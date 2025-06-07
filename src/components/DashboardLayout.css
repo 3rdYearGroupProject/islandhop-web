@@ -1,0 +1,82 @@
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #E6F0FA; /* Changed to match the blue background */
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 280px; /* Account for sidebar width + margin */
+  display: flex;
+  flex-direction: column;
+  background-color: #E6F0FA; /* Ensure blue background matches */
+}
+
+.role-switcher {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  background: white;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.role-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Roboto', sans-serif;
+}
+
+.role-button.active {
+  background: #1E90FF;
+  color: white;
+  box-shadow: 0 2px 4px rgba(30, 144, 255, 0.3);
+}
+
+.role-button:hover:not(.active) {
+  background: #f8f9fa;
+  color: #333;
+}
+
+.page-container {
+  flex: 1;
+  padding-top: 60px; /* Account for role switcher height */
+  background-color: #E6F0FA; /* Ensure blue background */
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .role-switcher {
+    position: relative;
+    top: 0;
+    right: 0;
+    margin: 20px;
+    align-self: flex-end;
+  }
+  
+  .page-container {
+    padding-top: 0;
+  }
+}

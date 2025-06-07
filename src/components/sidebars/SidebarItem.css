@@ -1,0 +1,83 @@
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 8px 12px 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: transparent;
+  transform: translateX(0);
+  max-width: calc(100% - 16px);
+  margin-left: 8px;
+  margin-right: 8px;
+  box-sizing: border-box;
+}
+
+.sidebar-item.active {
+  background-color: #D3E5F9;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(30, 144, 255, 0.15);
+}
+
+.sidebar-item:hover {
+  background-color: #E0E8F5;
+  transform: translateX(2px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-item.active:hover {
+  background-color: #D3E5F9;
+  transform: translateX(4px);
+}
+
+.sidebar-item-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  transition: transform 0.3s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-item-icon svg {
+  stroke-width: 1.5;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.sidebar-item:hover .sidebar-item-icon svg {
+  transform: scale(1.1);
+}
+
+.sidebar-item.active .sidebar-item-icon svg {
+  transform: scale(1.05);
+}
+
+/* Icon colors are now handled via inline styles in the component */
+
+.sidebar-item-label {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  color: #333;
+  font-weight: 400;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.sidebar-item:hover .sidebar-item-label {
+  color: #1976D2;
+}
+
+.sidebar-item.active .sidebar-item-label {
+  color: #1E90FF;
+}
+
+.sidebar-item.active .sidebar-item-icon {
+  color: #1E90FF !important;
+}

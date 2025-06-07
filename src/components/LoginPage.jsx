@@ -14,7 +14,7 @@ function LoginPage() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/profile');
+      navigate('/dashboard');
     } catch (error) {
       setError(error.message);
     }
@@ -24,7 +24,7 @@ function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      navigate('/profile');
+      navigate('/dashboard');
     } catch (error) {
       setError(error.message);
     }

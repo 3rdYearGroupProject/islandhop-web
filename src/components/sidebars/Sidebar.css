@@ -1,0 +1,157 @@
+.sidebar {
+  width: 240px;
+  min-height: calc(100vh - 40px);
+  height: calc(100vh - 40px);
+  background-color: white;
+  padding: 64px 16px 20px 16px;
+  box-sizing: border-box;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-logo {
+  margin-bottom: 64px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  max-width: 40px;
+  max-height: 40px;
+  object-fit: contain;
+}
+
+.logo-image {
+  max-width: 140px;
+  max-height: 50px;
+  object-fit: contain;
+}
+
+.sidebar-section-title {
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  color: #666;
+  margin: 25px 0 16px 4px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, font-weight 0.2s ease;
+  user-select: none;
+  position: relative;
+}
+
+.sidebar-section-title:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+  transform: translateX(2px);
+}
+
+.sidebar-section-title.first {
+  margin: 0 0 16px 4px;
+}
+
+/* Animation styles for collapsible sections */
+.section-content {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s ease,
+              margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.section-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  margin-bottom: 0;
+}
+
+.section-content.expanded {
+  max-height: 400px; /* Enough for up to 6-7 sidebar items */
+  opacity: 1;
+  pointer-events: auto;
+  margin-bottom: 0;
+}
+
+/* Chevron icon rotation animation */
+.chevron-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chevron-icon.rotated {
+  transform: rotate(-90deg);
+}
+
+/* Staggered animation for dropdown items */
+.section-content > div {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.section-content.collapsed > div {
+  transform: translateY(-8px);
+  opacity: 0;
+}
+
+.section-content.expanded > div {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Individual item animation timing */
+.section-content.expanded > div:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.section-content.expanded > div:nth-child(2) {
+  transition-delay: 50ms;
+}
+
+.section-content.expanded > div:nth-child(3) {
+  transition-delay: 100ms;
+}
+
+.section-content.expanded > div:nth-child(4) {
+  transition-delay: 150ms;
+}
+
+.section-content.expanded > div:nth-child(5) {
+  transition-delay: 200ms;
+}
+
+.section-content.expanded > div:nth-child(6) {
+  transition-delay: 250ms;
+}
+
+/* Reverse timing for collapse */
+.section-content.collapsed > div:nth-child(1) {
+  transition-delay: 250ms;
+}
+
+.section-content.collapsed > div:nth-child(2) {
+  transition-delay: 200ms;
+}
+
+.section-content.collapsed > div:nth-child(3) {
+  transition-delay: 150ms;
+}
+
+.section-content.collapsed > div:nth-child(4) {
+  transition-delay: 100ms;
+}
+
+.section-content.collapsed > div:nth-child(5) {
+  transition-delay: 50ms;
+}
+
+.section-content.collapsed > div:nth-child(6) {
+  transition-delay: 0ms;
+}
