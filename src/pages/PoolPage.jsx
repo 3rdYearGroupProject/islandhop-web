@@ -4,6 +4,7 @@ import FindPools from './pools/FindPools';
 import MyPools from './pools/MyPools';
 import ConfirmedPools from './pools/ConfirmedPools';
 import OngoingPools from './pools/OngoingPools';
+import pool4kVideo from '../assets/pool4k.mp4';
 
 const tabList = [
   { label: 'Find Pools', key: 'find' },
@@ -35,8 +36,23 @@ const PoolPage = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+        <video 
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          autoPlay 
+          muted 
+          loop
+          playsInline
+        >
+          <source src={pool4kVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        
+        {/* Video Overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        
+        {/* Hero Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Travel Pools
           </h1>
