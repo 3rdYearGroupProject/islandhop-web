@@ -95,7 +95,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
   return (
     <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-secondary-900 shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 border-r border-gray-200 dark:border-secondary-700`}>
-      <div className="flex flex-col h-full pt-16">
+      <div className="flex flex-col h-full">
         {/* Sidebar Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-secondary-700 lg:hidden">
           <div className="flex items-center space-x-3">
