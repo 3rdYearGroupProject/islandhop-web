@@ -52,36 +52,7 @@ const LandingPage = () => (
       </div>
     </section>
 
-    {/* Hero Card */}
-    <section className="w-full py-8">
-      <div className="page-container">
-        <div className="bg-pink-200 rounded-2xl p-0 flex flex-col md:flex-row overflow-hidden shadow-lg min-h-[220px]">
-          <img src={placeholder} alt="Trip" className="w-full md:w-64 h-48 object-cover" />
-          <div className="flex-1 flex flex-col justify-center p-6">
-            <span className="inline-block bg-white text-xs font-semibold text-gray-700 rounded-full px-3 py-1 mb-2">@PhylGan</span>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Book the best part of your trip</h2>
-            <p className="text-gray-700 mb-4">Browse unforgettable things to do—right here.</p>
-            <button className="bg-primary-600 text-white rounded-full px-5 py-2 font-semibold hover:bg-primary-700 transition">Find things to do</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    {/* Interest Cards */}
-    <section className="w-full py-8">
-      <div className="cards-container">
-        <CardGrid cardType="interest" maxCards={4}>
-          {['Outdoors', 'Food', 'Culture', 'Water'].map((interest, i) => (
-            <InterestCard 
-              key={interest}
-              image={placeholder}
-              title={interest}
-              className="hover:shadow-lg transition-shadow cursor-pointer"
-            />
-          ))}
-        </CardGrid>
-      </div>
-    </section>
+    
 
     {/* Experiences Near Colombo */}
     <section className="w-full py-8">
