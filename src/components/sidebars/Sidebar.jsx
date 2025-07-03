@@ -1,49 +1,52 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  HomeIcon,
+  MapIcon,
+  BriefcaseIcon,
+  TruckIcon,
+  ChatBubbleLeftRightIcon,
+  UserIcon,
+  CalendarIcon,
+  CurrencyDollarIcon,
+  StarIcon,
+  ClipboardDocumentListIcon,
+  TicketIcon,
+  BookOpenIcon,
+  UsersIcon
+} from '@heroicons/react/24/outline';
 
 const Sidebar = ({ isOpen, onClose, userRole }) => {
   const location = useLocation();
 
   const menuItems = {
     tourist: [
-      { name: 'Dashboard', path: '/tourist/dashboard', icon: '🏠' },
-      { name: 'Explore', path: '/tourist/explore', icon: '🗺️' },
-      { name: 'My Trips', path: '/tourist/trips', icon: '🎒' },
-      { name: 'Find Pools', path: '/tourist/pools', icon: '🚗' },
-      { name: 'Messages', path: '/tourist/messages', icon: '💬' },
-      { name: 'Profile', path: '/tourist/profile', icon: '👤' },
+      { name: 'Dashboard', path: '/tourist/dashboard', icon: HomeIcon },
+      { name: 'Explore', path: '/tourist/explore', icon: MapIcon },
+      { name: 'My Trips', path: '/tourist/trips', icon: BriefcaseIcon },
+      { name: 'Find Pools', path: '/tourist/pools', icon: TruckIcon },
+      { name: 'Messages', path: '/tourist/messages', icon: ChatBubbleLeftRightIcon },
+      { name: 'Profile', path: '/tourist/profile', icon: UserIcon },
     ],
     driver: [
-      { name: 'Dashboard', path: '/driver/dashboard', icon: '🏠' },
-      { name: 'Trips', path: '/driver/trips', icon: '🚗' },
-      { name: 'Schedule', path: '/driver/schedule', icon: '📅' },
-      { name: 'Earnings', path: '/driver/earnings', icon: '💰' },
-      { name: 'Messages', path: '/driver/chat', icon: '💬' },
-      { name: 'Profile', path: '/driver/profile', icon: '👤' },
+      { name: 'Dashboard', path: '/driver/dashboard', icon: HomeIcon },
+      { name: 'Active Rides', path: '/driver/rides', icon: TruckIcon },
+      { name: 'Schedule', path: '/driver/schedule', icon: CalendarIcon },
+      { name: 'Earnings', path: '/driver/earnings', icon: CurrencyDollarIcon },
+      { name: 'Profile', path: '/driver/profile', icon: UserIcon },
     ],
     guide: [
-      { name: 'Dashboard', path: '/guide/dashboard', icon: '🏠' },
-      { name: 'Tours', path: '/guide/tours', icon: '🎯' },
-      { name: 'Bookings', path: '/guide/bookings', icon: '📋' },
-      { name: 'Reviews', path: '/guide/reviews', icon: '⭐' },
-      { name: 'Profile', path: '/guide/profile', icon: '👤' },
-    ],
-    admin: [
-      { name: 'Dashboard', path: '/admin/dashboard', icon: '🏠' },
-      { name: 'User Accounts', path: '/admin/users', icon: '👥' },
-      { name: 'Analytics', path: '/admin/analytics', icon: '📊' },
-      { name: 'System Settings', path: '/admin/settings', icon: '⚙️' },
-      { name: 'Reviews', path: '/admin/reviews', icon: '⭐' },
-      { name: 'Notifications', path: '/admin/notifications', icon: '🔔' },
-      { name: 'APIs', path: '/admin/apis', icon: '🔌' },
-      { name: 'System History', path: '/admin/history', icon: '📋' },
-      { name: 'Profile', path: '/admin/profile', icon: '�' },
+      { name: 'Dashboard', path: '/guide/dashboard', icon: HomeIcon },
+      { name: 'Tours', path: '/guide/tours', icon: MapIcon },
+      { name: 'Bookings', path: '/guide/bookings', icon: ClipboardDocumentListIcon },
+      { name: 'Reviews', path: '/guide/reviews', icon: StarIcon },
+      { name: 'Profile', path: '/guide/profile', icon: UserIcon },
     ],
     support: [
-      { name: 'Dashboard', path: '/support/dashboard', icon: '🏠' },
-      { name: 'Tickets', path: '/support/tickets', icon: '🎫' },
-      { name: 'Knowledge Base', path: '/support/kb', icon: '📚' },
-      { name: 'Users', path: '/support/users', icon: '👥' },
+      { name: 'Dashboard', path: '/support/dashboard', icon: HomeIcon },
+      { name: 'Tickets', path: '/support/tickets', icon: TicketIcon },
+      { name: 'Knowledge Base', path: '/support/kb', icon: BookOpenIcon },
+      { name: 'Users', path: '/support/users', icon: UsersIcon },
     ],
   };
 
@@ -71,6 +74,8 @@ const Sidebar = ({ isOpen, onClose, userRole }) => {
         <nav className="flex-1 px-4 py-6 space-y-2">
           {items.map((item) => {
             const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            
             return (
               <Link
                 key={item.name}
@@ -82,7 +87,7 @@ const Sidebar = ({ isOpen, onClose, userRole }) => {
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
               >
-                <span className="text-lg mr-3">{item.icon}</span>
+                <Icon className="h-5 w-5 mr-3" />
                 {item.name}
               </Link>
             );

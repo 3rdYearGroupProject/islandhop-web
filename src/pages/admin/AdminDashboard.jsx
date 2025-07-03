@@ -4,7 +4,7 @@ import {
   UsersIcon,
   ChartBarIcon,
   CogIcon,
-  DocumentReportIcon,
+  PresentationChartBarIcon,
   ServerIcon,
   ShieldCheckIcon,
   BellIcon,
@@ -52,7 +52,7 @@ const AdminDashboard = ({ onPageChange }) => {
       value: '2,847',
       change: '+8%',
       changeType: 'positive',
-      icon: DocumentReportIcon,
+      icon: PresentationChartBarIcon,
       color: 'success'
     },
     {
