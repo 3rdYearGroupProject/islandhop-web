@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
+import AdminDashboardLayout from '../components/AdminDashboardLayout';
 
 // Import admin page components
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -19,7 +19,7 @@ import UpdateUserProfile from '../pages/admin/UpdateUserProfile';
 
 const AdminRoutes = () => {
   return (
-    <DashboardLayout userRole="admin">
+    <AdminDashboardLayout>
       <Routes>
         <Route path="/" element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
@@ -36,7 +36,7 @@ const AdminRoutes = () => {
         <Route path="apis" element={<APIs />} />
         <Route path="update-user/:userId" element={<UpdateUserProfile />} />
       </Routes>
-    </DashboardLayout>
+    </AdminDashboardLayout>
   );
 };
 
