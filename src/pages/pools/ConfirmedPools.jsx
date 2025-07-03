@@ -47,49 +47,52 @@ const ConfirmedPools = () => {
 
   return (
     <div>
-      <Card className="bg-gradient-to-r from-info-50 to-info-100 dark:from-info-900/20 dark:to-info-800/20 border-2 border-info-200 dark:border-info-700">
-        <CardBody className="p-8">
-          {/* Header Section */}
-          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+      <Card className="bg-gradient-to-r from-info-50 to-info-100 dark:from-info-900/20 dark:to-info-800/20 border-2 border-info-200 dark:border-info-700 p-0 overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-full">
+          {/* Image Section - edge to edge, left side */}
+          <div className="relative w-full lg:w-1/2 h-48 lg:h-auto flex-shrink-0">
             <img
               src={confirmedPool.image}
               alt={confirmedPool.name}
-              className="w-full lg:w-48 h-32 object-cover rounded-xl border-2 border-info-300"
+              className="absolute top-0 left-0 w-full h-full object-cover"
             />
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-info-800 dark:text-info-200 mb-4">
-                {confirmedPool.name} (Confirmed)
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
-                <div className="flex items-center">
-                  <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span><strong>Destinations:</strong> {confirmedPool.destinations}</span>
-                </div>
-                <div className="flex items-center">
-                  <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span><strong>Date:</strong> {confirmedPool.date}</span>
-                </div>
-                <div className="flex items-center">
-                  <UserGroupIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span><strong>Participants:</strong> {confirmedPool.participants}</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-5 w-5 text-info-600 mr-2" />
-                  <span className="text-info-600 font-bold">Status: {confirmedPool.status}</span>
-                </div>
-                <div className="flex items-center">
-                  <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span><strong>Guide:</strong> {confirmedPool.guide}</span>
-                </div>
-                <div className="flex items-center">
-                  <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span><strong>Driver:</strong> {confirmedPool.driver}</span>
-                </div>
-              </div>
+            <div className="absolute top-3 left-3 bg-info-600 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+              {confirmedPool.status}
             </div>
           </div>
+          {/* Content Section */}
+          <CardBody className="flex-1 flex flex-col p-8">
+            <h2 className="text-3xl font-bold text-info-800 dark:text-info-200 mb-4">
+              {confirmedPool.name}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300 mb-4">
+              <div className="flex items-center">
+                <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <span><strong>Destinations:</strong> {confirmedPool.destinations}</span>
+              </div>
+              <div className="flex items-center">
+                <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <span><strong>Date:</strong> {confirmedPool.date}</span>
+              </div>
+              <div className="flex items-center">
+                <UserGroupIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <span><strong>Participants:</strong> {confirmedPool.participants}</span>
+              </div>
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 text-info-600 mr-2" />
+                <span className="text-info-600 font-bold">Status: {confirmedPool.status}</span>
+              </div>
+              <div className="flex items-center">
+                <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <span><strong>Guide:</strong> {confirmedPool.guide}</span>
+              </div>
+              <div className="flex items-center">
+                <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <span><strong>Driver:</strong> {confirmedPool.driver}</span>
+              </div>
+            </div>
 
-          {/* Payment Status Section */}
+            {/* Payment Status Section */}
           <div className="mb-8">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
               <CreditCardIcon className="h-6 w-6 mr-2" />
@@ -222,7 +225,8 @@ const ConfirmedPools = () => {
               Download Itinerary
             </button>
           </div>
-        </CardBody>
+          </CardBody>
+        </div>
       </Card>
     </div>
   );
