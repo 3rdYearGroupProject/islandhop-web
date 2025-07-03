@@ -1,18 +1,5 @@
 import React from 'react';
-i    admin: [
-      { name: 'Dashboard', path: '/admin/dashboard', icon: '🏠' },
-      { name: 'User Accounts', path: '/admin/users', icon: '👥' },
-      { name: 'Account Management', path: '/admin/accounts', icon: '👤' },
-      { name: 'Analytics', path: '/admin/analytics', icon: '📊' },
-      { name: 'System Settings', path: '/admin/settings', icon: '⚙️' },
-      { name: 'AI Settings', path: '/admin/ai-settings', icon: '🤖' },
-      { name: 'Hosting', path: '/admin/hosting', icon: '🖥️' },
-      { name: 'Reviews', path: '/admin/reviews', icon: '⭐' },
-      { name: 'Notifications', path: '/admin/notifications', icon: '🔔' },
-      { name: 'APIs', path: '/admin/apis', icon: '🔌' },
-      { name: 'System History', path: '/admin/history', icon: '📋' },
-      { name: 'Profile', path: '/admin/profile', icon: '👤' },
-    ],k, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ isOpen, onClose, userRole }) => {
   const location = useLocation();
@@ -28,9 +15,10 @@ const Sidebar = ({ isOpen, onClose, userRole }) => {
     ],
     driver: [
       { name: 'Dashboard', path: '/driver/dashboard', icon: '🏠' },
-      { name: 'Active Rides', path: '/driver/rides', icon: '🚗' },
+      { name: 'Trips', path: '/driver/trips', icon: '🚗' },
       { name: 'Schedule', path: '/driver/schedule', icon: '📅' },
       { name: 'Earnings', path: '/driver/earnings', icon: '💰' },
+      { name: 'Messages', path: '/driver/chat', icon: '💬' },
       { name: 'Profile', path: '/driver/profile', icon: '👤' },
     ],
     guide: [
