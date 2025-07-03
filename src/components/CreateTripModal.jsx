@@ -5,8 +5,7 @@ import Input from './Input';
 
 const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    destination: ''
+    name: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -35,10 +34,6 @@ const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
       newErrors.name = 'Trip name must be 80 characters or less';
     }
 
-    if (!formData.destination.trim()) {
-      newErrors.destination = 'Destination is required';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -49,7 +44,7 @@ const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
     if (validateForm()) {
       onCreateTrip(formData);
       // Reset form
-      setFormData({ name: '', destination: '' });
+      setFormData({ name: '' });
       setErrors({});
       onClose();
     }
@@ -57,7 +52,7 @@ const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
 
   const handleCancel = () => {
     // Reset form and close
-    setFormData({ name: '', destination: '' });
+    setFormData({ name: '' });
     setErrors({});
     onClose();
   };
@@ -113,9 +108,9 @@ const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
           <Button
             type="submit"
             variant="primary"
-            disabled={!formData.name.trim() || !formData.destination.trim()}
+            disabled={!formData.name.trim()}
             className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-              !formData.name.trim() || !formData.destination.trim()
+              !formData.name.trim()
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-primary-800 text-white hover:bg-primary-900'
             }`}

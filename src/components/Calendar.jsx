@@ -62,10 +62,15 @@ const Calendar = ({
   };
 
   const isDateInRange = (day) => {
-    if (!day || !rangeStart || selectedDates.length < 2) return false;
+    if (!day || selectedDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     const [start, end] = selectedDates.sort((a, b) => a - b);
-    return date >= start && date <= end;
+    
+    // Don't highlight the start and end dates as "in range" since they are already highlighted as selected
+    const isStartOrEnd = date.getTime() === start.getTime() || date.getTime() === end.getTime();
+    if (isStartOrEnd) return false;
+    
+    return date > start && date < end;
   };
 
   const handleDateClick = (day) => {
@@ -76,14 +81,20 @@ const Calendar = ({
     if (mode === 'single') {
       onDateSelect?.(date);
     } else if (mode === 'range') {
-      if (!rangeStart) {
+      if (selectedDates.length === 0) {
+        // First date selection
         setRangeStart(date);
         onDateSelect?.(date);
-      } else {
-        const start = rangeStart < date ? rangeStart : date;
-        const end = rangeStart < date ? date : rangeStart;
+      } else if (selectedDates.length === 1) {
+        // Second date selection - complete the range
+        const start = selectedDates[0] < date ? selectedDates[0] : date;
+        const end = selectedDates[0] < date ? date : selectedDates[0];
         setRangeStart(null);
         onDateRangeSelect?.([start, end]);
+      } else {
+        // Start a new range selection
+        setRangeStart(date);
+        onDateSelect?.(date);
       }
     } else if (mode === 'multiple') {
       const newDates = isDateSelected(day) 
@@ -104,21 +115,21 @@ const Calendar = ({
   const getDayClasses = (day) => {
     if (!day) return 'invisible';
     
-    const baseClasses = 'w-8 h-8 flex items-center justify-center text-sm rounded-full cursor-pointer transition-colors';
+    const baseClasses = 'w-8 h-8 flex items-center justify-center text-sm rounded-full cursor-pointer transition-all duration-200 font-medium';
     
     if (isDateDisabled(day)) {
       return `${baseClasses} text-gray-300 cursor-not-allowed`;
     }
     
     if (isDateSelected(day)) {
-      return `${baseClasses} bg-primary-600 text-white font-semibold`;
+      return `${baseClasses} bg-primary-600 text-white font-semibold hover:bg-primary-700 scale-110 shadow-md`;
     }
     
     if (isDateInRange(day)) {
-      return `${baseClasses} bg-primary-100 text-primary-800`;
+      return `${baseClasses} bg-primary-100 text-primary-800 hover:bg-primary-200`;
     }
     
-    return `${baseClasses} text-gray-700 hover:bg-primary-50 hover:text-primary-600`;
+    return `${baseClasses} text-gray-700 hover:bg-primary-50 hover:text-primary-600 hover:scale-105`;
   };
 
   return (
