@@ -6,6 +6,7 @@ import PlaceCard from '../components/PlaceCard';
 import CollectionCard from '../components/CollectionCard';
 import InspirationCard from '../components/InspirationCard';
 import CardGrid from '../components/CardGrid';
+import sriLankaVideo from '../assets/sri-lanka-video.mp4';
 
 const placeholder = 'https://placehold.co/400x250';
 const avatar = 'https://placehold.co/64x64';
@@ -15,30 +16,39 @@ const LandingPage = () => (
     {/* Navbar */}
     <Navbar />
 
-    {/* Hero/Search Section */}
-    <section className="w-full bg-white py-10">
-      <div className="hero-container text-center">
-        <h1 className="text-5xl font-extrabold text-gray-900 mb-4">Where to?</h1>
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {['Search All', 'Hotels', 'Things to Do', 'Restaurants', 'Flights', 'Vacation Rentals'].map((cat) => (
-            <button
-              key={cat}
-              className="px-4 py-2 rounded-full bg-white border border-gray-300 text-gray-900 font-semibold text-sm hover:bg-gray-100 shadow-sm transition"
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-        <form className="w-full max-w-2xl mx-auto flex items-center bg-white rounded-full shadow border border-gray-300 p-2">
-          <input
-            type="text"
-            placeholder="Places to go, things to do, hotels..."
-            className="flex-1 px-4 py-2 bg-transparent outline-none text-gray-800 text-lg"
-          />
-          <button type="submit" className="ml-2 px-6 py-2 rounded-full bg-primary-600 text-white font-bold hover:bg-primary-700 transition">
-            Search
+    {/* Hero Video Section */}
+    <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+      <video 
+        className="absolute top-0 left-0 w-full h-full object-cover"
+        autoPlay 
+        muted 
+        loop
+        playsInline
+      >
+        <source src={sriLankaVideo} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      
+      {/* Video Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+      
+      {/* Hero Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
+        <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          Ready For Your<br />
+          Next Adventure?
+        </h1>
+        <p className="text-lg md:text-xl mb-8 max-w-2xl">
+          Get an experience like never before with IslandHop
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button className="px-8 py-3 bg-white text-gray-900 font-semibold rounded-full hover:bg-gray-100 transition">
+            Start Planning
           </button>
-        </form>
+          <button className="px-8 py-3 border-2 border-white text-white font-semibold rounded-full hover:bg-white hover:text-gray-900 transition">
+            Join a Pool
+          </button>
+        </div>
       </div>
     </section>
 

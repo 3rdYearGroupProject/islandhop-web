@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import logo from '../assets/islandHopIcon.png'; // Adjust the path as necessary
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -10,7 +11,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <img src="/logo192.png" alt="IslandHop Logo" className="h-8 w-8 mr-2" />
+          <img src={logo} alt="IslandHop Logo" className="h-8 w-8 mr-2" />
           <span className="text-2xl font-bold text-primary-600 tracking-tight">IslandHop</span>
         </Link>
         {/* Nav Links */}
