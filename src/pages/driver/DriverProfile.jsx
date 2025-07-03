@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   User, 
-  Car, 
   Camera, 
   MapPin, 
   Phone, 
@@ -22,7 +21,7 @@ import {
 
 const DriverProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal'); // personal, vehicle, documents, preferences
+  const [activeTab, setActiveTab] = useState('personal'); // personal, documents, preferences
 
   const [driverData, setDriverData] = useState({
     // Personal Information
@@ -137,7 +136,6 @@ const DriverProfile = () => {
 
   const tabs = [
     { key: 'personal', label: 'Personal Info', icon: User },
-    { key: 'vehicle', label: 'Vehicle', icon: Car },
     { key: 'documents', label: 'Documents', icon: FileText },
     { key: 'preferences', label: 'Preferences', icon: Settings }
   ];
@@ -211,7 +209,7 @@ const DriverProfile = () => {
                 <span className="text-gray-500 text-sm ml-1">({driverData.totalReviews} reviews)</span>
               </div>
               <div className="flex items-center text-sm text-gray-500">
-                <Car className="h-4 w-4 mr-1" />
+                <MapPin className="h-4 w-4 mr-1" />
                 {driverData.totalTrips} trips completed
               </div>
               <div className="flex items-center text-sm text-gray-500">
@@ -366,152 +364,6 @@ const DriverProfile = () => {
                   />
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Vehicle Information Tab */}
-          {activeTab === 'vehicle' && (
-            <div className="space-y-6">
-              {driverData.vehicles.map((vehicle, index) => (
-                <div key={vehicle.id} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {vehicle.year} {vehicle.make} {vehicle.model}
-                    </h3>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      vehicle.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {vehicle.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Make
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicle.make}
-                        disabled={!isEditing}
-                        className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Model
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicle.model}
-                        disabled={!isEditing}
-                        className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Year
-                      </label>
-                      <input
-                        type="number"
-                        value={vehicle.year}
-                        disabled={!isEditing}
-                        className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Color
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicle.color}
-                        disabled={!isEditing}
-                        className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Plate Number
-                      </label>
-                      <input
-                        type="text"
-                        value={vehicle.plateNumber}
-                        disabled={!isEditing}
-                        className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Passenger Capacity
-                      </label>
-                      <input
-                        type="number"
-                        value={vehicle.capacity}
-                        disabled={!isEditing}
-                        className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vehicle Images
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {vehicle.images.map((image, imgIndex) => (
-                        <div key={imgIndex} className="relative">
-                          <img
-                            src={image}
-                            alt={`Vehicle ${imgIndex + 1}`}
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
-                          {isEditing && (
-                            <button className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700">
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {isEditing && (
-                        <button className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400">
-                          <Upload className="h-6 w-6 text-gray-400" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Insurance Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">Company</label>
-                        <p className="font-medium">{vehicle.insurance.company}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">Policy Number</label>
-                        <p className="font-medium">{vehicle.insurance.policyNumber}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">Expiry Date</label>
-                        <p className="font-medium">{vehicle.insurance.expiryDate}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {isEditing && (
-                <button className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700">
-                  <Car className="h-6 w-6 mx-auto mb-2" />
-                  Add Another Vehicle
-                </button>
-              )}
             </div>
           )}
 

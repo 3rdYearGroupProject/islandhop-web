@@ -13,6 +13,7 @@ import {
   Settings,
   AlertCircle
 } from 'lucide-react';
+import DriverStatusCard from '../../components/driver/DriverStatusCard';
 
 const DriverDashboard = () => {
   const [driverStats, setDriverStats] = useState({
@@ -23,9 +24,7 @@ const DriverDashboard = () => {
     rating: 4.8,
     totalReviews: 89,
     activeTrips: 1,
-    pendingRequests: 3,
-    onlineStatus: true,
-    availabilityStatus: 'available' // available, busy, offline
+    pendingRequests: 3
   });
 
   const [activeTrip, setActiveTrip] = useState({
@@ -68,14 +67,6 @@ const DriverDashboard = () => {
     }
   ]);
 
-  const toggleOnlineStatus = () => {
-    setDriverStats(prev => ({
-      ...prev,
-      onlineStatus: !prev.onlineStatus,
-      availabilityStatus: !prev.onlineStatus ? 'available' : 'offline'
-    }));
-  };
-
   const handleTripAction = (tripId, action) => {
     if (action === 'accept') {
       // Handle trip acceptance
@@ -95,42 +86,12 @@ const DriverDashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900">Driver Dashboard</h1>
             <p className="text-gray-600 mt-1">Welcome back, Rajesh! Ready for another great day?</p>
           </div>
-          
-          {/* Online Status Toggle */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <span className="text-sm font-medium text-gray-700 mr-3">Status:</span>
-              <button
-                onClick={toggleOnlineStatus}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                  driverStats.onlineStatus ? 'bg-green-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    driverStats.onlineStatus ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className={`ml-3 text-sm font-medium ${
-                driverStats.onlineStatus ? 'text-green-600' : 'text-gray-500'
-              }`}>
-                {driverStats.onlineStatus ? 'Online' : 'Offline'}
-              </span>
-            </div>
-            
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              driverStats.availabilityStatus === 'available' 
-                ? 'bg-green-100 text-green-800' 
-                : driverStats.availabilityStatus === 'busy'
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {driverStats.availabilityStatus === 'available' ? 'Available' : 
-               driverStats.availabilityStatus === 'busy' ? 'Busy' : 'Offline'}
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* Driver Status Card */}
+      <div className="mb-8">
+        <DriverStatusCard showToggle={true} />
       </div>
 
       {/* Stats Grid */}
