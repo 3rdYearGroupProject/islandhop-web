@@ -1,40 +1,67 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import LoginPage from '../pages/LoginPage';
+import SignupPage from '../pages/SignupPage';
+import ProfessionalSignupPage from '../pages/ProfessionalSignupPage';
+import LandingPage from '../pages/LandingPage';
+import DiscoverPage from '../pages/Discover';
+import PoolPage from '../pages/PoolPage'; 
+import AboutPage from '../pages/AboutPage'; 
+import { Navigate } from 'react-router-dom';
 
-// Placeholder components for general routes
-const AboutPage = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-        About IslandHop
-      </h1>
-      <p className="text-lg text-gray-600 dark:text-gray-400">
-        Your gateway to exploring beautiful Sri Lanka
-      </p>
-    </div>
-  </div>
-);
-
-const ContactPage = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-        Contact Us
-      </h1>
-      <p className="text-lg text-gray-600 dark:text-gray-400">
-        Get in touch with our support team
-      </p>
-    </div>
-  </div>
-);
-
-const GeneralRoutes = () => {
-  return (
-    <Routes>
-      <Route path="about" element={<AboutPage />} />
-      <Route path="contact" element={<ContactPage />} />
-    </Routes>
-  );
+const ProtectedRouteWrapper = ({ children }) => {
+  // ...existing code for auth check...
+  return children;
 };
+const PublicRoute = ({ children }) => {
+  // ...existing code for public route check...
+  return children;
+};
+
+const GeneralRoutes = () => (
+  <Routes>
+    <Route path="/" element={
+      <PublicRoute>
+        <LandingPage />
+      </PublicRoute>
+    } />
+    <Route path="/login" element={
+      <PublicRoute>
+        <LoginPage />
+      </PublicRoute>
+    } />
+    <Route path="/discover" element={
+      <PublicRoute>
+        <DiscoverPage />
+      </PublicRoute>
+    } />
+    <Route path="/pools" element={
+      <PublicRoute>
+        <PoolPage />
+      </PublicRoute>
+    } />
+    <Route path="/about" element={
+      <PublicRoute>
+        <AboutPage />
+      </PublicRoute>
+    } />
+    
+    {/* Protected Routes */}
+
+    <Route path="/signup" element={
+      <PublicRoute>
+        <SignupPage />
+      </PublicRoute>
+    } />
+    <Route path="/signup/professional" element={
+      <PublicRoute>
+        <ProfessionalSignupPage />
+      </PublicRoute>
+    } />
+    
+    {/* Catch-all for general routes */}
+    <Route path="*" element={<Navigate to="/" />} />
+  </Routes>
+);
 
 export default GeneralRoutes;

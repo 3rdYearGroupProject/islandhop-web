@@ -22,7 +22,7 @@
   }
   
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
     line-height: 1.6;
     color: theme('colors.gray.900');
     background-color: theme('colors.white');
@@ -404,6 +404,15 @@
   
   .tablet-only {
     @apply hidden md:block lg:hidden;
+  }
+  
+  /* Hide scrollbar for horizontal scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
   }
 }
 
