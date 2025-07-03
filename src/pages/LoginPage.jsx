@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-toastify';
 import sriLankaVideo from '../assets/sri-lanka-video.mp4';
-import islandHopLogo from '../assets/IslandHop.png';
+import islandHopLogo from '../assets/IslandHopWhite.png';
 import islandHopLogoWhite from '../assets/IslandHopWhite.png';
 import islandHopIcon from '../assets/islandHopIcon.png';
 
@@ -50,19 +50,19 @@ const LoginPage = () => {
     <div className="min-h-screen flex">
       {/* Top left logo */}
       <div 
-        className="absolute top-6 left-6 z-20 flex items-center gap-2 cursor-pointer"
+        className="absolute top-8 left-8 z-20 flex items-center gap-3 cursor-pointer"
         onClick={handleLogoClick}
       >
-        <img src={islandHopIcon} alt="IslandHop Icon" className="h-8 w-8" />
-        <img src={islandHopLogoWhite} alt="IslandHop" className="h-6 block md:hidden" />
-        <img src={islandHopLogo} alt="IslandHop" className="h-6 hidden md:block" />
+        <img src={islandHopIcon} alt="IslandHop Icon" className="h-10 w-10" />
+        <img src={islandHopLogoWhite} alt="IslandHop" className="h-7 block md:hidden" />
+        <img src={islandHopLogo} alt="IslandHop" className="h-7 hidden md:block" />
       </div>
 
       {/* Left side - Video section */}
-      <div className="hidden md:flex md:w-1/2 relative">
-        <div className="w-full h-full relative overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 relative p-4">
+        <div className="w-full h-full relative overflow-hidden rounded-2xl">
           <video 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover rounded-2xl"
             autoPlay 
             muted 
             loop 
@@ -72,9 +72,9 @@ const LoginPage = () => {
             Your browser does not support the video tag.
           </video>
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white px-8">
-              <h3 className="text-4xl font-bold mb-4">
+          <div className="absolute inset-0 flex items-end justify-end pb-8 pr-8">
+            <div className="text-right text-white">
+              <h3 className="text-5xl font-normal mb-4">
                 Welcome Back<br />to IslandHop
               </h3>
               <p className="text-xl opacity-90">
@@ -89,7 +89,7 @@ const LoginPage = () => {
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+            <h2 className="text-3xl font-semibold text-gray-900 mb-2">Welcome Back</h2>
             <p className="text-gray-600">Sign in to your IslandHop account</p>
           </div>
           
@@ -108,7 +108,7 @@ const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
               />
             </div>
             
@@ -120,7 +120,7 @@ const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
               />
             </div>
             
@@ -136,7 +136,7 @@ const LoginPage = () => {
               </label>
               <Link
                 to="/forgot-password"
-                className="text-sm text-primary-600 hover:text-primary-500"
+                className="text-sm text-black hover:text-gray-700"
               >
                 Forgot password?
               </Link>
@@ -145,7 +145,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-black text-white py-3 px-4 rounded-full font-semibold hover:bg-gray-900 focus:ring-2 focus:ring-black focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
@@ -162,7 +162,7 @@ const LoginPage = () => {
           
           <button
             type="button"
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition"
+            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-full text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" className="mr-3">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -178,7 +178,7 @@ const LoginPage = () => {
               Don't have an account?{' '}
               <Link
                 to="/signup"
-                className="font-medium text-primary-600 hover:text-primary-500"
+                className="font-medium text-black hover:text-gray-700"
               >
                 Sign up
               </Link>
