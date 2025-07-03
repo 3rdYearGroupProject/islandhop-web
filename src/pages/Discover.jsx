@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import Card, { CardBody, CardHeader } from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import waterfallVideo from '../assets/waterfall.mp4';
 import { 
   MapPinIcon, 
   StarIcon, 
@@ -205,38 +206,51 @@ const Discover = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Discover Sri Lanka
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 opacity-90">
-              Explore the Pearl of the Indian Ocean's hidden gems and popular attractions
-            </p>
-            
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for attractions, restaurants, hotels..."
-                  className="w-full px-6 py-4 pl-14 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-primary-300 text-lg"
-                />
-                <MagnifyingGlassIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary-600 text-white px-6 py-3 rounded-full hover:bg-primary-700 transition-colors"
-                >
-                  Search
-                </button>
-              </div>
-            </form>
-          </div>
+      <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+        <video 
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          autoPlay 
+          muted 
+          loop
+          playsInline
+        >
+          <source src={waterfallVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        
+        {/* Video Overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        
+        {/* Hero Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            Discover Sri Lanka
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 opacity-90">
+            Explore the Pearl of the Indian Ocean's hidden gems and popular attractions
+          </p>
+          
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search for attractions, restaurants, hotels..."
+                className="w-full px-6 py-4 pl-14 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-primary-300 text-lg"
+              />
+              <MagnifyingGlassIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary-600 text-white px-6 py-3 rounded-full hover:bg-primary-700 transition-colors"
+              >
+                Search
+              </button>
+            </div>
+          </form>
         </div>
-      </div>
+      </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Destinations */}
