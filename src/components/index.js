@@ -5,6 +5,7 @@ export { default as InterestCard } from './InterestCard';
 export { default as PlaceCard } from './PlaceCard';
 export { default as CollectionCard } from './CollectionCard';
 export { default as InspirationCard } from './InspirationCard';
+export { default as DestinationCard } from './DestinationCard';
 export { default as CardGrid } from './CardGrid';
 
 // UI Components

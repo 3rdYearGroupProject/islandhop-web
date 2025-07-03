@@ -1,14 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import Card, { CardBody, CardHeader } from '../components/Card';
+import DestinationCard from '../components/DestinationCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import waterfallVideo from '../assets/waterfall.mp4';
+
+// Import destination images
+import colomboImg from '../assets/destinations/colombo.jpg';
+import kandyImg from '../assets/destinations/kandy.jpg';
+import galleImg from '../assets/destinations/galle.jpg';
+import nuwaraEliyaImg from '../assets/destinations/nuwara-eliya.jpg';
+import anuradhapuraImg from '../assets/destinations/anuradhapura.jpg';
+import sigiriyaImg from '../assets/destinations/sigiriya.jpg';
+import ellaImg from '../assets/destinations/ella.jpg';
+import mirissaImg from '../assets/destinations/mirissa.jpg';
 import { 
   MapPinIcon, 
-  StarIcon, 
+  BuildingLibraryIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   PhotoIcon,
+  SunIcon,
+  BuildingLibraryIcon as TempleIcon,
+  SparklesIcon,
+  CakeIcon,
+  HomeModernIcon,
   ClockIcon,
   PhoneIcon,
   GlobeAltIcon,
@@ -31,25 +47,25 @@ const Discover = () => {
 
   // Categories for filtering
   const categories = [
-    { id: 'tourist_attraction', name: 'Tourist Attractions', icon: '🏛️' },
-    { id: 'museum', name: 'Museums', icon: '🏛️' },
-    { id: 'park', name: 'Parks & Nature', icon: '🌳' },
-    { id: 'temple', name: 'Temples', icon: '🏯' },
-    { id: 'beach', name: 'Beaches', icon: '🏖️' },
-    { id: 'restaurant', name: 'Restaurants', icon: '🍽️' },
-    { id: 'lodging', name: 'Hotels', icon: '🏨' },
+    { id: 'tourist_attraction', name: 'Tourist Attractions', icon: <SparklesIcon className="h-6 w-6 mx-auto" /> },
+    { id: 'museum', name: 'Museums', icon: <BuildingLibraryIcon className="h-6 w-6 mx-auto" /> },
+    { id: 'park', name: 'Parks & Nature', icon: <SunIcon className="h-6 w-6 mx-auto" /> },
+    { id: 'temple', name: 'Temples', icon: <TempleIcon className="h-6 w-6 mx-auto" /> },
+    { id: 'beach', name: 'Beaches', icon: <PhotoIcon className="h-6 w-6 mx-auto" /> },
+    { id: 'restaurant', name: 'Restaurants', icon: <CakeIcon className="h-6 w-6 mx-auto" /> },
+    { id: 'lodging', name: 'Hotels', icon: <HomeModernIcon className="h-6 w-6 mx-auto" /> },
   ];
 
   // Popular destinations in Sri Lanka
   const popularDestinations = [
-    { name: 'Colombo', coords: { lat: 6.9271, lng: 79.8612 } },
-    { name: 'Kandy', coords: { lat: 7.2906, lng: 80.6337 } },
-    { name: 'Galle', coords: { lat: 6.0329, lng: 80.217 } },
-    { name: 'Nuwara Eliya', coords: { lat: 6.9497, lng: 80.7891 } },
-    { name: 'Anuradhapura', coords: { lat: 8.3114, lng: 80.4037 } },
-    { name: 'Sigiriya', coords: { lat: 7.9568, lng: 80.7608 } },
-    { name: 'Ella', coords: { lat: 6.8720, lng: 81.0463 } },
-    { name: 'Mirissa', coords: { lat: 5.9487, lng: 80.4565 } },
+    { name: 'Colombo', coords: { lat: 6.9271, lng: 79.8612 }, image: colomboImg },
+    { name: 'Kandy', coords: { lat: 7.2906, lng: 80.6337 }, image: kandyImg },
+    { name: 'Galle', coords: { lat: 6.0329, lng: 80.217 }, image: galleImg },
+    { name: 'Nuwara Eliya', coords: { lat: 6.9497, lng: 80.7891 }, image: nuwaraEliyaImg },
+    { name: 'Anuradhapura', coords: { lat: 8.3114, lng: 80.4037 }, image: anuradhapuraImg },
+    { name: 'Sigiriya', coords: { lat: 7.9568, lng: 80.7608 }, image: sigiriyaImg },
+    { name: 'Ella', coords: { lat: 6.8720, lng: 81.0463 }, image: ellaImg },
+    { name: 'Mirissa', coords: { lat: 5.9487, lng: 80.4565 }, image: mirissaImg },
   ];
 
   useEffect(() => {
@@ -223,7 +239,7 @@ const Discover = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-normal mb-6">
             Discover Sri Lanka
           </h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90">
@@ -231,19 +247,19 @@ const Discover = () => {
           </p>
           
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+          <form onSubmit={handleSearch} className="max-w-3xl w-full mx-auto">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for attractions, restaurants, hotels..."
-                className="w-full px-6 py-4 pl-14 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-primary-300 text-lg"
+                className="w-full px-8 py-4 pl-16 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-primary-300 text-lg"
               />
-              <MagnifyingGlassIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-6 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary-600 text-white px-6 py-3 rounded-full hover:bg-primary-700 transition-colors"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary-600 text-white px-8 py-3 rounded-full hover:bg-primary-700 transition-colors"
               >
                 Search
               </button>
@@ -258,18 +274,16 @@ const Discover = () => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Popular Destinations
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {popularDestinations.map((destination) => (
-              <button
-                key={destination.name}
-                onClick={() => searchByDestination(destination)}
-                className="p-4 bg-white dark:bg-secondary-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-1 text-center group"
-              >
-                <div className="text-2xl mb-2">📍</div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-primary-600">
-                  {destination.name}
-                </span>
-              </button>
+              <div key={destination.name} className="flex-shrink-0 w-48 md:w-56">
+                <DestinationCard
+                  destination={destination}
+                  imageUrl={destination.image}
+                  onClick={searchByDestination}
+                  className="h-48 md:h-56"
+                />
+              </div>
             ))}
           </div>
         </section>
@@ -290,14 +304,23 @@ const Discover = () => {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`p-4 rounded-xl transition-all duration-200 text-center ${
-                  selectedCategory === category.id
-                    ? 'bg-primary-600 text-white shadow-lg scale-105'
-                    : 'bg-white dark:bg-secondary-800 text-gray-900 dark:text-white shadow-md hover:shadow-lg hover:-translate-y-1'
-                }`}
+                className={`group flex flex-col items-center justify-center py-3 px-2 rounded-full border transition-all duration-300 text-center text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400
+                  ${selectedCategory === category.id
+                    ? 'bg-primary-600 border-primary-600 scale-105 shadow'
+                    : 'bg-transparent border-gray-300 hover:bg-primary-50 hover:border-primary-300'}
+                `}
+                style={{ '--tw-icon-color': selectedCategory === category.id ? '#fff' : undefined }}
               >
-                <div className="text-2xl mb-2">{category.icon}</div>
-                <span className="text-sm font-medium">{category.name}</span>
+                <span
+                  className={`mb-1 transition-colors duration-300
+                    ${selectedCategory === category.id ? 'text-white' : 'text-gray-900 dark:text-white group-hover:text-primary-700 group-focus:text-primary-700'}`}
+                >
+                  {React.cloneElement(category.icon, {
+                    className: `h-6 w-6 mx-auto transition-colors duration-300 ${selectedCategory === category.id ? 'text-white' : 'text-gray-900 dark:text-white group-hover:text-primary-700'}`,
+                    style: undefined
+                  })}
+                </span>
+                <span className={`text-xs font-medium transition-colors duration-300 ${selectedCategory === category.id ? 'text-white' : 'text-gray-900 dark:text-white group-hover:text-primary-700 group-focus:text-primary-700'}`}>{category.name}</span>
               </button>
             ))}
           </div>
