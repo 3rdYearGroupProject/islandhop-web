@@ -7,6 +7,10 @@ import LandingPage from '../pages/LandingPage';
 import DiscoverPage from '../pages/Discover';
 import PoolPage from '../pages/PoolPage'; 
 import AboutPage from '../pages/AboutPage'; 
+import TripDurationPage from '../pages/TripDurationPage';
+import TripPreferencesPage from '../pages/TripPreferencesPage';
+import TripItineraryPage from '../pages/TripItineraryPage';
+import MyTripsPage from '../pages/MyTripsPage';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -43,6 +47,26 @@ const GeneralRoutes = () => (
     <Route path="/about" element={
       <PublicRoute>
         <AboutPage />
+      </PublicRoute>
+    } />
+    <Route path="/trips" element={
+      <PublicRoute>
+        <MyTripsPage />
+      </PublicRoute>
+    } />
+    <Route path="/trip-duration" element={
+      <PublicRoute>
+        <TripDurationPage />
+      </PublicRoute>
+    } />
+    <Route path="/trip-preferences" element={
+      <PublicRoute>
+        <TripPreferencesPage />
+      </PublicRoute>
+    } />
+    <Route path="/trip-itinerary" element={
+      <PublicRoute>
+        <TripItineraryPage />
       </PublicRoute>
     } />
     

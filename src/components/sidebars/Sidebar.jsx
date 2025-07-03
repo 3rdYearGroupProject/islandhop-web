@@ -1,5 +1,18 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+i    admin: [
+      { name: 'Dashboard', path: '/admin/dashboard', icon: '🏠' },
+      { name: 'User Accounts', path: '/admin/users', icon: '👥' },
+      { name: 'Account Management', path: '/admin/accounts', icon: '👤' },
+      { name: 'Analytics', path: '/admin/analytics', icon: '📊' },
+      { name: 'System Settings', path: '/admin/settings', icon: '⚙️' },
+      { name: 'AI Settings', path: '/admin/ai-settings', icon: '🤖' },
+      { name: 'Hosting', path: '/admin/hosting', icon: '🖥️' },
+      { name: 'Reviews', path: '/admin/reviews', icon: '⭐' },
+      { name: 'Notifications', path: '/admin/notifications', icon: '🔔' },
+      { name: 'APIs', path: '/admin/apis', icon: '🔌' },
+      { name: 'System History', path: '/admin/history', icon: '📋' },
+      { name: 'Profile', path: '/admin/profile', icon: '👤' },
+    ],k, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ isOpen, onClose, userRole }) => {
   const location = useLocation();
@@ -29,10 +42,14 @@ const Sidebar = ({ isOpen, onClose, userRole }) => {
     ],
     admin: [
       { name: 'Dashboard', path: '/admin/dashboard', icon: '🏠' },
-      { name: 'Users', path: '/admin/users', icon: '👥' },
+      { name: 'User Accounts', path: '/admin/users', icon: '👥' },
       { name: 'Analytics', path: '/admin/analytics', icon: '📊' },
-      { name: 'Settings', path: '/admin/settings', icon: '⚙️' },
-      { name: 'Reports', path: '/admin/reports', icon: '📈' },
+      { name: 'System Settings', path: '/admin/settings', icon: '⚙️' },
+      { name: 'Reviews', path: '/admin/reviews', icon: '⭐' },
+      { name: 'Notifications', path: '/admin/notifications', icon: '🔔' },
+      { name: 'APIs', path: '/admin/apis', icon: '🔌' },
+      { name: 'System History', path: '/admin/history', icon: '📋' },
+      { name: 'Profile', path: '/admin/profile', icon: '�' },
     ],
     support: [
       { name: 'Dashboard', path: '/support/dashboard', icon: '🏠' },
