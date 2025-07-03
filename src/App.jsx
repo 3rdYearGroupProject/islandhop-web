@@ -25,6 +25,9 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfessionalSignupPage from './pages/ProfessionalSignupPage';
 import MyTripsPage from './pages/MyTripsPage';
+import TripDurationPage from './pages/TripDurationPage';
+import TripPreferencesPage from './pages/TripPreferencesPage';
+import TripItineraryPage from './pages/TripItineraryPage';
 
 function App() {
   const { user, loading, userRole, isDarkMode, toggleDarkMode } = useAuth();
@@ -61,6 +64,9 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/trips" element={<MyTripsPage />} />
+            <Route path="/trip-duration" element={<TripDurationPage />} />
+            <Route path="/trip-preferences" element={<TripPreferencesPage />} />
+            <Route path="/trip-itinerary" element={<TripItineraryPage />} />
             <Route 
               path="/login" 
               element={user ? <Navigate to={`/${userRole}`} replace /> : <LoginPage />} 
