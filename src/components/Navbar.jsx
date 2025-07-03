@@ -18,8 +18,8 @@ const Navbar = () => {
         <div className="hidden md:flex space-x-6 mx-auto">
           <Link to="/discover" className="text-gray-700 hover:text-primary-600 font-medium">Discover</Link>
           <Link to="/trips" className="text-gray-700 hover:text-primary-600 font-medium">Trips</Link>
-          <Link to="/review" className="text-gray-700 hover:text-primary-600 font-medium">Review</Link>
           <Link to="/pools" className="text-gray-700 hover:text-primary-600 font-medium">Pools</Link>
+          <Link to="/about" className="text-gray-700 hover:text-primary-600 font-medium">About</Link>
         </div>
         {/* User/Currency */}
         <div className="flex items-center space-x-4">

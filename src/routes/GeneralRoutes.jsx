@@ -6,6 +6,7 @@ import ProfessionalSignupPage from '../pages/ProfessionalSignupPage';
 import LandingPage from '../pages/LandingPage';
 import DiscoverPage from '../pages/Discover';
 import PoolPage from '../pages/PoolPage'; 
+import AboutPage from '../pages/AboutPage'; 
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -39,6 +40,13 @@ const GeneralRoutes = () => (
         <PoolPage />
       </PublicRoute>
     } />
+    <Route path="/about" element={
+      <PublicRoute>
+        <AboutPage />
+      </PublicRoute>
+    } />
+    
+    {/* Protected Routes */}
 
     <Route path="/signup" element={
       <PublicRoute>
