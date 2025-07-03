@@ -4,6 +4,7 @@ import LoginPage from '../pages/LoginPage';
 import SignupPage from '../pages/SignupPage';
 import ProfessionalSignupPage from '../pages/ProfessionalSignupPage';
 import LandingPage from '../pages/LandingPage';
+import DiscoverPage from '../pages/Discover';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -25,6 +26,11 @@ const GeneralRoutes = () => (
     <Route path="/login" element={
       <PublicRoute>
         <LoginPage />
+      </PublicRoute>
+    } />
+    <Route path="/discover" element={
+      <PublicRoute>
+        <DiscoverPage />
       </PublicRoute>
     } />
     <Route path="/signup" element={
