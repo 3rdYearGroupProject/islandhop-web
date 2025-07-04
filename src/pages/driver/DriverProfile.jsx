@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import api from '../../api/axios';
 import { 
   User, 
   Camera, 
@@ -22,6 +25,12 @@ import {
 const DriverProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('personal'); // personal, documents, preferences
+  const [showDeactivate, setShowDeactivate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [firebaseData, setFirebaseData] = useState({ email: '', memberSince: '' });
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [driverData, setDriverData] = useState({
     // Personal Information
@@ -74,31 +83,16 @@ const DriverProfile = () => {
         status: 'verified',
         uploadedAt: '2024-01-10'
       },
-      vehicleRegistration: {
-        number: 'VR-345678',
-        expiryDate: '2025-12-31',
+      sltdaLicense: {
+        number: 'SLTDA-2025-001',
+        expiryDate: '2027-05-20',
         status: 'verified',
-        uploadedAt: '2024-01-10'
-      },
-      insurance: {
-        policyNumber: 'SLI-123456',
-        expiryDate: '2025-06-15',
-        status: 'verified',
-        uploadedAt: '2024-01-10'
-      },
-      backgroundCheck: {
-        status: 'verified',
-        completedAt: '2024-01-05'
+        uploadedAt: '2025-01-15'
       }
     },
     
     // Preferences
     preferences: {
-      workingHours: {
-        start: '06:00',
-        end: '22:00'
-      },
-      preferredAreas: ['Colombo', 'Kandy', 'Galle'],
       maxDistance: 200,
       acceptPartialTrips: true,
       autoAcceptTrips: false,
@@ -111,14 +105,102 @@ const DriverProfile = () => {
     }
   });
 
-  const handleSave = () => {
-    // Save driver data
-    setIsEditing(false);
+  useEffect(() => {
+    let unsubscribe;
+    setLoadingProfile(true);
+    unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setFirebaseData({
+          email: user.email,
+          memberSince: user.metadata.creationTime
+        });
+        try {
+          const res = await api.get('/driver/profile?email=' + user.email);
+          if (res.status === 200 && res.data) {
+            setDriverData({
+              ...driverData,
+              firstName: res.data.firstName || '',
+              lastName: res.data.lastName || '',
+              phone: res.data.phone || '',
+              dateOfBirth: res.data.dateOfBirth || '',
+              address: res.data.address || '',
+              emergencyContact: res.data.emergencyContact || '',
+              emergencyContactName: res.data.emergencyContactName || '',
+              profilePicture: res.data.profilePicture || driverData.profilePicture,
+              documents: {
+                drivingLicense: {
+                  image: res.data.drivingLicenseImage || '',
+                  number: res.data.drivingLicenseNumber || '',
+                  expiryDate: res.data.drivingLicenseExpiry || '',
+                  status: res.data.drivingLicenseStatus === 1 ? 'verified' : 'pending',
+                  uploadedAt: res.data.drivingLicenseUploadedAt || ''
+                },
+                sltdaLicense: {
+                  image: res.data.sltdaLicenseImage || '',
+                  number: res.data.sltdaLicenseNumber || '',
+                  expiryDate: res.data.sltdaLicenseExpiry || '',
+                  status: res.data.sltdaLicenseStatus === 1 ? 'verified' : 'pending',
+                  uploadedAt: res.data.sltdaLicenseUploadedAt || ''
+                }
+              },
+              preferences: {
+                acceptPartialTrips: res.data.acceptPartialTrips === 1,
+                autoAcceptTrips: res.data.autoAcceptTrips === 1,
+                maxDistance: res.data.maxDistance || 0
+              }
+            });
+          }
+        } catch (err) {
+          // handle error
+        }
+      }
+      setLoadingProfile(false);
+    });
+    return () => unsubscribe && unsubscribe();
+    // eslint-disable-next-line
+  }, []);
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      // Only send editable fields
+      const payload = {
+        email: firebaseData.email,
+        firstName: driverData.firstName,
+        lastName: driverData.lastName,
+        phone: driverData.phone,
+        dateOfBirth: driverData.dateOfBirth,
+        address: driverData.address,
+        emergencyContact: driverData.emergencyContact,
+        emergencyContactName: driverData.emergencyContactName,
+        profilePicture: driverData.profilePicture,
+        acceptPartialTrips: driverData.preferences.acceptPartialTrips ? 1 : 0,
+        autoAcceptTrips: driverData.preferences.autoAcceptTrips ? 1 : 0,
+        maxDistance: driverData.preferences.maxDistance
+      };
+      await api.put('/driver/profile', payload);
+      setIsEditing(false);
+    } catch (err) {
+      // handle error
+    }
+    setLoading(false);
   };
 
-  const handleCancel = () => {
-    // Reset changes
-    setIsEditing(false);
+  const handleLicenseImageUpload = (docType, file) => {
+    // Only allow image update for licenses
+    // Simulate upload and update state
+    setDriverData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [docType]: {
+          ...prev.documents[docType],
+          image: URL.createObjectURL(file),
+          uploadedAt: new Date().toISOString().slice(0, 10),
+          status: 'pending',
+        }
+      }
+    }));
   };
 
   const getStatusColor = (status) => {
@@ -154,7 +236,7 @@ const DriverProfile = () => {
             {isEditing ? (
               <>
                 <button
-                  onClick={handleCancel}
+                  onClick={() => setIsEditing(false)}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
                 >
                   <X className="h-4 w-4 mr-2" />
@@ -191,9 +273,24 @@ const DriverProfile = () => {
               className="w-24 h-24 rounded-full object-cover"
             />
             {isEditing && (
-              <button className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors">
+              <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
                 <Camera className="h-4 w-4" />
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setDriverData(prev => ({
+                        ...prev,
+                        profilePicture: URL.createObjectURL(file)
+                      }));
+                      // Optionally, you can store the file in state for upload on save
+                    }
+                  }}
+                />
+              </label>
             )}
           </div>
           
@@ -201,7 +298,7 @@ const DriverProfile = () => {
             <h2 className="text-2xl font-bold text-gray-900">
               {driverData.firstName} {driverData.lastName}
             </h2>
-            <p className="text-gray-600">{driverData.email}</p>
+            <p className="text-gray-600">{firebaseData.email}</p>
             <div className="flex items-center space-x-4 mt-2">
               <div className="flex items-center">
                 <Star className="h-4 w-4 text-yellow-400 mr-1" />
@@ -214,7 +311,7 @@ const DriverProfile = () => {
               </div>
               <div className="flex items-center text-sm text-gray-500">
                 <Calendar className="h-4 w-4 mr-1" />
-                Member since {new Date(driverData.memberSince).getFullYear()}
+                Member since {new Date(firebaseData.memberSince).getFullYear()}
               </div>
             </div>
           </div>
@@ -259,108 +356,86 @@ const DriverProfile = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                   <input
                     type="text"
                     value={driverData.firstName}
                     disabled={!isEditing}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, firstName: e.target.value})}
+                    onChange={e => setDriverData({ ...driverData, firstName: e.target.value })}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
                   <input
                     type="text"
                     value={driverData.lastName}
                     disabled={!isEditing}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, lastName: e.target.value})}
+                    onChange={e => setDriverData({ ...driverData, lastName: e.target.value })}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                   <input
                     type="email"
-                    value={driverData.email}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, email: e.target.value})}
+                    value={firebaseData.email}
+                    disabled
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                   <input
                     type="tel"
                     value={driverData.phone}
                     disabled={!isEditing}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, phone: e.target.value})}
+                    onChange={e => setDriverData({ ...driverData, phone: e.target.value })}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date of Birth
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                   <input
                     type="date"
                     value={driverData.dateOfBirth}
                     disabled={!isEditing}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, dateOfBirth: e.target.value})}
+                    onChange={e => setDriverData({ ...driverData, dateOfBirth: e.target.value })}
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
                 <textarea
                   value={driverData.address}
                   disabled={!isEditing}
                   rows={3}
                   className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                  onChange={(e) => setDriverData({...driverData, address: e.target.value})}
+                  onChange={e => setDriverData({ ...driverData, address: e.target.value })}
                 />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Emergency Contact Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact Name</label>
                   <input
                     type="text"
                     value={driverData.emergencyContactName}
                     disabled={!isEditing}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, emergencyContactName: e.target.value})}
+                    onChange={e => setDriverData({ ...driverData, emergencyContactName: e.target.value })}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Emergency Contact Phone
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact Phone</label>
                   <input
                     type="tel"
                     value={driverData.emergencyContact}
                     disabled={!isEditing}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setDriverData({...driverData, emergencyContact: e.target.value})}
+                    onChange={e => setDriverData({ ...driverData, emergencyContact: e.target.value })}
                   />
                 </div>
               </div>
@@ -375,7 +450,7 @@ const DriverProfile = () => {
                   <div key={docType} className="border border-gray-200 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-gray-900 capitalize">
-                        {docType.replace(/([A-Z])/g, ' $1').trim()}
+                        {docType === 'drivingLicense' ? 'Driving License' : docType === 'sltdaLicense' ? 'SLTDA License' : docType}
                       </h3>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(docData.status)}`}>
                         {docData.status === 'verified' && <CheckCircle className="h-3 w-3 inline mr-1" />}
@@ -384,36 +459,39 @@ const DriverProfile = () => {
                         {docData.status}
                       </span>
                     </div>
-                    
                     {docData.number && (
                       <div className="mb-2">
                         <span className="text-sm text-gray-600">Number: </span>
                         <span className="font-medium">{docData.number}</span>
                       </div>
                     )}
-                    
                     {docData.expiryDate && (
                       <div className="mb-2">
                         <span className="text-sm text-gray-600">Expires: </span>
                         <span className="font-medium">{docData.expiryDate}</span>
                       </div>
                     )}
-                    
                     {docData.uploadedAt && (
                       <div className="mb-4">
                         <span className="text-sm text-gray-600">Uploaded: </span>
                         <span className="font-medium">{docData.uploadedAt}</span>
                       </div>
                     )}
-                    
                     <div className="flex space-x-2">
                       <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
                         View Document
                       </button>
                       {isEditing && (
-                        <button className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm">
-                          <Upload className="h-4 w-4" />
-                        </button>
+                        <label className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm cursor-pointer flex items-center">
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload
+                          <input
+                            type="file"
+                            accept="application/pdf,image/*"
+                            style={{ display: 'none' }}
+                            onChange={e => handleLicenseImageUpload(docType, e.target.files[0])}
+                          />
+                        </label>
                       )}
                     </div>
                   </div>
@@ -425,57 +503,6 @@ const DriverProfile = () => {
           {/* Preferences Tab */}
           {activeTab === 'preferences' && (
             <div className="space-y-8">
-              {/* Working Hours */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Working Hours</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      value={driverData.preferences.workingHours.start}
-                      disabled={!isEditing}
-                      className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={driverData.preferences.workingHours.end}
-                      disabled={!isEditing}
-                      className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Preferred Areas */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferred Areas</h3>
-                <div className="flex flex-wrap gap-2">
-                  {driverData.preferences.preferredAreas.map((area, index) => (
-                    <span key={index} className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
-                      {area}
-                      {isEditing && (
-                        <button className="ml-2 text-primary-600 hover:text-primary-800">
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                  {isEditing && (
-                    <button className="px-3 py-1 border border-dashed border-gray-300 rounded-full text-sm text-gray-600 hover:border-gray-400">
-                      + Add Area
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {/* Trip Preferences */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Trip Preferences</h3>
@@ -490,13 +517,23 @@ const DriverProfile = () => {
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         driverData.preferences.acceptPartialTrips ? 'bg-primary-600' : 'bg-gray-300'
                       } ${!isEditing ? 'opacity-50' : ''}`}
+                      onClick={() => {
+                        if (isEditing) {
+                          setDriverData(prev => ({
+                            ...prev,
+                            preferences: {
+                              ...prev.preferences,
+                              acceptPartialTrips: !prev.preferences.acceptPartialTrips
+                            }
+                          }));
+                        }
+                      }}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         driverData.preferences.acceptPartialTrips ? 'translate-x-6' : 'translate-x-1'
                       }`} />
                     </button>
                   </div>
-                  
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium text-gray-900">Auto Accept Trips</h4>
@@ -507,52 +544,133 @@ const DriverProfile = () => {
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         driverData.preferences.autoAcceptTrips ? 'bg-primary-600' : 'bg-gray-300'
                       } ${!isEditing ? 'opacity-50' : ''}`}
+                      onClick={() => {
+                        if (isEditing) {
+                          setDriverData(prev => ({
+                            ...prev,
+                            preferences: {
+                              ...prev.preferences,
+                              autoAcceptTrips: !prev.preferences.autoAcceptTrips
+                            }
+                          }));
+                        }
+                      }}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         driverData.preferences.autoAcceptTrips ? 'translate-x-6' : 'translate-x-1'
                       }`} />
                     </button>
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Trip Distance (km)
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Trip Distance (km)</label>
                     <input
                       type="number"
                       value={driverData.preferences.maxDistance}
                       disabled={!isEditing}
                       className="w-32 p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
+                      onChange={e => {
+                        if (isEditing) {
+                          setDriverData(prev => ({
+                            ...prev,
+                            preferences: {
+                              ...prev.preferences,
+                              maxDistance: e.target.value
+                            }
+                          }));
+                        }
+                      }}
                     />
                   </div>
                 </div>
               </div>
-
-              {/* Notification Preferences */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Notifications</h3>
-                <div className="space-y-4">
-                  {Object.entries(driverData.preferences.notifications).map(([notType, enabled]) => (
-                    <div key={notType} className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900 capitalize">
-                          {notType.replace(/([A-Z])/g, ' $1').trim()}
-                        </h4>
-                      </div>
-                      <button 
-                        disabled={!isEditing}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          enabled ? 'bg-primary-600' : 'bg-gray-300'
-                        } ${!isEditing ? 'opacity-50' : ''}`}
+              {/* Account Actions */}
+              <div className="flex flex-col md:flex-row gap-4 mt-8">
+                <button
+                  onClick={() => setShowPasswordReset(true)}
+                  className="flex-1 px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-semibold"
+                >
+                  Reset Password
+                </button>
+                <button
+                  onClick={() => setShowDeactivate(true)}
+                  className="flex-1 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors font-semibold"
+                >
+                  Deactivate Account
+                </button>
+                <button
+                  onClick={() => setShowDelete(true)}
+                  className="flex-1 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors font-semibold"
+                >
+                  Delete Account
+                </button>
+              </div>
+              {/* Modals */}
+              {showPasswordReset && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Reset Password</h3>
+                    <p className="text-gray-600 mb-6">A password reset email will be sent to <strong>{driverData.email}</strong>. Follow the instructions in the email to reset your password.</p>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() => setShowPasswordReset(false)}
+                        className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          enabled ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => setShowPasswordReset(false)}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      >
+                        Send Reset Email
                       </button>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
+              {showDeactivate && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Deactivate Account</h3>
+                    <p className="text-gray-600 mb-6">Are you sure you want to deactivate your account? You can reactivate it later by contacting support.</p>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() => setShowDeactivate(false)}
+                        className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => setShowDeactivate(false)}
+                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                      >
+                        Deactivate Account
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {showDelete && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Account</h3>
+                    <p className="text-gray-600 mb-6">This action is <strong>permanent</strong>. Are you sure you want to delete your account?</p>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() => setShowDelete(false)}
+                        className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => setShowDelete(false)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
