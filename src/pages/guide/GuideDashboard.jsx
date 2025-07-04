@@ -16,8 +16,13 @@ import {
   Languages
 } from 'lucide-react';
 import GuideStatusCard from '../../components/guide/GuideStatusCard';
+import { useToast } from '../../components/ToastProvider';
+import { getUserData } from '../../utils/userStorage';
+import { Link } from 'react-router-dom';
 
 const GuideDashboard = () => {
+  const toast = useToast();
+
   const [guideStats, setGuideStats] = useState({
     todayEarnings: 320.75,
     weeklyEarnings: 1890.50,
@@ -68,6 +73,19 @@ const GuideDashboard = () => {
       specialRequests: 'Vegetarian preferences'
     }
   ]);
+
+  useEffect(() => {
+    const user = getUserData();
+    if (user && user.profileComplete === false) {
+      toast.info(
+        <span>
+          Please complete your profile to enjoy all features!{' '}
+          <Link to="/profile" className="underline text-primary-600 hover:text-primary-800 font-semibold">Go to Profile</Link>
+        </span>,
+        { duration: 6000 }
+      );
+    }
+  }, [toast]);
 
   const handleTourAction = (tourId, action) => {
     if (action === 'accept') {
@@ -176,7 +194,7 @@ const GuideDashboard = () => {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4">                  <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <MapPin className="h-4 w-4 text-gray-600" />
                     <span className="text-sm font-medium text-gray-900">Route</span>
                   </div>
