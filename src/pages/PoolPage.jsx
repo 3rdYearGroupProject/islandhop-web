@@ -36,9 +36,9 @@ const PoolPage = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+      <section className="relative w-full h-[18vh] md:h-[37.5vh] overflow-hidden">
         <video 
-          className="absolute top-0 left-0 w-full h-full object-cover"
+          className="absolute top-0 left-0 w-full h-full object-cover scale-105"
           autoPlay 
           muted 
           loop
@@ -59,6 +59,15 @@ const PoolPage = () => {
           <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
             Meet new friends and explore together, find your perfect travel pool!
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              // TODO: Add onClick handler to open create pool modal when implemented
+            >
+              <svg className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+              Create New Pool
+            </button>
+          </div>
         </div>
       </section>
 

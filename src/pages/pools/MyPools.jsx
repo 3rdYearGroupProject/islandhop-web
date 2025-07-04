@@ -127,24 +127,24 @@ const MyPools = () => {
 
           {/* Destination Filter */}
           <div className="relative w-full md:w-44">
-            <select
-              value={selectedDestination}
-              onChange={(e) => setSelectedDestination(e.target.value)}
-              className="appearance-none px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white text-sm shadow-none pr-8 min-w-[120px] cursor-pointer transition-colors duration-200"
-            >
-              <option value="">All Destinations</option>
-              <option value="kandy">Kandy</option>
-              <option value="ella">Ella</option>
-              <option value="colombo">Colombo</option>
-            </select>
-            <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="relative">
+              <select
+                value={selectedDestination}
+                onChange={(e) => setSelectedDestination(e.target.value)}
+                className="appearance-none w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white text-sm shadow-none pr-8 min-w-[120px] cursor-pointer transition-colors duration-200"
+              >
+                <option value="">All Destinations</option>
+                <option value="kandy">Kandy</option>
+                <option value="ella">Ella</option>
+                <option value="colombo">Colombo</option>
+              </select>
+              <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center h-full">
+                <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+              </span>
+            </div>
           </div>
 
-          {/* Create New Button */}
-          <button className="flex items-center justify-center gap-2 bg-success-600 text-white px-6 py-2 rounded-full font-medium hover:bg-success-700 transition-colors text-sm w-full md:w-44 min-w-[120px]">
-            <PlusIcon className="h-4 w-4" />
-            Create New
-          </button>
+          {/* Create New Button removed as requested */}
         </div>
       </div>
 
