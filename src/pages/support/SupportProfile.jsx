@@ -330,22 +330,17 @@ const SupportProfile = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Support Agent Profile
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage your support agent profile information
-          </p>
+          
         </div>
 
         {/* Profile Card */}
         <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 overflow-hidden mb-8">
           {/* Cover Section */}
-          <div className="h-32 bg-gradient-to-r from-primary-600 to-primary-800"></div>
+          <div className="h-12 bg-gradient-to-r from-primary-600 to-primary-800"></div>
           
           {/* Profile Info Section */}
           <div className="px-6 pb-6">
-            <div className="flex items-start justify-between -mt-16 mb-6">
+            <div className="flex items-start justify-between -mt-6 mb-6">
               <div className="flex items-end space-x-6">
                 {/* Avatar */}
                 <div className="relative">
