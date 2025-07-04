@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import api from '../../api/axios';
 import { 
   User, 
   Camera, 
@@ -26,6 +29,8 @@ const DriverProfile = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [firebaseData, setFirebaseData] = useState({ email: '', memberSince: '' });
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [driverData, setDriverData] = useState({
     // Personal Information
@@ -100,14 +105,102 @@ const DriverProfile = () => {
     }
   });
 
-  const handleSave = () => {
-    // Save driver data
-    setIsEditing(false);
+  useEffect(() => {
+    let unsubscribe;
+    setLoadingProfile(true);
+    unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setFirebaseData({
+          email: user.email,
+          memberSince: user.metadata.creationTime
+        });
+        try {
+          const res = await api.get('/driver/profile?email=' + user.email);
+          if (res.status === 200 && res.data) {
+            setDriverData({
+              ...driverData,
+              firstName: res.data.firstName || '',
+              lastName: res.data.lastName || '',
+              phone: res.data.phone || '',
+              dateOfBirth: res.data.dateOfBirth || '',
+              address: res.data.address || '',
+              emergencyContact: res.data.emergencyContact || '',
+              emergencyContactName: res.data.emergencyContactName || '',
+              profilePicture: res.data.profilePicture || driverData.profilePicture,
+              documents: {
+                drivingLicense: {
+                  image: res.data.drivingLicenseImage || '',
+                  number: res.data.drivingLicenseNumber || '',
+                  expiryDate: res.data.drivingLicenseExpiry || '',
+                  status: res.data.drivingLicenseStatus === 1 ? 'verified' : 'pending',
+                  uploadedAt: res.data.drivingLicenseUploadedAt || ''
+                },
+                sltdaLicense: {
+                  image: res.data.sltdaLicenseImage || '',
+                  number: res.data.sltdaLicenseNumber || '',
+                  expiryDate: res.data.sltdaLicenseExpiry || '',
+                  status: res.data.sltdaLicenseStatus === 1 ? 'verified' : 'pending',
+                  uploadedAt: res.data.sltdaLicenseUploadedAt || ''
+                }
+              },
+              preferences: {
+                acceptPartialTrips: res.data.acceptPartialTrips === 1,
+                autoAcceptTrips: res.data.autoAcceptTrips === 1,
+                maxDistance: res.data.maxDistance || 0
+              }
+            });
+          }
+        } catch (err) {
+          // handle error
+        }
+      }
+      setLoadingProfile(false);
+    });
+    return () => unsubscribe && unsubscribe();
+    // eslint-disable-next-line
+  }, []);
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      // Only send editable fields
+      const payload = {
+        email: firebaseData.email,
+        firstName: driverData.firstName,
+        lastName: driverData.lastName,
+        phone: driverData.phone,
+        dateOfBirth: driverData.dateOfBirth,
+        address: driverData.address,
+        emergencyContact: driverData.emergencyContact,
+        emergencyContactName: driverData.emergencyContactName,
+        profilePicture: driverData.profilePicture,
+        acceptPartialTrips: driverData.preferences.acceptPartialTrips ? 1 : 0,
+        autoAcceptTrips: driverData.preferences.autoAcceptTrips ? 1 : 0,
+        maxDistance: driverData.preferences.maxDistance
+      };
+      await api.put('/driver/profile', payload);
+      setIsEditing(false);
+    } catch (err) {
+      // handle error
+    }
+    setLoading(false);
   };
 
-  const handleCancel = () => {
-    // Reset changes
-    setIsEditing(false);
+  const handleLicenseImageUpload = (docType, file) => {
+    // Only allow image update for licenses
+    // Simulate upload and update state
+    setDriverData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [docType]: {
+          ...prev.documents[docType],
+          image: URL.createObjectURL(file),
+          uploadedAt: new Date().toISOString().slice(0, 10),
+          status: 'pending',
+        }
+      }
+    }));
   };
 
   const getStatusColor = (status) => {
@@ -129,21 +222,6 @@ const DriverProfile = () => {
     { key: 'preferences', label: 'Preferences', icon: Settings }
   ];
 
-  const handleDocumentUpload = (docType, file) => {
-    // Simulate upload and update state
-    setDriverData(prev => ({
-      ...prev,
-      documents: {
-        ...prev.documents,
-        [docType]: {
-          ...prev.documents[docType],
-          uploadedAt: new Date().toISOString().slice(0, 10),
-          status: 'pending',
-        }
-      }
-    }));
-  };
-
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -158,7 +236,7 @@ const DriverProfile = () => {
             {isEditing ? (
               <>
                 <button
-                  onClick={handleCancel}
+                  onClick={() => setIsEditing(false)}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
                 >
                   <X className="h-4 w-4 mr-2" />
@@ -195,9 +273,24 @@ const DriverProfile = () => {
               className="w-24 h-24 rounded-full object-cover"
             />
             {isEditing && (
-              <button className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors">
+              <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
                 <Camera className="h-4 w-4" />
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setDriverData(prev => ({
+                        ...prev,
+                        profilePicture: URL.createObjectURL(file)
+                      }));
+                      // Optionally, you can store the file in state for upload on save
+                    }
+                  }}
+                />
+              </label>
             )}
           </div>
           
@@ -205,7 +298,7 @@ const DriverProfile = () => {
             <h2 className="text-2xl font-bold text-gray-900">
               {driverData.firstName} {driverData.lastName}
             </h2>
-            <p className="text-gray-600">{driverData.email}</p>
+            <p className="text-gray-600">{firebaseData.email}</p>
             <div className="flex items-center space-x-4 mt-2">
               <div className="flex items-center">
                 <Star className="h-4 w-4 text-yellow-400 mr-1" />
@@ -218,7 +311,7 @@ const DriverProfile = () => {
               </div>
               <div className="flex items-center text-sm text-gray-500">
                 <Calendar className="h-4 w-4 mr-1" />
-                Member since {new Date(driverData.memberSince).getFullYear()}
+                Member since {new Date(firebaseData.memberSince).getFullYear()}
               </div>
             </div>
           </div>
@@ -286,7 +379,7 @@ const DriverProfile = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                   <input
                     type="email"
-                    value={driverData.email}
+                    value={firebaseData.email}
                     disabled
                     className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                   />
@@ -396,7 +489,7 @@ const DriverProfile = () => {
                             type="file"
                             accept="application/pdf,image/*"
                             style={{ display: 'none' }}
-                            onChange={e => handleDocumentUpload(docType, e.target.files[0])}
+                            onChange={e => handleLicenseImageUpload(docType, e.target.files[0])}
                           />
                         </label>
                       )}
@@ -424,6 +517,17 @@ const DriverProfile = () => {
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         driverData.preferences.acceptPartialTrips ? 'bg-primary-600' : 'bg-gray-300'
                       } ${!isEditing ? 'opacity-50' : ''}`}
+                      onClick={() => {
+                        if (isEditing) {
+                          setDriverData(prev => ({
+                            ...prev,
+                            preferences: {
+                              ...prev.preferences,
+                              acceptPartialTrips: !prev.preferences.acceptPartialTrips
+                            }
+                          }));
+                        }
+                      }}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         driverData.preferences.acceptPartialTrips ? 'translate-x-6' : 'translate-x-1'
@@ -440,6 +544,17 @@ const DriverProfile = () => {
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         driverData.preferences.autoAcceptTrips ? 'bg-primary-600' : 'bg-gray-300'
                       } ${!isEditing ? 'opacity-50' : ''}`}
+                      onClick={() => {
+                        if (isEditing) {
+                          setDriverData(prev => ({
+                            ...prev,
+                            preferences: {
+                              ...prev.preferences,
+                              autoAcceptTrips: !prev.preferences.autoAcceptTrips
+                            }
+                          }));
+                        }
+                      }}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         driverData.preferences.autoAcceptTrips ? 'translate-x-6' : 'translate-x-1'
@@ -453,6 +568,17 @@ const DriverProfile = () => {
                       value={driverData.preferences.maxDistance}
                       disabled={!isEditing}
                       className="w-32 p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
+                      onChange={e => {
+                        if (isEditing) {
+                          setDriverData(prev => ({
+                            ...prev,
+                            preferences: {
+                              ...prev.preferences,
+                              maxDistance: e.target.value
+                            }
+                          }));
+                        }
+                      }}
                     />
                   </div>
                 </div>
