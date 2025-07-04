@@ -33,9 +33,8 @@ const LoginPage = () => {
   }, []);
 
   // Function to securely store user data
-  const storeUserData = (firebaseUser, role) => {
+  const storeUserData = (firebaseUser, role, profileComplete) => {
     console.log('🔐 Storing user data securely...');
-    
     const userData = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
@@ -45,7 +44,8 @@ const LoginPage = () => {
       role: role,
       loginTimestamp: Date.now(),
       tokenExpiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-      lastLoginMethod: firebaseUser.providerData?.[0]?.providerId || 'password'
+      lastLoginMethod: firebaseUser.providerData?.[0]?.providerId || 'password',
+      profileComplete: profileComplete // <-- Save this
     };
 
     console.log('📝 User data to store:', {
@@ -86,14 +86,19 @@ const LoginPage = () => {
 
       if (res.status === 200 && res.data && res.data.role) {
         // Store user data
-        storeUserData(userCredential.user, res.data.role);
+        storeUserData(userCredential.user, res.data.role, res.data.profileComplete
+);
         
         errorLogger.logInfo('email_login_success', { 
           email: formData.email,
-          role: res.data.role 
+          role: res.data.role,
+          profileComplete: res.data.profileComplete
         });
         
-        toast.success('Welcome back!', { duration: 2000 });
+        toast.success('Welcome back!', { duration: 1000 });
+        setTimeout(() => {
+          toast.dismiss && toast.dismiss();
+        }, 1000);
         
         // Navigate based on role
         const userRole = res.data.role;
@@ -158,11 +163,13 @@ const LoginPage = () => {
 
       if (res.status === 200 && res.data && res.data.role) {
         // Store user data
-        storeUserData(result.user, res.data.role);
+        storeUserData(userCredential.user, res.data.role, res.data.profileComplete
+);
         
-        errorLogger.logInfo('google_login_success', { 
-          email: result.user.email,
-          role: res.data.role 
+        errorLogger.logInfo('email_login_success', { 
+          email: formData.email,
+          role: res.data.role,
+          profileComplete: res.data.profileComplete
         });
         
         toast.success('Welcome back!', { duration: 2000 });

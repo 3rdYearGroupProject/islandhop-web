@@ -4,65 +4,39 @@ import {
   PencilIcon,
   CheckIcon,
   XMarkIcon,
-  HeartIcon,
   PhoneIcon,
   EnvelopeIcon,
   MapPinIcon,
   CalendarIcon,
-  ClockIcon,
-  StarIcon,
-  ChartBarIcon,
-  ShieldCheckIcon
+  ClockIcon
 } from '@heroicons/react/24/outline';
+import { auth } from '../../firebase';
+import { sendPasswordResetEmail, onAuthStateChanged, deleteUser as firebaseDeleteUser } from 'firebase/auth';
+import api from '../../api/axios';
+import profilePic from '../../assets/islandHopIcon.png';
 
 const SupportProfile = () => {
   const [user, setUser] = useState({
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    email: 'sarah.johnson@islandhop.com',
-    role: 'Senior Support Agent',
-    avatar: '',
-    lastActive: 'Loading...',
+    firstName: 'Alex',
+    lastName: 'Support',
+    email: 'alex.support@islandhop.com',
     phone: '+94 77 234 5678',
-    location: 'Kandy, Sri Lanka',
-    joinedDate: '2023-06-15',
-    department: 'Customer Support',
-    employeeId: 'SUP-001',
-    shift: 'Day Shift (9 AM - 6 PM)',
-    languages: ['English', 'Sinhala', 'Tamil'],
-    specializations: ['Booking Issues', 'Payment Problems', 'Technical Support'],
-    certifications: ['Customer Service Excellence', 'Conflict Resolution', 'Product Knowledge']
+    address: 'Kandy, Sri Lanka',
+    role: 'Support Agent',
+    avatar: profilePic,
+    joinedDate: 'Loading...',
+    lastActive: 'Loading...'
   });
   
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState(user);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showDeactivate, setShowDeactivate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-
-  // Performance metrics
-  const [performanceData] = useState({
-    thisMonth: {
-      ticketsHandled: 124,
-      avgResponseTime: '1.8 hours',
-      resolutionRate: 96.8,
-      customerRating: 4.9,
-      escalationRate: 2.4
-    },
-    lastMonth: {
-      ticketsHandled: 118,
-      avgResponseTime: '2.1 hours',
-      resolutionRate: 94.2,
-      customerRating: 4.7,
-      escalationRate: 3.1
-    },
-    achievements: [
-      { title: 'Top Performer', date: '2024-03-01', description: 'Highest customer satisfaction score' },
-      { title: 'Quick Resolver', date: '2024-02-15', description: 'Fastest average response time' },
-      { title: 'Customer Champion', date: '2024-01-20', description: 'Excellence in customer service' }
-    ]
-  });
+  const [avatarPreview, setAvatarPreview] = useState(user.avatar);
 
   // Function to format the last active time
   const formatLastActive = (timestamp) => {
@@ -80,14 +54,79 @@ const SupportProfile = () => {
     return 'Just now';
   };
 
-  // Simulate getting user's last sign-in time
+  // Function to format the joined date
+  const formatJoinedDate = (timestamp) => {
+    if (!timestamp) return 'Unknown';
+    const joinedDate = new Date(timestamp);
+    return joinedDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Get user's last sign-in time from Firebase Auth and load profile from backend
   useEffect(() => {
-    setTimeout(() => {
-      setUser(prev => ({
-        ...prev,
-        lastActive: formatLastActive(new Date(Date.now() - 1000 * 60 * 5)) // 5 minutes ago
-      }));
-    }, 1000);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        const lastSignInTime = currentUser.metadata.lastSignInTime;
+        const creationTime = currentUser.metadata.creationTime;
+        const formattedLastActive = formatLastActive(lastSignInTime);
+        const formattedJoinedDate = formatJoinedDate(creationTime);
+        
+        try {
+          const response = await api.get(`/support/profile?email=${currentUser.email}`);
+          if (response.status === 200 && response.data) {
+            const profileData = response.data;
+            setUser(prevUser => ({
+              ...prevUser,
+              firstName: profileData.firstName || prevUser.firstName,
+              lastName: profileData.lastName || prevUser.lastName,
+              email: profileData.email || currentUser.email,
+              phone: profileData.contactNo || prevUser.phone,
+              address: profileData.address || prevUser.address,
+              role: profileData.role || prevUser.role,
+              avatar: profileData.profilePicture || prevUser.avatar,
+              joinedDate: formattedJoinedDate,
+              lastActive: formattedLastActive
+            }));
+            
+            setEditedUser(prevUser => ({
+              ...prevUser,
+              firstName: profileData.firstName || prevUser.firstName,
+              lastName: profileData.lastName || prevUser.lastName,
+              phone: profileData.contactNo || prevUser.phone,
+              address: profileData.address || prevUser.address
+            }));
+            
+            setAvatarPreview(profileData.profilePicture || prevUser.avatar);
+          } else {
+            setUser(prevUser => ({
+              ...prevUser,
+              email: currentUser.email,
+              joinedDate: formattedJoinedDate,
+              lastActive: formattedLastActive
+            }));
+          }
+        } catch (error) {
+          console.warn('Failed to fetch profile from backend:', error);
+          setUser(prevUser => ({
+            ...prevUser,
+            email: currentUser.email,
+            joinedDate: formattedJoinedDate,
+            lastActive: formattedLastActive
+          }));
+        }
+      } else {
+        setUser(prevUser => ({
+          ...prevUser,
+          joinedDate: 'Unknown',
+          lastActive: 'Not signed in'
+        }));
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const notify = (msg, type = 'success') => {
@@ -104,13 +143,49 @@ const SupportProfile = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setUser(editedUser);
-      setIsEditing(false);
-      notify('Profile updated successfully!');
+      const formData = new FormData();
+      formData.append('email', user.email);
+      formData.append('firstName', editedUser.firstName);
+      formData.append('lastName', editedUser.lastName);
+      formData.append('contactNo', editedUser.phone);
+      formData.append('address', editedUser.address);
+      
+      if (avatarPreview !== user.avatar) {
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput && fileInput.files[0]) {
+          formData.append('profilePicture', fileInput.files[0]);
+        }
+      }
+      
+      const response = await api.put('/support/profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      if (response.status === 200) {
+        const updatedProfile = response.data;
+        setUser(prev => ({
+          ...prev,
+          firstName: editedUser.firstName,
+          lastName: editedUser.lastName,
+          phone: editedUser.phone,
+          address: editedUser.address,
+          avatar: updatedProfile.profilePicture || prev.avatar
+        }));
+        
+        if (updatedProfile.profilePicture) {
+          setAvatarPreview(updatedProfile.profilePicture);
+        }
+        
+        setIsEditing(false);
+        notify('Profile updated successfully!');
+      } else {
+        notify('Failed to update profile. Please try again.', 'error');
+      }
     } catch (error) {
-      notify('Failed to update profile', 'error');
+      console.error('Error updating profile:', error);
+      notify('Failed to update profile. Please try again.', 'error');
     }
     setLoading(false);
   };
@@ -118,6 +193,7 @@ const SupportProfile = () => {
   const handleCancel = () => {
     setEditedUser(user);
     setIsEditing(false);
+    setAvatarPreview(user.avatar);
   };
 
   const handleInputChange = (field, value) => {
@@ -127,17 +203,95 @@ const SupportProfile = () => {
     }));
   };
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handlePasswordReset = async () => {
     setLoading(true);
     try {
-      // Simulate password reset
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await sendPasswordResetEmail(auth, user.email);
       setShowPasswordReset(false);
       notify('Password reset email sent successfully!');
     } catch (error) {
       notify('Failed to send password reset email', 'error');
     }
     setLoading(false);
+  };
+
+  const handleDeactivate = async () => {
+    setShowDeactivate(false);
+    setLoading(true);
+    
+    try {
+      const response = await api.put('/support/account/status', {
+        email: user.email,
+        status: 'INACTIVE'
+      });
+      
+      if (response.status === 200) {
+        notify('Account deactivated successfully. You will be logged out.');
+        
+        setTimeout(() => {
+          auth.signOut().then(() => {
+            window.location.href = '/login';
+          });
+        }, 2000);
+      } else {
+        notify('Failed to deactivate account. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error deactivating account:', error);
+      notify('Failed to deactivate account. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setShowDelete(false);
+    setLoading(true);
+    
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        notify('No user is currently signed in.', 'error');
+        setLoading(false);
+        return;
+      }
+      
+      const response = await api.put('/support/account/status', {
+        email: user.email,
+        status: 'DELETED'
+      });
+      
+      if (response.status === 200) {
+        await firebaseDeleteUser(currentUser);
+        notify('Account deleted successfully.');
+        
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        notify('Failed to delete account. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      if (error.code === 'auth/requires-recent-login') {
+        notify('Please sign in again to delete your account for security reasons.', 'error');
+      } else {
+        notify('Failed to delete account. Please try again.', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const MetricCard = ({ title, value, subtitle, icon: Icon, trend, color = 'primary' }) => {
@@ -176,41 +330,66 @@ const SupportProfile = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Support Agent Profile
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage your support agent profile and performance metrics
-          </p>
+          
         </div>
 
         {/* Profile Card */}
         <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 overflow-hidden mb-8">
           {/* Cover Section */}
-          <div className="h-32 bg-gradient-to-r from-primary-600 to-primary-800"></div>
+          <div className="h-12 bg-gradient-to-r from-primary-600 to-primary-800"></div>
           
           {/* Profile Info Section */}
           <div className="px-6 pb-6">
-            <div className="flex items-start justify-between -mt-16 mb-6">
+            <div className="flex items-start justify-between -mt-6 mb-6">
               <div className="flex items-end space-x-6">
                 {/* Avatar */}
                 <div className="relative">
                   <div className="w-32 h-32 bg-white dark:bg-secondary-700 rounded-xl border-4 border-white dark:border-secondary-700 flex items-center justify-center overflow-hidden">
-                    {user.avatar ? (
-                      <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    {(isEditing ? avatarPreview : user.avatar) ? (
+                      <img src={isEditing ? avatarPreview : user.avatar} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <UserCircleIcon className="w-20 h-20 text-gray-400" />
                     )}
                   </div>
-                  <button className="absolute -bottom-2 -right-2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
+                  {isEditing && (
+                    <label className="absolute -bottom-2 -right-2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 cursor-pointer">
+                      <PencilIcon className="h-4 w-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleAvatarChange}
+                        disabled={loading}
+                      />
+                    </label>
+                  )}
                 </div>
 
                 {/* Basic Info */}
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                    {user.firstName} {user.lastName}
+                    {isEditing ? (
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={editedUser.firstName}
+                          onChange={(e) => handleInputChange('firstName', e.target.value)}
+                          className="text-2xl font-bold bg-transparent border-b border-gray-300 dark:border-secondary-600 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
+                          placeholder="First Name"
+                          disabled={loading}
+                        />
+                        <input
+                          type="text"
+                          value={editedUser.lastName}
+                          onChange={(e) => handleInputChange('lastName', e.target.value)}
+                          className="text-2xl font-bold bg-transparent border-b border-gray-300 dark:border-secondary-600 focus:border-primary-500 outline-none text-gray-900 dark:text-white"
+                          placeholder="Last Name"
+                          disabled={loading}
+                        />
+                      </div>
+                    ) : (
+                      `${user.firstName} ${user.lastName}`
+                    )}
                   </h2>
                   <p className="text-primary-600 dark:text-primary-400 font-semibold mb-2">
                     {user.role}
@@ -245,6 +424,12 @@ const SupportProfile = () => {
                     >
                       Reset Password
                     </button>
+                    <button
+                      onClick={() => setShowDeactivate(true)}
+                      className="px-4 py-2 border border-red-200 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                    >
+                      Deactivate
+                    </button>
                   </>
                 ) : (
                   <>
@@ -276,16 +461,7 @@ const SupportProfile = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={editedUser.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="text-sm font-medium text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-secondary-600 focus:border-primary-500 outline-none"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
-                  )}
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
                 </div>
               </div>
 
@@ -301,6 +477,7 @@ const SupportProfile = () => {
                       value={editedUser.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       className="text-sm font-medium text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-secondary-600 focus:border-primary-500 outline-none"
+                      disabled={loading}
                     />
                   ) : (
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{user.phone}</p>
@@ -313,16 +490,17 @@ const SupportProfile = () => {
                   <MapPinIcon className="h-5 w-5 text-warning-600 dark:text-warning-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Location</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editedUser.location}
-                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      value={editedUser.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
                       className="text-sm font-medium text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-secondary-600 focus:border-primary-500 outline-none"
+                      disabled={loading}
                     />
                   ) : (
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.location}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.address}</p>
                   )}
                 </div>
               </div>
@@ -334,141 +512,11 @@ const SupportProfile = () => {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Joined</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {new Date(user.joinedDate).toLocaleDateString()}
+                    {user.joinedDate}
                   </p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Performance Metrics */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Performance Metrics</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <MetricCard
-              title="Tickets Handled"
-              value={performanceData.thisMonth.ticketsHandled}
-              subtitle="This month"
-              icon={ChartBarIcon}
-              trend={5.1}
-              color="primary"
-            />
-            <MetricCard
-              title="Response Time"
-              value={performanceData.thisMonth.avgResponseTime}
-              subtitle="Average response"
-              icon={ClockIcon}
-              trend={-14.3}
-              color="success"
-            />
-            <MetricCard
-              title="Resolution Rate"
-              value={`${performanceData.thisMonth.resolutionRate}%`}
-              subtitle="Successful resolutions"
-              icon={CheckIcon}
-              trend={2.6}
-              color="success"
-            />
-            <MetricCard
-              title="Customer Rating"
-              value={`${performanceData.thisMonth.customerRating}/5.0`}
-              subtitle="Average rating"
-              icon={StarIcon}
-              trend={4.3}
-              color="warning"
-            />
-            <MetricCard
-              title="Escalation Rate"
-              value={`${performanceData.thisMonth.escalationRate}%`}
-              subtitle="Escalated tickets"
-              icon={ShieldCheckIcon}
-              trend={-22.6}
-              color="success"
-            />
-          </div>
-        </div>
-
-        {/* Additional Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Work Information */}
-          <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Work Information</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Employee ID</label>
-                <p className="font-medium text-gray-900 dark:text-white">{user.employeeId}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Department</label>
-                <p className="font-medium text-gray-900 dark:text-white">{user.department}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Work Shift</label>
-                <p className="font-medium text-gray-900 dark:text-white">{user.shift}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Languages</label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {user.languages.map((language, index) => (
-                    <span key={index} className="px-2 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-300 rounded text-sm">
-                      {language}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Skills & Certifications */}
-          <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Skills & Certifications</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Specializations</label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {user.specializations.map((spec, index) => (
-                    <span key={index} className="px-2 py-1 bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-300 rounded text-sm">
-                      {spec}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-400">Certifications</label>
-                <div className="space-y-2 mt-1">
-                  {user.certifications.map((cert, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <ShieldCheckIcon className="h-4 w-4 text-success-600" />
-                      <span className="text-sm text-gray-900 dark:text-white">{cert}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Achievements */}
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Recent Achievements</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {performanceData.achievements.map((achievement, index) => (
-              <div key={index} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="p-2 bg-gradient-to-r from-warning-500 to-warning-600 rounded-lg">
-                    <StarIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">{achievement.title}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(achievement.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{achievement.description}</p>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -478,7 +526,7 @@ const SupportProfile = () => {
             <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reset Password</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to reset your password? A reset link will be sent to your email.
+                A password reset email will be sent to <strong>{user.email}</strong>. Follow the instructions in the email to reset your password.
               </p>
               <div className="flex justify-end space-x-3">
                 <button
@@ -492,7 +540,61 @@ const SupportProfile = () => {
                   disabled={loading}
                   className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors duration-200"
                 >
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? 'Sending...' : 'Send Reset Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deactivate Modal */}
+        {showDeactivate && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Deactivate Account</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to deactivate your account? You can reactivate it later by contacting support.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeactivate(false)}
+                  className="px-4 py-2 border border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeactivate}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200"
+                >
+                  {loading ? 'Deactivating...' : 'Deactivate Account'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Modal */}
+        {showDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Account</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                This action is <strong>permanent</strong>. Are you sure you want to delete your account?
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDelete(false)}
+                  className="px-4 py-2 border border-gray-200 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200"
+                >
+                  {loading ? 'Deleting...' : 'Delete Account'}
                 </button>
               </div>
             </div>

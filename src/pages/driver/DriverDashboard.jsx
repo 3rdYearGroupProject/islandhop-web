@@ -14,8 +14,13 @@ import {
   AlertCircle
 } from 'lucide-react';
 import DriverStatusCard from '../../components/driver/DriverStatusCard';
+import { useToast } from '../../components/ToastProvider';
+import { getUserData } from '../../utils/userStorage';
+import { Link } from 'react-router-dom';
 
 const DriverDashboard = () => {
+  const toast = useToast();
+
   const [driverStats, setDriverStats] = useState({
     todayEarnings: 245.50,
     weeklyEarnings: 1240.75,
@@ -66,6 +71,19 @@ const DriverDashboard = () => {
       note: 'Leg 2 of 3 - Ella to Colombo'
     }
   ]);
+
+  useEffect(() => {
+    const user = getUserData();
+    if (user && user.profileComplete === false) {
+      toast.info(
+        <span>
+          Please complete your profile to enjoy all features!{' '}
+          <Link to="/profile" className="underline text-primary-600 hover:text-primary-800 font-semibold">Go to Profile</Link>
+        </span>,
+        { duration: 6000 }
+      );
+    }
+  }, [toast]);
 
   const handleTripAction = (tripId, action) => {
     if (action === 'accept') {

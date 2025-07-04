@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   TicketIcon,
   ExclamationTriangleIcon,
@@ -7,8 +7,22 @@ import {
   ChatBubbleLeftRightIcon,
   ArchiveBoxXMarkIcon,
 } from '@heroicons/react/24/outline';
+import { useToast } from '../../components/ToastProvider';
+import { getUserData } from '../../utils/userStorage';
+import { Link } from 'react-router-dom';
+import Modal from '../../components/Modal';
 
 const SupportDashboard = ({ onPageChange }) => {
+  const toast = useToast();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  useEffect(() => {
+    const user = getUserData();
+    if (user && user.profileComplete === false) {
+      setShowProfileModal(true);
+    }
+  }, []);
+
   // Dashboard stats data
   const dashboardStats = [
     {
@@ -169,6 +183,23 @@ const SupportDashboard = ({ onPageChange }) => {
 
   return (
     <div className="space-y-6">
+      <Modal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        title="Complete Your Profile"
+        size="sm"
+      >
+        <div className="text-gray-700 dark:text-gray-200">
+          <p className="mb-4">Please complete your profile to enjoy all features of the support dashboard.</p>
+          <Link
+            to="/support/profile"
+            className="inline-block px-4 py-2 rounded bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors"
+            onClick={() => setShowProfileModal(false)}
+          >
+            Go to Profile
+          </Link>
+        </div>
+      </Modal>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
