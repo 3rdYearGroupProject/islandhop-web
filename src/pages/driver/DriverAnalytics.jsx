@@ -88,16 +88,16 @@ const DriverAnalytics = () => {
     { value: 'quarter', label: 'Last 3 Months' }
   ];
 
-  const StatCard = ({ title, value, change, icon: Icon, suffix = '', prefix = '' }) => {
+  const StatCard = ({ title, value, change, icon: Icon, suffix = '', prefix = '', trend = 'week' }) => {
     const isPositive = change > 0;
     const TrendIcon = isPositive ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
     
     return (
-      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6 hover:shadow-md transition-shadow duration-200">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mt-1">
               {prefix}{value}{suffix}
             </p>
           </div>
@@ -106,12 +106,12 @@ const DriverAnalytics = () => {
           </div>
         </div>
         <div className="mt-4 flex items-center">
-          <TrendIcon className={`h-4 w-4 mr-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`} />
-          <span className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <TrendIcon className={`h-4 w-4 mr-1 ${isPositive ? 'text-blue-500' : 'text-red-500'}`} />
+          <span className={`text-sm font-medium ${isPositive ? 'text-blue-600' : 'text-red-600'}`}>
             {Math.abs(change)}%
           </span>
           <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-            vs last {timeRange}
+            vs last {trend}
           </span>
         </div>
       </div>
@@ -151,19 +151,21 @@ const DriverAnalytics = () => {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <StatCard
             title="Total Earnings"
             value={currentData.totalEarnings.toLocaleString()}
             change={currentData.earningsChange}
             icon={CurrencyDollarIcon}
             prefix="$"
+            trend={timeRange}
           />
           <StatCard
             title="Completed Trips"
             value={currentData.totalTrips}
             change={currentData.tripsChange}
             icon={MapPinIcon}
+            trend={timeRange}
           />
           <StatCard
             title="Hours Worked"
@@ -171,6 +173,7 @@ const DriverAnalytics = () => {
             change={currentData.hoursChange}
             icon={ClockIcon}
             suffix="h"
+            trend={timeRange}
           />
           <StatCard
             title="Distance Covered"
@@ -178,25 +181,26 @@ const DriverAnalytics = () => {
             change={currentData.distanceChange}
             icon={ChartBarIcon}
             suffix=" km"
+            trend={timeRange}
           />
         </div>
 
         {/* Additional Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Average Rating</h3>
               <StarIcon className="h-6 w-6 text-yellow-500" />
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 {currentData.averageRating}
               </div>
               <div className="flex justify-center mb-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <StarIcon
                     key={star}
-                    className={`h-6 w-6 ${
+                    className={`h-5 w-5 ${
                       star <= Math.round(currentData.averageRating) 
                         ? 'text-yellow-400 fill-current' 
                         : 'text-gray-300 dark:text-gray-600'
@@ -208,18 +212,18 @@ const DriverAnalytics = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Completion Rate</h3>
-              <UserGroupIcon className="h-6 w-6 text-green-500" />
+              <UserGroupIcon className="h-6 w-6 text-blue-500" />
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 {currentData.completionRate}%
               </div>
               <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2 mb-2">
                 <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${currentData.completionRate}%` }}
                 ></div>
               </div>
@@ -227,27 +231,35 @@ const DriverAnalytics = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Avg per Trip</h3>
               <CurrencyDollarIcon className="h-6 w-6 text-blue-500" />
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 ${(currentData.totalEarnings / currentData.totalTrips).toFixed(0)}
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Average earnings per trip</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Average earnings per trip</p>
+              <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                ${(currentData.totalEarnings / currentData.totalHours).toFixed(0)}/hour
+              </div>
             </div>
           </div>
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
           {/* Weekly Earnings Chart */}
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Daily Earnings (This Week)
-            </h3>
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Daily Earnings (This Week)
+              </h3>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Total: ${weeklyEarnings.reduce((sum, day) => sum + day.earnings, 0).toFixed(2)}
+              </div>
+            </div>
             <div className="space-y-4">
               {weeklyEarnings.map((day, index) => (
                 <div key={index} className="flex items-center justify-between">
@@ -255,11 +267,13 @@ const DriverAnalytics = () => {
                     {day.day}
                   </span>
                   <div className="flex-1 mx-4">
-                    <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-3">
                       <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
                         style={{ width: `${(day.earnings / maxEarnings) * 100}%` }}
-                      ></div>
+                      >
+                        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                      </div>
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-gray-900 dark:text-white w-16 text-right">
@@ -271,10 +285,15 @@ const DriverAnalytics = () => {
           </div>
 
           {/* Peak Hours */}
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Peak Hours Analysis
-            </h3>
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Peak Hours Analysis
+              </h3>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Best: {busyHours.reduce((max, hour) => hour.trips > max.trips ? hour : max).hour}
+              </div>
+            </div>
             <div className="space-y-4">
               {busyHours.map((hour, index) => (
                 <div key={index} className="flex items-center justify-between">
@@ -282,9 +301,9 @@ const DriverAnalytics = () => {
                     {hour.hour}
                   </span>
                   <div className="flex-1 mx-4">
-                    <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-3">
                       <div 
-                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${hour.percentage}%` }}
                       ></div>
                     </div>
@@ -299,14 +318,53 @@ const DriverAnalytics = () => {
         </div>
 
         {/* Top Routes */}
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700">
           <div className="p-6 border-b border-gray-200 dark:border-secondary-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Top Performing Routes
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">
+                Top Performing Routes
+              </h3>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Based on {timeRange} performance
+              </div>
+            </div>
           </div>
           <div className="p-6">
-            <div className="overflow-x-auto">
+            {/* Mobile Card Layout */}
+            <div className="block md:hidden space-y-4">
+              {topRoutes.map((route, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-secondary-900/50 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        {route.route}
+                      </h4>
+                      <div className="flex items-center mt-1">
+                        <StarIcon className="h-4 w-4 text-yellow-400 fill-current mr-1" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{route.avgRating}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900 dark:text-white">
+                        ${route.earnings.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {route.trips} trips
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Avg per trip:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      ${(route.earnings / route.trips).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-secondary-700">
@@ -319,14 +377,18 @@ const DriverAnalytics = () => {
                 </thead>
                 <tbody>
                   {topRoutes.map((route, index) => (
-                    <tr key={index} className="border-b border-gray-100 dark:border-secondary-700/50">
+                    <tr key={index} className="border-b border-gray-100 dark:border-secondary-700/50 hover:bg-gray-50 dark:hover:bg-secondary-900/20 transition-colors duration-150">
                       <td className="py-4 px-4">
                         <div className="font-medium text-gray-900 dark:text-white">
                           {route.route}
                         </div>
                       </td>
                       <td className="py-4 px-4 text-gray-600 dark:text-gray-400">
-                        {route.trips}
+                        <div className="flex items-center">
+                          <span className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-sm font-medium">
+                            {route.trips}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
                         ${route.earnings.toFixed(2)}
