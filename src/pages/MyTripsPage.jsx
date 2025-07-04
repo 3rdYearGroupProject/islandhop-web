@@ -268,7 +268,7 @@ const MyTripsPage = () => {
       <Navbar />
 
       {/* Enhanced Hero Video Section */}
-      <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+      <section className="relative w-full h-[18vh] md:h-[37.5vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover scale-105"
           autoPlay 
@@ -280,17 +280,14 @@ const MyTripsPage = () => {
           Your browser does not support the video tag.
         </video>
         
-        {/* Enhanced Video Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/50 via-blue-800/30 to-blue-900/50"></div>
+        {/* Video Overlay Removed */}
+        {/* <div className="absolute inset-0 bg-gradient-to-r from-blue-900/50 via-blue-800/30 to-blue-900/50"></div> */}
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Your Travel Dreams<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
-                Come to Life
-              </span>
+            <h1 className="text-4xl md:text-6xl font-normal mb-6 leading-tight text-white">
+              Your Travel Dreams Come to Life
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto text-blue-100">
               Plan, organize, and experience unforgettable journeys with our intelligent trip planner
@@ -298,77 +295,55 @@ const MyTripsPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => setIsCreateTripModalOpen(true)}
-                className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <Plus className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
                 Plan New Adventure
               </button>
-              <button className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
+              <button className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
                 <Sparkles className="mr-3 h-6 w-6" />
                 AI Trip Suggestions
               </button>
             </div>
           </div>
         </div>
-
-        {/* Floating Stats */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden md:flex space-x-8 text-white/90">
-          <div className="text-center">
-            <div className="text-2xl font-bold">{trips.length}</div>
-            <div className="text-sm">Total Trips</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{trips.filter(t => t.status === 'completed').length}</div>
-            <div className="text-sm">Completed</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{trips.filter(t => t.status === 'active').length}</div>
-            <div className="text-sm">Active</div>
-          </div>
-        </div>
       </section>
 
+
       {/* Enhanced Main Content */}
-      <main className="relative z-10 -mt-20 pb-20">
+      <main className="relative z-10 -mt-10 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Enhanced Control Panel */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">My Travel Collection</h1>
-                <p className="text-gray-600">Organize and manage your travel experiences</p>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
+          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-5 mb-20 w-fit mx-auto relative z-20">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end space-y-4 lg:space-y-0">
+              <div className="flex flex-col sm:flex-row gap-4 w-full justify-end">
                 {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <div className="relative flex-[3_3_0%] min-w-[340px] max-w-2xl">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search trips..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
+                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base"
                   />
                 </div>
-                
                 {/* Filter */}
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-[0_1_160px] min-w-[120px] max-w-[160px] px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none"
                 >
                   <option value="all">All Trips</option>
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
                   <option value="draft">Drafts</option>
                 </select>
-                
                 {/* Sort */}
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-[0_1_160px] min-w-[120px] max-w-[160px] px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none"
                 >
                   <option value="recent">Recent</option>
                   <option value="name">Name</option>
