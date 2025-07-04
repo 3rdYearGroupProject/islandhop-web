@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin, Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -12,6 +12,8 @@ const TripDurationPage = () => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [flightData, setFlightData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const leftCardRef = useRef(null);
+  const [leftCardHeight, setLeftCardHeight] = useState('auto');
 
   // Mock flight data
   const mockFlightData = {
@@ -45,6 +47,12 @@ const TripDurationPage = () => {
       }, 1000);
     }
   }, [selectedDates]);
+
+  useEffect(() => {
+    if (leftCardRef.current) {
+      setLeftCardHeight(leftCardRef.current.offsetHeight + 'px');
+    }
+  }, [selectedDates, isLoading, flightData]);
 
   const handleDateSelect = (date) => {
     // Start new range selection
@@ -146,8 +154,8 @@ const TripDurationPage = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Calendar */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="lg:col-span-1">
+            <div ref={leftCardRef} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 max-w-md flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Travel Dates</h2>
@@ -168,57 +176,25 @@ const TripDurationPage = () => {
                 />
               </div>
 
-              {/* Selected Dates Summary */}
-              {selectedDates.length > 0 && (
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-blue-900 mb-2">Selected Dates</h3>
-                      <p className="text-blue-800 font-medium text-lg">
-                        {formatDateRange(selectedDates)}
-                      </p>
-                      {selectedDates.length === 2 && (
-                        <p className="text-blue-700 text-sm mt-1">
-                          Duration: {Math.ceil((selectedDates[1] - selectedDates[0]) / (1000 * 60 * 60 * 24))} days
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleDateClear}
-                      className="px-4 py-2 text-blue-700 hover:text-blue-800 hover:bg-blue-200 rounded-lg transition-colors duration-200 text-sm font-medium"
-                    >
-                      Clear dates
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Clear Dates Button */}
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={handleDateClear}
+                  className="px-2 py-1 text-xs text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors duration-200 font-medium border border-blue-200"
+                  type="button"
+                  disabled={selectedDates.length === 0}
+                >
+                  Clear Dates
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <button
-                onClick={handleContinue}
-                disabled={selectedDates.length === 0}
-                className={`flex-1 px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
-                  selectedDates.length > 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Continue to Preferences
-              </button>
-              <button
-                onClick={handleBack}
-                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold"
-              >
-                Back
-              </button>
-            </div>
+            {/* Action Buttons removed from left card */}
           </div>
 
           {/* Right Column - Flight Options */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 w-full flex flex-col" style={{ height: leftCardHeight }}>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-gray-900">Flight Options</h3>
                 <Plane className="h-6 w-6 text-blue-600" />
@@ -250,7 +226,7 @@ const TripDurationPage = () => {
                   </div>
                   
                   {flightData.map((flight, index) => (
-                    <div key={index} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                    <div key={index} className="border border-gray-200 rounded-xl px-4 pt-3 pb-3 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
@@ -278,11 +254,7 @@ const TripDurationPage = () => {
                     </div>
                   ))}
                   
-                  <div className="border-t border-gray-200 pt-4 mt-6">
-                    <p className="text-xs text-gray-500 text-center">
-                      Prices may vary. Final booking through airline partners.
-                    </p>
-                  </div>
+                  {/* Removed horizontal line and disclaimer text as requested */}
                 </div>
               )}
 
@@ -301,6 +273,26 @@ const TripDurationPage = () => {
                   </button>
                 </div>
               )}
+            </div>
+            {/* Flight Options Action Buttons */}
+            <div className="flex flex-row gap-4 justify-end mt-6">
+              <button
+                onClick={handleBack}
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleContinue}
+                disabled={selectedDates.length === 0}
+                className={`px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
+                  selectedDates.length > 0
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Continue to Preferences
+              </button>
             </div>
           </div>
         </div>
