@@ -9,6 +9,8 @@ import islandHopLogoWhite from '../assets/IslandHopWhite.png';
 import islandHopIcon from '../assets/islandHopIcon.png';
 import api from '../api/axios';
 import { encryptUserData } from '../utils/userStorage';
+import errorLogger from '../utils/errorLogger';
+import DebugConsole from '../components/DebugConsole';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +22,15 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const toast = useToast();
   const navigate = useNavigate();
+
+  // Log component mount
+  React.useEffect(() => {
+    console.log('📄 LoginPage mounted');
+    errorLogger.logInfo('login_page_mounted', { 
+      timestamp: new Date().toISOString(),
+      url: window.location.href 
+    });
+  }, []);
 
   // Function to securely store user data
   const storeUserData = (firebaseUser, role) => {
@@ -63,6 +74,8 @@ const LoginPage = () => {
     
     try {
       console.log('📧 Starting email login...');
+      errorLogger.logInfo('email_login_attempt', { email: formData.email });
+      
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const idToken = await userCredential.user.getIdToken();
 
@@ -74,6 +87,11 @@ const LoginPage = () => {
       if (res.status === 200 && res.data && res.data.role) {
         // Store user data
         storeUserData(userCredential.user, res.data.role);
+        
+        errorLogger.logInfo('email_login_success', { 
+          email: formData.email,
+          role: res.data.role 
+        });
         
         toast.success('Welcome back!', { duration: 2000 });
         
@@ -100,13 +118,22 @@ const LoginPage = () => {
           }
         }, 1000);
       } else {
-        toast.error('Login failed. Please check your credentials.');
+        const errorMsg = 'Login failed. Please check your credentials.';
+        toast.error(errorMsg);
         setError('Login failed');
+        errorLogger.logWarning('email_login_invalid_response', { 
+          email: formData.email,
+          responseStatus: res.status,
+          responseData: res.data 
+        });
       }
     } catch (err) {
-      setError(err.message || 'Login error');
+      const errorMsg = err.message || 'Login error';
+      setError(errorMsg);
       toast.error(err.message || 'Login failed. Please check your credentials.');
       console.error('❌ Error during email login:', err);
+      
+      errorLogger.logAuthError('email_login', err);
     } finally {
       setLoading(false);
     }
@@ -116,6 +143,8 @@ const LoginPage = () => {
     console.log('🔍 Starting Google login...');
     setError('');
     setLoading(true);
+    
+    errorLogger.logInfo('google_login_attempt');
     
     const provider = new GoogleAuthProvider();
     try {
@@ -130,6 +159,11 @@ const LoginPage = () => {
       if (res.status === 200 && res.data && res.data.role) {
         // Store user data
         storeUserData(result.user, res.data.role);
+        
+        errorLogger.logInfo('google_login_success', { 
+          email: result.user.email,
+          role: res.data.role 
+        });
         
         toast.success('Welcome back!', { duration: 2000 });
         
@@ -156,13 +190,22 @@ const LoginPage = () => {
           }
         }, 1000);
       } else {
-        toast.error('Google login failed. Please try again.');
+        const errorMsg = 'Google login failed. Please try again.';
+        toast.error(errorMsg);
         setError('Google login failed');
+        errorLogger.logWarning('google_login_invalid_response', { 
+          email: result.user.email,
+          responseStatus: res.status,
+          responseData: res.data 
+        });
       }
     } catch (err) {
-      setError(err.message || 'Google login error');
+      const errorMsg = err.message || 'Google login error';
+      setError(errorMsg);
       toast.error(err.message || 'Google login failed. Please try again.');
       console.error('❌ Error during Google login:', err);
+      
+      errorLogger.logAuthError('google_login', err);
     } finally {
       setLoading(false);
     }
@@ -174,6 +217,9 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex">
+      {/* Debug Console - only show in development */}
+      {process.env.NODE_ENV === 'development' && <DebugConsole />}
+      
       {/* Top left logo */}
       <div 
         className="absolute top-8 left-8 z-20 flex items-center gap-3 cursor-pointer"
