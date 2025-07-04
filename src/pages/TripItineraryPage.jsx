@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock } from 'lucide-react';
+import AddDestinationModal from '../components/AddDestinationModal';
+import AddThingsToDoModal from '../components/AddThingsToDoModal';
+import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
+import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
+import AddTransportationModal from '../components/AddTransportationModal';
 import Navbar from '../components/Navbar';
 
 const TripItineraryPage = () => {
-  const location = useLocation();
+  const location = useRouterLocation();
   const navigate = useNavigate();
   const { tripName, selectedDates, selectedTerrains, selectedActivities } = location.state || {};
   
   const [currentDay, setCurrentDay] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [itinerary, setItinerary] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
@@ -47,7 +52,7 @@ const TripItineraryPage = () => {
         transportation: []
       };
       // Expand first 3 days by default
-      initialExpanded[index] = index < 3;
+      initialExpanded[index] = index < 1;
     });
     setItinerary(initialItinerary);
     setExpandedDays(initialExpanded);
@@ -311,37 +316,77 @@ const TripItineraryPage = () => {
   const handleAddItem = (category, dayIndex) => {
     setSelectedCategory(category);
     setCurrentDay(dayIndex);
-    if (category === 'locations') {
-      setShowLocationModal(true);
+    if (category === 'Destinations') {
+      setShowDestinationModal(true);
     } else {
       setShowAddModal(true);
     }
   };
 
   const addItemToItinerary = (item, selectedDates = null) => {
+    // Helper function to get category key
+    const getCategoryKey = (category) => {
+      switch(category) {
+        case 'Destinations': return 'places';
+        case 'activities': return 'activities';
+        case 'places': return 'places';
+        case 'food': return 'food';
+        case 'transportation': return 'transportation';
+        default: return 'activities';
+      }
+    };
+
     if (selectedDates && selectedDates.length > 0) {
-      // Add location to multiple days
+      // Add item to multiple selected days
       selectedDates.forEach(dateIndex => {
-        setItinerary(prev => ({
-          ...prev,
-          [dateIndex]: {
-            ...prev[dateIndex],
-            places: [...prev[dateIndex].places, { ...item, stayDates: selectedDates, isLocation: true }]
-          }
-        }));
+        setItinerary(prev => {
+          const categoryKey = getCategoryKey(selectedCategory);
+          const dayData = prev[dateIndex] || {
+            date: days[dateIndex],
+            activities: [],
+            places: [],
+            food: [],
+            transportation: []
+          };
+          
+          return {
+            ...prev,
+            [dateIndex]: {
+              ...dayData,
+              [categoryKey]: [
+                ...(dayData[categoryKey] || []), 
+                { ...item, selectedDates: selectedDates, isMultiDay: true }
+              ]
+            }
+          };
+        });
       });
     } else {
-      // Add to single day
-      setItinerary(prev => ({
-        ...prev,
-        [currentDay]: {
-          ...prev[currentDay],
-          [selectedCategory]: [...prev[currentDay][selectedCategory], item]
-        }
-      }));
+      // Add to single day (fallback for old logic)
+      setItinerary(prev => {
+        const categoryKey = getCategoryKey(selectedCategory);
+        const dayData = prev[currentDay] || {
+          date: days[currentDay],
+          activities: [],
+          places: [],
+          food: [],
+          transportation: []
+        };
+        
+        return {
+          ...prev,
+          [currentDay]: {
+            ...dayData,
+            [categoryKey]: [
+              ...(dayData[categoryKey] || []), 
+              item
+            ]
+          }
+        };
+      });
     }
     setShowAddModal(false);
-    setShowLocationModal(false);
+    setShowDestinationModal(false);
     setSelectedStayDates([]);
   };
 
@@ -356,11 +401,12 @@ const TripItineraryPage = () => {
   };
 
   const getFilteredSuggestions = () => {
-    const suggestionsKey = showLocationModal ? 'cities' : selectedCategory;
+    const suggestionsKey = showDestinationModal ? 'cities' : selectedCategory;
     if (!searchQuery) return mockSuggestions[suggestionsKey] || [];
     
     return (mockSuggestions[suggestionsKey] || []).filter(item =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.destination && item.destination.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.region && item.region.toLowerCase().includes(searchQuery.toLowerCase()))
     );
@@ -446,9 +492,9 @@ const TripItineraryPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Itinerary */}
-          <div className="lg:col-span-2">
+          <div className="w-full lg:w-1/2">
             <p className="text-gray-600 text-sm mb-6">What's a trip without experiences?</p>
             
             {/* Day Timeline */}
@@ -478,100 +524,133 @@ const TripItineraryPage = () => {
                       <div className="ml-6 pb-8">
                         {/* Add Location Button */}
                         <div className="mb-6">
-                          <button 
-                            onClick={() => handleAddItem('locations', dayIndex)}
-                            className="flex items-center text-primary-600 hover:text-primary-700 font-medium"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add a location
-                          </button>
-                        </div>
-
-                        {/* Activity Input Area */}
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                          <div className="flex items-center text-gray-500 mb-3">
-                            <Clock className="w-4 h-4 mr-2" />
-                            <span className="text-sm">Start your day by visiting from places or adding custom travel/vacation activities</span>
-                          </div>
-                          
-                          <textarea 
-                            placeholder="Add details or leave them blank for recommendations."
-                            className="w-full p-3 border border-gray-300 rounded-lg resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            rows="3"
-                          />
-                          
-                          {/* Category Icons */}
-                          <div className="flex items-center justify-center space-x-4 mt-4 pt-4 border-t border-gray-300">
-                            <button 
-                              onClick={() => handleAddItem('activities', dayIndex)}
-                              className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg group"
-                              title="Things to Do"
-                            >
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center group-hover:bg-primary-100">
-                                <Camera className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                              </div>
-                            </button>
-                            <button 
-                              onClick={() => handleAddItem('places', dayIndex)}
-                              className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg group"
-                              title="Places to Stay"
-                            >
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center group-hover:bg-primary-100">
-                                <Bed className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                              </div>
-                            </button>
-                            <button 
-                              onClick={() => handleAddItem('food', dayIndex)}
-                              className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg group"
-                              title="Food & Drink"
-                            >
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center group-hover:bg-primary-100">
-                                <Utensils className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                              </div>
-                            </button>
-                            <button 
-                              onClick={() => handleAddItem('transportation', dayIndex)}
-                              className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg group"
-                              title="Transportation"
-                            >
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center group-hover:bg-primary-100">
-                                <Car className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                              </div>
-                            </button>
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
+                        <button 
+                          onClick={() => handleAddItem('Destinations', dayIndex)}
+                          className="flex items-center text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Destination
+                        </button>
                         </div>
 
                         {/* Added Items */}
-                        {hasItems && (
-                          <div className="space-y-3">
+                        {hasItems ? (
+                          <div className="space-y-3 mb-6">
                             {Object.entries(dayItinerary).map(([category, items]) => {
-                              if (!items || items.length === 0) return null;
+                              // Ensure items is always an array before mapping
+                              if (!Array.isArray(items) || items.length === 0) return null;
+                              
+                              const getCategoryIcon = (category) => {
+                                switch(category) {
+                                  case 'activities': return <Camera className="w-4 h-4 text-primary-600" />;
+                                  case 'places': return <MapPin className="w-4 h-4 text-primary-600" />;
+                                  case 'food': return <Utensils className="w-4 h-4 text-primary-600" />;
+                                  case 'transportation': return <Car className="w-4 h-4 text-primary-600" />;
+                                  default: return <MapPin className="w-4 h-4 text-primary-600" />;
+                                }
+                              };
+
+                              const getCategoryName = (category) => {
+                                switch(category) {
+                                  case 'activities': return 'Things to Do';
+                                  case 'places': return 'Places to Stay';
+                                  case 'food': return 'Dining';
+                                  case 'transportation': return 'Transportation';
+                                  default: return category;
+                                }
+                              };
                               
                               return items.map((item, itemIndex) => (
-                                <div key={`${category}-${itemIndex}`} className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div key={`${category}-${itemIndex}`} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                                   <div className="flex items-start justify-between">
-                                    <div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        {getCategoryIcon(category)}
+                                        <span className="text-xs font-medium text-primary-600 uppercase tracking-wide">
+                                          {getCategoryName(category)}
+                                        </span>
+                                        {item.isMultiDay && (
+                                          <span className="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full">
+                                            Multi-day
+                                          </span>
+                                        )}
+                                      </div>
                                       <h4 className="font-medium text-gray-900">{item.name}</h4>
                                       <p className="text-sm text-gray-500">{item.location}</p>
-                                      {item.duration && <p className="text-xs text-gray-400">{item.duration}</p>}
-                                      {item.price && <p className="text-sm font-medium text-gray-900 mt-1">{item.price}</p>}
-                                    </div>
-                                    <div className="text-right">
-                                      {item.rating && (
-                                        <p className="text-xs text-yellow-600">★ {item.rating}</p>
+                                      {item.duration && <p className="text-xs text-gray-400 mt-1">{item.duration}</p>}
+                                      {item.description && (
+                                        <p className="text-xs text-gray-600 mt-2 line-clamp-2">{item.description}</p>
                                       )}
+                                      {item.price && <p className="text-sm font-medium text-gray-900 mt-2">{item.price}</p>}
+                                    </div>
+                                    <div className="text-right ml-4">
+                                      {item.rating && (
+                                        <p className="text-xs text-yellow-600 mb-2">★ {item.rating}</p>
+                                      )}
+                                      <button className="text-gray-400 hover:text-gray-600">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
                                     </div>
                                   </div>
                                 </div>
                               ));
                             })}
                           </div>
+                        ) : (
+                          <div className="text-center py-8 mb-6">
+                            <div className="text-gray-400 mb-2">
+                              <Calendar className="w-8 h-8 mx-auto" />
+                            </div>
+                            <p className="text-gray-500 text-sm mb-1">No activities planned for this day</p>
+                            <p className="text-gray-400 text-xs">Use the buttons below to add activities, places, dining, or transportation</p>
+                          </div>
                         )}
+
+                        {/* Category Addition Buttons */}
+                        <div className="flex items-center justify-center space-x-4 pt-4 border-t border-gray-200">
+                          <button 
+                            onClick={() => handleAddItem('activities', dayIndex)}
+                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                            title="Add Things to Do"
+                          >
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                              <Camera className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                            </div>
+                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Things to Do</span>
+                          </button>
+                          <button 
+                            onClick={() => handleAddItem('places', dayIndex)}
+                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                            title="Add Places to Stay"
+                          >
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                              <Bed className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                            </div>
+                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Places to Stay</span>
+                          </button>
+                          <button 
+                            onClick={() => handleAddItem('food', dayIndex)}
+                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                            title="Add Dining"
+                          >
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                              <Utensils className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                            </div>
+                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Dining</span>
+                          </button>
+                          <button 
+                            onClick={() => handleAddItem('transportation', dayIndex)}
+                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                            title="Add Transportation"
+                          >
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                              <Car className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                            </div>
+                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Transportation</span>
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -590,13 +669,13 @@ const TripItineraryPage = () => {
           </div>
 
           {/* Right Column - Map */}
-          <div className="lg:col-span-1">
+          <div className="w-full lg:w-1/2">
             <div className="sticky top-6">
               <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center text-gray-500">
                   <MapPin className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">Interactive map</p>
-                  <p className="text-xs">Your trip locations will appear here</p>
+                  <p className="text-xs">Your trip destinations will appear here</p>
                 </div>
               </div>
             </div>
@@ -604,283 +683,89 @@ const TripItineraryPage = () => {
         </div>
       </div>
 
-      {/* Add Item Modal - Regular Items */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Add {selectedCategory === 'activities' ? 'Things to Do' : 
-                       selectedCategory === 'places' ? 'Places to Stay' :
-                       selectedCategory === 'food' ? 'Food & Drink' : 'Transportation'}
-                </h3>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="mt-4 flex items-center border border-gray-300 rounded-lg px-3 py-2">
-                <Search className="w-4 h-4 text-gray-400 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search recommendations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 border-0 focus:ring-0 text-sm placeholder-gray-400"
-                />
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-96">
-              <div className="grid grid-cols-1 gap-2">
-                {getFilteredSuggestions().map((item) => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="flex">
-                      {/* Compact Image */}
-                      <div className="w-16 h-16 flex-shrink-0">
-                        <img 
-                          src={item.image} 
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      
-                      {/* Compact Content */}
-                      <div className="flex-1 p-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 text-sm truncate">{item.name}</h4>
-                            <p className="text-xs text-gray-500 truncate">{item.location}</p>
-                            
-                            {/* Rating */}
-                            {item.rating && (
-                              <div className="flex items-center mt-1">
-                                <span className="text-xs text-yellow-500">★ {item.rating}</span>
-                                {item.reviews && (
-                                  <span className="text-xs text-gray-400 ml-1">({item.reviews})</span>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Additional compact details */}
-                            <div className="mt-1 flex gap-2 text-xs text-gray-500">
-                              {item.duration && <span>{item.duration}</span>}
-                              {item.cuisine && <span>{item.cuisine}</span>}
-                              {item.type && <span>{item.type}</span>}
-                              {item.priceRange && <span>{item.priceRange}</span>}
-                            </div>
-                          </div>
-                          
-                          {/* Price and Add Button */}
-                          <div className="ml-2 flex flex-col items-end justify-between">
-                            {item.price && (
-                              <span className="text-sm font-bold text-gray-900">{item.price}</span>
-                            )}
-                            <button
-                              onClick={() => addItemToItinerary(item)}
-                              className="bg-primary-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-primary-700 transition-colors mt-1"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {getFilteredSuggestions().length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No recommendations found matching your search.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Location Selection Modal */}
-      {showLocationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Add a location to your trip</h3>
-                <button
-                  onClick={() => {
-                    setShowLocationModal(false);
-                    setSelectedStayDates([]);
-                    setSearchQuery('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <p className="text-gray-600 mt-2">Choose a city or region to stay, then select which days you'll be there.</p>
-              <div className="mt-4 flex items-center border border-gray-300 rounded-lg px-3 py-2">
-                <Search className="w-4 h-4 text-gray-400 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search cities and regions in Sri Lanka..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 border-0 focus:ring-0 text-sm placeholder-gray-400"
-                />
-              </div>
-            </div>
-            
-            <div className="flex">
-              {/* Left Side - City Selection */}
-              <div className="flex-1 p-6 overflow-y-auto max-h-[calc(90vh-160px)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {getFilteredSuggestions().map((city) => (
-                    <div key={city.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
-                      <div className="relative">
-                        <img 
-                          src={city.image} 
-                          alt={city.name}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
-                          {city.accommodations} hotels
-                        </div>
-                      </div>
-                      
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-bold text-lg text-gray-900">{city.name}</h4>
-                            <p className="text-sm text-gray-500">{city.region}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-gray-900">from</p>
-                            <p className="text-lg font-bold text-primary-600">{city.averagePrice}</p>
-                          </div>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{city.description}</p>
-                        
-                        <div className="mb-4">
-                          <p className="text-xs font-medium text-gray-500 mb-2">TOP HIGHLIGHTS</p>
-                          <div className="flex flex-wrap gap-1">
-                            {city.highlights.slice(0, 3).map((highlight, index) => (
-                              <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                                {highlight}
-                              </span>
-                            ))}
-                            {city.highlights.length > 3 && (
-                              <span className="text-xs text-gray-500">+{city.highlights.length - 3} more</span>
-                            )}
-                          </div>
-                        </div>
+      {/* Modularized Add Item Modals */}
+      <AddThingsToDoModal
+        show={showAddModal && selectedCategory === 'activities'}
+        onClose={() => {
+          setShowAddModal(false);
+          setSelectedStayDates([]);
+          setSearchQuery('');
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        getFilteredSuggestions={getFilteredSuggestions}
+        selectedStayDates={selectedStayDates}
+        setSelectedStayDates={setSelectedStayDates}
+        days={days}
+        formatDate={formatDate}
+        addItemToItinerary={addItemToItinerary}
+      />
+      <AddPlacesToStayModal
+        show={showAddModal && selectedCategory === 'places'}
+        onClose={() => {
+          setShowAddModal(false);
+          setSelectedStayDates([]);
+          setSearchQuery('');
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        getFilteredSuggestions={getFilteredSuggestions}
+        selectedStayDates={selectedStayDates}
+        setSelectedStayDates={setSelectedStayDates}
+        days={days}
+        formatDate={formatDate}
+        addItemToItinerary={addItemToItinerary}
+      />
+      <AddFoodAndDrinkModal
+        show={showAddModal && selectedCategory === 'food'}
+        onClose={() => {
+          setShowAddModal(false);
+          setSelectedStayDates([]);
+          setSearchQuery('');
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        getFilteredSuggestions={getFilteredSuggestions}
+        selectedStayDates={selectedStayDates}
+        setSelectedStayDates={setSelectedStayDates}
+        days={days}
+        formatDate={formatDate}
+        addItemToItinerary={addItemToItinerary}
+      />
+      <AddTransportationModal
+        show={showAddModal && selectedCategory === 'transportation'}
+        onClose={() => {
+          setShowAddModal(false);
+          setSelectedStayDates([]);
+          setSearchQuery('');
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        getFilteredSuggestions={getFilteredSuggestions}
+        selectedStayDates={selectedStayDates}
+        setSelectedStayDates={setSelectedStayDates}
+        days={days}
+        formatDate={formatDate}
+        addItemToItinerary={addItemToItinerary}
+      />
 
-                        <button
-                          onClick={() => addItemToItinerary(city, selectedStayDates)}
-                          disabled={selectedStayDates.length === 0}
-                          className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                        >
-                          {selectedStayDates.length === 0 ? 'Select dates first' : `Add to ${selectedStayDates.length} day${selectedStayDates.length !== 1 ? 's' : ''}`}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {getFilteredSuggestions().length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg font-medium">No cities found</p>
-                    <p>Try searching for a different location.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Side - Calendar */}
-              <div className="w-80 bg-gradient-to-b from-primary-50 to-white border-l border-gray-200 p-6">
-                <div className="sticky top-0">
-                  <div className="flex items-center mb-4">
-                    <Calendar className="w-5 h-5 text-primary-600 mr-2" />
-                    <h4 className="font-semibold text-gray-900">Select your stay dates</h4>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Choose which days you'll be staying in this city. You can select multiple consecutive or separate days.
-                  </p>
-                  
-                  {selectedStayDates.length > 0 && (
-                    <div className="mb-6 p-4 bg-primary-100 border border-primary-200 rounded-xl">
-                      <div className="flex items-center mb-2">
-                        <div className="w-3 h-3 bg-primary-600 rounded-full mr-2"></div>
-                        <p className="text-sm font-semibold text-primary-800">
-                          {selectedStayDates.length} day{selectedStayDates.length !== 1 ? 's' : ''} selected
-                        </p>
-                      </div>
-                      <div className="text-xs text-primary-700">
-                        {selectedStayDates.map(dayIndex => formatDate(days[dayIndex])).join(', ')}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {days.map((day, dayIndex) => (
-                      <button
-                        key={dayIndex}
-                        onClick={() => handleStayDateSelect(dayIndex)}
-                        className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:scale-[1.02] ${
-                          selectedStayDates.includes(dayIndex)
-                            ? 'bg-primary-600 text-white border-primary-600 shadow-lg'
-                            : 'bg-white border-gray-200 hover:border-primary-300 text-gray-900 hover:shadow-md'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-sm">
-                              {formatDate(day)}
-                            </div>
-                            <div className={`text-xs ${
-                              selectedStayDates.includes(dayIndex) ? 'text-primary-100' : 'text-gray-500'
-                            }`}>
-                              Day {dayIndex + 1} of your trip
-                            </div>
-                          </div>
-                          {selectedStayDates.includes(dayIndex) && (
-                            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                              <svg className="w-3 h-3 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-gray-300">
-                    <button
-                      onClick={() => setSelectedStayDates([])}
-                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
-                      disabled={selectedStayDates.length === 0}
-                    >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      Clear all selections
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddDestinationModal
+        show={showDestinationModal}
+        onClose={() => {
+          setShowDestinationModal(false);
+          setSelectedStayDates([]);
+          setSearchQuery('');
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        getFilteredSuggestions={getFilteredSuggestions}
+        selectedStayDates={selectedStayDates}
+        setSelectedStayDates={setSelectedStayDates}
+        days={days}
+        formatDate={formatDate}
+        addItemToItinerary={addItemToItinerary}
+      />
     </div>
   );
 };
