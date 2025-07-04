@@ -4,12 +4,14 @@ import { Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin } fro
 import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
 import TripProgressBar from '../components/TripProgressBar';
-import api from '../api/axios';
+import { tripPlanningApi } from '../api/axios';
 
 const TripDurationPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { tripName } = location.state || {};
+  const { tripName, userUid } = location.state || {};
+  
+  console.log('📍 TripDurationPage received:', { tripName, userUid });
   
   const [selectedDates, setSelectedDates] = useState([]);
   const [flightData, setFlightData] = useState([]);
@@ -85,7 +87,7 @@ const TripDurationPage = () => {
   };
 
   const handleContinue = async () => {
-    if (selectedDates.length > 0) {
+    if (selectedDates.length > 0 && userUid) {
       setIsCreatingTrip(true);
       
       try {
@@ -95,6 +97,7 @@ const TripDurationPage = () => {
         
         // Create basic trip in backend
         const result = await createBasicTrip({
+          userUid,
           tripName,
           startDate,
           endDate
@@ -108,7 +111,8 @@ const TripDurationPage = () => {
             tripName, 
             selectedDates,
             tripId: result.tripId,
-            trip: result.trip
+            trip: result.trip,
+            userUid
           } 
         });
       } catch (error) {
@@ -118,7 +122,8 @@ const TripDurationPage = () => {
         navigate('/trip-preferences', { 
           state: { 
             tripName, 
-            selectedDates 
+            selectedDates,
+            userUid
           } 
         });
       } finally {
@@ -130,13 +135,15 @@ const TripDurationPage = () => {
   // Create basic trip with minimal information to reduce initial friction
   const createBasicTrip = async (tripData) => {
     console.log('🚀 Sending trip creation request to backend...', {
+      userUid: tripData.userUid,
       tripName: tripData.tripName,
       startDate: tripData.startDate,
       endDate: tripData.endDate
     });
     
     try {
-      const response = await api.post('/trip/create-basic', {
+      const response = await tripPlanningApi.post('/trip/create-basic', {
+        userUid: tripData.userUid,
         tripName: tripData.tripName,
         startDate: tripData.startDate,
         endDate: tripData.endDate
@@ -298,9 +305,9 @@ const TripDurationPage = () => {
               </button>
               <button
                 onClick={handleContinue}
-                disabled={selectedDates.length === 0 || isCreatingTrip}
+                disabled={selectedDates.length === 0 || isCreatingTrip || !userUid}
                 className={`px-8 py-3 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                  selectedDates.length > 0 && !isCreatingTrip
+                  selectedDates.length > 0 && !isCreatingTrip && userUid
                     ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}

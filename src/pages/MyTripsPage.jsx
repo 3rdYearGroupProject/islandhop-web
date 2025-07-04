@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { 
   Plus, 
   Calendar, 
@@ -25,7 +27,6 @@ import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
-import api from '../api/axios';
 
 const placeholder = 'https://placehold.co/400x250';
 
@@ -34,8 +35,23 @@ const MyTripsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // all, active, completed, draft
   const [sortBy, setSortBy] = useState('recent'); // recent, name, date
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('🔐 Current user UID:', user.uid);
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
   
   const [trips, setTrips] = useState([
     // Trip History (mostly expired, some completed)
@@ -317,45 +333,18 @@ const MyTripsPage = () => {
     }
   };
 
-  // Create basic trip with minimal information to reduce initial friction
-  const createBasicTrip = async (tripData) => {
-    console.log('[createBasicTrip] Sending request:', tripData);
-    try {
-      const response = await api.post('/trip/create-basic', {
+  const handleCreateTrip = (tripData) => {
+    console.log('🚀 Creating trip with user UID:', currentUser?.uid);
+    console.log('📝 Trip data:', tripData);
+    
+    // Navigate to trip duration page with trip name and user UID
+    navigate('/trip-duration', { 
+      state: { 
         tripName: tripData.name,
-        startDate: tripData.startDate, // ISO date string
-        endDate: tripData.endDate // ISO date string
-      }, {
-        withCredentials: true // Essential for session management
-      });
-      console.log('[createBasicTrip] Response:', response);
-      if (response.status !== 200 || !response.data) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return {
-        tripId: response.data.tripId,
-        trip: response.data.trip,
-        message: response.data.message
-      };
-    } catch (err) {
-      console.error('[createBasicTrip] Error:', err);
-      throw err;
-    }
-  };
-
-  const handleCreateTrip = async (tripData) => {
-    try {
-      // You may want to collect startDate/endDate from tripData or UI in the future
-      const basicTrip = await createBasicTrip(tripData);
-      // Optionally, you can store tripId or pass it to the next page
-      console.log('[handleCreateTrip] Created trip:', basicTrip);
-      // Navigate to trip duration page with trip name (and optionally tripId)
-      navigate('/trip-duration', { state: { tripName: tripData.name, tripId: basicTrip.tripId } });
-      setIsCreateTripModalOpen(false);
-    } catch (err) {
-      // Handle error (show toast, etc.)
-      console.error('[handleCreateTrip] Failed to create trip:', err);
-    }
+        userUid: currentUser?.uid
+      } 
+    });
+    setIsCreateTripModalOpen(false);
   };
 
   return (
