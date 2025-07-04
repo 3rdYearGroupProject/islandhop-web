@@ -99,7 +99,7 @@ const TripDurationPage = () => {
       <Navbar />
 
       {/* Header Section */}
-      <TripProgressBar tripName={tripName} onBack={handleBack} />
+      <TripProgressBar tripName={tripName} onBack={handleBack} currentStep={2} completedSteps={[1]} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

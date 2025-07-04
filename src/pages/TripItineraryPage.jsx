@@ -6,7 +6,10 @@ import AddThingsToDoModal from '../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../components/AddTransportationModal';
+
 import Navbar from '../components/Navbar';
+// Import the trip progress bar component (assume it's named TripProgressBar and in components)
+import TripProgressBar from '../components/TripProgressBar';
 
 const TripItineraryPage = () => {
   const location = useRouterLocation();
@@ -455,27 +458,14 @@ const TripItineraryPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
-      {/* Trip Header */}
-      <div className="bg-primary-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{tripName}</h1>
-              <p className="text-primary-100 flex items-center">
-                <Calendar className="w-4 h-4 mr-2" />
-                {selectedDates[0]?.toLocaleDateString()} - {selectedDates[1]?.toLocaleDateString()} • Sri Lanka
-              </p>
-            </div>
-            <button
-              onClick={handleSaveTrip}
-              className="bg-white text-primary-600 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              Save Trip
-            </button>
-          </div>
+      {/* Trip Progress Bar */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 pt-2 pb-1">
+          <TripProgressBar currentStep={4} completedSteps={[1, 2, 3]} tripName={tripName} />
         </div>
       </div>
+      
+      {/* Trip Header removed as per request */}
 
       {/* Trip Tabs */}
       <div className="border-b border-gray-200 bg-white">
@@ -671,7 +661,7 @@ const TripItineraryPage = () => {
           {/* Right Column - Map */}
           <div className="w-full lg:w-1/2">
             <div className="sticky top-6">
-              <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
+              <div className="bg-gray-100 rounded-lg h-[calc(100vh-12rem)] flex items-center justify-center">
                 <div className="text-center text-gray-500">
                   <MapPin className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">Interactive map</p>
@@ -683,6 +673,25 @@ const TripItineraryPage = () => {
         </div>
       </div>
 
+      {/* Bottom Navigation Buttons */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="w-full lg:w-1/2">
+          <div className="flex gap-4 pt-6 border-t border-gray-200">
+            <button
+              onClick={handleBack}
+              className="bg-white border border-primary-600 text-primary-600 px-6 py-2 rounded-lg shadow hover:bg-primary-50 font-medium transition-colors"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleSaveTrip}
+              className="bg-primary-600 text-white px-6 py-2 rounded-lg shadow hover:bg-primary-700 font-medium transition-colors"
+            >
+              Save Trip
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Modularized Add Item Modals */}
       <AddThingsToDoModal
