@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin, Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
 
@@ -84,148 +85,220 @@ const TripDurationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Navbar */}
       <Navbar />
 
-      {/* Main Content */}
-      <main className="w-full py-8">
-        <div className="page-container">
-          {/* Header */}
-          <div className="flex items-center mb-8">
-            <button
-              onClick={handleBack}
-              className="flex items-center text-primary-600 hover:text-primary-700 mr-4"
-            >
-              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to trips
-            </button>
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleBack}
+                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {tripName || 'New Trip'}
+                </h1>
+                <p className="text-gray-600 mt-1">Step 2 of 4 - Choose your travel dates</p>
+              </div>
+            </div>
+            
+            {/* Progress Indicator */}
+            <div className="hidden md:flex items-center space-x-2">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="ml-2 text-sm font-medium text-gray-900">Details</span>
+              </div>
+              <div className="w-8 h-1 bg-blue-600 rounded"></div>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  2
+                </div>
+                <span className="ml-2 text-sm font-medium text-gray-900">Dates</span>
+              </div>
+              <div className="w-8 h-1 bg-gray-200 rounded"></div>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
+                  3
+                </div>
+                <span className="ml-2 text-sm font-medium text-gray-500">Preferences</span>
+              </div>
+              <div className="w-8 h-1 bg-gray-200 rounded"></div>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
+                  4
+                </div>
+                <span className="ml-2 text-sm font-medium text-gray-500">Review</span>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Trip Details and Calendar */}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{tripName || 'New Trip'}</h1>
-              <p className="text-gray-600 mb-8">Select your travel dates to see flight options</p>
-
-              {/* Date Selection with Embedded Calendar */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">When are you traveling?</h2>
-                
-                {/* Calendar Component */}
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Calendar */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Travel Dates</h2>
+                  <p className="text-gray-600">Choose when you'd like to travel to see available options</p>
+                </div>
+                <CalendarIcon className="h-8 w-8 text-blue-600" />
+              </div>
+              
+              {/* Calendar Component */}
+              <div className="mb-6">
                 <Calendar
                   selectedDates={selectedDates}
                   onDateSelect={handleDateSelect}
                   onDateRangeSelect={handleDateRangeSelect}
                   mode="range"
                   minDate={new Date()}
-                  className="mb-4"
+                  className="w-full"
                 />
+              </div>
 
-                {selectedDates.length > 0 && (
-                  <div className="text-sm text-gray-600 border-t pt-4">
-                    <p className="mb-2">Selected dates:</p>
-                    <div className="bg-primary-50 p-3 rounded-lg">
-                      <p className="font-medium text-primary-800">
+              {/* Selected Dates Summary */}
+              {selectedDates.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-blue-900 mb-2">Selected Dates</h3>
+                      <p className="text-blue-800 font-medium text-lg">
                         {formatDateRange(selectedDates)}
                       </p>
                       {selectedDates.length === 2 && (
-                        <p className="text-primary-600">
+                        <p className="text-blue-700 text-sm mt-1">
                           Duration: {Math.ceil((selectedDates[1] - selectedDates[0]) / (1000 * 60 * 60 * 24))} days
                         </p>
                       )}
                     </div>
                     <button
                       onClick={handleDateClear}
-                      className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      className="px-4 py-2 text-blue-700 hover:text-blue-800 hover:bg-blue-200 rounded-lg transition-colors duration-200 text-sm font-medium"
                     >
                       Clear dates
                     </button>
                   </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <button
-                  onClick={handleContinue}
-                  disabled={selectedDates.length === 0}
-                  className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                    selectedDates.length > 0
-                      ? 'bg-primary-600 text-white hover:bg-primary-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Continue
-                </button>
-                <button
-                  onClick={handleBack}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Right Column - Flight Data */}
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                {selectedDates.length > 0 ? 'Available Flights' : 'Select dates to see flights'}
-              </h2>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-6">
+              <button
+                onClick={handleContinue}
+                disabled={selectedDates.length === 0}
+                className={`flex-1 px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
+                  selectedDates.length > 0
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Continue to Preferences
+              </button>
+              <button
+                onClick={handleBack}
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold"
+              >
+                Back
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column - Flight Options */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900">Flight Options</h3>
+                <Plane className="h-6 w-6 text-blue-600" />
+              </div>
 
               {selectedDates.length === 0 && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                  </svg>
-                  <p className="text-gray-600 text-lg">Choose your travel dates to see flight options</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <CalendarIcon className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-2">Select Travel Dates</h4>
+                  <p className="text-gray-600 text-sm">Choose your dates to see available flights and pricing</p>
                 </div>
               )}
 
               {isLoading && selectedDates.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading flight options...</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <h4 className="font-medium text-gray-900 mb-2">Finding Flights</h4>
+                  <p className="text-gray-600 text-sm">Searching for the best options...</p>
                 </div>
               )}
 
               {!isLoading && flightData.length > 0 && (
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Flights for {selectedDates[0]?.toLocaleDateString()} • From Colombo (CMB) to your destination
-                  </p>
+                  <div className="flex items-center text-sm text-gray-600 mb-4">
+                    <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                    <span>From Colombo (CMB) • {selectedDates[0]?.toLocaleDateString()}</span>
+                  </div>
                   
                   {flightData.map((flight, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200 hover:border-primary-300">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-gray-900">{flight.airline}</h3>
-                            <span className="text-xl font-bold text-primary-600">{flight.price}</span>
-                          </div>
-                          <div className="flex items-center text-gray-600 text-sm">
-                            <span className="mr-4">{flight.departure} → {flight.arrival}</span>
-                            <span className="text-gray-500">{flight.duration}</span>
+                    <div key={index} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                            {flight.airline}
+                          </h4>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span>{flight.duration}</span>
                           </div>
                         </div>
-                        <button className="ml-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-blue-600">{flight.price}</div>
+                          <div className="text-xs text-gray-500">per person</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="text-gray-600">
+                          <span className="font-medium">{flight.departure}</span> → <span className="font-medium">{flight.arrival}</span>
+                        </div>
+                        <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium">
                           Select
                         </button>
                       </div>
                     </div>
                   ))}
+                  
+                  <div className="border-t border-gray-200 pt-4 mt-6">
+                    <p className="text-xs text-gray-500 text-center">
+                      Prices may vary. Final booking through airline partners.
+                    </p>
+                  </div>
                 </div>
               )}
 
               {!isLoading && selectedDates.length > 0 && flightData.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-                  <svg className="w-12 h-12 text-yellow-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <p className="text-yellow-800">No flights available for the selected date</p>
-                  <p className="text-yellow-600 text-sm mt-1">Try selecting a different date</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Plane className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-2">No Flights Available</h4>
+                  <p className="text-gray-600 text-sm mb-4">No flights found for the selected date</p>
+                  <button 
+                    onClick={handleDateClear}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    Try different dates
+                  </button>
                 </div>
               )}
             </div>
