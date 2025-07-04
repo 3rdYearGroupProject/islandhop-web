@@ -6,7 +6,8 @@ import {
   UserGroupIcon,
   CalendarIcon,
   PlusIcon,
-  ClockIcon
+  ClockIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
 const MyPools = () => {
@@ -110,35 +111,38 @@ const MyPools = () => {
   return (
     <div>
       {/* Search and Filters */}
-      <div className="mb-8 bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="mb-10 flex justify-center">
+        <div className="flex flex-col md:flex-row gap-2 items-center justify-center w-full max-w-2xl">
           {/* Search Input */}
-          <div className="relative md:col-span-2">
+          <div className="relative w-full md:w-96">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search your pools..."
-              className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white"
+              className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white text-sm shadow-none"
             />
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
 
           {/* Destination Filter */}
-          <select
-            value={selectedDestination}
-            onChange={(e) => setSelectedDestination(e.target.value)}
-            className="px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white"
-          >
-            <option value="">All Destinations</option>
-            <option value="kandy">Kandy</option>
-            <option value="ella">Ella</option>
-            <option value="colombo">Colombo</option>
-          </select>
+          <div className="relative w-full md:w-44">
+            <select
+              value={selectedDestination}
+              onChange={(e) => setSelectedDestination(e.target.value)}
+              className="appearance-none px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white text-sm shadow-none pr-8 min-w-[120px] cursor-pointer transition-colors duration-200"
+            >
+              <option value="">All Destinations</option>
+              <option value="kandy">Kandy</option>
+              <option value="ella">Ella</option>
+              <option value="colombo">Colombo</option>
+            </select>
+            <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
 
           {/* Create New Button */}
-          <button className="flex items-center justify-center gap-2 bg-success-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-success-700 transition-colors">
-            <PlusIcon className="h-5 w-5" />
+          <button className="flex items-center justify-center gap-2 bg-success-600 text-white px-6 py-2 rounded-full font-medium hover:bg-success-700 transition-colors text-sm w-full md:w-44 min-w-[120px]">
+            <PlusIcon className="h-4 w-4" />
             Create New
           </button>
         </div>
@@ -146,17 +150,22 @@ const MyPools = () => {
 
       {/* Ongoing Pool - Full Width Card */}
       {ongoingPool && (
-        <div className="mb-8">
+        <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Current Trip
           </h2>
-          <Card className="bg-gradient-to-r from-success-50 to-success-100 dark:from-success-900/20 dark:to-success-800/20 border-2 border-success-200 dark:border-success-700">
-            <div className="flex flex-col lg:flex-row">
-              <img
-                src={ongoingPool.image}
-                alt={ongoingPool.name}
-                className="w-full lg:w-80 h-48 lg:h-auto object-cover"
-              />
+          <Card className="bg-gradient-to-r from-success-50 to-success-100 dark:from-success-900/20 dark:to-success-800/20 border-2 border-success-200 dark:border-success-700 p-0 overflow-hidden">
+            <div className="flex flex-col lg:flex-row h-full">
+              <div className="relative w-full lg:w-1/2 h-48 lg:h-auto flex-shrink-0">
+                <img
+                  src={ongoingPool.image}
+                  alt={ongoingPool.name}
+                  className="absolute top-0 left-0 w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3 bg-success-600 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+                  {ongoingPool.status}
+                </div>
+              </div>
               <CardBody className="flex-1">
                 <div className="flex flex-col h-full">
                   <div className="flex items-start justify-between mb-4">
@@ -178,9 +187,7 @@ const MyPools = () => {
                           {ongoingPool.participants}
                         </div>
                       </div>
-                      <span className="inline-block bg-success-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                        {ongoingPool.status}
-                      </span>
+                      {/* Status badge removed from right side */}
                     </div>
                   </div>
 
@@ -222,26 +229,27 @@ const MyPools = () => {
       )}
 
       {/* Upcoming Pools */}
-      <div className="mb-8">
+      <div className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Upcoming Pools
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
           {upcomingPools.map((pool) => (
-            <Card key={pool.id} hover className="group cursor-pointer">
-              <div className="relative">
+            <Card key={pool.id} hover className="group cursor-pointer p-0 flex flex-col">
+              <div className="relative w-full aspect-[4/3] flex-shrink-0">
                 <img
                   src={pool.image}
                   alt={pool.name}
-                  className="w-full h-40 object-cover"
+                  className="absolute top-0 left-0 w-full h-full object-cover rounded-t-lg"
+                  style={{ margin: 0, borderTopLeftRadius: 'inherit', borderTopRightRadius: 'inherit' }}
                 />
-                <div className="absolute top-3 right-3 bg-warning-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                <div className="absolute top-3 right-3 bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
                   {pool.status}
                 </div>
               </div>
               
-              <CardBody>
-                <h3 className="text-lg font-bold text-primary-600 mb-2 group-hover:text-primary-700 transition-colors">
+              <CardBody className="flex-1 flex flex-col">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-primary-700 transition-colors">
                   {pool.name}
                 </h3>
                 
@@ -273,7 +281,7 @@ const MyPools = () => {
                   </div>
                 </div>
 
-                <button className="w-full bg-warning-500 text-white py-2 rounded-lg font-medium hover:bg-warning-600 transition-colors">
+                <button className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors mt-auto">
                   View Details
                 </button>
               </CardBody>
@@ -289,14 +297,17 @@ const MyPools = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {poolHistory.map((pool) => (
-            <Card key={pool.id} hover className="group cursor-pointer opacity-80">
-              <img
-                src={pool.image}
-                alt={pool.name}
-                className="w-full h-40 object-cover"
-              />
+            <Card key={pool.id} hover className="group cursor-pointer opacity-80 p-0 flex flex-col">
+              <div className="relative w-full aspect-[4/3] flex-shrink-0">
+                <img
+                  src={pool.image}
+                  alt={pool.name}
+                  className="absolute top-0 left-0 w-full h-full object-cover rounded-t-lg"
+                  style={{ margin: 0, borderTopLeftRadius: 'inherit', borderTopRightRadius: 'inherit' }}
+                />
+              </div>
               
-              <CardBody>
+              <CardBody className="flex-1 flex flex-col">
                 <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2 group-hover:text-primary-600 transition-colors">
                   {pool.name}
                 </h3>
@@ -328,7 +339,7 @@ const MyPools = () => {
                   </div>
                 </div>
 
-                <button className="w-full bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors">
+                <button className="w-full bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors mt-auto">
                   View Details
                 </button>
               </CardBody>

@@ -53,7 +53,7 @@ const PoolPage = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-normal mb-6">
             Travel Pools
           </h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
@@ -64,22 +64,20 @@ const PoolPage = () => {
 
       {/* Tab Navigation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-center mb-8">
-          <div className="flex space-x-1 bg-white dark:bg-secondary-800 p-1 rounded-xl shadow-lg">
-            {tabList.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  activeTab === tab.key
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-secondary-700'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex justify-center mb-8 gap-4 flex-wrap">
+          {tabList.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-8 py-3 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-base ${
+                activeTab === tab.key
+                  ? 'bg-primary-600 text-white border-primary-600 scale-105'
+                  : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Tab Content */}
