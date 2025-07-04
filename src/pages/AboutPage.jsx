@@ -17,7 +17,6 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import SmoothVideo from '../components/SmoothVideo';
 import aboutVideo from '../assets/about.mp4';
 
 const AboutPage = () => {
