@@ -4,84 +4,84 @@ import {
   HomeIcon,
   MapIcon,
   CalendarIcon,
-  CurrencyDollarIcon,
+  CurrencyDollarIcon,              
   UserIcon,
   ChatBubbleLeftRightIcon,
-  TruckIcon,
+  AcademicCapIcon,
   StarIcon,
   ClockIcon,
   ChartBarIcon,
   BellIcon,
-  CogIcon
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
-import DriverStatusCard from '../driver/DriverStatusCard';
+import GuideStatusCard from '../guide/GuideStatusCard';
 import OnlineToggle from '../shared/OnlineToggle';
 
-const DriverSidebar = ({ isOpen, onClose }) => {
+const GuideSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
 
-  const driverMenuItems = [
+  const guideMenuItems = [
     { 
       name: 'Dashboard', 
-      path: '/driver/dashboard', 
+      path: '/guide/dashboard', 
       icon: HomeIcon,
       description: 'Overview & Stats'
     },
     { 
       name: 'Trip Requests', 
-      path: '/driver/trips', 
+      path: '/guide/trips', 
       icon: MapIcon,
-      description: 'Manage Trips',
-      badge: '3'
+      description: 'Manage Tours',
+      badge: '2'
     },
     { 
       name: 'Schedule', 
-      path: '/driver/schedule', 
+      path: '/guide/schedule', 
       icon: CalendarIcon,
       description: 'Availability'
     },
     { 
       name: 'Earnings', 
-      path: '/driver/earnings', 
+      path: '/guide/earnings', 
       icon: CurrencyDollarIcon,
       description: 'Income & Payouts'
     },
     { 
       name: 'Messages', 
-      path: '/driver/chat', 
+      path: '/guide/chat', 
       icon: ChatBubbleLeftRightIcon,
-      description: 'Chat with Riders',
-      badge: '2'
+      description: 'Chat with Tourists',
+      badge: '1'
     },
     { 
-      name: 'Vehicle', 
-      path: '/driver/vehicle', 
-      icon: TruckIcon,
-      description: 'Vehicle Info'
+      name: 'Tour Packages', 
+      path: '/guide/packages', 
+      icon: GlobeAltIcon,
+      description: 'Your Tour Offerings'
     },
     { 
       name: 'Reviews', 
-      path: '/driver/reviews', 
+      path: '/guide/reviews', 
       icon: StarIcon,
       description: 'Ratings & Feedback'
     },
     { 
       name: 'History', 
-      path: '/driver/history', 
+      path: '/guide/history', 
       icon: ClockIcon,
-      description: 'Trip History'
+      description: 'Tour History'
     },
     { 
       name: 'Analytics', 
-      path: '/driver/analytics', 
+      path: '/guide/analytics', 
       icon: ChartBarIcon,
       description: 'Performance Data'
     },
     { 
       name: 'Profile', 
-      path: '/driver/profile', 
+      path: '/guide/profile', 
       icon: UserIcon,
-      description: 'Driver Profile'
+      description: 'Guide Profile'
     },
   ];
 
@@ -102,11 +102,11 @@ const DriverSidebar = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-secondary-700 lg:hidden">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                <TruckIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                <AcademicCapIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Driver Portal
+                  Guide Portal
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Mobile Menu
@@ -123,42 +123,42 @@ const DriverSidebar = ({ isOpen, onClose }) => {
             </button>
           </div>
 
-          {/* Driver Portal Header - Desktop */}
+          {/* Guide Portal Header - Desktop */}
           <div className="hidden lg:flex items-center px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg">
-                <TruckIcon className="h-6 w-6 text-white" />
+                <AcademicCapIcon className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Driver Portal
+                  Guide Portal
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Your Driver Dashboard
+                  Your Guide Dashboard
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Driver Status Card - Only on Desktop */}
+          {/* Guide Status Card - Only on Desktop */}
           <div className="hidden lg:block px-4 py-4 border-b border-gray-200 dark:border-secondary-700">
-            <DriverStatusCard compact={true} showToggle={false} />
+            <GuideStatusCard compact={true} showToggle={false} />
           </div>
 
           {/* Mobile Quick Actions */}
           <div className="lg:hidden px-4 py-4 border-b border-gray-200 dark:border-secondary-700">
             <div className="grid grid-cols-2 gap-3">
-              <OnlineToggle userType="driver" />
+              <OnlineToggle userType="guide" />
               <button className="flex items-center justify-center p-3 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg font-medium text-sm">
                 <MapIcon className="h-4 w-4 mr-2" />
-                View Trips
+                View Tours
               </button>
             </div>
           </div>
 
           {/* Navigation Items */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {driverMenuItems.map((item) => {
+            {guideMenuItems.map((item) => {
               const isActive = location.pathname === item.path;
               const Icon = item.icon;
               
@@ -213,10 +213,10 @@ const DriverSidebar = ({ isOpen, onClose }) => {
             })}
           </nav>
 
-          {/* Quick Actions - Mobile Only */}
-          <div className="lg:hidden px-4 py-4 border-t border-gray-200 dark:border-secondary-700">
+          {/* Quick Actions */}
+          <div className="px-4 py-4 border-t border-gray-200 dark:border-secondary-700">
             <div className="space-y-2">
-              <OnlineToggle userType="driver" size="large" className="w-full" />
+              <OnlineToggle userType="guide" size="large" className="w-full" />
               <button className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-secondary-800 hover:bg-gray-200 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors duration-200">
                 <BellIcon className="h-4 w-4 mr-2" />
                 Notifications
@@ -227,7 +227,7 @@ const DriverSidebar = ({ isOpen, onClose }) => {
           {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-200 dark:border-secondary-700">
             <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-              © 2024 IslandHop Driver
+              © 2024 IslandHop Guide
             </p>
           </div>
         </div>
@@ -236,5 +236,4 @@ const DriverSidebar = ({ isOpen, onClose }) => {
   );
 };
 
-export default DriverSidebar;
-
+export default GuideSidebar;

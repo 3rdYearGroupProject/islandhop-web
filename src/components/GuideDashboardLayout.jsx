@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import DriverSidebar from './sidebars/DriverSidebar';
+import GuideSidebar from './sidebars/GuideSidebar';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 
-const DriverDashboardLayout = ({ children }) => {
+const GuideDashboardLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
 
@@ -19,20 +19,20 @@ const DriverDashboardLayout = ({ children }) => {
           onClick={toggleSidebar}
           className="p-2 bg-white dark:bg-secondary-800 rounded-lg shadow-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
         >
-        <Bars3Icon className="h-6 w-6" />
+          <Bars3Icon className="h-6 w-6" />
         </button>
       </div>
       
-      {/* Driver Sidebar */}
-      <DriverSidebar 
+      {/* Guide Sidebar */}
+      <GuideSidebar 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
       
       {/* Main Content */}
       <div className="lg:pl-72">
-        <main className="min-h-screen pt-16">
-          <div className="px-4 py-6 lg:px-8">
+        <main className="min-h-screen">
+          <div className="px-4 py-6 lg:px-8 pt-16 lg:pt-6">
             {children}
           </div>
         </main>
@@ -49,4 +49,4 @@ const DriverDashboardLayout = ({ children }) => {
   );
 };
 
-export default DriverDashboardLayout;
+export default GuideDashboardLayout;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import logo from '../assets/islandHopIcon.png'; // Icon
@@ -6,6 +6,36 @@ import logoText from '../assets/IslandHop.png'; // Full logo text
 
 const Navbar = () => {
   const { user } = useAuth();
+  const [showLang, setShowLang] = useState(false);
+  const langRef = useRef(null);
+
+  // Load Google Translate script once
+  useEffect(() => {
+    if (!window.googleTranslateElementInit) {
+      window.googleTranslateElementInit = function () {
+        new window.google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,si,ta', // English, Sinhala, Tamil
+          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_translate_element');
+      };
+      const script = document.createElement('script');
+      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  // Show/hide language dropdown
+  const handleLangClick = () => {
+    setShowLang((prev) => !prev);
+    setTimeout(() => {
+      if (langRef.current) {
+        langRef.current.querySelector('span.goog-te-combo')?.focus();
+      }
+    }, 100);
+  };
 
   return (
     <nav className="bg-white w-full border-b border-gray-200 shadow-sm sticky top-0 z-50">
@@ -22,11 +52,29 @@ const Navbar = () => {
           <Link to="/pools" className="text-gray-700 hover:text-primary-600 font-medium">Pools</Link>
           <Link to="/about" className="text-gray-700 hover:text-primary-600 font-medium">About</Link>
         </div>
-        {/* User/Currency */}
+        {/* User/Currency/Language */}
         <div className="flex items-center space-x-4">
           <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center">
             USD
           </button>
+          {/* Language Switcher */}
+          <div className="relative">
+            <button
+              onClick={handleLangClick}
+              className="text-gray-700 hover:text-primary-600 font-medium flex items-center px-2 py-1 border rounded"
+              aria-label="Change language"
+            >
+              🌐 Language
+            </button>
+            {showLang && (
+              <div
+                ref={langRef}
+                id="google_translate_element"
+                className="absolute right-0 mt-2 bg-white border rounded shadow-lg z-50 p-2 min-w-[120px]"
+                style={{ minWidth: 120 }}
+              />
+            )}
+          </div>
           {user ? (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
