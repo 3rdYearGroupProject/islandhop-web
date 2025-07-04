@@ -17,6 +17,7 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import SmoothVideo from '../components/SmoothVideo';
 import aboutVideo from '../assets/about.mp4';
 
 const AboutPage = () => {
@@ -244,7 +245,7 @@ const AboutPage = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-normal mb-6">
             About IslandHop
           </h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
@@ -258,7 +259,7 @@ const AboutPage = () => {
         {/* Platform Overview */}
         <section className="mb-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
               Your Gateway to Sri Lanka
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
@@ -288,7 +289,7 @@ const AboutPage = () => {
 
         {/* Why Choose IslandHop */}
         <section className="mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white text-center mb-12">
             Why Choose IslandHop?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -336,7 +337,7 @@ const AboutPage = () => {
         {/* Featured Drivers */}
         <section className="mb-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
               Meet Our Featured Drivers
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
@@ -364,7 +365,7 @@ const AboutPage = () => {
                 <CardBody>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                         {driver.name}
                       </h3>
                       <div className="flex items-center gap-2 mb-2">
@@ -392,7 +393,7 @@ const AboutPage = () => {
                   </div>
 
                   <div className="mb-4">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">Specialties:</div>
+                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Specialties:</div>
                     <div className="flex flex-wrap gap-1">
                       {driver.specialties.map((specialty, i) => (
                         <span key={i} className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 text-xs rounded-full">
@@ -403,7 +404,7 @@ const AboutPage = () => {
                   </div>
 
                   <div className="mb-4">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">Languages:</div>
+                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Languages:</div>
                     <div className="flex flex-wrap gap-1">
                       {driver.languages.map((language, i) => (
                         <span key={i} className="px-2 py-1 bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300 text-xs rounded-full">
@@ -430,7 +431,7 @@ const AboutPage = () => {
         {/* Featured Guides */}
         <section className="mb-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
               Meet Our Expert Guides
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
@@ -458,7 +459,7 @@ const AboutPage = () => {
                 <CardBody>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                         {guide.name}
                       </h3>
                       <div className="flex items-center gap-2 mb-2">
@@ -486,7 +487,7 @@ const AboutPage = () => {
                   </div>
 
                   <div className="mb-4">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">Specialties:</div>
+                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Specialties:</div>
                     <div className="flex flex-wrap gap-1">
                       {guide.specialties.map((specialty, i) => (
                         <span key={i} className="px-2 py-1 bg-warning-100 dark:bg-warning-900/30 text-warning-800 dark:text-warning-300 text-xs rounded-full">
@@ -497,7 +498,7 @@ const AboutPage = () => {
                   </div>
 
                   <div className="mb-4">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">Languages:</div>
+                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Languages:</div>
                     <div className="flex flex-wrap gap-1">
                       {guide.languages.map((language, i) => (
                         <span key={i} className="px-2 py-1 bg-info-100 dark:bg-info-900/30 text-info-800 dark:text-info-300 text-xs rounded-full">
@@ -524,7 +525,7 @@ const AboutPage = () => {
         {/* Tourist Reviews */}
         <section className="mb-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
               What Our Travelers Say
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
@@ -570,7 +571,7 @@ const AboutPage = () => {
 
         {/* Call to Action */}
         <section className="text-center bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl text-white p-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          <h2 className="text-3xl md:text-4xl font-semibold mb-6">
             Ready to Start Your Sri Lankan Adventure?
           </h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
