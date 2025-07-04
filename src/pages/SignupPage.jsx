@@ -18,7 +18,6 @@ const SignupPage = () => {
   const toast = useToast();
   
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -281,18 +280,6 @@ const SignupPage = () => {
           )}
           
           <form onSubmit={handleEmailSignup} className="space-y-6">
-            <div>
-              <input
-                type="text"
-                name="name"
-                placeholder="Name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-              />
-            </div>
-            
             <input
               type="email"
               name="email"
