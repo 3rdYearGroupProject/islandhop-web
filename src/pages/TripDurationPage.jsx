@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
+import TripProgressBar from '../components/TripProgressBar';
 
 const TripDurationPage = () => {
   const location = useLocation();
@@ -98,57 +99,7 @@ const TripDurationPage = () => {
       <Navbar />
 
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleBack}
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {tripName || 'New Trip'}
-                </h1>
-                <p className="text-gray-600 mt-1">Step 2 of 4 - Choose your travel dates</p>
-              </div>
-            </div>
-            
-            {/* Progress Indicator */}
-            <div className="hidden md:flex items-center space-x-2">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  <Check className="w-4 h-4" />
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-900">Details</span>
-              </div>
-              <div className="w-8 h-1 bg-blue-600 rounded"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  2
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-900">Dates</span>
-              </div>
-              <div className="w-8 h-1 bg-gray-200 rounded"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
-                  3
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">Preferences</span>
-              </div>
-              <div className="w-8 h-1 bg-gray-200 rounded"></div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
-                  4
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">Review</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TripProgressBar tripName={tripName} onBack={handleBack} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -278,18 +229,20 @@ const TripDurationPage = () => {
             <div className="flex flex-row gap-4 justify-end mt-6">
               <button
                 onClick={handleBack}
-                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none"
+                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                style={{ minWidth: '120px' }}
               >
                 Back
               </button>
               <button
                 onClick={handleContinue}
                 disabled={selectedDates.length === 0}
-                className={`px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
+                className={`px-8 py-3 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
                   selectedDates.length > 0
                     ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
+                style={{ minWidth: '180px' }}
               >
                 Continue to Preferences
               </button>
