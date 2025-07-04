@@ -1,202 +1,235 @@
-// User storage utility for managing user data in localStorage
-const USER_DATA_KEY = 'islandhop_user_data';
-
-/**
- * Save user data to localStorage
- * @param {Object} userData - User data object
- */
-export const setUserData = (userData) => {
-  try {
-    const dataToStore = {
-      ...userData,
-      timestamp: new Date().toISOString()
-    };
-    localStorage.setItem(USER_DATA_KEY, JSON.stringify(dataToStore));
-  } catch (error) {
-    console.error('Error saving user data to localStorage:', error);
+// Simple encryption/decryption using browser's built-in crypto
+class UserDataManager {
+  constructor() {
+    this.storageKey = '__ih_session__';
+    this.roleKey = '__ih_role__';
+    this.secretKey = this.generateBrowserSecret();
   }
-};
 
-/**
- * Get user data from localStorage
- * @returns {Object|null} - User data object or null if not found
- */
-export const getUserData = () => {
-  try {
-    const data = localStorage.getItem(USER_DATA_KEY);
-    if (data) {
-      const userData = JSON.parse(data);
-      // Check if data is older than 24 hours
-      const timestamp = new Date(userData.timestamp);
-      const now = new Date();
-      const hoursDiff = (now - timestamp) / (1000 * 60 * 60);
+  // Generate a consistent secret based on browser characteristics
+  generateBrowserSecret() {
+    const browserInfo = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      new Date().toDateString() // Changes daily for auto-expiration
+    ].join('|');
+    
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < browserInfo.length; i++) {
+      const char = browserInfo.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  // Simple encryption using XOR and base64
+  encrypt(data) {
+    const jsonString = JSON.stringify(data);
+    const secret = this.secretKey;
+    let encrypted = '';
+    
+    for (let i = 0; i < jsonString.length; i++) {
+      const charCode = jsonString.charCodeAt(i) ^ secret.charCodeAt(i % secret.length);
+      encrypted += String.fromCharCode(charCode);
+    }
+    
+    return btoa(encrypted);
+  }
+
+  // Simple decryption
+  decrypt(encryptedData) {
+    try {
+      const encrypted = atob(encryptedData);
+      const secret = this.secretKey;
+      let decrypted = '';
       
-      if (hoursDiff > 24) {
-        // Data is stale, remove it
-        clearUserData();
-        return null;
+      for (let i = 0; i < encrypted.length; i++) {
+        const charCode = encrypted.charCodeAt(i) ^ secret.charCodeAt(i % secret.length);
+        decrypted += String.fromCharCode(charCode);
       }
       
-      return userData;
+      return JSON.parse(decrypted);
+    } catch (error) {
+      console.error('🔓 Failed to decrypt user data:', error);
+      return null;
     }
-    return null;
-  } catch (error) {
-    console.error('Error getting user data from localStorage:', error);
-    return null;
   }
-};
 
-/**
- * Clear user data from localStorage
- */
-export const clearUserData = () => {
-  try {
-    localStorage.removeItem(USER_DATA_KEY);
-  } catch (error) {
-    console.error('Error clearing user data from localStorage:', error);
-  }
-};
-
-/**
- * Update specific fields in user data
- * @param {Object} updates - Fields to update
- */
-export const updateUserData = (updates) => {
-  try {
-    const currentData = getUserData();
-    if (currentData) {
-      const updatedData = {
-        ...currentData,
-        ...updates,
-        timestamp: new Date().toISOString()
+  // Store user data with obfuscated keys
+  storeUserData(userData) {
+    try {
+      console.log('💾 Storing encrypted user data...');
+      
+      // Store main user data encrypted
+      const encryptedData = this.encrypt(userData);
+      localStorage.setItem(this.storageKey, encryptedData);
+      
+      // Store role separately with additional obfuscation
+      const roleData = {
+        r: userData.role,
+        t: Date.now(),
+        uid: userData.uid.slice(-8) // Last 8 chars of UID
       };
-      setUserData(updatedData);
+      const encryptedRole = this.encrypt(roleData);
+      sessionStorage.setItem(this.roleKey, encryptedRole);
+      
+      console.log('✅ User data stored successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to store user data:', error);
+      return false;
     }
-  } catch (error) {
-    console.error('Error updating user data:', error);
   }
-};
 
-/**
- * Check if user is authenticated based on localStorage
- * @returns {boolean} - True if user is authenticated
- */
-export const isUserAuthenticated = () => {
-  const userData = getUserData();
-  return userData && userData.uid;
-};
+  // Retrieve user data
+  getUserData() {
+    try {
+      const encryptedData = localStorage.getItem(this.storageKey);
+      if (!encryptedData) {
+        console.log('📭 No user data found');
+        return null;
+      }
 
-/**
- * Get user role from localStorage
- * @returns {string|null} - User role or null
- */
-export const getUserRole = () => {
-  const userData = getUserData();
-  return userData ? userData.role : null;
-};
+      const userData = this.decrypt(encryptedData);
+      if (!userData) {
+        console.log('🔓 Failed to decrypt user data');
+        this.clearUserData();
+        return null;
+      }
 
-/**
- * Save user preferences to localStorage
- * @param {Object} preferences - User preferences object
- */
-export const saveUserPreferences = (preferences) => {
-  try {
-    const key = 'islandhop_user_preferences';
-    localStorage.setItem(key, JSON.stringify(preferences));
-  } catch (error) {
-    console.error('Error saving user preferences:', error);
+      // Check if token is expired
+      if (userData.tokenExpiresAt && userData.tokenExpiresAt < Date.now()) {
+        console.log('⏰ User session expired');
+        this.clearUserData();
+        return null;
+      }
+
+      console.log('✅ Retrieved user data successfully');
+      return userData;
+    } catch (error) {
+      console.error('❌ Error retrieving user data:', error);
+      this.clearUserData();
+      return null;
+    }
   }
-};
 
-/**
- * Get user preferences from localStorage
- * @returns {Object|null} - User preferences or null
- */
-export const getUserPreferences = () => {
-  try {
-    const key = 'islandhop_user_preferences';
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
-  } catch (error) {
-    console.error('Error getting user preferences:', error);
-    return null;
+  // Get user role only
+  getUserRole() {
+    try {
+      const encryptedRole = sessionStorage.getItem(this.roleKey);
+      if (!encryptedRole) {
+        console.log('📭 No role data found');
+        return null;
+      }
+
+      const roleData = this.decrypt(encryptedRole);
+      if (!roleData || !roleData.r) {
+        console.log('🔓 Failed to decrypt role data');
+        return null;
+      }
+
+      return roleData.r;
+    } catch (error) {
+      console.error('❌ Error retrieving user role:', error);
+      return null;
+    }
   }
-};
 
-/**
- * Clear all user-related data from localStorage
- */
-export const clearAllUserData = () => {
-  try {
-    const keys = [
-      'islandhop_user_data',
-      'islandhop_user_preferences',
-      'islandhop_search_history',
-      'islandhop_recent_locations'
-    ];
+  // Get user UID only
+  getUserUID() {
+    const userData = this.getUserData();
+    return userData ? userData.uid : null;
+  }
+
+  // Check if user is logged in
+  isLoggedIn() {
+    const userData = this.getUserData();
+    return userData !== null;
+  }
+
+  // Clear all user data
+  clearUserData() {
+    console.log('🗑️ Clearing user data...');
+    localStorage.removeItem(this.storageKey);
+    sessionStorage.removeItem(this.roleKey);
     
-    keys.forEach(key => {
-      localStorage.removeItem(key);
-    });
-  } catch (error) {
-    console.error('Error clearing all user data:', error);
+    // Clear any other related storage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('__ih_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log('✅ User data cleared');
   }
-};
 
-/**
- * Save search history
- * @param {Array} searchHistory - Array of search terms
- */
-export const saveSearchHistory = (searchHistory) => {
-  try {
-    const key = 'islandhop_search_history';
-    const limitedHistory = searchHistory.slice(0, 10); // Keep only last 10 searches
-    localStorage.setItem(key, JSON.stringify(limitedHistory));
-  } catch (error) {
-    console.error('Error saving search history:', error);
-  }
-};
+  // Update user data (for profile updates)
+  updateUserData(updates) {
+    const currentData = this.getUserData();
+    if (!currentData) {
+      console.log('❌ No current user data to update');
+      return false;
+    }
 
-/**
- * Get search history
- * @returns {Array} - Array of search terms
- */
-export const getSearchHistory = () => {
-  try {
-    const key = 'islandhop_search_history';
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error getting search history:', error);
-    return [];
+    const updatedData = { ...currentData, ...updates };
+    return this.storeUserData(updatedData);
   }
-};
 
-/**
- * Save recent locations
- * @param {Array} locations - Array of location objects
- */
-export const saveRecentLocations = (locations) => {
-  try {
-    const key = 'islandhop_recent_locations';
-    const limitedLocations = locations.slice(0, 5); // Keep only last 5 locations
-    localStorage.setItem(key, JSON.stringify(limitedLocations));
-  } catch (error) {
-    console.error('Error saving recent locations:', error);
-  }
-};
+  // Check role authorization
+  hasRole(requiredRole) {
+    const userRole = this.getUserRole();
+    if (!userRole) return false;
 
-/**
- * Get recent locations
- * @returns {Array} - Array of location objects
- */
-export const getRecentLocations = () => {
-  try {
-    const key = 'islandhop_recent_locations';
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Error getting recent locations:', error);
-    return [];
+    // Define role hierarchy
+    const roleHierarchy = {
+      'admin': 5,
+      'support': 4,
+      'guide': 3,
+      'driver': 2,
+      'tourist': 1
+    };
+
+    const userLevel = roleHierarchy[userRole] || 0;
+    const requiredLevel = roleHierarchy[requiredRole] || 0;
+
+    return userLevel >= requiredLevel;
   }
-};
+
+  // Get user display info (safe for UI)
+  getUserDisplayInfo() {
+    const userData = this.getUserData();
+    if (!userData) return null;
+
+    return {
+      displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
+      email: userData.email,
+      photoURL: userData.photoURL,
+      role: userData.role,
+      emailVerified: userData.emailVerified
+    };
+  }
+}
+
+// Create singleton instance
+const userDataManager = new UserDataManager();
+
+// Export convenient functions
+export const encryptUserData = (userData) => userDataManager.storeUserData(userData);
+export const getUserData = () => userDataManager.getUserData();
+export const getUserRole = () => userDataManager.getUserRole();
+export const getUserUID = () => userDataManager.getUserUID();
+export const isLoggedIn = () => userDataManager.isLoggedIn();
+export const clearUserData = () => userDataManager.clearUserData();
+export const updateUserData = (updates) => userDataManager.updateUserData(updates);
+export const hasRole = (role) => userDataManager.hasRole(role);
+export const getUserDisplayInfo = () => userDataManager.getUserDisplayInfo();
+export const decryptUserData = (data) => userDataManager.decrypt(data);
+
+// Export the manager for advanced usage
+export default userDataManager;

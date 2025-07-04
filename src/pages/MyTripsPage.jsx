@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/CreateTripModal';
+import myTripsVideo from '../assets/mytrips.mp4';
 
 const placeholder = 'https://placehold.co/400x250';
 
@@ -57,6 +58,34 @@ const MyTripsPage = () => {
     <div className="min-h-screen bg-white">
       {/* Navbar */}
       <Navbar />
+
+      {/* Hero Video Section */}
+      <section className="relative w-full h-[40vh] md:h-[50vh] overflow-hidden">
+        <video 
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          autoPlay 
+          muted 
+          loop
+          playsInline
+        >
+          <source src={myTripsVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        
+        {/* Video Overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        
+        {/* Hero Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+            Your Travel Journey<br />
+            Starts Here
+          </h1>
+          <p className="text-lg md:text-xl mb-6 max-w-2xl">
+            Manage, plan, and discover amazing experiences with IslandHop
+          </p>
+        </div>
+      </section>
 
       {/* Main Content */}
       <main className="w-full py-8">

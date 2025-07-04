@@ -1,43 +1,42 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
+import AdminDashboardLayout from '../components/AdminDashboardLayout';
 
-// Placeholder components for admin routes
-const AdminDashboard = () => (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-      Admin Dashboard
-    </h1>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Users</h2>
-        <p className="text-gray-600 dark:text-gray-400">Manage all users</p>
-      </div>
-      <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Analytics</h2>
-        <p className="text-gray-600 dark:text-gray-400">View system analytics</p>
-      </div>
-      <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Settings</h2>
-        <p className="text-gray-600 dark:text-gray-400">System configuration</p>
-      </div>
-      <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold mb-2">Reports</h2>
-        <p className="text-gray-600 dark:text-gray-400">Generate reports</p>
-      </div>
-    </div>
-  </div>
-);
+// Import admin page components
+import AdminDashboard from '../pages/admin/AdminDashboard';
+import UserAccounts from '../pages/admin/UserAccounts';
+import Analytics from '../pages/admin/Analytics';
+import SystemSettings from '../pages/admin/SystemSettings';
+import Reviews from '../pages/admin/Reviews';
+import Notifications from '../pages/admin/Notifications';
+import ProfileDetails from '../pages/admin/ProfileDetails';
+import SystemHistory from '../pages/admin/SystemHistory';
+import APIs from '../pages/admin/APIs';
+import AISettings from '../pages/admin/AISettings';
+import Hosting from '../pages/admin/Hosting';
+import Accounts from '../pages/admin/Accounts';
+import UpdateUserProfile from '../pages/admin/UpdateUserProfile';
 
 const AdminRoutes = () => {
   return (
-    <DashboardLayout userRole="admin">
+    <AdminDashboardLayout>
       <Routes>
         <Route path="/" element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        {/* Add other admin routes here */}
+        <Route path="users" element={<UserAccounts />} />
+        <Route path="accounts" element={<Accounts />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="settings" element={<SystemSettings />} />
+        <Route path="ai-settings" element={<AISettings />} />
+        <Route path="hosting" element={<Hosting />} />
+        <Route path="reviews" element={<Reviews />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="profile" element={<ProfileDetails />} />
+        <Route path="history" element={<SystemHistory />} />
+        <Route path="apis" element={<APIs />} />
+        <Route path="update-user/:userId" element={<UpdateUserProfile />} />
       </Routes>
-    </DashboardLayout>
+    </AdminDashboardLayout>
   );
 };
 
