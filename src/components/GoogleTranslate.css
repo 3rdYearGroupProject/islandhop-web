@@ -1,0 +1,49 @@
+/* Hide Google Translate default elements */
+.goog-te-gadget {
+  display: none !important;
+}
+
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+.goog-te-menu-frame {
+  display: none !important;
+}
+
+/* Prevent the Google Translate bar from pushing the page down */
+body {
+  top: 0 !important;
+}
+
+.skiptranslate {
+  display: none !important;
+}
+
+/* Hide the "Powered by Google Translate" text */
+.goog-logo-link {
+  display: none !important;
+}
+
+.goog-te-gadget > span > a {
+  display: none !important;
+}
+
+.goog-te-gadget .goog-te-combo {
+  display: none !important;
+}
+
+/* Ensure dropdown is above other elements */
+.language-dropdown {
+  z-index: 9999 !important;
+}
+
+/* Style for when page is being translated */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+/* Remove the translate notification bar */
+.goog-te-balloon-frame {
+  display: none !important;
+}
