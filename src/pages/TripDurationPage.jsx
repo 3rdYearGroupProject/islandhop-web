@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin } fro
 import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
 import TripProgressBar from '../components/TripProgressBar';
+import api from '../api/axios';
 
 const TripDurationPage = () => {
   const location = useLocation();
@@ -13,6 +14,7 @@ const TripDurationPage = () => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [flightData, setFlightData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const leftCardRef = useRef(null);
   const [leftCardHeight, setLeftCardHeight] = useState('auto');
 
@@ -82,14 +84,74 @@ const TripDurationPage = () => {
     navigate('/trips');
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selectedDates.length > 0) {
-      navigate('/trip-preferences', { 
-        state: { 
-          tripName, 
-          selectedDates 
-        } 
+      setIsCreatingTrip(true);
+      
+      try {
+        // Format dates for backend (ISO format)
+        const startDate = selectedDates[0].toISOString().split('T')[0];
+        const endDate = selectedDates[selectedDates.length - 1].toISOString().split('T')[0];
+        
+        // Create basic trip in backend
+        const result = await createBasicTrip({
+          tripName,
+          startDate,
+          endDate
+        });
+        
+        console.log('🎉 Trip created successfully:', result);
+        
+        // Navigate to next step with trip data
+        navigate('/trip-preferences', { 
+          state: { 
+            tripName, 
+            selectedDates,
+            tripId: result.tripId,
+            trip: result.trip
+          } 
+        });
+      } catch (error) {
+        console.error('Failed to create trip:', error);
+        // You might want to show a toast error here
+        // For now, continue without backend trip creation
+        navigate('/trip-preferences', { 
+          state: { 
+            tripName, 
+            selectedDates 
+          } 
+        });
+      } finally {
+        setIsCreatingTrip(false);
+      }
+    }
+  };
+
+  // Create basic trip with minimal information to reduce initial friction
+  const createBasicTrip = async (tripData) => {
+    console.log('🚀 Sending trip creation request to backend...', {
+      tripName: tripData.tripName,
+      startDate: tripData.startDate,
+      endDate: tripData.endDate
+    });
+    
+    try {
+      const response = await api.post('/trip/create-basic', {
+        tripName: tripData.tripName,
+        startDate: tripData.startDate,
+        endDate: tripData.endDate
       });
+
+      console.log('✅ Trip creation response received:', response.data);
+      
+      return {
+        tripId: response.data.tripId,
+        trip: response.data.trip,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Error creating trip:', error);
+      throw new Error(`HTTP error! status: ${error.response?.status || 'unknown'}`);
     }
   };
 
@@ -236,15 +298,15 @@ const TripDurationPage = () => {
               </button>
               <button
                 onClick={handleContinue}
-                disabled={selectedDates.length === 0}
+                disabled={selectedDates.length === 0 || isCreatingTrip}
                 className={`px-8 py-3 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                  selectedDates.length > 0
+                  selectedDates.length > 0 && !isCreatingTrip
                     ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
                 style={{ minWidth: '180px' }}
               >
-                Continue to Preferences
+                {isCreatingTrip ? 'Creating Trip...' : 'Continue to Preferences'}
               </button>
             </div>
           </div>

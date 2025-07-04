@@ -25,6 +25,7 @@ import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
+import api from '../api/axios';
 
 const placeholder = 'https://placehold.co/400x250';
 
@@ -316,10 +317,45 @@ const MyTripsPage = () => {
     }
   };
 
-  const handleCreateTrip = (tripData) => {
-    // Navigate to trip duration page with trip name
-    navigate('/trip-duration', { state: { tripName: tripData.name } });
-    setIsCreateTripModalOpen(false);
+  // Create basic trip with minimal information to reduce initial friction
+  const createBasicTrip = async (tripData) => {
+    console.log('[createBasicTrip] Sending request:', tripData);
+    try {
+      const response = await api.post('/trip/create-basic', {
+        tripName: tripData.name,
+        startDate: tripData.startDate, // ISO date string
+        endDate: tripData.endDate // ISO date string
+      }, {
+        withCredentials: true // Essential for session management
+      });
+      console.log('[createBasicTrip] Response:', response);
+      if (response.status !== 200 || !response.data) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return {
+        tripId: response.data.tripId,
+        trip: response.data.trip,
+        message: response.data.message
+      };
+    } catch (err) {
+      console.error('[createBasicTrip] Error:', err);
+      throw err;
+    }
+  };
+
+  const handleCreateTrip = async (tripData) => {
+    try {
+      // You may want to collect startDate/endDate from tripData or UI in the future
+      const basicTrip = await createBasicTrip(tripData);
+      // Optionally, you can store tripId or pass it to the next page
+      console.log('[handleCreateTrip] Created trip:', basicTrip);
+      // Navigate to trip duration page with trip name (and optionally tripId)
+      navigate('/trip-duration', { state: { tripName: tripData.name, tripId: basicTrip.tripId } });
+      setIsCreateTripModalOpen(false);
+    } catch (err) {
+      // Handle error (show toast, etc.)
+      console.error('[handleCreateTrip] Failed to create trip:', err);
+    }
   };
 
   return (
