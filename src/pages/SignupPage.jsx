@@ -105,12 +105,7 @@ const SignupPage = () => {
 
       if (res.status === 200) {
         toast.success('Account created successfully! Please sign in to continue.', {
-          position: 'top-right',
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
+          duration: 3000
         });
         
         // Wait a moment for the toast to be visible, then navigate
@@ -120,10 +115,7 @@ const SignupPage = () => {
       } else {
         // If backend fails, delete Firebase user
         await deleteUser(userCredential.user);
-        toast.error('Registration failed on server. Please try again.', {
-          position: 'top-right',
-          autoClose: 4000,
-        });
+        toast.error('Registration failed on server. Please try again.');
         setError('Registration failed on server');
       }
     } catch (err) {
@@ -132,10 +124,7 @@ const SignupPage = () => {
         try { await deleteUser(userCredential.user); } catch (e) { /* ignore */ }
       }
       
-      toast.error(err.message || 'Registration failed. Please try again.', {
-        position: 'top-right',
-        autoClose: 4000,
-      });
+      toast.error(err.message || 'Registration failed. Please try again.');
       
       setError(err.message || 'Registration error');
       console.log('Error during email signup:', err);
@@ -208,17 +197,20 @@ const SignupPage = () => {
         }, 1000);
       } else {
         // If backend fails, delete Firebase user
-        await deleteUser(result.user);
-        toast.error('Google authentication failed on server. Please try again.', {
-          position: 'top-right',
-          autoClose: 4000,
+        // Use a promise instead of await inside setTimeout
+        deleteUser(result.user).then(() => {
+          toast.error('Google authentication failed on server. Please try again.', {
+            position: 'top-right',
+            autoClose: 4000,
+          });
+          setError('Google authentication failed on server');
         });
-        setError('Google authentication failed on server');
       }
     } catch (err) {
       // If Firebase user was created but any error (including network) occurs, delete user
       if (result && result.user) {
-        try { await deleteUser(result.user); } catch (e) { /* ignore */ }
+        // Use a promise instead of await inside catch
+        deleteUser(result.user).catch(() => {});
       }
       
       toast.error(err.message || 'Google sign-up failed. Please try again.', {

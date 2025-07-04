@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { toast } from 'react-toastify';
+import { auth } from '../firebase';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useToast } from '../components/ToastProvider';
 import sriLankaVideo from '../assets/sri-lanka-video.mp4';
 import islandHopLogo from '../assets/IslandHopWhite.png';
 import islandHopLogoWhite from '../assets/IslandHopWhite.png';
 import islandHopIcon from '../assets/islandHopIcon.png';
+import api from '../api/axios';
+import { encryptUserData } from '../utils/userStorage';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -15,8 +18,36 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
+
+  // Function to securely store user data
+  const storeUserData = (firebaseUser, role) => {
+    console.log('🔐 Storing user data securely...');
+    
+    const userData = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      photoURL: firebaseUser.photoURL,
+      emailVerified: firebaseUser.emailVerified,
+      role: role,
+      loginTimestamp: Date.now(),
+      tokenExpiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+      lastLoginMethod: firebaseUser.providerData?.[0]?.providerId || 'password'
+    };
+
+    console.log('📝 User data to store:', {
+      uid: userData.uid,
+      email: userData.email,
+      role: userData.role,
+      loginMethod: userData.lastLoginMethod
+    });
+
+    // Store encrypted user data
+    encryptUserData(userData);
+    console.log('✅ User data stored securely');
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -25,18 +56,113 @@ const LoginPage = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-
+    setLoading(true);
+    
     try {
-      await login(formData.email, formData.password);
-      toast.success('Welcome back!');
-      // Navigation will be handled by App.jsx based on user role
-    } catch (error) {
-      setError(error.message || 'Login failed');
-      toast.error(error.message || 'Login failed');
+      console.log('📧 Starting email login...');
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const idToken = await userCredential.user.getIdToken();
+
+      console.log('🔑 Got Firebase token, sending to backend...');
+      // Send ID token to backend for session login
+      const res = await api.post('/login', { idToken });
+      console.log('📨 Login response:', res);
+
+      if (res.status === 200 && res.data && res.data.role) {
+        // Store user data
+        storeUserData(userCredential.user, res.data.role);
+        
+        toast.success('Welcome back!', { duration: 2000 });
+        
+        // Navigate based on role
+        const userRole = res.data.role;
+        setTimeout(() => {
+          switch (userRole) {
+            case 'admin':
+              navigate('/admin/dashboard');
+              break;
+            case 'support':
+              navigate('/support/dashboard');
+              break;
+            case 'guide':
+              navigate('/guide/dashboard');
+              break;
+            case 'driver':
+              navigate('/driver/dashboard');
+              break;
+            case 'tourist':
+            default:
+              navigate('/tourist/dashboard');
+              break;
+          }
+        }, 1000);
+      } else {
+        toast.error('Login failed. Please check your credentials.');
+        setError('Login failed');
+      }
+    } catch (err) {
+      setError(err.message || 'Login error');
+      toast.error(err.message || 'Login failed. Please check your credentials.');
+      console.error('❌ Error during email login:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    console.log('🔍 Starting Google login...');
+    setError('');
+    setLoading(true);
+    
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      console.log('🔑 Got Google Firebase token, sending to backend...');
+      // Send ID token to backend for session login
+      const res = await api.post('/login', { idToken });
+      console.log('📨 Google login response:', res);
+
+      if (res.status === 200 && res.data && res.data.role) {
+        // Store user data
+        storeUserData(result.user, res.data.role);
+        
+        toast.success('Welcome back!', { duration: 2000 });
+        
+        // Navigate based on role immediately for Google login
+        const userRole = res.data.role;
+        setTimeout(() => {
+          switch (userRole) {
+            case 'admin':
+              navigate('/admin/dashboard');
+              break;
+            case 'support':
+              navigate('/support/dashboard');
+              break;
+            case 'guide':
+              navigate('/guide/dashboard');
+              break;
+            case 'driver':
+              navigate('/driver/dashboard');
+              break;
+            case 'tourist':
+            default:
+              navigate('/tourist/dashboard');
+              break;
+          }
+        }, 1000);
+      } else {
+        toast.error('Google login failed. Please try again.');
+        setError('Google login failed');
+      }
+    } catch (err) {
+      setError(err.message || 'Google login error');
+      toast.error(err.message || 'Google login failed. Please try again.');
+      console.error('❌ Error during Google login:', err);
     } finally {
       setLoading(false);
     }
@@ -99,7 +225,7 @@ const LoginPage = () => {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleEmailLogin} className="space-y-6">
             <div>
               <input
                 type="email"
@@ -162,7 +288,9 @@ const LoginPage = () => {
           
           <button
             type="button"
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-full text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-full text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-black focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" className="mr-3">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

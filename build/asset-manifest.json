@@ -1,0 +1,35 @@
+{
+  "files": {
+    "main.css": "/static/css/main.31b74abf.css",
+    "main.js": "/static/js/main.080402d5.js",
+    "static/media/waterfall.mp4": "/static/media/waterfall.1e217633a3ff54f26d36.mp4",
+    "static/media/mytrips.mp4": "/static/media/mytrips.3037e587b3c87bf8df9b.mp4",
+    "static/media/sri-lanka-video.mp4": "/static/media/sri-lanka-video.1cb37d704bf2ededd03d.mp4",
+    "static/media/pool4k.mp4": "/static/media/pool4k.1b5e99e46d794f1d4216.mp4",
+    "static/media/about.mp4": "/static/media/about.481dab10c7fded72940a.mp4",
+    "static/media/pinnawala.jpg": "/static/media/pinnawala.29210a4c12bd47de935f.jpg",
+    "static/media/sigiriya.jpeg": "/static/media/sigiriya.ed05eaabb0273d7e6700.jpeg",
+    "static/media/ella.jpg": "/static/media/ella.b96eec3f80e18c64509a.jpg",
+    "static/media/sigiriya.jpg": "/static/media/sigiriya.f97883a7ae050e7dc2e1.jpg",
+    "static/media/whale-watching-mirissa.jpg": "/static/media/whale-watching-mirissa.cd22cd3b210d07f65860.jpg",
+    "static/media/colombo-tour.jpg": "/static/media/colombo-tour.3aae250f970f14416bd3.jpg",
+    "static/media/colombo.jpg": "/static/media/colombo.3aae250f970f14416bd3.jpg",
+    "static/media/nuwara-eliya.jpg": "/static/media/nuwara-eliya.ebd182509683e22334cd.jpg",
+    "static/media/galle.jpg": "/static/media/galle.f84c0183e2e1c4d3d43e.jpg",
+    "static/media/mirissa.jpg": "/static/media/mirissa.08515989e70a16c2820b.jpg",
+    "static/media/tea-plantations.jpg": "/static/media/tea-plantations.9002c53c1d3d2e3e87a4.jpg",
+    "static/media/galle-fort.jpg": "/static/media/galle-fort.c5ba3137b2b7f4f8cd14.jpg",
+    "static/media/kandy.jpg": "/static/media/kandy.05a8a55a007df3e016fa.jpg",
+    "static/media/anuradhapura.jpg": "/static/media/anuradhapura.5a570133e9e22250750e.jpg",
+    "static/media/IslandHop.png": "/static/media/IslandHop.3cad3871d8ac75e266bd.png",
+    "static/media/IslandHopWhite.png": "/static/media/IslandHopWhite.c84bea6dea0ccaebdfa3.png",
+    "static/media/islandHopIcon.png": "/static/media/islandHopIcon.ee8e929f8a1faa23ec06.png",
+    "index.html": "/index.html",
+    "main.31b74abf.css.map": "/static/css/main.31b74abf.css.map",
+    "main.080402d5.js.map": "/static/js/main.080402d5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.31b74abf.css",
+    "static/js/main.080402d5.js"
+  ]
+}

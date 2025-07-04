@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { ToastProvider } from './components/ToastProvider'
 
 // --- Route Imports ---
 import SupportRoutes from './routes/SupportRoutes';
@@ -18,22 +19,24 @@ import './App.css'
 
 function App() {
   return (
-    <Routes>
-      {/* General/Public and Tourist Routes */}
-      <Route path="/*" element={<GeneralRoutes />} />
-      {/* Admin Dashboard */}
-      <Route path="/admin/*" element={<AdminRoutes />} />
-      {/* Support Dashboard */}
-      <Route path="/support/*" element={<SupportRoutes />} />
-      {/* Tourist Dashboard */}
-      <Route path="/tourist/*" element={<TouristRoutes />} /> 
-      {/* Driver Dashboard */}
-      <Route path="/driver/*" element={<DriverRoutes />} />
-      {/* Guide Dashboard */}
-      <Route path="/guide/*" element={<GuideRoutes />} />
-      {/* Catch-all */}
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <ToastProvider>
+      <Routes>
+        {/* General/Public and Tourist Routes */}
+        <Route path="/*" element={<GeneralRoutes />} />
+        {/* Admin Dashboard */}
+        <Route path="/admin/*" element={<AdminRoutes />} />
+        {/* Support Dashboard */}
+        <Route path="/support/*" element={<SupportRoutes />} />
+        {/* Tourist Dashboard */}
+        <Route path="/tourist/*" element={<TouristRoutes />} /> 
+        {/* Driver Dashboard */}
+        <Route path="/driver/*" element={<DriverRoutes />} />
+        {/* Guide Dashboard */}
+        <Route path="/guide/*" element={<GuideRoutes />} />
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </ToastProvider>
   )
 }
 
