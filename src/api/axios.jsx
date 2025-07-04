@@ -1,8 +1,16 @@
 import axios from 'axios';
 import errorLogger from '../utils/errorLogger';
 
+// Debug environment variables
+console.log('🔧 Environment Debug:', {
+  NODE_ENV: process.env.NODE_ENV,
+  API_BASE_URL: process.env.REACT_APP_API_BASE_URL_USER_SERVICES,
+  ENVIRONMENT: process.env.REACT_APP_ENVIRONMENT,
+  ALL_ENV_VARS: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
+});
+
 const api = axios.create({
-  baseURL: import.meta.env.REACT_APP_API_BASE_URL_USER_SERVICES,
+  baseURL: process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1',
   withCredentials: true, 
 });
 

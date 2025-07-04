@@ -268,6 +268,28 @@ class ErrorLogger {
   }
 }
 
+// Check for common environment variable issues
+const checkEnvironmentVariables = () => {
+  const requiredEnvVars = [
+    'REACT_APP_API_BASE_URL_USER_SERVICES',
+    'REACT_APP_FIREBASE_API_KEY',
+    'REACT_APP_FIREBASE_PROJECT_ID'
+  ];
+  
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    const error = new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    error.name = 'EnvironmentConfigError';
+    logError(error, { missingVars });
+  }
+  
+  return missingVars.length === 0;
+};
+
+// Initialize environment check
+checkEnvironmentVariables();
+
 // Create global instance
 const errorLogger = new ErrorLogger();
 
@@ -277,5 +299,7 @@ window.getErrorLogs = () => errorLogger.getErrorLogs();
 window.clearErrorLogs = () => errorLogger.clearErrorLogs();
 window.exportErrorLogs = () => errorLogger.exportErrorLogs();
 window.getErrorSummary = () => errorLogger.getErrorSummary();
+window.checkEnvironmentVariables = checkEnvironmentVariables;
 
 export default errorLogger;
+export { checkEnvironmentVariables };
