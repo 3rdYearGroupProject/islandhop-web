@@ -18,10 +18,12 @@ import {
   Sparkles,
   Globe,
   Camera,
-  Heart
+  Heart,
+  ChevronDown
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import CreateTripModal from '../components/CreateTripModal';
+import CreateTripModal from '../components/tourist/CreateTripModal';
+import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 
 const placeholder = 'https://placehold.co/400x250';
@@ -35,13 +37,14 @@ const MyTripsPage = () => {
   const location = useLocation();
   
   const [trips, setTrips] = useState([
+    // Trip History (mostly expired, some completed)
     {
       id: 1,
       name: 'Summer Adventure in Sri Lanka',
       dates: 'Jun 11 → Jun 21, 2025',
       destination: 'Sri Lanka',
-      image: placeholder,
-      status: 'completed',
+      image: require('../assets/destinations/sigiriya.jpg'),
+      status: 'expired',
       progress: 100,
       daysLeft: 0,
       travelers: 2,
@@ -52,11 +55,125 @@ const MyTripsPage = () => {
       spent: 2350
     },
     {
+      id: 4,
+      name: 'Wildlife Safari',
+      dates: 'May 2 → May 10, 2025',
+      destination: 'Yala National Park',
+      image: require('../assets/destinations/anuradhapura.jpg'),
+      status: 'expired',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 3,
+      rating: 4.6,
+      memories: 32,
+      highlights: ['Leopard Spotting', 'Safari Jeep', 'Bird Watching'],
+      budget: 2100,
+      spent: 2050
+    },
+    {
+      id: 5,
+      name: 'Hill Country Escape',
+      dates: 'Apr 10 → Apr 18, 2025',
+      destination: 'Nuwara Eliya',
+      image: require('../assets/destinations/nuwara-eliya.jpg'),
+      status: 'expired',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 2,
+      rating: 4.9,
+      memories: 28,
+      highlights: ['Tea Estates', 'Hiking', 'Waterfalls'],
+      budget: 1800,
+      spent: 1700
+    },
+    {
+      id: 6,
+      name: 'Historic Wonders',
+      dates: 'Mar 1 → Mar 7, 2025',
+      destination: 'Anuradhapura',
+      image: require('../assets/destinations/anuradhapura.jpg'),
+      status: 'expired',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 1,
+      rating: 4.2,
+      memories: 12,
+      highlights: ['Sacred City', 'Ancient Ruins'],
+      budget: 1200,
+      spent: 1100
+    },
+    {
+      id: 10,
+      name: 'City Lights',
+      dates: 'Feb 1 → Feb 5, 2025',
+      destination: 'Colombo',
+      image: require('../assets/destinations/colombo.jpg'),
+      status: 'expired',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 2,
+      rating: 4.0,
+      memories: 10,
+      highlights: ['Nightlife', 'Shopping'],
+      budget: 900,
+      spent: 850
+    },
+    {
+      id: 11,
+      name: 'Solo Explorer',
+      dates: 'Jan 10 → Jan 15, 2025',
+      destination: 'Jaffna',
+      image: require('../assets/destinations/ella.jpg'),
+      status: 'expired',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 1,
+      rating: 3.8,
+      memories: 7,
+      highlights: ['Nallur Temple'],
+      budget: 800,
+      spent: 700
+    },
+    {
+      id: 12,
+      name: 'Expired Beach Bash',
+      dates: 'Dec 1 → Dec 7, 2024',
+      destination: 'Mirissa',
+      image: require('../assets/destinations/mirissa.jpg'),
+      status: 'expired',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 5,
+      rating: 4.2,
+      memories: 12,
+      highlights: ['Whale Watching', 'Beach Party'],
+      budget: 1800,
+      spent: 1700
+    },
+    // Only one completed trip for variety
+    {
+      id: 13,
+      name: 'Wellness Getaway',
+      dates: 'Nov 10 → Nov 15, 2024',
+      destination: 'Kandy',
+      image: require('../assets/destinations/kandy.jpg'),
+      status: 'completed',
+      progress: 100,
+      daysLeft: 0,
+      travelers: 2,
+      rating: 4.7,
+      memories: 15,
+      highlights: ['Ayurveda Spa', 'Botanical Gardens'],
+      budget: 2000,
+      spent: 1900
+    },
+    // Ongoing Trip (active)
+    {
       id: 2,
       name: 'Cultural Heritage Tour',
       dates: 'Aug 15 → Aug 25, 2025',
       destination: 'Central Province',
-      image: placeholder,
+      image: require('../assets/destinations/kandy.jpg'),
       status: 'active',
       progress: 65,
       daysLeft: 12,
@@ -67,12 +184,13 @@ const MyTripsPage = () => {
       budget: 3200,
       spent: 1200
     },
+    // Upcoming (draft/upcoming)
     {
       id: 3,
       name: 'Beach Retreat',
       dates: 'Not set',
       destination: 'Southern Coast',
-      image: placeholder,
+      image: require('../assets/destinations/mirissa.jpg'),
       status: 'draft',
       progress: 25,
       daysLeft: null,
@@ -81,6 +199,54 @@ const MyTripsPage = () => {
       memories: 0,
       highlights: [],
       budget: 1800,
+      spent: 0
+    },
+    {
+      id: 7,
+      name: 'Family Fun Trip',
+      dates: 'Dec 20 → Dec 28, 2025',
+      destination: 'Colombo',
+      image: require('../assets/destinations/colombo.jpg'),
+      status: 'upcoming',
+      progress: 10,
+      daysLeft: 5,
+      travelers: 5,
+      rating: null,
+      memories: 0,
+      highlights: ['Zoo', 'Amusement Park'],
+      budget: 3000,
+      spent: 0
+    },
+    {
+      id: 8,
+      name: 'Adventure with Friends',
+      dates: 'Jan 5 → Jan 12, 2026',
+      destination: 'Ella',
+      image: require('../assets/destinations/ella.jpg'),
+      status: 'upcoming',
+      progress: 0,
+      daysLeft: 180,
+      travelers: 4,
+      rating: null,
+      memories: 0,
+      highlights: ['Nine Arches Bridge', 'Little Adam’s Peak'],
+      budget: 2200,
+      spent: 0
+    },
+    {
+      id: 9,
+      name: 'Wellness Getaway',
+      dates: 'Feb 10 → Feb 15, 2026',
+      destination: 'Kandy',
+      image: require('../assets/destinations/kandy.jpg'),
+      status: 'draft',
+      progress: 0,
+      daysLeft: null,
+      travelers: 2,
+      rating: null,
+      memories: 0,
+      highlights: ['Ayurveda Spa', 'Botanical Gardens'],
+      budget: 2000,
       spent: 0
     }
   ]);
@@ -135,126 +301,20 @@ const MyTripsPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'active': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'draft': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'active':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'upcoming':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'expired':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
-
-  const TripCard = ({ trip }) => (
-    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
-      <div className="relative">
-        <img 
-          src={trip.image} 
-          alt={trip.destination}
-          className="w-full h-48 sm:h-56 object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute top-4 left-4">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(trip.status)}`}>
-            {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
-          </span>
-        </div>
-        <div className="absolute top-4 right-4">
-          <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-            <Heart className="h-4 w-4 text-gray-600 hover:text-red-500" />
-          </button>
-        </div>
-        {trip.status === 'active' && trip.progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
-            <div className="flex items-center justify-between text-white text-sm mb-2">
-              <span>Trip Progress</span>
-              <span>{trip.progress}%</span>
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-2">
-              <div 
-                className="bg-white h-2 rounded-full transition-all duration-500"
-                style={{ width: `${trip.progress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-            {trip.name}
-          </h3>
-          <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded">
-            <MoreHorizontal className="h-4 w-4 text-gray-500" />
-          </button>
-        </div>
-        
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center text-gray-600">
-            <MapPin className="h-4 w-4 mr-2 text-blue-500" />
-            <span className="text-sm">{trip.destination}</span>
-          </div>
-          
-          <div className="flex items-center text-gray-600">
-            <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-            <span className="text-sm">{trip.dates}</span>
-            {trip.daysLeft && trip.daysLeft > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full">
-                {trip.daysLeft} days left
-              </span>
-            )}
-          </div>
-          
-          {trip.travelers && (
-            <div className="flex items-center text-gray-600">
-              <Users className="h-4 w-4 mr-2 text-blue-500" />
-              <span className="text-sm">{trip.travelers} traveler{trip.travelers !== 1 ? 's' : ''}</span>
-            </div>
-          )}
-        </div>
-
-        {trip.highlights && trip.highlights.length > 0 && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-1">
-              {trip.highlights.slice(0, 3).map((highlight, index) => (
-                <span key={index} className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md">
-                  {highlight}
-                </span>
-              ))}
-              {trip.highlights.length > 3 && (
-                <span className="inline-block px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md">
-                  +{trip.highlights.length - 3} more
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            {trip.rating && (
-              <div className="flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                <span>{trip.rating}</span>
-              </div>
-            )}
-            {trip.memories > 0 && (
-              <div className="flex items-center">
-                <Camera className="h-4 w-4 mr-1" />
-                <span>{trip.memories}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-              <Share2 className="h-4 w-4" />
-            </button>
-            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-              <Edit3 className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const handleCreateTrip = (tripData) => {
     // Navigate to trip duration page with trip name
@@ -329,92 +389,175 @@ const MyTripsPage = () => {
                   />
                 </div>
                 {/* Filter */}
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="flex-[0_1_160px] min-w-[120px] max-w-[160px] px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none"
-                >
-                  <option value="all">All Trips</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="draft">Drafts</option>
-                </select>
-                {/* Sort */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="flex-[0_1_160px] min-w-[120px] max-w-[160px] px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none"
-                >
-                  <option value="recent">Recent</option>
-                  <option value="name">Name</option>
-                  <option value="date">Date</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <button
-              onClick={() => setIsCreateTripModalOpen(true)}
-              className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-2xl p-8 text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="relative z-10">
-                <Plus className="h-8 w-8 mb-4 group-hover:rotate-90 transition-transform duration-300" />
-                <h3 className="text-xl font-bold mb-2">Create New Trip</h3>
-                <p className="text-blue-100">Start planning your next adventure</p>
-              </div>
-            </button>
-            
-            <button className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 rounded-2xl p-8 text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="relative z-10">
-                <Sparkles className="h-8 w-8 mb-4 group-hover:rotate-12 transition-transform duration-300" />
-                <h3 className="text-xl font-bold mb-2">AI Trip Planner</h3>
-                <p className="text-purple-100">Let AI create the perfect itinerary</p>
-              </div>
-            </button>
-            
-            <button className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-2xl p-8 text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="relative z-10">
-                <Globe className="h-8 w-8 mb-4 group-hover:rotate-12 transition-transform duration-300" />
-                <h3 className="text-xl font-bold mb-2">Explore Templates</h3>
-                <p className="text-green-100">Browse popular trip templates</p>
-              </div>
-            </button>
-          </div>
-
-          {/* Trips Grid */}
-          {sortedTrips.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-              {sortedTrips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20">
-              <div className="max-w-md mx-auto">
-                <div className="w-24 h-24 mx-auto mb-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Globe className="h-12 w-12 text-blue-600" />
+                <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none pr-10"
+                  >
+                    <option value="all">All Trips</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="draft">Drafts</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">No trips found</h3>
-                <p className="text-gray-600 mb-8">
-                  {searchTerm || filterStatus !== 'all' 
-                    ? "Try adjusting your search or filter criteria"
-                    : "Your travel adventure starts with a single step. Create your first trip!"}
-                </p>
-                <button
-                  onClick={() => setIsCreateTripModalOpen(true)}
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="mr-2 h-5 w-5" />
-                  Create Your First Trip
-                </button>
+                {/* Sort */}
+                <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none pr-10"
+                  >
+                    <option value="recent">Recent</option>
+                    <option value="name">Name</option>
+                    <option value="date">Date</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                </div>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Quick Actions Removed */}
+
+          {/* Highlight Ongoing Trip */}
+          {(() => {
+            const ongoingTrip = sortedTrips.find(trip => trip.status === 'active');
+            const otherTrips = sortedTrips.filter(trip => trip.status !== 'active');
+            return (
+              <>
+                {ongoingTrip && (
+                  <div className="flex justify-center mb-16">
+                    <div className="relative bg-blue-50 rounded-3xl shadow-2xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-4xl overflow-hidden">
+                      {/* Image */}
+                      <div className="md:w-2/5 w-full min-h-[260px] relative">
+                        <img
+                          src={ongoingTrip.image}
+                          alt={ongoingTrip.destination}
+                          className="absolute inset-0 w-full h-full object-cover object-center md:rounded-none"
+                          style={{ borderTopLeftRadius: '1.5rem', borderBottomLeftRadius: '1.5rem' }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                        <span className="absolute top-4 left-4 px-3 py-1 bg-blue-500 text-white text-xs rounded-full font-semibold uppercase tracking-wide">Ongoing Trip</span>
+                      </div>
+                      {/* Details */}
+                      <div className="flex-1 flex flex-col justify-center px-8 py-8">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-gray-500 text-xs">{ongoingTrip.dates}</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-blue-900 mb-2">{ongoingTrip.name}</h2>
+                        <div className="flex items-center text-gray-700 mb-2">
+                          <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                          <span className="text-base font-medium">{ongoingTrip.destination}</span>
+                        </div>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex items-center text-gray-600">
+                            <Users className="h-4 w-4 mr-1 text-blue-400" />
+                            <span className="text-sm">{ongoingTrip.travelers} traveler{ongoingTrip.travelers !== 1 ? 's' : ''}</span>
+                          </div>
+                          {ongoingTrip.daysLeft && (
+                            <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-semibold">{ongoingTrip.daysLeft} days left</span>
+                          )}
+                        </div>
+                        <div className="w-full bg-blue-200/40 rounded-full h-3 mb-2">
+                          <div className="bg-blue-500 h-3 rounded-full transition-all duration-500" style={{ width: `${ongoingTrip.progress}%` }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500 mb-4">
+                          <span>Progress</span>
+                          <span>{ongoingTrip.progress}%</span>
+                        </div>
+                        {ongoingTrip.highlights && ongoingTrip.highlights.length > 0 && (
+                          <div className="mb-2">
+                            <div className="flex flex-wrap gap-1">
+                              {ongoingTrip.highlights.slice(0, 3).map((highlight, index) => (
+                                <span key={index} className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md">{highlight}</span>
+                              ))}
+                              {ongoingTrip.highlights.length > 3 && (
+                                <span className="inline-block px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md">+{ongoingTrip.highlights.length - 3} more</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-6 mt-4">
+                          {ongoingTrip.rating && (
+                            <div className="flex items-center">
+                              <Star className="h-5 w-5 text-yellow-400 fill-current mr-1" />
+                              <span className="font-semibold text-lg text-gray-700">{ongoingTrip.rating}</span>
+                            </div>
+                          )}
+                          {ongoingTrip.memories > 0 && (
+                            <div className="flex items-center">
+                              <Camera className="h-5 w-5 mr-1 text-blue-400" />
+                              <span className="font-semibold text-lg text-gray-700">{ongoingTrip.memories} memories</span>
+                            </div>
+                          )}
+                          <div className="flex items-center">
+                            <span className="font-semibold text-lg text-gray-700">Budget: ${ongoingTrip.budget}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Categorized Other Trips */}
+                {(() => {
+                  const upcoming = otherTrips.filter(trip => trip.status === 'draft' || trip.status === 'upcoming' || trip.status === 'active');
+                  const history = otherTrips.filter(trip => trip.status === 'completed' || trip.status === 'expired');
+                  return (
+                    <>
+                      {upcoming.length > 0 && (
+                        <div className="mb-12">
+                          <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Upcoming Trips</h2>
+                          <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
+                            {upcoming.map((trip) => (
+                              <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
+                                <TripCard trip={trip} getStatusColor={getStatusColor} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {history.length > 0 && (
+                        <div className="mb-12">
+                          <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-6">Trip History</h2>
+                          <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
+                            {history.map((trip) => (
+                              <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
+                                <TripCard trip={trip} getStatusColor={getStatusColor} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {upcoming.length === 0 && history.length === 0 && (
+                        <div className="text-center py-20">
+                          <div className="max-w-md mx-auto">
+                            <div className="w-24 h-24 mx-auto mb-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <Globe className="h-12 w-12 text-blue-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-4">No trips found</h3>
+                            <p className="text-gray-600 mb-8">
+                              {searchTerm || filterStatus !== 'all' 
+                                ? "Try adjusting your search or filter criteria"
+                                : "Your travel adventure starts with a single step. Create your first trip!"}
+                            </p>
+                            <button
+                              onClick={() => setIsCreateTripModalOpen(true)}
+                              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <Plus className="mr-2 h-5 w-5" />
+                              Create Your First Trip
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </>
+            );
+          })()}
         </div>
       </main>
 
