@@ -161,21 +161,26 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="bg-white w-full border-b border-gray-200 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 justify-between">
-        {/* Logo */}
+    <nav className="w-full fixed top-0 left-0 right-0 z-50 px-2 py-4">
+      <div className="max-w-[95%] mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 pr-8 sm:pr-10 lg:pr-12 pl-6 flex items-center h-20">
+        {/* Logo - Left Edge */}
         <Link to="/" className="flex items-center">
-          <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-2" />
-          <img src={logoText} alt="IslandHop" className="h-7" />
+          <img src={logo} alt="IslandHop Icon" className="h-10 w-10 mr-3" />
+          <img src={logoText} alt="IslandHop" className="h-8" />
         </Link>
-        {/* Nav Links */}
-        <div className="hidden md:flex space-x-6 mx-auto">
+        
+        {/* Nav Links - Center */}
+        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-12">
           <Link to="/discover" className="text-gray-700 hover:text-primary-600 font-medium">Discover</Link>
           <Link to="/trips" className="text-gray-700 hover:text-primary-600 font-medium">Trips</Link>
           <Link to="/pools" className="text-gray-700 hover:text-primary-600 font-medium">Pools</Link>
           <Link to="/about" className="text-gray-700 hover:text-primary-600 font-medium">About</Link>
         </div>
-        {/* User/Currency/Language */}
+        
+        {/* Spacer for layout balance */}
+        <div className="flex-1"></div>
+        
+        {/* User/Currency/Language - Right Edge */}
         <div className="flex items-center space-x-4">
           <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center">
             USD

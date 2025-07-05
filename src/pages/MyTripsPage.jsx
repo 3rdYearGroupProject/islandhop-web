@@ -353,7 +353,7 @@ const MyTripsPage = () => {
       <Navbar />
 
       {/* Enhanced Hero Video Section */}
-      <section className="relative w-full h-[18vh] md:h-[37.5vh] overflow-hidden">
+      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover scale-105"
           autoPlay 
@@ -403,15 +403,25 @@ const MyTripsPage = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end space-y-4 lg:space-y-0">
               <div className="flex flex-col sm:flex-row gap-4 w-full justify-end">
                 {/* Search */}
-                <div className="relative flex-[3_3_0%] min-w-[340px] max-w-2xl">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search trips..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base"
-                  />
+                <div className="relative flex-[3_3_0%] min-w-[500px] md:min-w-[600px] lg:min-w-[700px]">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
+                  <form onSubmit={e => { e.preventDefault(); }} className="w-full">
+                    <div className="relative w-full">
+                      <input
+                        type="text"
+                        placeholder="Search trips..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base bg-white"
+                      />
+                      <button
+                        type="submit"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 {/* Filter */}
                 <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">

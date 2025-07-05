@@ -28,7 +28,8 @@ import {
   ClockIcon,
   PhoneIcon,
   GlobeAltIcon,
-  HeartIcon
+  HeartIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 
@@ -222,7 +223,7 @@ const Discover = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 
@@ -245,30 +246,32 @@ const Discover = () => {
           <p className="text-xl md:text-2xl mb-8 opacity-90">
             Explore the Pearl of the Indian Ocean's hidden gems and popular attractions
           </p>
-          
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="max-w-3xl w-full mx-auto">
-            <div className="relative">
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Search Bar - Pill Shaped Container */}
+        <div className="bg-white rounded-full shadow-xl border border-gray-100 p-5 mb-8 w-fit mx-auto relative -mt-8 z-20">
+          <form onSubmit={handleSearch} className="flex items-center">
+            <div className="relative flex items-center min-w-[500px] md:min-w-[600px] lg:min-w-[700px]">
+              <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for attractions, restaurants, hotels..."
-                className="w-full px-8 py-4 pl-16 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-primary-300 text-lg"
+                className="pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full text-base bg-transparent"
               />
-              <MagnifyingGlassIcon className="absolute left-6 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary-600 text-white px-8 py-3 rounded-full hover:bg-primary-700 transition-colors"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-primary-600 text-white rounded-full font-semibold shadow hover:bg-primary-700 transition-colors text-sm"
               >
                 Search
               </button>
             </div>
           </form>
         </div>
-      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Destinations */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
