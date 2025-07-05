@@ -11,10 +11,112 @@ import Navbar from '../components/Navbar';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
 
+// API Functions for backend integration
+// Search activities with preferences and proximity optimization
+const searchActivities = async (tripId, searchParams) => {
+  console.log('🔍 Searching activities for trip:', tripId, 'with params:', searchParams);
+  const params = new URLSearchParams({
+    query: searchParams.query || '',           // Optional text search
+    city: searchParams.city || '',             // Filter by specific city
+    lastPlaceId: searchParams.lastPlaceId || '', // For proximity recommendations
+    maxResults: searchParams.maxResults || 10   // Pagination support
+  });
+  
+  try {
+    const fullUrl = `/api/trip/${tripId}/search/activities?${params}`;
+    console.log('📡 Making API request to:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
+      credentials: 'include'
+    });
+    
+    console.log('📨 API Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to search activities: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Activities search result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Activities search error:', error);
+    throw error;
+  }
+};
+
+// Search accommodation with preference-based filtering
+const searchAccommodation = async (tripId, searchParams) => {
+  console.log('🔍 Searching accommodation for trip:', tripId, 'with params:', searchParams);
+  const params = new URLSearchParams({
+    query: searchParams.query || '',
+    city: searchParams.city || '',
+    lastPlaceId: searchParams.lastPlaceId || '',
+    maxResults: searchParams.maxResults || 10
+  });
+  
+  try {
+    const fullUrl = `/api/trip/${tripId}/search/accommodation?${params}`;
+    console.log('📡 Making API request to:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
+      credentials: 'include'
+    });
+    
+    console.log('📨 API Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to search accommodation: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Accommodation search result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Accommodation search error:', error);
+    throw error;
+  }
+};
+
+// Search dining options with preference and proximity matching
+const searchDining = async (tripId, searchParams) => {
+  console.log('🔍 Searching dining for trip:', tripId, 'with params:', searchParams);
+  const params = new URLSearchParams({
+    query: searchParams.query || '',
+    city: searchParams.city || '',
+    lastPlaceId: searchParams.lastPlaceId || '',
+    maxResults: searchParams.maxResults || 10
+  });
+  
+  try {
+    const fullUrl = `/api/trip/${tripId}/search/dining?${params}`;
+    console.log('📡 Making API request to:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
+      credentials: 'include'
+    });
+    
+    console.log('📨 API Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to search dining: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Dining search result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Dining search error:', error);
+    throw error;
+  }
+};
+
 const TripItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
-  const { tripName, selectedDates, selectedTerrains, selectedActivities } = location.state || {};
+  const { tripName, selectedDates, selectedTerrains, selectedActivities, tripId, trip, userUid } = location.state || {};
+  
+  console.log('📍 TripItineraryPage received:', { tripName, selectedDates, tripId, userUid });
   
   const [currentDay, setCurrentDay] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -24,6 +126,15 @@ const TripItineraryPage = () => {
   const [expandedDays, setExpandedDays] = useState({});
   const [selectedStayDates, setSelectedStayDates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Backend data states
+  const [backendSuggestions, setBackendSuggestions] = useState({
+    activities: [],
+    places: [],
+    food: []
+  });
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [lastSearchParams, setLastSearchParams] = useState(null);
 
   // Generate days array from selected dates
   const generateDays = () => {
@@ -317,12 +428,25 @@ const TripItineraryPage = () => {
   };
 
   const handleAddItem = (category, dayIndex) => {
+    console.log('🎯 Add button clicked for category:', category, 'dayIndex:', dayIndex);
     setSelectedCategory(category);
     setCurrentDay(dayIndex);
+    
     if (category === 'Destinations') {
+      console.log('🏙️ Opening destination modal (uses mock data)');
       setShowDestinationModal(true);
     } else {
+      console.log('📋 Opening modal for category:', category);
       setShowAddModal(true);
+      
+      // Fetch backend data when specific category button is clicked
+      if (['activities', 'places', 'food'].includes(category)) {
+        console.log('🚀 Fetching backend data for category:', category);
+        fetchBackendSuggestions(category, { 
+          query: '',  // Start with empty search
+          maxResults: 20 
+        });
+      }
     }
   };
 
@@ -403,17 +527,202 @@ const TripItineraryPage = () => {
     });
   };
 
-  const getFilteredSuggestions = () => {
-    const suggestionsKey = showDestinationModal ? 'cities' : selectedCategory;
-    if (!searchQuery) return mockSuggestions[suggestionsKey] || [];
+  // Function to fetch backend suggestions based on category
+  const fetchBackendSuggestions = async (category, searchParams = {}) => {
+    if (!tripId) {
+      console.warn('⚠️ No tripId available for backend search, tripId:', tripId);
+      console.log('🔍 Available location state:', { tripName, selectedDates, tripId, userUid });
+      return [];
+    }
+
+    console.log('🔄 Fetching backend suggestions for category:', category, 'params:', searchParams);
+    console.log('🆔 Using tripId:', tripId);
+    setIsLoadingSuggestions(true);
     
-    return (mockSuggestions[suggestionsKey] || []).filter(item =>
+    try {
+      let searchFunction;
+      let cacheKey;
+      
+      switch(category) {
+        case 'activities':
+          searchFunction = searchActivities;
+          cacheKey = 'activities';
+          console.log('🎯 Using activities search function');
+          break;
+        case 'places':
+          searchFunction = searchAccommodation;
+          cacheKey = 'places';
+          console.log('🏨 Using accommodation search function');
+          break;
+        case 'food':
+          searchFunction = searchDining;
+          cacheKey = 'food';
+          console.log('🍽️ Using dining search function');
+          break;
+        default:
+          console.warn('⚠️ Unknown category for backend search:', category);
+          return mockSuggestions[category] || [];
+      }
+
+      const result = await searchFunction(tripId, searchParams);
+      
+      // Update backend suggestions cache
+      setBackendSuggestions(prev => ({
+        ...prev,
+        [cacheKey]: result.data || result || []
+      }));
+      
+      setLastSearchParams({ category, searchParams });
+      console.log('✅ Backend suggestions updated for', category, ':', result);
+      console.log('📊 Cached suggestions count:', (result.data || result || []).length);
+      
+      return result.data || result || [];
+    } catch (error) {
+      console.error('❌ Failed to fetch backend suggestions:', error);
+      console.log('🔄 Falling back to mock data for category:', category);
+      // Fallback to mock data on error
+      return mockSuggestions[category] || [];
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // Enhanced getFilteredSuggestions to use backend data
+  const getFilteredSuggestions = async () => {
+    const suggestionsKey = showDestinationModal ? 'cities' : selectedCategory;
+    
+    console.log('🔍 Getting filtered suggestions for:', suggestionsKey, 'query:', searchQuery);
+    
+    // For destinations (cities), still use mock data
+    if (showDestinationModal) {
+      if (!searchQuery) return mockSuggestions.cities || [];
+      
+      return (mockSuggestions.cities || []).filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.region && item.region.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+    
+    // For other categories, try backend first
+    if (['activities', 'places', 'food'].includes(selectedCategory)) {
+      const searchParams = {
+        query: searchQuery,
+        maxResults: 20
+      };
+      
+      // Check if we need to refetch (different search or no cached data)
+      const needsRefetch = !lastSearchParams || 
+                          lastSearchParams.category !== selectedCategory ||
+                          lastSearchParams.searchParams?.query !== searchQuery ||
+                          !backendSuggestions[selectedCategory]?.length;
+      
+      if (needsRefetch) {
+        console.log('🔄 Fetching fresh backend data...');
+        const backendData = await fetchBackendSuggestions(selectedCategory, searchParams);
+        return backendData;
+      } else {
+        console.log('📊 Using cached backend data for', selectedCategory);
+        return backendSuggestions[selectedCategory] || [];
+      }
+    }
+    
+    // Fallback to mock suggestions with search filter
+    const suggestions = mockSuggestions[suggestionsKey] || [];
+    if (!searchQuery) return suggestions;
+    
+    return suggestions.filter(item =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.destination && item.destination.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.region && item.region.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   };
+
+  // Wrapper function for modals to handle async suggestions
+  const getSuggestionsForModal = () => {
+    const suggestionsKey = showDestinationModal ? 'cities' : selectedCategory;
+    
+    console.log('🔍 getSuggestionsForModal called for:', suggestionsKey, 'searchQuery:', searchQuery);
+    
+    // For destinations, return mock data immediately
+    if (showDestinationModal) {
+      if (!searchQuery) {
+        console.log('📋 Returning all cities (no search query)');
+        return mockSuggestions.cities || [];
+      }
+      
+      const filtered = (mockSuggestions.cities || []).filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.region && item.region.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      console.log('📋 Returning filtered cities:', filtered.length, 'items');
+      return filtered;
+    }
+    
+    // For backend categories, return cached data if available
+    if (['activities', 'places', 'food'].includes(selectedCategory)) {
+      const cachedData = backendSuggestions[selectedCategory] || [];
+      console.log('📊 Backend cached data for', selectedCategory, ':', cachedData.length, 'items');
+      
+      // If no cached data and not currently loading, show empty state
+      if (cachedData.length === 0 && !isLoadingSuggestions) {
+        console.log('📭 No cached data available and not loading - showing empty state');
+        return [];
+      }
+      
+      if (!searchQuery) {
+        console.log('📋 Returning all cached backend data (no search query)');
+        return cachedData;
+      }
+      
+      const filtered = cachedData.filter(item =>
+        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      console.log('📋 Returning filtered backend data:', filtered.length, 'items');
+      return filtered;
+    }
+    
+    // Fallback to mock suggestions
+    console.log('🔄 Falling back to mock suggestions for:', suggestionsKey);
+    const suggestions = mockSuggestions[suggestionsKey] || [];
+    if (!searchQuery) return suggestions;
+    
+    return suggestions.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.destination && item.destination.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.region && item.region.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  };
+
+  // Effect to refetch when search query changes (with debounce)
+  useEffect(() => {
+    if (!showAddModal || !selectedCategory || !['activities', 'places', 'food'].includes(selectedCategory)) {
+      return;
+    }
+
+    console.log('🔍 Search query effect triggered - query:', searchQuery, 'category:', selectedCategory);
+    
+    const timeoutId = setTimeout(() => {
+      if (searchQuery !== (lastSearchParams?.searchParams?.query || '')) {
+        console.log('🔍 Search query changed, refetching suggestions...', {
+          newQuery: searchQuery,
+          oldQuery: lastSearchParams?.searchParams?.query
+        });
+        fetchBackendSuggestions(selectedCategory, { 
+          query: searchQuery,
+          maxResults: 20 
+        });
+      } else {
+        console.log('🔍 Search query unchanged, skipping refetch');
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, showAddModal, selectedCategory]);
 
   const toggleDayExpansion = (dayIndex) => {
     setExpandedDays(prev => ({
@@ -697,50 +1006,74 @@ const TripItineraryPage = () => {
       <AddThingsToDoModal
         show={showAddModal && selectedCategory === 'activities'}
         onClose={() => {
+          console.log('🚪 Closing Things to Do modal');
           setShowAddModal(false);
           setSelectedStayDates([]);
           setSearchQuery('');
+          // Clear cached suggestions for fresh data next time
+          setBackendSuggestions(prev => ({
+            ...prev,
+            activities: []
+          }));
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        getFilteredSuggestions={getFilteredSuggestions}
+        getFilteredSuggestions={getSuggestionsForModal}
         selectedStayDates={selectedStayDates}
         setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        isLoading={isLoadingSuggestions}
+        tripId={tripId}
       />
       <AddPlacesToStayModal
         show={showAddModal && selectedCategory === 'places'}
         onClose={() => {
+          console.log('🚪 Closing Places to Stay modal');
           setShowAddModal(false);
           setSelectedStayDates([]);
           setSearchQuery('');
+          // Clear cached suggestions for fresh data next time
+          setBackendSuggestions(prev => ({
+            ...prev,
+            places: []
+          }));
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        getFilteredSuggestions={getFilteredSuggestions}
+        getFilteredSuggestions={getSuggestionsForModal}
         selectedStayDates={selectedStayDates}
         setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        isLoading={isLoadingSuggestions}
+        tripId={tripId}
       />
       <AddFoodAndDrinkModal
         show={showAddModal && selectedCategory === 'food'}
         onClose={() => {
+          console.log('🚪 Closing Food & Drink modal');
           setShowAddModal(false);
           setSelectedStayDates([]);
           setSearchQuery('');
+          // Clear cached suggestions for fresh data next time
+          setBackendSuggestions(prev => ({
+            ...prev,
+            food: []
+          }));
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        getFilteredSuggestions={getFilteredSuggestions}
+        getFilteredSuggestions={getSuggestionsForModal}
         selectedStayDates={selectedStayDates}
         setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        isLoading={isLoadingSuggestions}
+        tripId={tripId}
       />
       <AddTransportationModal
         show={showAddModal && selectedCategory === 'transportation'}
@@ -768,12 +1101,14 @@ const TripItineraryPage = () => {
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        getFilteredSuggestions={getFilteredSuggestions}
+        getFilteredSuggestions={getSuggestionsForModal}
         selectedStayDates={selectedStayDates}
         setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        isLoading={false}
+        tripId={tripId}
       />
     </div>
   );

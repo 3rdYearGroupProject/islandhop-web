@@ -11,9 +11,14 @@ const AddPlacesToStayModal = ({
   setSelectedStayDates,
   days,
   formatDate,
-  addItemToItinerary
+  addItemToItinerary,
+  isLoading = false,
+  tripId
 }) => {
   if (!show) return null;
+
+  const suggestions = getFilteredSuggestions();
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
@@ -44,65 +49,77 @@ const AddPlacesToStayModal = ({
         <div className="flex">
           {/* Left Side - Place Selection */}
           <div className="flex-1 p-6 overflow-y-auto max-h-[calc(90vh-160px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {getFilteredSuggestions().map((place) => (
-                <div key={place.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
-                  <div className="relative">
-                    <img 
-                      src={place.image} 
-                      alt={place.name}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
-                      {place.type || 'Hotel'}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-bold text-lg text-gray-900">{place.name}</h4>
-                        <p className="text-sm text-gray-500">{place.location}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">from</p>
-                        <p className="text-lg font-bold text-primary-600">{place.price}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{place.description}</p>
-                    <div className="mb-4">
-                      <p className="text-xs font-medium text-gray-500 mb-2">AMENITIES</p>
-                      <div className="flex flex-wrap gap-1">
-                        {place.priceRange && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                            {place.priceRange}
-                          </span>
-                        )}
-                        {place.rating && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                            ★ {place.rating}
-                          </span>
-                        )}
-                        {place.reviews && (
-                          <span className="text-xs text-gray-500">({place.reviews} reviews)</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => addItemToItinerary(place, selectedStayDates)}
-                      disabled={selectedStayDates.length === 0}
-                      className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      {selectedStayDates.length === 0 ? 'Select dates first' : `Add to ${selectedStayDates.length} day${selectedStayDates.length !== 1 ? 's' : ''}`}
-                    </button>
-                  </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Searching for accommodations...</p>
                 </div>
-              ))}
-            </div>
-            {getFilteredSuggestions().length === 0 && (
+              </div>
+            ) : suggestions.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No places found</p>
-                <p>Try searching for a different accommodation.</p>
+                <p className="text-lg font-medium">
+                  {tripId ? "No places found" : "Ready to search"}
+                </p>
+                <p>
+                  {tripId ? "Try searching for a different accommodation." : "Use the search box above to find places to stay."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {suggestions.map((place) => (
+                  <div key={place.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
+                    <div className="relative">
+                      <img 
+                        src={place.image || place.photos?.[0]?.url || 'https://placehold.co/400x250'} 
+                        alt={place.name || place.title}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
+                        {place.type || place.category || 'Hotel'}
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">{place.name || place.title}</h4>
+                          <p className="text-sm text-gray-500">{place.location || place.address}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">from</p>
+                          <p className="text-lg font-bold text-primary-600">{place.price || place.priceRange || 'Contact'}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{place.description}</p>
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-500 mb-2">AMENITIES</p>
+                        <div className="flex flex-wrap gap-1">
+                          {place.priceRange && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              {place.priceRange}
+                            </span>
+                          )}
+                          {place.rating && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              ★ {place.rating}
+                            </span>
+                          )}
+                          {place.reviews && (
+                            <span className="text-xs text-gray-500">({place.reviews} reviews)</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => addItemToItinerary(place, selectedStayDates)}
+                        disabled={selectedStayDates.length === 0}
+                        className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {selectedStayDates.length === 0 ? 'Select dates first' : `Add to ${selectedStayDates.length} day${selectedStayDates.length !== 1 ? 's' : ''}`}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
