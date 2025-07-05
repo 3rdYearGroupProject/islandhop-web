@@ -16,11 +16,14 @@ const FindPools = () => {
       name: 'Adventure to Ella',
       owner: 'John Doe',
       destinations: 'Kandy, Nuwara Eliya, Ella',
-      participants: '3/5',
+      participants: 3,
+      maxParticipants: 5,
       rating: 4.8,
       price: 'Rs. 15,000',
-      date: '2025-08-15',
-      duration: '3 days'
+      date: 'Aug 15-17, 2025',
+      duration: '3 days',
+      status: 'open',
+      highlights: ['Tea Plantations', 'Nine Arch Bridge', 'Little Adams Peak']
     },
     {
       id: 2,
@@ -28,11 +31,14 @@ const FindPools = () => {
       name: 'Beach Escape',
       owner: 'Jane Smith',
       destinations: 'Colombo, Galle, Mirissa',
-      participants: '2/4',
+      participants: 2,
+      maxParticipants: 4,
       rating: 4.6,
       price: 'Rs. 12,000',
-      date: '2025-08-20',
-      duration: '2 days'
+      date: 'Aug 20-21, 2025',
+      duration: '2 days',
+      status: 'open',
+      highlights: ['Whale Watching', 'Galle Fort', 'Beach Sunset']
     },
     {
       id: 3,
@@ -40,11 +46,14 @@ const FindPools = () => {
       name: 'Cultural Wonders',
       owner: 'Sam Perera',
       destinations: 'Anuradhapura, Sigiriya, Polonnaruwa',
-      participants: '5/7',
+      participants: 5,
+      maxParticipants: 7,
       rating: 4.9,
       price: 'Rs. 18,000',
-      date: '2025-08-25',
-      duration: '4 days'
+      date: 'Aug 25-28, 2025',
+      duration: '4 days',
+      status: 'open',
+      highlights: ['Ancient Ruins', 'Lion Rock', 'Sacred Sites', 'Buddhist Temples']
     },
     {
       id: 4,
@@ -52,11 +61,14 @@ const FindPools = () => {
       name: 'Hill Country Hike',
       owner: 'Ayesha Fernando',
       destinations: 'Kandy, Haputale, Ella',
-      participants: '1/5',
+      participants: 1,
+      maxParticipants: 5,
       rating: 4.5,
       price: 'Rs. 16,000',
-      date: '2025-09-01',
-      duration: '3 days'
+      date: 'Sep 1-3, 2025',
+      duration: '3 days',
+      status: 'open',
+      highlights: ['Mountain Views', 'Train Ride', 'Hiking Trails']
     },
     {
       id: 5,
@@ -64,11 +76,14 @@ const FindPools = () => {
       name: 'Wildlife Safari',
       owner: 'Kasun Silva',
       destinations: 'Yala, Udawalawe, Tissamaharama',
-      participants: '4/6',
+      participants: 4,
+      maxParticipants: 6,
       rating: 4.7,
       price: 'Rs. 20,000',
-      date: '2025-09-05',
-      duration: '3 days'
+      date: 'Sep 5-7, 2025',
+      duration: '3 days',
+      status: 'open',
+      highlights: ['Safari Drives', 'Elephants', 'Leopards']
     },
     {
       id: 6,
@@ -76,11 +91,14 @@ const FindPools = () => {
       name: 'Northern Explorer',
       owner: 'Priya Kumari',
       destinations: 'Jaffna, Mannar, Kilinochchi',
-      participants: '2/5',
+      participants: 2,
+      maxParticipants: 5,
       rating: 4.4,
       price: 'Rs. 22,000',
-      date: '2025-09-10',
-      duration: '4 days'
+      date: 'Sep 10-13, 2025',
+      duration: '4 days',
+      status: 'open',
+      highlights: ['Cultural Heritage', 'Baobab Tree', 'Jaffna Fort']
     }
   ];
 
@@ -107,28 +125,38 @@ const FindPools = () => {
         </div>
 
         {/* Filters */}
-        <select
-          value={selectedDestination}
-          onChange={(e) => setSelectedDestination(e.target.value)}
-          className="px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white appearance-none min-w-[140px]"
-        >
-          <option value="">All Destinations</option>
-          <option value="kandy">Kandy</option>
-          <option value="ella">Ella</option>
-          <option value="colombo">Colombo</option>
-          <option value="galle">Galle</option>
-          <option value="sigiriya">Sigiriya</option>
-        </select>
-        <select
-          value={selectedSeats}
-          onChange={(e) => setSelectedSeats(e.target.value)}
-          className="px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white appearance-none min-w-[120px]"
-        >
-          <option value="">All Seats</option>
-          <option value="1">1 seat</option>
-          <option value="2">2 seats</option>
-          <option value="3">3+ seats</option>
-        </select>
+        <div className="relative min-w-[140px]">
+          <select
+            value={selectedDestination}
+            onChange={(e) => setSelectedDestination(e.target.value)}
+            className="px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white appearance-none w-full pr-10"
+          >
+            <option value="">All Destinations</option>
+            <option value="kandy">Kandy</option>
+            <option value="ella">Ella</option>
+            <option value="colombo">Colombo</option>
+            <option value="galle">Galle</option>
+            <option value="sigiriya">Sigiriya</option>
+          </select>
+          <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center h-full">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </span>
+        </div>
+        <div className="relative min-w-[120px]">
+          <select
+            value={selectedSeats}
+            onChange={(e) => setSelectedSeats(e.target.value)}
+            className="px-4 py-3 border border-gray-300 dark:border-secondary-600 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-secondary-700 dark:text-white appearance-none w-full pr-10"
+          >
+            <option value="">All Seats</option>
+            <option value="1">1 seat</option>
+            <option value="2">2 seats</option>
+            <option value="3">3+ seats</option>
+          </select>
+          <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center h-full">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </span>
+        </div>
       </div>
 
       {/* Pool Cards Grid */}
