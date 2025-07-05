@@ -173,19 +173,19 @@ const FindPools = () => {
       {/* Pagination */}
       <div className="flex justify-center mt-8">
         <div className="flex space-x-2">
-          <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+          <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
             Previous
           </button>
-          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium">
+          <button className="w-10 h-10 bg-primary-600 text-white rounded-full font-medium flex items-center justify-center">
             1
           </button>
-          <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+          <button className="w-10 h-10 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors flex items-center justify-center">
             2
           </button>
-          <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+          <button className="w-10 h-10 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors flex items-center justify-center">
             3
           </button>
-          <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+          <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
             Next
           </button>
         </div>

@@ -205,9 +205,9 @@ const MyPools = () => {
 
       {/* Ongoing Pool - Full Width Card */}
       {ongoingPool && (
-        <div className="mb-12">
+        <div className="mb-12 max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Current Trip
+            Current Pool
           </h2>
           <div className="group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-200 hover:border-green-400 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full">
             {/* Image on the left */}
@@ -274,10 +274,10 @@ const MyPools = () => {
                   {/* You can add a rating or other info here if needed */}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                  <button className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors">
                     View Details
                   </button>
-                  <button className="flex items-center px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors">
+                  <button className="flex items-center px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors">
                     Contact Group
                   </button>
                 </div>

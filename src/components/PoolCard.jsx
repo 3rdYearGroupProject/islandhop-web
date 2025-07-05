@@ -120,7 +120,7 @@ const PoolCard = ({ pool, onJoinPool, buttonText = "Join Pool", buttonIcon = Use
             </button>
             <button 
               onClick={handleJoinPool}
-              className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors"
             >
               <ButtonIcon className="h-4 w-4 mr-1" />
               {buttonText}
