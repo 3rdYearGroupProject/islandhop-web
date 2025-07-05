@@ -73,7 +73,7 @@ const PoolPage = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative w-full h-[18vh] md:h-[37.5vh] overflow-hidden">
+      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover scale-105"
           autoPlay 

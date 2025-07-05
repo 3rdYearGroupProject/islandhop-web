@@ -20,11 +20,11 @@ const avatar = 'https://placehold.co/64x64';
 
 const LandingPage = () => (
   <div className="min-h-screen bg-white">
-    {/* Navbar */}
+    {/* Navbar - Floating over all content */}
     <Navbar />
 
     {/* Hero Video Section */}
-    <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
+    <section className="relative w-full h-[55vh] md:h-[65vh] overflow-hidden">
       <video 
         className="absolute top-0 left-0 w-full h-full object-cover"
         autoPlay 
@@ -40,7 +40,8 @@ const LandingPage = () => (
       <div className="absolute inset-0 bg-black bg-opacity-30"></div>
       
       {/* Hero Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4 pt-24">
+        {/* ...existing content... */}
         <h1 className="text-5xl md:text-7xl font-normal mb-6">
           Ready For Your<br />
           Next Adventure?
