@@ -143,7 +143,7 @@ const TripDurationPage = () => {
     
     try {
       const response = await tripPlanningApi.post('/trip/create-basic', {
-        userUid: tripData.userUid,
+        userId: tripData.userUid,
         tripName: tripData.tripName,
         startDate: tripData.startDate,
         endDate: tripData.endDate

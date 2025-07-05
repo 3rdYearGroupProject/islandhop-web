@@ -3,15 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2, Book, Building, ChevronLeft, Trees, Camera as CameraIcon } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import TripProgressBar from '../components/TripProgressBar';
+import { tripPlanningApi } from '../api/axios';
 
 const TripPreferencesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { tripName, selectedDates } = location.state || {};
+  const { tripName, selectedDates, tripId, trip, userUid } = location.state || {};
+  
+  console.log('📍 TripPreferencesPage received:', { tripName, selectedDates, tripId, userUid });
   
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTerrainPreferences, setSelectedTerrainPreferences] = useState([]);
   const [selectedActivityPreferences, setSelectedActivityPreferences] = useState([]);
+  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
 
   const terrainPreferences = [
     { id: 'beaches', name: 'Beach', icon: Waves, color: '#007bff' },
@@ -62,20 +66,95 @@ const TripPreferencesPage = () => {
     return false;
   };
 
-  const handleNext = () => {
+  // Update trip preferences with backend request
+  const updateTripPreferences = async (tripId, preferences, userId) => {
+    console.log('🚀 Sending trip preferences update to backend...', {
+      tripId,
+      userId,
+      terrainPreferences: preferences.terrain,
+      activityPreferences: preferences.activities
+    });
+    
+    try {
+      const response = await tripPlanningApi.post(`/trip/${tripId}/preferences`, {
+        userId: userId,
+        terrainPreferences: preferences.terrain,
+        activityPreferences: preferences.activities
+      });
+
+      console.log('✅ Trip preferences update response received:', response.data);
+      
+      return {
+        message: response.data.message,
+        userId: response.data.userId,
+        trip: response.data.trip
+      };
+    } catch (error) {
+      console.error('❌ Error updating trip preferences:', error);
+      throw new Error(`Failed to update preferences: ${error.response?.status || 'unknown'}`);
+    }
+  };
+
+  const handleNext = async () => {
     if (canProceed()) {
       if (currentStep < 2) {
         setCurrentStep(currentStep + 1);
       } else {
-        // Navigate to itinerary planning
-        navigate('/trip-itinerary', { 
-          state: { 
-            tripName, 
-            selectedDates, 
-            selectedTerrains: selectedTerrainPreferences,
-            selectedActivities: selectedActivityPreferences
-          } 
-        });
+        // Both preferences are filled, send request to backend
+        if (tripId && userUid && selectedTerrainPreferences.length > 0 && selectedActivityPreferences.length > 0) {
+          setIsUpdatingPreferences(true);
+          
+          try {
+            const result = await updateTripPreferences(tripId, {
+              terrain: selectedTerrainPreferences,
+              activities: selectedActivityPreferences
+            }, userUid);
+            
+            console.log('🎉 Trip preferences updated successfully:', result);
+            
+            // Navigate to itinerary planning with updated trip data
+            navigate('/trip-itinerary', { 
+              state: { 
+                tripName, 
+                selectedDates, 
+                selectedTerrains: selectedTerrainPreferences,
+                selectedActivities: selectedActivityPreferences,
+                tripId,
+                trip: result.trip || trip,
+                userUid
+              } 
+            });
+          } catch (error) {
+            console.error('Failed to update trip preferences:', error);
+            // Continue to next page even if backend fails
+            navigate('/trip-itinerary', { 
+              state: { 
+                tripName, 
+                selectedDates, 
+                selectedTerrains: selectedTerrainPreferences,
+                selectedActivities: selectedActivityPreferences,
+                tripId,
+                trip,
+                userUid
+              } 
+            });
+          } finally {
+            setIsUpdatingPreferences(false);
+          }
+        } else {
+          // Missing required data, navigate anyway
+          navigate('/trip-itinerary', { 
+            state: { 
+              tripName, 
+              selectedDates, 
+              selectedTerrains: selectedTerrainPreferences,
+              selectedActivities: selectedActivityPreferences,
+              tripId,
+              trip,
+              userUid
+            } 
+          });
+        }
       }
     }
   };
@@ -84,7 +163,12 @@ const TripPreferencesPage = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      navigate('/trip-duration', { state: { tripName } });
+      navigate('/trip-duration', { 
+        state: { 
+          tripName,
+          userUid
+        } 
+      });
     }
   };
 
