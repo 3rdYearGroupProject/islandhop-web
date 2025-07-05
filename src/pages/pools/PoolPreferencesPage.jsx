@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2, Book, Building, ChevronLeft, Trees, Camera as CameraIcon } from 'lucide-react';
@@ -7,24 +8,10 @@ import PoolProgressBar from '../../components/PoolProgressBar';
 const PoolPreferencesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { 
-    poolName, 
-    poolDescription, 
-    selectedDates, 
-    poolSize, 
-    startDate, 
-    endDate, 
-    userUid 
-  } = location.state || {};
-  
-  console.log('📍 PoolPreferencesPage received:', { 
-    poolName, 
-    poolDescription, 
-    selectedDates, 
-    poolSize, 
-    userUid 
-  });
-  
+  const { poolName, selectedDates, poolSize, poolId, pool, userUid } = location.state || {};
+
+  console.log('📍 PoolPreferencesPage received:', { poolName, selectedDates, poolId, userUid });
+
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTerrainPreferences, setSelectedTerrainPreferences] = useState([]);
   const [selectedActivityPreferences, setSelectedActivityPreferences] = useState([]);
@@ -41,7 +28,7 @@ const PoolPreferencesPage = () => {
     { id: 'wetland', name: 'Wetland', icon: CameraIcon, color: '#6c757d' },
     { id: 'countryside', name: 'Countryside', icon: MapPin, color: '#ffc107' }
   ];
-  
+
   const activityPreferences = [
     { id: 'surfing', name: 'Surfing', icon: Waves, color: '#007bff' },
     { id: 'hiking', name: 'Hiking', icon: Mountain, color: '#28a745' },
@@ -73,188 +60,184 @@ const PoolPreferencesPage = () => {
     );
   };
 
-  const handleNext = () => {
-    if (currentStep === 1) {
-      setCurrentStep(2);
-    } else if (currentStep === 2) {
-      // Navigate to destinations page
-      navigate('/pool-destinations', {
-        state: {
-          poolName,
-          poolDescription,
-          selectedDates,
-          poolSize,
-          startDate,
-          endDate,
-          selectedTerrains: selectedTerrainPreferences,
-          selectedActivities: selectedActivityPreferences,
-          userUid
-        }
-      });
+  const canProceed = () => {
+    if (currentStep === 1) return selectedTerrainPreferences.length > 0;
+    if (currentStep === 2) return selectedActivityPreferences.length > 0;
+    return false;
+  };
+
+  const handleNext = async () => {
+    if (canProceed()) {
+      if (currentStep < 2) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        // Both preferences are filled, navigate to itinerary
+        navigate('/pool-itinerary', {
+          state: {
+            poolName,
+            selectedDates,
+            poolSize,
+            selectedTerrains: selectedTerrainPreferences,
+            selectedActivities: selectedActivityPreferences,
+            poolId,
+            pool,
+            userUid
+          }
+        });
+      }
     }
   };
 
   const handleBack = () => {
-    if (currentStep === 1) {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
       navigate('/pool-duration', {
         state: {
           poolName,
-          poolDescription,
           userUid
         }
       });
-    } else {
-      setCurrentStep(1);
     }
   };
-
-  const canProceed = currentStep === 1 
-    ? selectedTerrainPreferences.length > 0
-    : selectedActivityPreferences.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
-      <PoolProgressBar 
-        poolName={poolName}
-        onBack={handleBack}
-        currentStep={3}
-        completedSteps={[1, 2]}
-      />
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {currentStep === 1 ? 'What kind of places interest you?' : 'What activities do you enjoy?'}
-          </h1>
-          <p className="text-lg text-gray-600">
-            {currentStep === 1 
-              ? 'Choose the types of terrain and environments you\'d like to explore together'
-              : 'Select activities that you and your pool members would enjoy doing'
-            }
-          </p>
-        </div>
-
-        {/* Preferences Grid */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {(currentStep === 1 ? terrainPreferences : activityPreferences).map((preference) => {
-              const Icon = preference.icon;
-              const isSelected = currentStep === 1 
-                ? selectedTerrainPreferences.includes(preference.id)
-                : selectedActivityPreferences.includes(preference.id);
-              
-              return (
-                <button
-                  key={preference.id}
-                  onClick={() => currentStep === 1 
-                    ? handleTerrainToggle(preference.id)
-                    : handleActivityToggle(preference.id)
-                  }
-                  className={`
-                    relative p-4 rounded-lg border-2 text-center transition-all duration-200 hover:scale-105
-                    ${isSelected 
-                      ? 'border-blue-500 bg-blue-50 shadow-md' 
-                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                    }
-                  `}
-                >
-                  <div className="flex flex-col items-center space-y-2">
-                    <div 
-                      className={`p-3 rounded-full ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}
-                      style={{ 
-                        backgroundColor: isSelected ? `${preference.color}20` : undefined 
-                      }}
-                    >
-                      <Icon 
-                        className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`}
-                        style={{ 
-                          color: isSelected ? preference.color : undefined 
-                        }}
-                      />
-                    </div>
-                    <span className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
-                      {preference.name}
-                    </span>
-                  </div>
-                  
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Selected Summary */}
-        {((currentStep === 1 && selectedTerrainPreferences.length > 0) || 
-          (currentStep === 2 && selectedActivityPreferences.length > 0)) && (
-          <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
-            <p className="text-sm font-medium text-blue-800 mb-2">
-              Selected {currentStep === 1 ? 'Terrains' : 'Activities'}: 
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {(currentStep === 1 ? selectedTerrainPreferences : selectedActivityPreferences).map((id) => {
-                const preference = (currentStep === 1 ? terrainPreferences : activityPreferences)
-                  .find(p => p.id === id);
-                return (
-                  <span
-                    key={id}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {preference?.name}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-6">
-          <button
-            onClick={handleBack}
-            className="flex items-center px-6 py-3 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5 mr-2" />
-            Back
-          </button>
-          
-          <button
-            onClick={handleNext}
-            disabled={!canProceed || isUpdatingPreferences}
-            className={`
-              flex items-center px-8 py-3 rounded-lg font-medium transition-all
-              ${canProceed && !isUpdatingPreferences
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }
-            `}
-          >
-            {isUpdatingPreferences ? (
+      <PoolProgressBar poolName={poolName} onBack={handleBack} currentStep={3} completedSteps={[1, 2]} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Card - Terrain or Activity Preferences */}
+          <div className={`bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col ${currentStep === 1 ? 'mx-auto lg:col-span-2 max-w-4xl p-8' : currentStep === 2 ? 'mx-auto lg:col-span-2 max-w-5xl p-8' : 'p-6'}`}> 
+            {currentStep === 1 && (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                Saving...
-              </>
-            ) : currentStep === 1 ? (
-              <>
-                Continue
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </>
-            ) : (
-              <>
-                Continue to Destinations
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                    What terrains do you prefer?
+                  </h2>
+                  <p className="text-gray-600">
+                    Select the types of landscapes you'd like to visit in Sri Lanka
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  {terrainPreferences.map(preference => {
+                    const IconComponent = preference.icon;
+                    const isSelected = selectedTerrainPreferences.includes(preference.id);
+                    return (
+                      <button
+                        key={preference.id}
+                        onClick={() => handleTerrainToggle(preference.id)}
+                        className={`relative p-8 rounded-2xl border-2 text-center transition-all duration-200 group hover:scale-105 ${
+                          isSelected
+                            ? 'border-primary-600 bg-primary-600 text-white shadow-lg'
+                            : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-md'
+                        }`}
+                      >
+                        <div className={`flex items-center justify-center w-24 h-24 rounded-full mx-auto mb-4 transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-white bg-opacity-20' 
+                            : 'bg-gray-100 group-hover:bg-primary-50'
+                        }`}>
+                          <IconComponent 
+                            size={48} 
+                            className={`transition-colors duration-200 ${
+                              isSelected ? 'text-white' : 'text-primary-600'
+                            }`}
+                          />
+                        </div>
+                        <span className={`font-semibold text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                          {preference.name}
+                        </span>
+                        {isSelected && (
+                          <div className="absolute top-3 right-3">
+                            <div className="bg-white rounded-full p-1">
+                              <svg className="w-4 h-4 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </>
             )}
-          </button>
+            {currentStep === 2 && (
+              <>
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                    What activities interest you?
+                  </h2>
+                  <p className="text-gray-600">
+                    Select the activities you'd like to enjoy during your trip
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+                  {activityPreferences.map(activity => {
+                    const IconComponent = activity.icon;
+                    const isSelected = selectedActivityPreferences.includes(activity.id);
+                    return (
+                      <button
+                        key={activity.id}
+                        onClick={() => handleActivityToggle(activity.id)}
+                        className={`relative px-6 py-8 rounded-2xl border-2 text-center transition-all duration-200 group hover:scale-105 ${
+                          isSelected
+                            ? 'border-primary-600 bg-primary-600 text-white shadow-lg'
+                            : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-md'
+                        }`}
+                      >
+                        <div className={`flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-4 transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-white bg-opacity-20' 
+                            : 'bg-gray-100 group-hover:bg-primary-50'
+                        }`}>
+                          <IconComponent 
+                            size={40} 
+                            className={`transition-colors duration-200 ${
+                              isSelected ? 'text-white' : 'text-primary-600'
+                            }`}
+                          />
+                        </div>
+                        <span className={`font-semibold text-sm ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                          {activity.name}
+                        </span>
+                        {isSelected && (
+                          <div className="absolute top-3 right-3">
+                            <div className="bg-white rounded-full p-1">
+                              <svg className="w-4 h-4 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+          {/* Navigation Buttons - styled like TripDurationPage */}
+          <div className="lg:col-span-2 flex flex-row gap-4 justify-end mt-6">
+            <button
+              onClick={handleBack}
+              className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className={`px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
+                canProceed()
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {currentStep === 2 ? 'Continue to Itinerary' : 'Next'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ import TripItineraryPage from '../pages/TripItineraryPage';
 import MyTripsPage from '../pages/MyTripsPage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
-import PoolDestinationsPage from '../pages/pools/PoolDestinationsPage';
+import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
 import PoolDetailsPage from '../pages/pools/PoolDetailsPage';
 import { Navigate } from 'react-router-dom';
 
@@ -85,9 +85,9 @@ const GeneralRoutes = () => (
         <PoolPreferencesPage />
       </PublicRoute>
     } />
-    <Route path="/pool-destinations" element={
+    <Route path="/pool-itinerary" element={
       <PublicRoute>
-        <PoolDestinationsPage />
+        <PoolItineraryPage />
       </PublicRoute>
     } />
     <Route path="/pool-details" element={
