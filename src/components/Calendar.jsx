@@ -20,6 +20,9 @@ const Calendar = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [rangeStart, setRangeStart] = useState(null);
 
+  // Ensure selectedDates is always an array
+  const safeDates = Array.isArray(selectedDates) ? selectedDates : [];
+
   // Get the first day of the month
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
@@ -42,7 +45,7 @@ const Calendar = ({
   const isDateSelected = (day) => {
     if (!day) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    return selectedDates.some(selectedDate => {
+    return safeDates.some(selectedDate => {
       if (!selectedDate) return false;
       return date.toDateString() === selectedDate.toDateString();
     });
@@ -70,9 +73,9 @@ const Calendar = ({
   };
 
   const isDateInRange = (day) => {
-    if (!day || selectedDates.length !== 2) return false;
+    if (!day || safeDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const [start, end] = selectedDates.sort((a, b) => a - b);
+    const [start, end] = safeDates.sort((a, b) => a - b);
     
     // Don't highlight the start and end dates as "in range" since they are already highlighted as selected
     const isStartOrEnd = date.toDateString() === start.toDateString() || date.toDateString() === end.toDateString();
@@ -82,16 +85,16 @@ const Calendar = ({
   };
 
   const isRangeStart = (day) => {
-    if (!day || selectedDates.length !== 2) return false;
+    if (!day || safeDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const [start] = selectedDates.sort((a, b) => a - b);
+    const [start] = safeDates.sort((a, b) => a - b);
     return date.toDateString() === start.toDateString();
   };
 
   const isRangeEnd = (day) => {
-    if (!day || selectedDates.length !== 2) return false;
+    if (!day || safeDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const [, end] = selectedDates.sort((a, b) => a - b);
+    const [, end] = safeDates.sort((a, b) => a - b);
     return date.toDateString() === end.toDateString();
   };
 
@@ -101,27 +104,27 @@ const Calendar = ({
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     
     if (mode === 'single') {
-      onDateSelect?.(date);
+      onDateSelect?.([date]);
     } else if (mode === 'range') {
-      if (selectedDates.length === 0) {
+      if (safeDates.length === 0) {
         // First date selection
         setRangeStart(date);
-        onDateSelect?.(date);
-      } else if (selectedDates.length === 1) {
+        onDateSelect?.([date]);
+      } else if (safeDates.length === 1) {
         // Second date selection - complete the range
-        const start = selectedDates[0] < date ? selectedDates[0] : date;
-        const end = selectedDates[0] < date ? date : selectedDates[0];
+        const start = safeDates[0] < date ? safeDates[0] : date;
+        const end = safeDates[0] < date ? date : safeDates[0];
         setRangeStart(null);
-        onDateRangeSelect?.([start, end]);
+        onDateSelect?.([start, end]);
       } else {
         // Start a new range selection
         setRangeStart(date);
-        onDateSelect?.(date);
+        onDateSelect?.([date]);
       }
     } else if (mode === 'multiple') {
       const newDates = isDateSelected(day) 
-        ? selectedDates.filter(d => d.toDateString() !== date.toDateString())
-        : [...selectedDates, date];
+        ? safeDates.filter(d => d.toDateString() !== date.toDateString())
+        : [...safeDates, date];
       onDateSelect?.(newDates);
     }
   };

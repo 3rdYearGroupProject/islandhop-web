@@ -11,6 +11,10 @@ import TripDurationPage from '../pages/TripDurationPage';
 import TripPreferencesPage from '../pages/TripPreferencesPage';
 import TripItineraryPage from '../pages/TripItineraryPage';
 import MyTripsPage from '../pages/MyTripsPage';
+import PoolDurationPage from '../pages/pools/PoolDurationPage';
+import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
+import PoolDestinationsPage from '../pages/pools/PoolDestinationsPage';
+import PoolDetailsPage from '../pages/pools/PoolDetailsPage';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -67,6 +71,28 @@ const GeneralRoutes = () => (
     <Route path="/trip-itinerary" element={
       <PublicRoute>
         <TripItineraryPage />
+      </PublicRoute>
+    } />
+    
+    {/* Pool Creation Routes */}
+    <Route path="/pool-duration" element={
+      <PublicRoute>
+        <PoolDurationPage />
+      </PublicRoute>
+    } />
+    <Route path="/pool-preferences" element={
+      <PublicRoute>
+        <PoolPreferencesPage />
+      </PublicRoute>
+    } />
+    <Route path="/pool-destinations" element={
+      <PublicRoute>
+        <PoolDestinationsPage />
+      </PublicRoute>
+    } />
+    <Route path="/pool-details" element={
+      <PublicRoute>
+        <PoolDetailsPage />
       </PublicRoute>
     } />
     

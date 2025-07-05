@@ -1,3 +1,48 @@
+/* Blue thumb for pool size slider */
+input[type='range'].slider-blue-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px 0 rgba(37,99,235,0.15);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+input[type='range'].slider-blue-thumb::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px 0 rgba(37,99,235,0.15);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+input[type='range'].slider-blue-thumb::-ms-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px 0 rgba(37,99,235,0.15);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+input[type='range'].slider-blue-thumb:focus::-webkit-slider-thumb {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+input[type='range'].slider-blue-thumb:focus::-moz-range-thumb {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+input[type='range'].slider-blue-thumb:focus::-ms-thumb {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
 /* App-specific styles */
 .App {
   min-height: 100vh;

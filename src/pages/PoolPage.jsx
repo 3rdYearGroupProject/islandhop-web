@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Navbar from '../components/Navbar';
 import FindPools from './pools/FindPools';
 import MyPools from './pools/MyPools';
 import ConfirmedPools from './pools/ConfirmedPools';
 import OngoingPools from './pools/OngoingPools';
+import CreatePoolModal from '../components/pools/CreatePoolModal';
 import pool4kVideo from '../assets/pool4k.mp4';
 
 const tabList = [
@@ -15,6 +19,39 @@ const tabList = [
 
 const PoolPage = () => {
   const [activeTab, setActiveTab] = useState('find');
+  const [isCreatePoolModalOpen, setIsCreatePoolModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('🔐 Current user UID:', user.uid);
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleCreatePool = (poolData) => {
+    console.log('🚀 Creating pool with user UID:', currentUser?.uid);
+    console.log('📝 Pool data:', poolData);
+    
+    // Navigate to pool duration page with pool data and user UID
+    navigate('/pool-duration', { 
+      state: { 
+        poolName: poolData.name,
+        poolDescription: poolData.description,
+        userUid: currentUser?.uid
+      } 
+    });
+    setIsCreatePoolModalOpen(false);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -61,8 +98,8 @@ const PoolPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
+              onClick={() => setIsCreatePoolModalOpen(true)}
               className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
-              // TODO: Add onClick handler to open create pool modal when implemented
             >
               <svg className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
               Create New Pool
@@ -94,6 +131,13 @@ const PoolPage = () => {
           {renderTabContent()}
         </div>
       </div>
+
+      {/* Create Pool Modal */}
+      <CreatePoolModal
+        isOpen={isCreatePoolModalOpen}
+        onClose={() => setIsCreatePoolModalOpen(false)}
+        onCreatePool={handleCreatePool}
+      />
     </div>
   );
 };
