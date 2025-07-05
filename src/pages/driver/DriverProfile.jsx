@@ -121,10 +121,10 @@ const DriverProfile = () => {
               ...driverData,
               firstName: res.data.firstName || '',
               lastName: res.data.lastName || '',
-              phone: res.data.phone || '',
+              phone: res.data.phoneNumber || '',
               dateOfBirth: res.data.dateOfBirth || '',
               address: res.data.address || '',
-              emergencyContact: res.data.emergencyContact || '',
+              emergencyContact: res.data.emergencyContactNumber || '',
               emergencyContactName: res.data.emergencyContactName || '',
               profilePicture: res.data.profilePicture || driverData.profilePicture,
               documents: {
