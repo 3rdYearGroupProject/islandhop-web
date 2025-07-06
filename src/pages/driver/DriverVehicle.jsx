@@ -58,9 +58,20 @@ const DriverVehicle = () => {
     return () => unsub();
   }, []);
 
-  const fetchVehicleData = async (email) => {
+  const fetchVehicleData = async (emailParam) => {
     setLoading(true);
     try {
+      let email = emailParam;
+      if (!email) {
+        const user = auth.currentUser;
+        email = user ? user.email : '';
+        console.log('[FETCH] Using auth email:', email);
+      }
+      if (!email) {
+        toast.error('User email not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
       console.log('[FETCH] GET /driver/vehicle?email=' + email);
       const res = await userServicesApi.get(`/driver/vehicle?email=${email}`);
       console.log('[FETCH RESPONSE]', res);
@@ -125,8 +136,18 @@ const DriverVehicle = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
+      let email = userEmail;
+      if (!email) {
+        const user = auth.currentUser;
+        email = user ? user.email : '';
+      }
+      if (!email) {
+        toast.error('User email not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
       const formData = new FormData();
-      formData.append('email', userEmail);
+      formData.append('email', email);
       formData.append('Fueltype', vehicleData.fuelType);
       formData.append('Capacity', vehicleData.capacity);
       formData.append('Make', vehicleData.make);
@@ -150,7 +171,7 @@ const DriverVehicle = () => {
       console.log('[UPDATE RESPONSE]', res);
       setIsEditing(false);
       setIsEditingDocs(false);
-      fetchVehicleData(userEmail);
+      fetchVehicleData(email);
       toast.success('Vehicle details updated successfully!', { duration: 3000 });
     } catch (err) {
       console.error('[UPDATE ERROR]', err);
