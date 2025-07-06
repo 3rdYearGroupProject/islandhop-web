@@ -105,6 +105,8 @@ const DriverProfile = () => {
     }
   });
 
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+
   useEffect(() => {
     let unsubscribe;
     setLoadingProfile(true);
@@ -163,23 +165,44 @@ const DriverProfile = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Only send editable fields
-      const payload = {
-        email: firebaseData.email,
-        firstName: driverData.firstName,
-        lastName: driverData.lastName,
-        phone: driverData.phone,
-        dateOfBirth: driverData.dateOfBirth,
-        address: driverData.address,
-        emergencyContact: driverData.emergencyContact,
-        emergencyContactName: driverData.emergencyContactName,
-        profilePicture: driverData.profilePicture,
-        acceptPartialTrips: driverData.preferences.acceptPartialTrips ? 1 : 0,
-        autoAcceptTrips: driverData.preferences.autoAcceptTrips ? 1 : 0,
-        maxDistance: driverData.preferences.maxDistance
-      };
-      await api.put('/driver/profile', payload);
+      let payload;
+      let config = {};
+      if (profilePictureFile) {
+        // Use FormData if a new image is selected
+        payload = new FormData();
+        payload.append('email', firebaseData.email);
+        payload.append('firstName', driverData.firstName);
+        payload.append('lastName', driverData.lastName);
+        payload.append('phone', driverData.phone);
+        payload.append('dateOfBirth', driverData.dateOfBirth);
+        payload.append('address', driverData.address);
+        payload.append('emergencyContact', driverData.emergencyContact);
+        payload.append('emergencyContactName', driverData.emergencyContactName);
+        payload.append('acceptPartialTrips', driverData.preferences.acceptPartialTrips ? 1 : 0);
+        payload.append('autoAcceptTrips', driverData.preferences.autoAcceptTrips ? 1 : 0);
+        payload.append('maxDistance', driverData.preferences.maxDistance);
+        payload.append('profilePicture', profilePictureFile);
+        config.headers = { 'Content-Type': 'multipart/form-data' };
+      } else {
+        // Fallback to JSON if no new image
+        payload = {
+          email: firebaseData.email,
+          firstName: driverData.firstName,
+          lastName: driverData.lastName,
+          phone: driverData.phone,
+          dateOfBirth: driverData.dateOfBirth,
+          address: driverData.address,
+          emergencyContact: driverData.emergencyContact,
+          emergencyContactName: driverData.emergencyContactName,
+          profilePicture: driverData.profilePicture,
+          acceptPartialTrips: driverData.preferences.acceptPartialTrips ? 1 : 0,
+          autoAcceptTrips: driverData.preferences.autoAcceptTrips ? 1 : 0,
+          maxDistance: driverData.preferences.maxDistance
+        };
+      }
+      await api.put('/driver/profile', payload, config);
       setIsEditing(false);
+      setProfilePictureFile(null);
     } catch (err) {
       // handle error
     }
@@ -282,11 +305,11 @@ const DriverProfile = () => {
                   onChange={e => {
                     const file = e.target.files[0];
                     if (file) {
+                      setProfilePictureFile(file);
                       setDriverData(prev => ({
                         ...prev,
                         profilePicture: URL.createObjectURL(file)
                       }));
-                      // Optionally, you can store the file in state for upload on save
                     }
                   }}
                 />
