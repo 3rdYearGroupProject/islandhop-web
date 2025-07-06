@@ -202,10 +202,10 @@ const DriverVehicle = () => {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Vehicle Management
+                Vehicle Details
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Manage your vehicle information, documents, and maintenance records
+                Your vehicle information, documents, and maintenance records
               </p>
             </div>
           </div>
