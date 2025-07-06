@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import logo from '../assets/islandHopIcon.png'; // Icon
 import logoText from '../assets/IslandHop.png'; // Full logo text
@@ -7,6 +7,7 @@ import './GoogleTranslate.css'; // Import Google Translate styles
 
 const Navbar = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [showLang, setShowLang] = useState(false);
   const [currentLang, setCurrentLang] = useState('English');
   const translateRef = useRef(null);
@@ -162,19 +163,31 @@ const Navbar = () => {
 
   return (
     <nav className="w-full fixed top-0 left-0 right-0 z-50 px-2 py-4">
-      <div className="max-w-[95%] mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 pr-8 sm:pr-10 lg:pr-12 pl-6 flex items-center h-20">
+      <div className="max-w-[95%] mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 pr-4 sm:pr-4 lg:pr-4 pl-8 flex items-center h-20">
         {/* Logo - Left Edge */}
-        <Link to="/" className="flex items-center">
-          <img src={logo} alt="IslandHop Icon" className="h-10 w-10 mr-3" />
-          <img src={logoText} alt="IslandHop" className="h-8" />
+        <Link to="/" className="flex items-center ml-2">
+          <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-2" />
+          <img src={logoText} alt="IslandHop" className="h-6" />
         </Link>
         
         {/* Nav Links - Center */}
-        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-12">
-          <Link to="/discover" className="text-gray-700 hover:text-primary-600 font-medium">Discover</Link>
-          <Link to="/trips" className="text-gray-700 hover:text-primary-600 font-medium">Trips</Link>
-          <Link to="/pools" className="text-gray-700 hover:text-primary-600 font-medium">Pools</Link>
-          <Link to="/about" className="text-gray-700 hover:text-primary-600 font-medium">About</Link>
+        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-20">
+          <Link to="/discover" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/discover' ? 'font-bold' : 'font-normal'} relative`}>
+            Discover
+            {location.pathname === '/discover' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+          </Link>
+          <Link to="/trips" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/trips' ? 'font-bold' : 'font-normal'} relative`}>
+            Trips
+            {location.pathname === '/trips' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+          </Link>
+          <Link to="/pools" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/pools' ? 'font-bold' : 'font-normal'} relative`}>
+            Pools
+            {location.pathname === '/pools' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+          </Link>
+          <Link to="/about" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/about' ? 'font-bold' : 'font-normal'} relative`}>
+            About
+            {location.pathname === '/about' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+          </Link>
         </div>
         
         {/* Spacer for layout balance */}
@@ -229,7 +242,7 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/login" className="text-gray-700 hover:text-primary-600 font-medium">Sign in</Link>
-              <Link to="/signup" className="ml-2 px-4 py-2 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition">Sign up</Link>
+              <Link to="/signup" className="ml-2 px-4 py-3 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition">Sign up</Link>
             </>
           )}
         </div>
