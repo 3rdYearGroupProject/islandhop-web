@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { userServicesApi } from '../../api/axios';
 import { 
   TruckIcon, 
   WrenchScrewdriverIcon, 
@@ -9,77 +12,151 @@ import {
   PlusIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
+import { useToast } from '../../components/ToastProvider';
+
+const statusMap = {
+  1: 'Verified',
+  2: 'Pending',
+  3: 'Rejected'
+};
 
 const DriverVehicle = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingDocs, setIsEditingDocs] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const [showCompletePopup, setShowCompletePopup] = useState(false);
+
+  // Vehicle and document images
+  const [vehiclePics, setVehiclePics] = useState([null, null, null, null]);
+  const [vehiclePicPreviews, setVehiclePicPreviews] = useState([null, null, null, null]);
+  const [docPics, setDocPics] = useState([null, null]); // [vehicle reg, insurance]
+  const [docPicPreviews, setDocPicPreviews] = useState([null, null]);
 
   const [vehicleData, setVehicleData] = useState({
-    make: 'Toyota',
-    model: 'Prius',
-    year: '2020',
-    color: 'Silver',
-    plateNumber: 'CAR-1234',
-    capacity: '4',
-    type: 'sedan',
-    fuelType: 'hybrid',
-    mileage: '45,230'
+    make: '',
+    model: '',
+    year: '',
+    color: '',
+    plateNumber: '',
+    capacity: '',
+    type: '',
+    fuelType: '',
+    vehicle_registration_status: 2,
+    insurance_certificate_status: 2
   });
 
-  const [documents, setDocuments] = useState([
-    {
-      id: 1,
-      type: 'Vehicle Registration',
-      status: 'verified',
-      expiryDate: '2025-06-15',
-      uploadDate: '2024-01-15'
-    },
-    {
-      id: 2,
-      type: 'Insurance Certificate',
-      status: 'verified',
-      expiryDate: '2024-12-31',
-      uploadDate: '2024-01-10'
-    },
-    {
-      id: 3,
-      type: 'Roadworthiness Certificate',
-      status: 'pending',
-      expiryDate: '2024-08-20',
-      uploadDate: '2024-07-01'
-    }
-  ]);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, user => {
+      if (user) {
+        setUserEmail(user.email);
+        fetchVehicleData(user.email);
+      }
+    });
+    return () => unsub();
+  }, []);
 
-  const [maintenance, setMaintenance] = useState([
-    {
-      id: 1,
-      type: 'Oil Change',
-      date: '2024-06-15',
-      mileage: '45,000',
-      cost: 'LKR 8,500',
-      garage: 'Quick Service Center'
-    },
-    {
-      id: 2,
-      type: 'Tire Replacement',
-      date: '2024-05-10',
-      mileage: '44,500',
-      cost: 'LKR 65,000',
-      garage: 'Tire World'
-    },
-    {
-      id: 3,
-      type: 'Full Service',
-      date: '2024-03-20',
-      mileage: '43,000',
-      cost: 'LKR 25,000',
-      garage: 'Toyota Service Center'
+  const fetchVehicleData = async (email) => {
+    setLoading(true);
+    try {
+      console.log('[FETCH] GET /driver/vehicle?email=' + email);
+      const res = await userServicesApi.get(`/driver/vehicle?email=${email}`);
+      console.log('[FETCH RESPONSE]', res);
+      if (res.status === 200 && res.data) {
+        setVehicleData({
+          make: res.data.Make || '',
+          model: res.data.Model || '',
+          year: res.data.Year || '',
+          color: res.data.Color || '',
+          plateNumber: res.data['Plate Number'] || '',
+          capacity: res.data.Capacity || '',
+          type: res.data.Type || '',
+          fuelType: res.data.Fueltype || '',
+          vehicle_registration_status: res.data['Vehicle registration status'] || 2,
+          insurance_certificate_status: res.data['Insurance certificate status'] || 2
+        });
+        setVehiclePicPreviews([
+          res.data.Veh_pic_1 || null,
+          res.data.Veh_pic_2 || null,
+          res.data.Veh_pic_3 || null,
+          res.data.Veh_pic_4 || null
+        ]);
+        setDocPicPreviews([
+          res.data['Vehicle_registration(pic)'] || null,
+          res.data['Insurance Pic'] || null
+        ]);
+        // Check for missing required fields
+        const requiredFields = [
+          res.data.Make, res.data.Model, res.data.Year, res.data.Color, res.data['Plate Number'],
+          res.data.Capacity, res.data.Type, res.data.Fueltype,
+          res.data.Veh_pic_1, res.data['Vehicle_registration(pic)'], res.data['Insurance Pic']
+        ];
+        if (requiredFields.some(f => !f)) {
+          setShowCompletePopup(true);
+          toast.error('Please complete all vehicle and document details.', { duration: 4000 });
+        }
+      }
+    } catch (err) {
+      console.error('[FETCH ERROR]', err);
+      toast.error('Failed to fetch vehicle details.', { duration: 4000 });
     }
-  ]);
+    setLoading(false);
+  };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Save vehicle data logic here
+  const handleVehiclePicChange = (idx, file) => {
+    const newPics = [...vehiclePics];
+    newPics[idx] = file;
+    setVehiclePics(newPics);
+    const newPreviews = [...vehiclePicPreviews];
+    newPreviews[idx] = file ? URL.createObjectURL(file) : null;
+    setVehiclePicPreviews(newPreviews);
+  };
+  const handleDocPicChange = (idx, file) => {
+    const newPics = [...docPics];
+    newPics[idx] = file;
+    setDocPics(newPics);
+    const newPreviews = [...docPicPreviews];
+    newPreviews[idx] = file ? URL.createObjectURL(file) : null;
+    setDocPicPreviews(newPreviews);
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('email', userEmail);
+      formData.append('Fueltype', vehicleData.fuelType);
+      formData.append('Capacity', vehicleData.capacity);
+      formData.append('Make', vehicleData.make);
+      formData.append('Model', vehicleData.model);
+      formData.append('Year', vehicleData.year);
+      formData.append('Color', vehicleData.color);
+      formData.append('Plate Number', vehicleData.plateNumber);
+      formData.append('Type', vehicleData.type);
+      // Images
+      vehiclePics.forEach((file, idx) => {
+        if (file) formData.append(`Veh_pic_${idx+1}`, file);
+      });
+      docPics.forEach((file, idx) => {
+        if (file) formData.append(idx === 0 ? 'Vehicle_registration(pic)' : 'Insurance Pic', file);
+      });
+      // Statuses
+      formData.append('Vehicle registration status', vehicleData.vehicle_registration_status);
+      formData.append('Insurance certificate status', vehicleData.insurance_certificate_status);
+      console.log('[UPDATE] PUT /driver/vehicle', formData);
+      const res = await userServicesApi.put('/driver/vehicle', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      console.log('[UPDATE RESPONSE]', res);
+      setIsEditing(false);
+      setIsEditingDocs(false);
+      fetchVehicleData(userEmail);
+      toast.success('Vehicle details updated successfully!', { duration: 3000 });
+    } catch (err) {
+      console.error('[UPDATE ERROR]', err);
+      toast.error('Failed to update vehicle details.', { duration: 4000 });
+    }
+    setLoading(false);
   };
 
   const getStatusColor = (status) => {
@@ -93,8 +170,7 @@ const DriverVehicle = () => {
 
   const tabs = [
     { id: 'details', name: 'Vehicle Details', icon: TruckIcon },
-    { id: 'documents', name: 'Documents', icon: DocumentTextIcon },
-    { id: 'maintenance', name: 'Maintenance', icon: WrenchScrewdriverIcon }
+    { id: 'documents', name: 'Documents', icon: DocumentTextIcon }
   ];
 
   return (
@@ -110,12 +186,6 @@ const DriverVehicle = () => {
               <p className="text-gray-600 dark:text-gray-400">
                 Manage your vehicle information, documents, and maintenance records
               </p>
-            </div>
-            <div className="flex space-x-3">
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center">
-                <CameraIcon className="h-5 w-5 mr-2" />
-                Add Photos
-              </button>
             </div>
           </div>
         </div>
@@ -163,7 +233,44 @@ const DriverVehicle = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.entries(vehicleData).map(([key, value]) => (
+                {/* Fuel Type Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fuel Type</label>
+                  {isEditing ? (
+                    <select
+                      value={vehicleData.fuelType}
+                      onChange={e => setVehicleData(prev => ({ ...prev, fuelType: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="petrol">Petrol</option>
+                      <option value="diesel">Diesel</option>
+                      <option value="hybrid">Hybrid</option>
+                      <option value="electric">Electric</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
+                      {vehicleData.fuelType.charAt(0).toUpperCase() + vehicleData.fuelType.slice(1)}
+                    </p>
+                  )}
+                </div>
+                {/* Capacity with unit */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Capacity ({vehicleData.fuelType === 'electric' ? 'kW' : 'CC'})</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={vehicleData.capacity}
+                      onChange={e => setVehicleData(prev => ({ ...prev, capacity: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                    />
+                  ) : (
+                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
+                      {vehicleData.capacity} {vehicleData.fuelType === 'electric' ? 'kW' : 'CC'}
+                    </p>
+                  )}
+                </div>
+                {/* Other fields */}
+                {['make','model','year','color','plateNumber','type'].map(key => (
                   <div key={key}>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
                       {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
@@ -171,13 +278,13 @@ const DriverVehicle = () => {
                     {isEditing ? (
                       <input
                         type="text"
-                        value={value}
-                        onChange={(e) => setVehicleData(prev => ({ ...prev, [key]: e.target.value }))}
+                        value={vehicleData[key]}
+                        onChange={e => setVehicleData(prev => ({ ...prev, [key]: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
-                        {value}
+                        {vehicleData[key]}
                       </p>
                     )}
                   </div>
@@ -208,9 +315,19 @@ const DriverVehicle = () => {
                 Vehicle Photos
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="aspect-square bg-gray-100 dark:bg-secondary-700 rounded-lg flex items-center justify-center">
-                    <CameraIcon className="h-12 w-12 text-gray-400" />
+                {[0,1,2,3].map((i) => (
+                  <div key={i} className="aspect-square bg-gray-100 dark:bg-secondary-700 rounded-lg flex flex-col items-center justify-center relative">
+                    {vehiclePicPreviews[i] ? (
+                      <img src={vehiclePicPreviews[i]} alt={`Vehicle Pic ${i+1}`} className="object-cover w-full h-full rounded-lg" />
+                    ) : (
+                      <CameraIcon className="h-12 w-12 text-gray-400" />
+                    )}
+                    {isEditing && (
+                      <label className="absolute bottom-2 left-2 w-4/5">
+                        <span className="block w-full px-3 py-2 bg-blue-600 text-white text-center rounded-lg cursor-pointer hover:bg-blue-700 transition-colors text-sm">Upload</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleVehiclePicChange(i, e.target.files[0])} />
+                      </label>
+                    )}
                   </div>
                 ))}
               </div>
@@ -222,84 +339,91 @@ const DriverVehicle = () => {
         {activeTab === 'documents' && (
           <div className="space-y-6">
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
-              <div className="p-6 border-b border-gray-200 dark:border-secondary-700">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Vehicle Documents
-                  </h2>
-                  <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center">
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    Upload Document
-                  </button>
+              <div className="p-6 border-b border-gray-200 dark:border-secondary-700 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Vehicle Documents
+                </h2>
+                <div className="flex space-x-3">
+                  {isEditingDocs ? (
+                    <>
+                      <button
+                        onClick={() => setIsEditingDocs(false)}
+                        className="px-4 py-2 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                      >
+                        Save Changes
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditingDocs(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                    >
+                      <PencilIcon className="h-4 w-4 mr-2" />
+                      Edit Documents
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-secondary-600 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <DocumentTextIcon className="h-8 w-8 text-gray-400" />
-                        <div>
-                          <h3 className="font-medium text-gray-900 dark:text-white">{doc.type}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Uploaded: {doc.uploadDate} • Expires: {doc.expiryDate}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                          {doc.status}
-                        </span>
-                        <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                          View
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Vehicle Registration Pic */}
+                <div className="border border-gray-200 dark:border-secondary-600 rounded-lg p-4 flex flex-col items-center">
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">Vehicle Registration</h3>
+                  {docPicPreviews[0] ? (
+                    <img src={docPicPreviews[0]} alt="Vehicle Registration" className="object-cover w-full h-40 rounded-lg mb-2" />
+                  ) : (
+                    <CameraIcon className="h-12 w-12 text-gray-400 mb-2" />
+                  )}
+                  {isEditingDocs && (
+                    <label className="w-full">
+                      <span className="block w-full px-3 py-2 bg-blue-600 text-white text-center rounded-lg cursor-pointer hover:bg-blue-700 transition-colors text-sm">Upload</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={e => handleDocPicChange(0, e.target.files[0])} />
+                    </label>
+                  )}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(vehicleData.vehicle_registration_status)}`}>
+                    {statusMap[vehicleData.vehicle_registration_status]}
+                  </span>
+                </div>
+                {/* Insurance Pic */}
+                <div className="border border-gray-200 dark:border-secondary-600 rounded-lg p-4 flex flex-col items-center">
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">Insurance Certificate</h3>
+                  {docPicPreviews[1] ? (
+                    <img src={docPicPreviews[1]} alt="Insurance Certificate" className="object-cover w-full h-40 rounded-lg mb-2" />
+                  ) : (
+                    <CameraIcon className="h-12 w-12 text-gray-400 mb-2" />
+                  )}
+                  {isEditingDocs && (
+                    <label className="w-full">
+                      <span className="block w-full px-3 py-2 bg-blue-600 text-white text-center rounded-lg cursor-pointer hover:bg-blue-700 transition-colors text-sm">Upload</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={e => handleDocPicChange(1, e.target.files[0])} />
+                    </label>
+                  )}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(vehicleData.insurance_certificate_status)}`}>
+                    {statusMap[vehicleData.insurance_certificate_status]}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Maintenance Tab */}
-        {activeTab === 'maintenance' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
-              <div className="p-6 border-b border-gray-200 dark:border-secondary-700">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Maintenance History
-                  </h2>
-                  <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center">
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    Add Record
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {maintenance.map((record) => (
-                    <div key={record.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-secondary-600 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <WrenchScrewdriverIcon className="h-8 w-8 text-gray-400" />
-                        <div>
-                          <h3 className="font-medium text-gray-900 dark:text-white">{record.type}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {record.garage} • {record.date} • {record.mileage} km
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900 dark:text-white">{record.cost}</p>
-                        <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm">
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* Popup for incomplete details */}
+        {showCompletePopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+              <h2 className="text-2xl font-semibold text-red-600 mb-4">Complete Your Vehicle Details</h2>
+              <p className="text-gray-700 mb-6">Some required vehicle or document details are missing. Please complete all fields and upload all required images to proceed.</p>
+              <button
+                className="px-6 py-2 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition"
+                onClick={() => setShowCompletePopup(false)}
+              >
+                OK
+              </button>
             </div>
           </div>
         )}
