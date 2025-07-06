@@ -11,14 +11,15 @@ const TripDurationPage = () => {
   const navigate = useNavigate();
   const { tripName, userUid } = location.state || {};
   
-  console.log('📍 TripDurationPage received:', { tripName, userUid });
-  
   const [selectedDates, setSelectedDates] = useState([]);
   const [flightData, setFlightData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const leftCardRef = useRef(null);
   const [leftCardHeight, setLeftCardHeight] = useState('auto');
+
+  console.log('📍 TripDurationPage received:', { tripName, userUid });
+  console.log('📊 Current state - selectedDates:', selectedDates.length, 'userUid:', userUid, 'isCreatingTrip:', isCreatingTrip);
 
   // Mock flight data
   const mockFlightData = {
@@ -43,7 +44,13 @@ const TripDurationPage = () => {
     if (selectedDates.length > 0) {
       setIsLoading(true);
       const startDate = selectedDates[0];
-      const dateKey = startDate.toISOString().split('T')[0];
+      // Ensure startDate is a valid Date object
+      const dateObj = startDate instanceof Date ? startDate : new Date(startDate);
+      if (isNaN(dateObj.getTime())) {
+        setIsLoading(false);
+        return;
+      }
+      const dateKey = dateObj.toISOString().split('T')[0];
       
       // Simulate API call delay
       setTimeout(() => {
@@ -59,12 +66,13 @@ const TripDurationPage = () => {
     }
   }, [selectedDates, isLoading, flightData]);
 
-  const handleDateSelect = (date) => {
-    // Start new range selection
-    setSelectedDates([date]);
+  const handleDateSelect = (dates) => {
+    // This handles both single date and range selection
+    setSelectedDates(dates);
   };
 
   const handleDateRangeSelect = (dates) => {
+    // This is called when a range is completed
     setSelectedDates(dates);
   };
 
@@ -86,54 +94,8 @@ const TripDurationPage = () => {
     navigate('/trips');
   };
 
-  const handleContinue = async () => {
-    if (selectedDates.length > 0 && userUid) {
-      setIsCreatingTrip(true);
-      
-      try {
-        // Format dates for backend (ISO format)
-        const startDate = selectedDates[0].toISOString().split('T')[0];
-        const endDate = selectedDates[selectedDates.length - 1].toISOString().split('T')[0];
-        
-        // Create basic trip in backend
-        const result = await createBasicTrip({
-          userUid,
-          tripName,
-          startDate,
-          endDate
-        });
-        
-        console.log('🎉 Trip created successfully:', result);
-        
-        // Navigate to next step with trip data
-        navigate('/trip-preferences', { 
-          state: { 
-            tripName, 
-            selectedDates,
-            tripId: result.tripId,
-            trip: result.trip,
-            userUid
-          } 
-        });
-      } catch (error) {
-        console.error('Failed to create trip:', error);
-        // You might want to show a toast error here
-        // For now, continue without backend trip creation
-        navigate('/trip-preferences', { 
-          state: { 
-            tripName, 
-            selectedDates,
-            userUid
-          } 
-        });
-      } finally {
-        setIsCreatingTrip(false);
-      }
-    }
-  };
-
   // Create basic trip with minimal information to reduce initial friction
-  const createBasicTrip = async (tripData) => {
+  async function createBasicTrip(tripData) {
     console.log('🚀 Sending trip creation request to backend...', {
       userUid: tripData.userUid,
       tripName: tripData.tripName,
@@ -159,6 +121,68 @@ const TripDurationPage = () => {
     } catch (error) {
       console.error('❌ Error creating trip:', error);
       throw new Error(`HTTP error! status: ${error.response?.status || 'unknown'}`);
+    }
+  }
+
+  const handleContinue = async () => {
+    if (selectedDates.length > 0) {
+      setIsCreatingTrip(true);
+      
+      try {
+        // Format dates for backend (ISO format)
+        const startDateObj = selectedDates[0] instanceof Date ? selectedDates[0] : new Date(selectedDates[0]);
+        const endDateObj = selectedDates[selectedDates.length - 1] instanceof Date ? selectedDates[selectedDates.length - 1] : new Date(selectedDates[selectedDates.length - 1]);
+        
+        // Validate dates
+        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+          console.error('Invalid dates selected');
+          setIsCreatingTrip(false);
+          return;
+        }
+        
+        const startDate = startDateObj.toISOString().split('T')[0];
+        const endDate = endDateObj.toISOString().split('T')[0];
+        
+        // Only try to create trip in backend if we have userUid
+        let result = null;
+        if (userUid) {
+          try {
+            result = await createBasicTrip({
+              userUid,
+              tripName,
+              startDate,
+              endDate
+            });
+            console.log('🎉 Trip created successfully:', result);
+          } catch (error) {
+            console.error('Failed to create trip in backend:', error);
+            // Continue anyway without backend trip creation
+          }
+        }
+        
+        // Navigate to next step with trip data
+        navigate('/trip-preferences', { 
+          state: { 
+            tripName, 
+            selectedDates,
+            tripId: result?.tripId,
+            trip: result?.trip,
+            userUid
+          } 
+        });
+      } catch (error) {
+        console.error('Failed to continue:', error);
+        // Fallback navigation without backend data
+        navigate('/trip-preferences', { 
+          state: { 
+            tripName, 
+            selectedDates,
+            userUid
+          } 
+        });
+      } finally {
+        setIsCreatingTrip(false);
+      }
     }
   };
 
@@ -189,7 +213,6 @@ const TripDurationPage = () => {
                 <Calendar
                   selectedDates={selectedDates}
                   onDateSelect={handleDateSelect}
-                  onDateRangeSelect={handleDateRangeSelect}
                   mode="range"
                   minDate={new Date()}
                   className="w-full"
@@ -305,9 +328,9 @@ const TripDurationPage = () => {
               </button>
               <button
                 onClick={handleContinue}
-                disabled={selectedDates.length === 0 || isCreatingTrip || !userUid}
+                disabled={selectedDates.length === 0 || isCreatingTrip}
                 className={`px-8 py-3 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                  selectedDates.length > 0 && !isCreatingTrip && userUid
+                  selectedDates.length > 0 && !isCreatingTrip
                     ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}

@@ -47,7 +47,10 @@ const Calendar = ({
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     return safeDates.some(selectedDate => {
       if (!selectedDate) return false;
-      return date.toDateString() === selectedDate.toDateString();
+      // Ensure selectedDate is a Date object
+      const dateObj = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+      if (isNaN(dateObj.getTime())) return false; // Invalid date
+      return date.toDateString() === dateObj.toDateString();
     });
   };
 
@@ -67,15 +70,26 @@ const Calendar = ({
       if (dateOnly > maxDateOnly) return true;
     }
     
-    return disabledDates.some(disabledDate => 
-      date.toDateString() === disabledDate.toDateString()
-    );
+    return disabledDates.some(disabledDate => {
+      const dateObj = disabledDate instanceof Date ? disabledDate : new Date(disabledDate);
+      if (isNaN(dateObj.getTime())) return false; // Invalid date
+      return date.toDateString() === dateObj.toDateString();
+    });
   };
 
   const isDateInRange = (day) => {
     if (!day || safeDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const [start, end] = safeDates.sort((a, b) => a - b);
+    
+    // Convert dates to Date objects safely
+    const dateObjs = safeDates.map(d => {
+      const dateObj = d instanceof Date ? d : new Date(d);
+      return isNaN(dateObj.getTime()) ? null : dateObj;
+    }).filter(Boolean);
+    
+    if (dateObjs.length !== 2) return false;
+    
+    const [start, end] = dateObjs.sort((a, b) => a - b);
     
     // Don't highlight the start and end dates as "in range" since they are already highlighted as selected
     const isStartOrEnd = date.toDateString() === start.toDateString() || date.toDateString() === end.toDateString();
@@ -87,14 +101,32 @@ const Calendar = ({
   const isRangeStart = (day) => {
     if (!day || safeDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const [start] = safeDates.sort((a, b) => a - b);
+    
+    // Convert dates to Date objects safely
+    const dateObjs = safeDates.map(d => {
+      const dateObj = d instanceof Date ? d : new Date(d);
+      return isNaN(dateObj.getTime()) ? null : dateObj;
+    }).filter(Boolean);
+    
+    if (dateObjs.length !== 2) return false;
+    
+    const [start] = dateObjs.sort((a, b) => a - b);
     return date.toDateString() === start.toDateString();
   };
 
   const isRangeEnd = (day) => {
     if (!day || safeDates.length !== 2) return false;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const [, end] = safeDates.sort((a, b) => a - b);
+    
+    // Convert dates to Date objects safely
+    const dateObjs = safeDates.map(d => {
+      const dateObj = d instanceof Date ? d : new Date(d);
+      return isNaN(dateObj.getTime()) ? null : dateObj;
+    }).filter(Boolean);
+    
+    if (dateObjs.length !== 2) return false;
+    
+    const [, end] = dateObjs.sort((a, b) => a - b);
     return date.toDateString() === end.toDateString();
   };
 
@@ -112,8 +144,15 @@ const Calendar = ({
         onDateSelect?.([date]);
       } else if (safeDates.length === 1) {
         // Second date selection - complete the range
-        const start = safeDates[0] < date ? safeDates[0] : date;
-        const end = safeDates[0] < date ? date : safeDates[0];
+        const firstDate = safeDates[0] instanceof Date ? safeDates[0] : new Date(safeDates[0]);
+        if (isNaN(firstDate.getTime())) {
+          // Invalid first date, start over
+          setRangeStart(date);
+          onDateSelect?.([date]);
+          return;
+        }
+        const start = firstDate < date ? firstDate : date;
+        const end = firstDate < date ? date : firstDate;
         setRangeStart(null);
         onDateSelect?.([start, end]);
       } else {
@@ -123,7 +162,11 @@ const Calendar = ({
       }
     } else if (mode === 'multiple') {
       const newDates = isDateSelected(day) 
-        ? safeDates.filter(d => d.toDateString() !== date.toDateString())
+        ? safeDates.filter(d => {
+            const dateObj = d instanceof Date ? d : new Date(d);
+            if (isNaN(dateObj.getTime())) return true; // Keep invalid dates (shouldn't happen)
+            return dateObj.toDateString() !== date.toDateString();
+          })
         : [...safeDates, date];
       onDateSelect?.(newDates);
     }
