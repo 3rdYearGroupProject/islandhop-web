@@ -1,0 +1,25 @@
+.animate-navbar-dropdown {
+  opacity: 0;
+  transform: translateY(-16px);
+  animation: navbarDropdownDown 0.2s ease-out forwards;
+}
+
+@keyframes navbarDropdownDown {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-navbar-dropdown-leave {
+  opacity: 1;
+  transform: translateY(0);
+  animation: navbarDropdownUp 0.18s ease-in forwards;
+}
+
+@keyframes navbarDropdownUp {
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
