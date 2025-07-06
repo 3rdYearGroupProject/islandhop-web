@@ -23,7 +23,7 @@ const Navbar = () => {
   const userMenuRef = useRef(null);
 
   // Example user profile data (replace with real data as needed)
-  const userProfile = {
+  const [userProfile, setUserProfile] = useState({
     firstName: 'John',
     lastName: 'Doe',
     dob: '1990-01-01',
@@ -31,7 +31,13 @@ const Navbar = () => {
     email: 'john.doe@email.com',
     languages: ['English', 'Sinhala', 'Tamil'],
     avatar: tempUser.displayName?.[0]?.toUpperCase() || 'U',
-  };
+  });
+
+  // Editable state for first and last name
+  const [editingFirstName, setEditingFirstName] = useState(false);
+  const [editingLastName, setEditingLastName] = useState(false);
+  const [firstNameInput, setFirstNameInput] = useState(userProfile.firstName);
+  const [lastNameInput, setLastNameInput] = useState(userProfile.lastName);
 
   // Load Google Translate script and initialize
   useEffect(() => {
@@ -337,17 +343,28 @@ const Navbar = () => {
             <div className="p-6">
               {/* Profile Section - Centered */}
               <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-28 h-28 bg-primary-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                  <span className="text-white text-4xl font-bold">{userProfile.avatar}</span>
+                <div className="relative w-28 h-28 mb-4">
+                  <div className="w-28 h-28 bg-primary-500 rounded-full flex items-center justify-center shadow-md">
+                    <span className="text-white text-4xl font-bold">{userProfile.avatar}</span>
+                  </div>
+                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-primary-500 flex items-center justify-center text-primary-600 hover:text-primary-700 hover:bg-gray-50 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-1">{userProfile.firstName} {userProfile.lastName}</h2>
                   <p className="text-gray-600 text-sm mb-2">{userProfile.email}</p>
-                  <div className="flex items-center justify-center text-xs text-gray-500">
+                  <div className="flex items-center justify-center text-xs text-gray-500 mb-2">
                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
                     </svg>
                     {userProfile.nationality}
+                    <button className="ml-2 text-primary-600 hover:text-primary-700 transition-colors">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -356,11 +373,95 @@ const Navbar = () => {
               <div className="pt-4">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Date of Birth</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
+                      First Name
+                      {editingFirstName ? (
+                        <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
+                          setUserProfile(p => ({ ...p, firstName: firstNameInput }));
+                          setEditingFirstName(false);
+                        }} title="Save">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingFirstName(true); setFirstNameInput(userProfile.firstName); }} title="Edit">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <div className="font-semibold text-gray-700 text-sm">
+                      {editingFirstName ? (
+                        <input
+                          className="border rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
+                          value={firstNameInput}
+                          onChange={e => setFirstNameInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, firstName: firstNameInput })); setEditingFirstName(false); } }}
+                          autoFocus
+                        />
+                      ) : (
+                        userProfile.firstName
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
+                      Last Name
+                      {editingLastName ? (
+                        <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
+                          setUserProfile(p => ({ ...p, lastName: lastNameInput }));
+                          setEditingLastName(false);
+                        }} title="Save">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingLastName(true); setLastNameInput(userProfile.lastName); }} title="Edit">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <div className="font-semibold text-gray-700 text-sm">
+                      {editingLastName ? (
+                        <input
+                          className="border rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
+                          value={lastNameInput}
+                          onChange={e => setLastNameInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, lastName: lastNameInput })); setEditingLastName(false); } }}
+                          autoFocus
+                        />
+                      ) : (
+                        userProfile.lastName
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
+                      Date of Birth
+                      <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    </div>
                     <div className="font-semibold text-gray-700 text-sm">{userProfile.dob}</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Languages</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
+                      Languages
+                      <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    </div>
                     <div className="font-semibold text-gray-700 text-sm">{userProfile.languages.join(', ')}</div>
                   </div>
                 </div>
