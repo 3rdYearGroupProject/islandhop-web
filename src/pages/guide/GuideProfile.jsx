@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Camera, 
@@ -22,9 +22,10 @@ import {
   BadgeCheckIcon,
   PlusIcon
 } from 'lucide-react';
+import userServicesApi from '../../api/axios';
+import { useToast } from '../../components/ToastProvider';
 
 const GuideProfile = () => {
-  const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('personal'); // personal, certifications, languages, documents, preferences
 
   const [guideData, setGuideData] = useState({
@@ -117,18 +118,6 @@ const GuideProfile = () => {
       }
     ],
     
-    skills: [
-      'Cultural History',
-      'Wildlife Knowledge',
-      'Photography Guidance',
-      'Local Cuisine Expertise',
-      'Adventure Sports',
-      'Archaeological Sites',
-      'Tea Plantation Tours',
-      'Ayurvedic Medicine',
-      'Traditional Crafts'
-    ],
-    
     // Documents
     documents: {
       nationalId: {
@@ -169,12 +158,114 @@ const GuideProfile = () => {
     }
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
+
+  // Separate edit states for each section
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [isEditingCerts, setIsEditingCerts] = useState(false);
+  const [isEditingLangs, setIsEditingLangs] = useState(false);
+
+  // Fetch personal info
+  useEffect(() => {
+    const fetchPersonal = async () => {
+      try {
+        const res = await userServicesApi.get(`/guide/personal?email=${guideData.email}`);
+        if (res.status === 200 && res.data) {
+          setGuideData(prev => ({ ...prev, ...res.data }));
+        }
+      } catch (err) {
+        showErrorToast('Failed to fetch personal info');
+      }
+    };
+    fetchPersonal();
+    // eslint-disable-next-line
+  }, []);
+
+  // Fetch certificates
+  useEffect(() => {
+    const fetchCerts = async () => {
+      try {
+        const res = await userServicesApi.get(`/guide/certificates?email=${guideData.email}`);
+        if (res.status === 200 && Array.isArray(res.data)) {
+          setGuideData(prev => ({ ...prev, certifications: res.data }));
+        }
+      } catch (err) {
+        showErrorToast('Failed to fetch certificates');
+      }
+    };
+    fetchCerts();
+    // eslint-disable-next-line
+  }, []);
+
+  // Fetch languages (already present, but now separated)
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      try {
+        const res = await userServicesApi.get(`/guide/languages?email=${guideData.email}`);
+        if (res.status === 200 && Array.isArray(res.data)) {
+          setGuideData(prev => ({ ...prev, languages: res.data }));
+        }
+      } catch (err) {
+        showErrorToast('Failed to fetch languages');
+      }
+    };
+    fetchLanguages();
+    // eslint-disable-next-line
+  }, []);
+
+  // PUT methods for each section
+  const handleSavePersonal = async () => {
+    try {
+      const res = await userServicesApi.put('/guide/personal', {
+        email: guideData.email,
+        firstName: guideData.firstName,
+        lastName: guideData.lastName,
+        phone: guideData.phone,
+        dateOfBirth: guideData.dateOfBirth,
+        address: guideData.address,
+        emergencyContact: guideData.emergencyContact,
+        emergencyContactName: guideData.emergencyContactName,
+        profilePicture: guideData.profilePicture
+      });
+      if (res.status === 200) {
+        showSuccessToast('Personal info updated');
+        setIsEditingPersonal(false);
+      }
+    } catch (err) {
+      showErrorToast('Failed to update personal info');
+    }
   };
 
-  const handleCancel = () => {
-    setIsEditing(false);
+  const handleSaveCertificates = async () => {
+    try {
+      const res = await userServicesApi.put('/guide/certificates', {
+        email: guideData.email,
+        certifications: guideData.certifications
+      });
+      if (res.status === 200) {
+        showSuccessToast('Certificates updated');
+        setIsEditingCerts(false);
+      }
+    } catch (err) {
+      showErrorToast('Failed to update certificates');
+    }
+  };
+
+  // handleSaveLanguages already exists, just update to setIsEditingLangs(false) on success
+  const handleSaveLanguages = async (languages) => {
+    try {
+      const res = await userServicesApi.put('/guide/languages', {
+        email: guideData.email,
+        languages
+      });
+      if (res.status === 200) {
+        setGuideData(prev => ({ ...prev, languages }));
+        showSuccessToast('Languages updated');
+        setIsEditingLangs(false);
+      }
+    } catch (err) {
+      showErrorToast('Failed to update languages');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -209,9 +300,7 @@ const GuideProfile = () => {
   const tabs = [
     { key: 'personal', label: 'Personal Info', icon: User },
     { key: 'certifications', label: 'Certifications', icon: BadgeCheckIcon },
-    { key: 'languages', label: 'Languages & Skills', icon: Languages },
-    { key: 'documents', label: 'Documents', icon: FileText },
-    { key: 'preferences', label: 'Preferences', icon: Settings }
+    { key: 'languages', label: 'Languages & Skills', icon: Languages }
   ];
 
   return (
@@ -224,30 +313,28 @@ const GuideProfile = () => {
             <p className="text-gray-600 mt-1">Manage your professional guide information</p>
           </div>
           <div className="flex items-center space-x-3">
-            {isEditing ? (
-              <>
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <X className="h-4 w-4 mr-2 inline" />
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  <Save className="h-4 w-4 mr-2 inline" />
-                  Save Changes
-                </button>
-              </>
-            ) : (
+            {activeTab === 'personal' && !isEditingPersonal && (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => setIsEditingPersonal(true)}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
-                <Edit3 className="h-4 w-4 mr-2 inline" />
-                Edit Profile
+                <Edit3 className="h-4 w-4 mr-2 inline" />Edit Personal Info
+              </button>
+            )}
+            {activeTab === 'certifications' && !isEditingCerts && (
+              <button
+                onClick={() => setIsEditingCerts(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <Edit3 className="h-4 w-4 mr-2 inline" />Edit Certificates
+              </button>
+            )}
+            {activeTab === 'languages' && !isEditingLangs && (
+              <button
+                onClick={() => setIsEditingLangs(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <Edit3 className="h-4 w-4 mr-2 inline" />Edit Languages
               </button>
             )}
           </div>
@@ -263,10 +350,25 @@ const GuideProfile = () => {
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
             />
-            {isEditing && (
-              <button className="absolute bottom-0 right-0 p-2 bg-green-600 text-white rounded-full hover:bg-green-700">
+            {isEditingPersonal && (
+              <label className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full p-2 hover:bg-green-700 transition-colors cursor-pointer">
                 <Camera className="h-4 w-4" />
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Simulate upload and preview
+                      setGuideData(prev => ({
+                        ...prev,
+                        profilePicture: URL.createObjectURL(file)
+                      }));
+                    }
+                  }}
+                />
+              </label>
             )}
           </div>
           
@@ -274,8 +376,7 @@ const GuideProfile = () => {
             <h2 className="text-2xl font-bold text-gray-900">
               {guideData.firstName} {guideData.lastName}
             </h2>
-            <p className="text-gray-600 mb-2">Professional Tour Guide</p>
-            
+            <p className="text-gray-600">{guideData.email}</p>
             <div className="flex items-center space-x-4 mt-2">
               <div className="flex items-center">
                 <Star className="h-4 w-4 text-yellow-400 mr-1" />
@@ -291,14 +392,13 @@ const GuideProfile = () => {
                 Member since {new Date(guideData.memberSince).getFullYear()}
               </div>
             </div>
-            
-            <div className="flex flex-wrap gap-2 mt-3">
-              {guideData.specializations.map((spec, index) => (
-                <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                  {spec}
-                </span>
-              ))}
-            </div>
+          </div>
+          <div className="text-right">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              guideData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            }`}>
+              {guideData.status === 'active' ? 'Active Guide' : 'Inactive'}
+            </span>
           </div>
         </div>
       </div>
@@ -339,12 +439,11 @@ const GuideProfile = () => {
                   <input
                     type="text"
                     value={guideData.firstName}
-                    disabled={!isEditing}
+                    disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                     onChange={(e) => setGuideData({...guideData, firstName: e.target.value})}
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
@@ -352,12 +451,11 @@ const GuideProfile = () => {
                   <input
                     type="text"
                     value={guideData.lastName}
-                    disabled={!isEditing}
+                    disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                     onChange={(e) => setGuideData({...guideData, lastName: e.target.value})}
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address
@@ -365,12 +463,10 @@ const GuideProfile = () => {
                   <input
                     type="email"
                     value={guideData.email}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setGuideData({...guideData, email: e.target.value})}
+                    disabled
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
@@ -378,12 +474,11 @@ const GuideProfile = () => {
                   <input
                     type="tel"
                     value={guideData.phone}
-                    disabled={!isEditing}
+                    disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                     onChange={(e) => setGuideData({...guideData, phone: e.target.value})}
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date of Birth
@@ -391,38 +486,64 @@ const GuideProfile = () => {
                   <input
                     type="date"
                     value={guideData.dateOfBirth}
-                    disabled={!isEditing}
+                    disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                     onChange={(e) => setGuideData({...guideData, dateOfBirth: e.target.value})}
                   />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Emergency Contact
-                  </label>
-                  <input
-                    type="tel"
-                    value={guideData.emergencyContact}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setGuideData({...guideData, emergencyContact: e.target.value})}
-                  />
-                </div>
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address
                 </label>
                 <textarea
                   value={guideData.address}
-                  disabled={!isEditing}
+                  disabled={!isEditingPersonal}
                   rows={3}
                   className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                   onChange={(e) => setGuideData({...guideData, address: e.target.value})}
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact Name</label>
+                  <input
+                    type="text"
+                    value={guideData.emergencyContactName}
+                    disabled={!isEditingPersonal}
+                    className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
+                    onChange={e => setGuideData({ ...guideData, emergencyContactName: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact Phone</label>
+                  <input
+                    type="tel"
+                    value={guideData.emergencyContact}
+                    disabled={!isEditingPersonal}
+                    className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
+                    onChange={e => setGuideData({ ...guideData, emergencyContact: e.target.value })}
+                  />
+                </div>
+              </div>
+              {isEditingPersonal && (
+                <div className="flex gap-2 mt-6">
+                  <button
+                    type="button"
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    onClick={() => setIsEditingPersonal(false)}
+                  >
+                    <X className="h-4 w-4 mr-2 inline" />Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    onClick={handleSavePersonal}
+                  >
+                    <Save className="h-4 w-4 mr-2 inline" />Save Changes
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -431,53 +552,105 @@ const GuideProfile = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Professional Certifications</h3>
-                {isEditing && (
-                  <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                {isEditingCerts && (
+                  <button
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    onClick={() => setGuideData(prev => ({
+                      ...prev,
+                      certifications: [
+                        ...prev.certifications,
+                        {
+                          id: Date.now(),
+                          issuer: '',
+                          issueDate: '',
+                          expiryDate: '',
+                          verificationNumber: '',
+                          status: 'pending',
+                          documentFile: null
+                        }
+                      ]
+                    }))}
+                  >
                     <PlusIcon className="h-4 w-4 mr-2 inline" />
-                    Add Certification
+                    Add Certificate
                   </button>
                 )}
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {guideData.certifications.map((cert) => (
-                  <div key={cert.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-gray-900">{cert.name}</h4>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(cert.status)}`}>
-                        <BadgeCheckIcon className="h-3 w-3 inline mr-1" />
-                        {cert.status}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Issuer:</span> {cert.issuer}
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  // TODO: Add backend PUT call for certificates if needed
+                  setIsEditingCerts(false);
+                }}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {guideData.certifications.map((cert, idx) => (
+                    <div key={cert.id} className="border border-gray-200 rounded-lg p-6 flex flex-col gap-2">
+                      {/* Only allow upload, display all other fields as read-only */}
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div><span className="font-medium">Issuer:</span> {cert.issuer}</div>
+                        <div><span className="font-medium">Issue Date:</span> {cert.issueDate}</div>
+                        <div><span className="font-medium">Expiry:</span> {cert.expiryDate}</div>
+                        <div><span className="font-medium">Verification #:</span> {cert.verificationNumber}</div>
+                        <div><span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(cert.status)}`}>{cert.status}</span></div>
                       </div>
-                      <div>
-                        <span className="font-medium">Issue Date:</span> {cert.issueDate}
-                      </div>
-                      <div>
-                        <span className="font-medium">Expiry:</span> {cert.expiryDate}
-                      </div>
-                      <div>
-                        <span className="font-medium">Verification #:</span> {cert.verificationNumber}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 flex space-x-2">
-                      <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-                        View Certificate
-                      </button>
-                      {isEditing && (
-                        <button className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                          <Upload className="h-4 w-4" />
-                        </button>
+                      {isEditingCerts && (
+                        <>
+                          <label className="w-full mt-2 flex items-center justify-center px-4 py-2 bg-green-50 text-green-700 border border-green-300 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
+                            <Upload className="h-4 w-4 mr-2" />
+                            {cert.documentFile ? cert.documentFile.name : 'Choose Certificate File'}
+                            <input
+                              type="file"
+                              accept="application/pdf,image/*"
+                              className="hidden"
+                              onChange={e => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const newCerts = [...guideData.certifications];
+                                  newCerts[idx].documentFile = file;
+                                  setGuideData(prev => ({ ...prev, certifications: newCerts }));
+                                }
+                              }}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="text-red-500 text-xs self-end mt-1"
+                            onClick={() => {
+                              setGuideData(prev => ({
+                                ...prev,
+                                certifications: prev.certifications.filter((_, i) => i !== idx)
+                              }));
+                            }}
+                          >Remove</button>
+                        </>
                       )}
+                      <div className="mt-4 flex space-x-2">
+                        <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                          View Certificate
+                        </button>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                {isEditingCerts && (
+                  <div className="flex gap-2 mt-6">
+                    <button
+                      type="button"
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      onClick={() => setIsEditingCerts(false)}
+                    >
+                      <X className="h-4 w-4 mr-2 inline" />Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      <Save className="h-4 w-4 mr-2 inline" />Save Certificates
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+              </form>
             </div>
           )}
 
@@ -488,200 +661,100 @@ const GuideProfile = () => {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">Languages</h3>
-                  {isEditing && (
-                    <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                  {isEditingLangs && (
+                    <button
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      onClick={() => setGuideData(prev => ({
+                        ...prev,
+                        languages: [
+                          ...prev.languages,
+                          { id: Date.now(), language: '', proficiency: 'Native', certified: false }
+                        ]
+                      }))}
+                    >
                       <PlusIcon className="h-4 w-4 mr-2 inline" />
                       Add Language
                     </button>
                   )}
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {guideData.languages.map((lang) => (
-                    <div key={lang.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900">{lang.language}</h4>
-                        {lang.certified && (
-                          <BadgeCheckIcon className="h-5 w-5 text-green-500" />
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    handleSaveLanguages(guideData.languages);
+                    setIsEditingLangs(false);
+                  }}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {guideData.languages.map((lang, idx) => (
+                      <div key={lang.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-2">
+                        {isEditingLangs ? (
+                          <>
+                            <input
+                              type="text"
+                              placeholder="Language"
+                              value={lang.language}
+                              className="w-full p-2 border border-gray-300 rounded-lg"
+                              onChange={e => {
+                                const newLangs = [...guideData.languages];
+                                newLangs[idx].language = e.target.value;
+                                setGuideData(prev => ({ ...prev, languages: newLangs }));
+                              }}
+                              required
+                            />
+                            <select
+                              className="w-full p-2 border border-gray-300 rounded-lg"
+                              value={lang.proficiency}
+                              onChange={e => {
+                                const newLangs = [...guideData.languages];
+                                newLangs[idx].proficiency = e.target.value;
+                                setGuideData(prev => ({ ...prev, languages: newLangs }));
+                              }}
+                            >
+                              <option value="Native">Native</option>
+                              <option value="Advanced">Advanced</option>
+                              <option value="Intermediate">Intermediate</option>
+                              <option value="Basic">Basic</option>
+                            </select>
+                            <button
+                              type="button"
+                              className="text-red-500 text-xs self-end mt-1"
+                              onClick={() => {
+                                setGuideData(prev => ({
+                                  ...prev,
+                                  languages: prev.languages.filter((_, i) => i !== idx)
+                                }));
+                              }}
+                            >Remove</button>
+                          </>
+                        ) : (
+                          <>
+                            <h4 className="font-semibold text-gray-900">{lang.language}</h4>
+                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getProficiencyColor(lang.proficiency)}`}>
+                              {lang.proficiency}
+                            </span>
+                          </>
                         )}
-                      </div>
-                      
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getProficiencyColor(lang.proficiency)}`}>
-                        {lang.proficiency}
-                      </span>
-                      
-                      {lang.certification && (
-                        <div className="mt-2 text-xs text-gray-600">
-                          <span className="font-medium">Certified:</span> {lang.certification}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Skills Section */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Specialized Skills</h3>
-                  {isEditing && (
-                    <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                      <PlusIcon className="h-4 w-4 mr-2 inline" />
-                      Add Skill
-                    </button>
-                  )}
-                </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  {guideData.skills.map((skill, index) => (
-                    <span key={index} className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
-                      {skill}
-                      {isEditing && (
-                        <button className="ml-2 text-blue-600 hover:text-blue-800">
-                          <X className="h-3 w-3 inline" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Documents Tab */}
-          {activeTab === 'documents' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.entries(guideData.documents).map(([docType, docData]) => (
-                  <div key={docType} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900 capitalize">
-                        {docType.replace(/([A-Z])/g, ' $1').trim()}
-                      </h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(docData.status)}`}>
-                        {docData.status === 'verified' && <CheckCircle className="h-3 w-3 inline mr-1" />}
-                        {docData.status === 'pending' && <Clock className="h-3 w-3 inline mr-1" />}
-                        {docData.status === 'expired' && <AlertTriangle className="h-3 w-3 inline mr-1" />}
-                        {docData.status}
-                      </span>
-                    </div>
-                    
-                    {docData.number && (
-                      <div className="mb-2">
-                        <span className="text-sm text-gray-600">Number: </span>
-                        <span className="font-medium">{docData.number}</span>
-                      </div>
-                    )}
-                    
-                    {docData.expiryDate && (
-                      <div className="mb-2">
-                        <span className="text-sm text-gray-600">Expires: </span>
-                        <span className="font-medium">{docData.expiryDate}</span>
-                      </div>
-                    )}
-                    
-                    {docData.uploadedAt && (
-                      <div className="mb-4">
-                        <span className="text-sm text-gray-600">Uploaded: </span>
-                        <span className="font-medium">{docData.uploadedAt}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex space-x-2">
-                      <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-                        View Document
-                      </button>
-                      {isEditing && (
-                        <button className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                          <Upload className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Preferences Tab */}
-          {activeTab === 'preferences' && (
-            <div className="space-y-8">
-              {/* Working Hours */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Working Hours</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
-                    <input
-                      type="time"
-                      value={guideData.preferences.workingHours.start}
-                      disabled={!isEditing}
-                      className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
-                    <input
-                      type="time"
-                      value={guideData.preferences.workingHours.end}
-                      disabled={!isEditing}
-                      className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Preferred Areas */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferred Working Areas</h3>
-                <div className="flex flex-wrap gap-3">
-                  {guideData.preferences.preferredAreas.map((area, index) => (
-                    <span key={index} className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
-                      {area}
-                      {isEditing && (
-                        <button className="ml-2 text-green-600 hover:text-green-800">
-                          <X className="h-3 w-3 inline" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                  {isEditing && (
-                    <button className="px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400 text-sm">
-                      <PlusIcon className="h-3 w-3 mr-1 inline" />
-                      Add Area
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              {/* Other Preferences */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Group Size</label>
-                  <input
-                    type="number"
-                    value={guideData.preferences.maxGroupSize}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Tour Types</label>
-                  <div className="space-y-2">
-                    {guideData.preferences.tourTypes.map((type, index) => (
-                      <div key={index} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={true}
-                          disabled={!isEditing}
-                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 text-sm text-gray-700">{type}</label>
                       </div>
                     ))}
                   </div>
-                </div>
+                  {isEditingLangs && (
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        type="button"
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        onClick={() => setIsEditingLangs(false)}
+                      >
+                        <X className="h-4 w-4 mr-2 inline" />Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        <Save className="h-4 w-4 mr-2 inline" />Save Languages
+                      </button>
+                    </div>
+                  )}
+                </form>
               </div>
             </div>
           )}
