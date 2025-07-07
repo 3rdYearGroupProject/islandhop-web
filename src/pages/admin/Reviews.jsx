@@ -276,19 +276,19 @@ const Reviews = () => {
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Reviews</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-success-600">{reviews.filter(r => r.status === 'approved').length}</div>
+              <div className="text-2xl font-bold text-gray-900">{reviews.filter(r => r.status === 'approved').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Approved</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-warning-600">{reviews.filter(r => r.status === 'under-review').length}</div>
+              <div className="text-2xl font-bold text-gray-900">{reviews.filter(r => r.status === 'under-review').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Under Review</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-danger-600">{reviews.filter(r => r.reported).length}</div>
+              <div className="text-2xl font-bold text-gray-900">{reviews.filter(r => r.reported).length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Reported</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-primary-600">
+              <div className="text-2xl font-bold text-gray-900">
                 {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Avg Rating</div>
@@ -439,7 +439,7 @@ const Reviews = () => {
                     {review.status !== 'approved' && (
                       <button
                         onClick={() => handleApproveReview(review.id)}
-                        className="px-3 py-1 bg-success-600 text-white text-sm rounded hover:bg-success-700 transition-colors flex items-center space-x-1"
+                        className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-success-700 transition-colors flex items-center space-x-1"
                       >
                         <CheckIcon className="h-4 w-4" />
                         <span>Approve</span>
@@ -449,7 +449,7 @@ const Reviews = () => {
                     {review.status !== 'rejected' && (
                       <button
                         onClick={() => handleRejectReview(review.id)}
-                        className="px-3 py-1 bg-warning-600 text-white text-sm rounded hover:bg-warning-700 transition-colors flex items-center space-x-1"
+                        className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-warning-700 transition-colors flex items-center space-x-1"
                       >
                         <XMarkIcon className="h-4 w-4" />
                         <span>Reject</span>
@@ -458,7 +458,7 @@ const Reviews = () => {
                     
                     <button
                       onClick={() => handleDeleteReview(review.id)}
-                      className="px-3 py-1 bg-danger-600 text-white text-sm rounded hover:bg-danger-700 transition-colors flex items-center space-x-1"
+                      className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-danger-700 transition-colors flex items-center space-x-1"
                     >
                       <TrashIcon className="h-4 w-4" />
                       <span>Delete</span>

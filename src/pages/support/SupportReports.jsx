@@ -165,8 +165,8 @@ const SupportReports = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 ">
+      <div className="max-w-7xl ">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">

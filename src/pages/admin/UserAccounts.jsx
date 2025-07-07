@@ -249,19 +249,19 @@ const UserAccounts = ({
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{users.length}</div>
+              <div className="text-2xl font-bold text-secondary-900 dark:text-white">{users.length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Users</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-success-600">{users.filter(u => u.status === 'active').length}</div>
+              <div className="text-2xl font-bold text-secondary-900">{users.filter(u => u.status === 'active').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Active Users</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-warning-600">{users.filter(u => u.verificationStatus === 'pending').length}</div>
+              <div className="text-2xl font-bold text-secondary-900">{users.filter(u => u.verificationStatus === 'pending').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Pending Verification</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-danger-600">{users.filter(u => u.status === 'restricted').length}</div>
+              <div className="text-2xl font-bold text-secondary-900">{users.filter(u => u.status === 'restricted').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Restricted</div>
             </div>
           </div>
