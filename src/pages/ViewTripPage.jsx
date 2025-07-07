@@ -17,6 +17,35 @@ const ViewTripPage = () => {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // --- Expandable Cost Breakdown State ---
+  const [costExpanded, setCostExpanded] = useState({
+    accommodation: false,
+    food: false,
+    activities: false,
+    transportation: false
+  });
+
+  // --- Cost Calculation Helpers ---
+  // Helper to extract numeric value from price string (e.g., "$200/night" or "$25")
+  const parsePrice = (price) => {
+    if (!price) return 0;
+    const match = price.match(/\$([0-9]+(?:\.[0-9]+)?)/);
+    return match ? parseFloat(match[1]) : 0;
+  };
+  // Helper for price ranges (e.g., "$10-20")
+  const parsePriceRange = (range) => {
+    if (!range) return 0;
+    const match = range.match(/\$([0-9]+)(?:-([0-9]+))?/);
+    if (!match) return 0;
+    if (match[2]) return (parseInt(match[1]) + parseInt(match[2])) / 2;
+    return parseInt(match[1]);
+  };
+
+  // --- Expand/collapse handler ---
+  const toggleCostExpand = (cat) => {
+    setCostExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
   // Mock saved trip data - this would normally come from an API
   const mockSavedTrip = {
     id: '1',
@@ -489,42 +518,17 @@ const ViewTripPage = () => {
     );
   }
 
-
-  // --- Expandable Cost Breakdown State ---
-  const [costExpanded, setCostExpanded] = useState({
-    accommodation: false,
-    food: false,
-    activities: false,
-    transportation: false
-  });
-
-  // --- Cost Calculation Helpers ---
-  // Helper to extract numeric value from price string (e.g., "$200/night" or "$25")
-  const parsePrice = (price) => {
-    if (!price) return 0;
-    const match = price.match(/\$([0-9]+(?:\.[0-9]+)?)/);
-    return match ? parseFloat(match[1]) : 0;
-  };
-  // Helper for price ranges (e.g., "$10-20")
-  const parsePriceRange = (range) => {
-    if (!range) return 0;
-    const match = range.match(/\$([0-9]+)(?:-([0-9]+))?/);
-    if (!match) return 0;
-    if (match[2]) return (parseInt(match[1]) + parseInt(match[2])) / 2;
-    return parseInt(match[1]);
-  };
-
   // Calculate costs per category
-  const accommodationItems = Object.values(trip.itinerary || {}).flatMap(day => day?.places || []);
+  const accommodationItems = Object.values(trip?.itinerary || {}).flatMap(day => day?.places || []);
   const accommodationTotal = accommodationItems.reduce((sum, place) => sum + parsePrice(place.price), 0);
 
-  const foodItems = Object.values(trip.itinerary || {}).flatMap(day => day?.food || []);
+  const foodItems = Object.values(trip?.itinerary || {}).flatMap(day => day?.food || []);
   const foodTotal = foodItems.reduce((sum, food) => sum + parsePriceRange(food.priceRange), 0);
 
-  const activityItems = Object.values(trip.itinerary || {}).flatMap(day => day?.activities || []);
+  const activityItems = Object.values(trip?.itinerary || {}).flatMap(day => day?.activities || []);
   const activityTotal = activityItems.reduce((sum, act) => sum + parsePrice(act.price), 0);
 
-  const transportationItems = Object.values(trip.itinerary || {}).flatMap(day => day?.transportation || []);
+  const transportationItems = Object.values(trip?.itinerary || {}).flatMap(day => day?.transportation || []);
   const transportationTotal = transportationItems.reduce((sum, t) => sum + parsePrice(t.price), 0);
 
   // For demo, driver/guide costs are fixed
@@ -532,11 +536,6 @@ const ViewTripPage = () => {
   const guideCost = 150;
 
   const grandTotal = accommodationTotal + foodTotal + activityTotal + transportationTotal + driverCost + guideCost;
-
-  // --- Expand/collapse handler ---
-  const toggleCostExpand = (cat) => {
-    setCostExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
-  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
