@@ -8,6 +8,7 @@ import './Navbar.css'; // Import Navbar styles for dropdown animations
 
 const Navbar = () => {
   const { user } = useAuth();
+  const tempUser = user;
   const location = useLocation();
   const [showLang, setShowLang] = useState(false);
   const [currentLang, setCurrentLang] = useState('English');
@@ -20,23 +21,49 @@ const Navbar = () => {
   const translateRef = useRef(null);
   const userMenuRef = useRef(null);
 
-
-  // Example user profile data (replace with real data as needed)
-  const [userProfile, setUserProfile] = useState({
-    firstName: user?.displayName?.split(' ')[0] || 'John',
-    lastName: user?.displayName?.split(' ')[1] || 'Doe',
-    dob: '1990-01-01',
-    nationality: 'Sri Lankan',
-    email: user?.email || 'john.doe@email.com',
-    languages: ['English', 'Sinhala', 'Tamil'],
-    avatar: (user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase(),
+  // User profile state, initialized from actual user data if available
+  const [userProfile, setUserProfile] = useState(() => {
+    if (tempUser && tempUser.profile) {
+      return {
+        firstName: tempUser.profile.firstName || '',
+        lastName: tempUser.profile.lastName || '',
+        dob: tempUser.profile.dob || '',
+        nationality: tempUser.profile.nationality || '',
+        email: tempUser.email || '',
+        languages: tempUser.profile.languages || [],
+        avatar: tempUser.displayName?.[0]?.toUpperCase() || 'U',
+      };
+    } else if (tempUser) {
+      // Fallback for users without a profile object
+      return {
+        firstName: tempUser.displayName?.split(' ')[0] || '',
+        lastName: tempUser.displayName?.split(' ')[1] || '',
+        dob: '',
+        nationality: '',
+        email: tempUser.email || '',
+        languages: [],
+        avatar: tempUser.displayName?.[0]?.toUpperCase() || 'U',
+      };
+    } else {
+      return {
+        firstName: '',
+        lastName: '',
+        dob: '',
+        nationality: '',
+        email: '',
+        languages: [],
+        avatar: 'U',
+      };
+    }
   });
 
-  // Editable state for first and last name
+  // Editable state for first and last name and birthday
   const [editingFirstName, setEditingFirstName] = useState(false);
   const [editingLastName, setEditingLastName] = useState(false);
+  const [editingDob, setEditingDob] = useState(false);
   const [firstNameInput, setFirstNameInput] = useState(userProfile.firstName);
   const [lastNameInput, setLastNameInput] = useState(userProfile.lastName);
+  const [dobInput, setDobInput] = useState(userProfile.dob);
 
 
   // Load Google Translate script and initialize
@@ -449,13 +476,37 @@ const Navbar = () => {
                   <div className="text-center">
                     <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
                       Date of Birth
-                      <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
+                      {editingDob ? (
+                        <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
+                          setUserProfile(p => ({ ...p, dob: dobInput }));
+                          setEditingDob(false);
+                        }} title="Save">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingDob(true); setDobInput(userProfile.dob); }} title="Edit">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
-                    <div className="font-semibold text-gray-700 text-sm">{userProfile.dob}</div>
+                    <div className="font-semibold text-gray-700 text-sm">
+                      {editingDob ? (
+                        <input
+                          type="date"
+                          className="border rounded px-2 py-1 text-sm w-32 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
+                          value={dobInput}
+                          onChange={e => setDobInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, dob: dobInput })); setEditingDob(false); } }}
+                          autoFocus
+                        />
+                      ) : (
+                        userProfile.dob
+                      )}
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">

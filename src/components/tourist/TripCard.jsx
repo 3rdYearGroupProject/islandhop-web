@@ -1,8 +1,11 @@
 import React from 'react';
 import { Heart, MoreHorizontal, MapPin, Calendar, Users, Star, Camera, Share2, Edit3 } from 'lucide-react';
 
-const TripCard = ({ trip, getStatusColor }) => (
-  <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 transform hover:-translate-y-1 flex flex-col h-[500px] max-h-[500px] min-h-[500px]">
+const TripCard = ({ trip, getStatusColor, onClick }) => (
+  <div 
+    className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 transform hover:-translate-y-1 flex flex-col h-[500px] max-h-[500px] min-h-[500px] cursor-pointer"
+    onClick={() => onClick && onClick(trip)}
+  >
     <div className="relative">
       <img 
         src={trip.image} 

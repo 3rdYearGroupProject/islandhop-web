@@ -240,12 +240,14 @@ const Discover = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-normal mb-6">
-            Discover Sri Lanka
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-90">
-            Explore the Pearl of the Indian Ocean's hidden gems and popular attractions
-          </p>
+          <div className="mt-16 md:mt-24">
+            <h1 className="text-4xl md:text-6xl font-normal mb-6">
+              Discover Sri Lanka
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 opacity-90">
+              Explore the Pearl of the Indian Ocean's hidden gems and popular attractions
+            </p>
+          </div>
         </div>
       </section>
 
