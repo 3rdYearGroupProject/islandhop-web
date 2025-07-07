@@ -159,7 +159,16 @@ const getPhotoUrl = (photo, maxWidth = 400) => {
 // Search activities with preferences and proximity optimization
 const searchActivities = async (tripId, searchParams) => {
   const userId = getUserUID();
+  console.log('🎯 ACTIVITIES SEARCH START');
   console.log('🔍 Searching activities for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
+  console.log('📝 Search parameters breakdown:', {
+    query: searchParams.query || 'NO_QUERY',
+    city: searchParams.city || 'NO_CITY',
+    lastPlaceId: searchParams.lastPlaceId || 'NO_LAST_PLACE',
+    maxResults: searchParams.maxResults || 10,
+    userId: userId || 'NO_USER_ID'
+  });
+  
   const params = new URLSearchParams({
     query: searchParams.query || '',
     city: searchParams.city || '',
@@ -167,14 +176,23 @@ const searchActivities = async (tripId, searchParams) => {
     maxResults: searchParams.maxResults || 10,
     userId: userId || ''
   });
+  
   try {
     const fullUrl = `/trip/${tripId}/search/activities?${params}`;
-    console.log('📡 Making API request to:', fullUrl);
+    console.log('📡 Making ACTIVITIES API request to:', fullUrl);
+    console.log('🔗 Full URL with params:', fullUrl);
+    
     const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
-    console.log('📨 API Response status:', response.status, response.statusText);
+    console.log('📨 ACTIVITIES API Response status:', response.status, response.statusText);
+    console.log('📦 ACTIVITIES response data:', response.data);
+    console.log('✅ ACTIVITIES SEARCH SUCCESS - Found', response.data?.length || 0, 'activities');
+    
     return response.data;
   } catch (error) {
-    console.error('❌ Activities search error:', error);
+    console.error('❌ ACTIVITIES SEARCH FAILED');
+    console.error('❌ Error details:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error response:', error.response?.data);
     throw error;
   }
 };
@@ -182,7 +200,16 @@ const searchActivities = async (tripId, searchParams) => {
 // Search accommodation with preference-based filtering
 const searchAccommodation = async (tripId, searchParams) => {
   const userId = getUserUID();
+  console.log('🏨 ACCOMMODATION SEARCH START');
   console.log('🔍 Searching accommodation for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
+  console.log('📝 Accommodation search parameters:', {
+    query: searchParams.query || 'NO_QUERY',
+    city: searchParams.city || 'NO_CITY',
+    lastPlaceId: searchParams.lastPlaceId || 'NO_LAST_PLACE',
+    maxResults: searchParams.maxResults || 10,
+    userId: userId || 'NO_USER_ID'
+  });
+  
   const params = new URLSearchParams({
     query: searchParams.query || '',
     city: searchParams.city || '',
@@ -190,14 +217,23 @@ const searchAccommodation = async (tripId, searchParams) => {
     maxResults: searchParams.maxResults || 10,
     userId: userId || ''
   });
+  
   try {
     const fullUrl = `/trip/${tripId}/search/accommodation?${params}`;
-    console.log('📡 Making API request to:', fullUrl);
+    console.log('📡 Making ACCOMMODATION API request to:', fullUrl);
+    console.log('🔗 Full accommodation URL:', fullUrl);
+    
     const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
-    console.log('📨 API Response status:', response.status, response.statusText);
+    console.log('📨 ACCOMMODATION API Response status:', response.status, response.statusText);
+    console.log('📦 ACCOMMODATION response data:', response.data);
+    console.log('✅ ACCOMMODATION SEARCH SUCCESS - Found', response.data?.length || 0, 'places to stay');
+    
     return response.data;
   } catch (error) {
-    console.error('❌ Accommodation search error:', error);
+    console.error('❌ ACCOMMODATION SEARCH FAILED');
+    console.error('❌ Accommodation error details:', error);
+    console.error('❌ Accommodation error message:', error.message);
+    console.error('❌ Accommodation error response:', error.response?.data);
     throw error;
   }
 };
@@ -205,7 +241,16 @@ const searchAccommodation = async (tripId, searchParams) => {
 // Search dining options with preference and proximity matching
 const searchDining = async (tripId, searchParams) => {
   const userId = getUserUID();
+  console.log('🍽️ DINING SEARCH START');
   console.log('🔍 Searching dining for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
+  console.log('📝 Dining search parameters:', {
+    query: searchParams.query || 'NO_QUERY',
+    city: searchParams.city || 'NO_CITY',
+    lastPlaceId: searchParams.lastPlaceId || 'NO_LAST_PLACE',
+    maxResults: searchParams.maxResults || 10,
+    userId: userId || 'NO_USER_ID'
+  });
+  
   const params = new URLSearchParams({
     query: searchParams.query || '',
     city: searchParams.city || '',
@@ -213,22 +258,42 @@ const searchDining = async (tripId, searchParams) => {
     maxResults: searchParams.maxResults || 10,
     userId: userId || ''
   });
+  
   try {
     const fullUrl = `/trip/${tripId}/search/dining?${params}`;
-    console.log('📡 Making API request to:', fullUrl);
+    console.log('📡 Making DINING API request to:', fullUrl);
+    console.log('🔗 Full dining URL:', fullUrl);
+    
     const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
-    console.log('📨 API Response status:', response.status, response.statusText);
+    console.log('📨 DINING API Response status:', response.status, response.statusText);
+    console.log('📦 DINING response data:', response.data);
+    console.log('✅ DINING SEARCH SUCCESS - Found', response.data?.length || 0, 'dining options');
+    
     return response.data;
   } catch (error) {
-    console.error('❌ Dining search error:', error);
+    console.error('❌ DINING SEARCH FAILED');
+    console.error('❌ Dining error details:', error);
+    console.error('❌ Dining error message:', error.message);
+    console.error('❌ Dining error response:', error.response?.data);
     throw error;
   }
 };
 
 // Add place to a specific day with detailed context
 const addPlaceToDay = async (tripId, dayNumber, placeData, userId) => {
+  console.log('➕ ADD PLACE TO DAY START');
+  console.log('📍 Adding place to day:', { tripId, dayNumber, placeName: placeData.name, userId });
+  console.log('📝 Place data details:', {
+    name: placeData.name,
+    location: placeData.location || placeData.city || 'NO_LOCATION',
+    type: placeData.type || placeData.category || 'ATTRACTION',
+    duration: placeData.durationMinutes || placeData.duration || 120,
+    timeSlot: placeData.timeSlot || 'morning',
+    priority: placeData.priority || 5
+  });
+  
   try {
-    const response = await tripPlanningApi.post(`/trip/${tripId}/day/${dayNumber}/add-place`, {
+    const requestBody = {
       userId: userId,
       placeName: placeData.name,
       city: placeData.location || placeData.city,
@@ -237,28 +302,106 @@ const addPlaceToDay = async (tripId, dayNumber, placeData, userId) => {
       estimatedVisitDurationMinutes: placeData.durationMinutes || placeData.duration || 120,
       preferredTimeSlot: placeData.timeSlot || 'morning',
       priority: placeData.priority || 5
-    }, { withCredentials: true });
+    };
+    
+    console.log('📤 Sending ADD PLACE request with body:', requestBody);
+    
+    const response = await tripPlanningApi.post(`/trip/${tripId}/day/${dayNumber}/add-place`, requestBody, { withCredentials: true });
+    
+    console.log('📨 ADD PLACE Response status:', response.status);
+    console.log('📦 ADD PLACE Response data:', response.data);
+    
     if (response.status !== 200) {
       throw new Error(`Failed to add place to day: ${response.status}`);
     }
+    
+    console.log('✅ ADD PLACE SUCCESS - Place added to day', dayNumber);
     return response.data;
   } catch (error) {
-    console.error('❌ Add place to day error:', error);
+    console.error('❌ ADD PLACE TO DAY FAILED');
+    console.error('❌ Add place error details:', error);
+    console.error('❌ Add place error message:', error.message);
+    console.error('❌ Add place error response:', error.response?.data);
+    throw error;
+  }
+};
+
+// Set cities and day allocation for multi-city trips
+const updateTripCities = async (tripId, cityData, userId) => {
+  console.log('🏙️ UPDATE TRIP CITIES START');
+  console.log('📍 Updating cities for trip:', tripId, 'userId:', userId);
+  console.log('📝 City data details:', {
+    cities: cityData.cities,
+    cityDays: cityData.cityDays,
+    totalCities: cityData.cities?.length || 0
+  });
+  
+  try {
+    const requestBody = {
+      userId: userId,
+      cities: cityData.cities,
+      cityDays: cityData.cityDays
+    };
+    
+    console.log('📤 Sending UPDATE CITIES request with body:', requestBody);
+    
+    const response = await tripPlanningApi.post(`/trip/${tripId}/cities`, requestBody, { withCredentials: true });
+    
+    console.log('📨 UPDATE CITIES Response status:', response.status);
+    console.log('📦 UPDATE CITIES Response data:', response.data);
+    
+    if (response.status !== 200) {
+      throw new Error(`Failed to update cities: ${response.status}`);
+    }
+    
+    console.log('✅ UPDATE TRIP CITIES SUCCESS');
+    
+    return {
+      message: response.data.message,
+      userId: response.data.userId,
+      trip: response.data.trip
+    };
+  } catch (error) {
+    console.error('❌ UPDATE TRIP CITIES FAILED');
+    console.error('❌ Update cities error details:', error);
+    console.error('❌ Update cities error message:', error.message);
+    console.error('❌ Update cities error response:', error.response?.data);
     throw error;
   }
 };
 
 // Retrieve complete trip information
 const getTripDetails = async (tripId) => {
+  console.log('📥 GET TRIP DETAILS START');
+  console.log('� Fetching trip details for tripId:', tripId);
+  
   try {
-    console.log('📥 Fetching trip details for tripId:', tripId);
+    console.log('📡 Making GET TRIP DETAILS API request to:', `/trip/${tripId}`);
+    
     const response = await tripPlanningApi.get(`/trip/${tripId}`, { withCredentials: true });
+    
+    console.log('📨 GET TRIP DETAILS Response status:', response.status);
+    console.log('📦 GET TRIP DETAILS Response data:', response.data);
+    
     if (response.status !== 200) {
       throw new Error(`Failed to get trip details: ${response.status}`);
     }
+    
+    console.log('✅ GET TRIP DETAILS SUCCESS');
+    console.log('📊 Trip details summary:', {
+      tripId: response.data?.trip?.id || response.data?.tripId,
+      tripName: response.data?.trip?.name,
+      userId: response.data?.userId,
+      hasItinerary: !!response.data?.trip?.itinerary,
+      itineraryDays: Object.keys(response.data?.trip?.itinerary || {}).length
+    });
+    
     return response.data;
   } catch (error) {
+    console.error('❌ GET TRIP DETAILS FAILED');
     console.error('❌ Get trip details error:', error);
+    console.error('❌ Get trip details error message:', error.message);
+    console.error('❌ Get trip details error response:', error.response?.data);
     throw error;
   }
 };
@@ -678,15 +821,47 @@ const TripItineraryPage = () => {
 
   // Enhanced addItemToItinerary to sync with backend after add
   const addItemToItinerary = async (item, selectedDates = null) => {
+    console.log('🚀 ADD ITEM TO ITINERARY START');
+    console.log('📍 Item details:', item);
+    console.log('📅 Selected dates:', selectedDates);
+    console.log('🏠 Show destination modal:', showDestinationModal);
+    console.log('📋 Current category:', selectedCategory);
+    console.log('📅 Current day:', currentDay);
+    
     // Handle destination selection separately
     if (showDestinationModal) {
+      console.log('🏙️ DESTINATION ADDITION FLOW');
       console.log('🏙️ Adding destination:', item, 'to day:', currentDay);
       
-      // Update destinations state
-      setDestinations(prev => ({
-        ...prev,
-        [currentDay]: item
-      }));
+      try {
+        // Call updateTripCities to register this city with the backend
+        const cityData = {
+          cities: [item.name],
+          cityDays: { [item.name]: 1 } // Allocate 1 day to this city for now
+        };
+        
+        console.log('📤 Calling updateTripCities with:', cityData);
+        await updateTripCities(tripId, cityData, userUid);
+        console.log('✅ Successfully updated trip cities');
+        
+        // Update destinations state
+        console.log('🔄 Updating local destinations state');
+        setDestinations(prev => ({
+          ...prev,
+          [currentDay]: item
+        }));
+        
+        // Fetch latest trip details to sync with backend
+        console.log('🔄 Fetching latest trip details after city addition');
+        const tripDetails = await getTripDetails(tripId);
+        if (tripDetails && tripDetails.trip) {
+          console.log('🔄 Synced trip data after city addition');
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to add destination:', error);
+        alert('Failed to add destination: ' + error.message);
+      }
       
       // Close modal and reset state
       setShowDestinationModal(false);
@@ -694,6 +869,8 @@ const TripItineraryPage = () => {
       return;
     }
 
+    console.log('🎯 ACTIVITY/PLACE/FOOD ADDITION FLOW');
+    
     // Helper function to get category key
     const getCategoryKey = (category) => {
       if (category === 'activities') return 'activities';
@@ -703,6 +880,8 @@ const TripItineraryPage = () => {
       return 'activities';
     };
 
+    console.log('📂 Category key:', getCategoryKey(selectedCategory));
+
     // Determine which days to add to
     let daysToAdd = [];
     if (selectedDates && selectedDates.length > 0) {
@@ -710,6 +889,8 @@ const TripItineraryPage = () => {
     } else if (currentDay !== undefined && days && days[currentDay]) {
       daysToAdd = [days[currentDay]];
     }
+
+    console.log('📅 Days to add to:', daysToAdd);
 
     // Map days to day indices
     const dayIndices = daysToAdd.map(date => {
@@ -721,26 +902,41 @@ const TripItineraryPage = () => {
       }
     }).filter(idx => idx !== -1);
 
+    console.log('📊 Day indices to add to:', dayIndices);
+
     // Loading state for add operation
     setIsLoadingSuggestions(true);
     let error = null;
 
     try {
+      console.log('🔄 Starting backend addition process...');
+      
       // For each day, call backend
       await Promise.all(dayIndices.map(async (dayIdx) => {
+        console.log(`➕ Adding item to day ${dayIdx}:`, item.name);
         await addPlaceToDay(tripId, dayIdx, item, userUid);
+        console.log(`✅ Successfully added ${item.name} to day ${dayIdx}`);
       }));
+      
+      console.log('🔄 All items added, fetching latest trip details...');
+      
       // Fetch latest trip details from backend
       const tripDetails = await getTripDetails(tripId);
+      
       // Update local itinerary state from backend trip data
       if (tripDetails && tripDetails.trip && tripDetails.trip.itinerary) {
+        console.log('🔄 Updating local itinerary with backend data');
+        console.log('📊 Updated itinerary:', tripDetails.trip.itinerary);
         setItinerary(tripDetails.trip.itinerary);
       }
+      
+      console.log('🎉 ITEM ADDITION COMPLETE - Closing modals');
       setShowAddModal(false);
       setShowDestinationModal(false);
       setSelectedStayDates([]);
     } catch (err) {
       error = err;
+      console.error('❌ ITEM ADDITION FAILED:', err);
       alert('Failed to add item: ' + err.message);
     } finally {
       setIsLoadingSuggestions(false);
