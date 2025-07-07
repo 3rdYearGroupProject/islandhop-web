@@ -1,6 +1,8 @@
 import React from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
 
+console.log('AddFoodAndDrinkModal loaded');
+
 const AddFoodAndDrinkModal = ({
   show,
   onClose,
@@ -15,6 +17,12 @@ const AddFoodAndDrinkModal = ({
   isLoading = false,
   tripId
 }) => {
+  console.log('AddFoodAndDrinkModal props', {
+    show,
+    searchQuery,
+    selectedStayDates,
+    days
+  });
   if (!show) return null;
 
   const suggestions = getFilteredSuggestions();

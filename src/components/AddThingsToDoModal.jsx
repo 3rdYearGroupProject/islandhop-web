@@ -1,6 +1,8 @@
 import React from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
 
+console.log('AddThingsToDoModal loaded');
+
 const AddThingsToDoModal = ({
   show,
   onClose,
@@ -15,6 +17,12 @@ const AddThingsToDoModal = ({
   isLoading = false,
   tripId
 }) => {
+  console.log('AddThingsToDoModal props', {
+    show,
+    searchQuery,
+    selectedStayDates,
+    days
+  });
   if (!show) return null;
 
   const suggestions = getFilteredSuggestions();

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
 
+console.log('AddDestinationModal loaded');
+
 const AddDestinationModal = ({
   show,
   onClose,
@@ -11,6 +13,12 @@ const AddDestinationModal = ({
   formatDate,
   addItemToItinerary
 }) => {
+  console.log('AddDestinationModal props', {
+    show,
+    searchQuery,
+    selectedStayDates,
+    days
+  });
   if (!show) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
