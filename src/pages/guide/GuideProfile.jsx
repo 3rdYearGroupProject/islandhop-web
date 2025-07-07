@@ -165,13 +165,20 @@ const GuideProfile = () => {
   const [isEditingCerts, setIsEditingCerts] = useState(false);
   const [isEditingLangs, setIsEditingLangs] = useState(false);
 
+  // Track uploaded profile picture file
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+
   // Fetch personal info
   useEffect(() => {
     const fetchPersonal = async () => {
       try {
         const res = await userServicesApi.get(`/guide/profile?email=${guideData.email}`);
         if (res.status === 200 && res.data) {
-          setGuideData(prev => ({ ...prev, ...res.data }));
+          let profilePicture = res.data.profilePicture;
+          if (res.data.profilePictureBase64) {
+            profilePicture = `data:image/jpeg;base64,${res.data.profilePictureBase64}`;
+          }
+          setGuideData(prev => ({ ...prev, ...res.data, profilePicture }));
         }
       } catch (err) {
         showErrorToast('Failed to fetch personal info');
@@ -216,6 +223,22 @@ const GuideProfile = () => {
   // PUT methods for each section
   const handleSavePersonal = async () => {
     try {
+      let profilePictureToSend = guideData.profilePicture;
+      if (profilePictureFile) {
+        // Convert file to base64 and strip data URL prefix
+        const toBase64 = file => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            const result = reader.result;
+            // Remove data URL prefix if present
+            const base64 = result.split(',')[1] || result;
+            resolve(base64);
+          };
+          reader.onerror = error => reject(error);
+        });
+        profilePictureToSend = await toBase64(profilePictureFile);
+      }
       const res = await userServicesApi.put('/guide/profile', {
         email: guideData.email,
         firstName: guideData.firstName,
@@ -225,11 +248,12 @@ const GuideProfile = () => {
         address: guideData.address,
         emergencyContactNumber: guideData.emergencyContactNumber,
         emergencyContactName: guideData.emergencyContactName,
-        profilePicture: guideData.profilePicture
+        profilePictureBase64: profilePictureToSend
       });
       if (res.status === 200) {
         showSuccessToast('Personal info updated');
         setIsEditingPersonal(false);
+        setProfilePictureFile(null); // Reset after successful upload
       }
     } catch (err) {
       showErrorToast('Failed to update personal info');
@@ -360,7 +384,7 @@ const GuideProfile = () => {
                   onChange={e => {
                     const file = e.target.files[0];
                     if (file) {
-                      // Simulate upload and preview
+                      setProfilePictureFile(file);
                       setGuideData(prev => ({
                         ...prev,
                         profilePicture: URL.createObjectURL(file)
