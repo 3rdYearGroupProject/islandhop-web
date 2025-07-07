@@ -295,6 +295,55 @@ const MyTripsPage = () => {
     }
   }, [location.state, navigate]);
 
+  // List all trips for authenticated user
+  const getUserTrips = async () => {
+    const response = await fetch('/api/trip/my-trips', {
+      credentials: 'include' // Session required
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get user trips: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return {
+      trips: result.trips,
+      userId: result.userId,
+      count: result.count
+    };
+  };
+
+  // Fetch backend trips and merge with hardcoded trips
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTrips = async () => {
+      try {
+        const backend = await getUserTrips();
+        if (backend && backend.trips) {
+          // Avoid duplicates by id or name
+          setTrips(prev => {
+            const prevIds = new Set(prev.map(t => t.id));
+            const prevNames = new Set(prev.map(t => t.name));
+            const backendFormatted = backend.trips.map(trip => ({
+              ...trip,
+              id: trip.id || trip._id || Date.now() + Math.random(),
+              image: trip.image || placeholder,
+              status: trip.status || 'active',
+              dates: trip.dates || 'Not set',
+              destination: trip.destination || 'Sri Lanka',
+              // Add any other mapping as needed
+            })).filter(trip => !prevNames.has(trip.name));
+            return [...backendFormatted, ...prev];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch user trips:', err);
+      }
+    };
+    fetchTrips();
+    return () => { isMounted = false; };
+  }, []);
+
   // Filter and sort trips
   const filteredTrips = trips.filter(trip => {
     const matchesSearch = trip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
