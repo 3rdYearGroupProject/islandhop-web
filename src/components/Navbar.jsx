@@ -23,13 +23,13 @@ const Navbar = () => {
 
   // Example user profile data (replace with real data as needed)
   const [userProfile, setUserProfile] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
+    firstName: user?.displayName?.split(' ')[0] || 'John',
+    lastName: user?.displayName?.split(' ')[1] || 'Doe',
     dob: '1990-01-01',
     nationality: 'Sri Lankan',
-    email: 'john.doe@email.com',
+    email: user?.email || 'john.doe@email.com',
     languages: ['English', 'Sinhala', 'Tamil'],
-    avatar: tempUser.displayName?.[0]?.toUpperCase() || 'U',
+    avatar: (user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase(),
   });
 
   // Editable state for first and last name

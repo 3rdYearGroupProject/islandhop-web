@@ -33,10 +33,10 @@ const GuideProfile = () => {
     firstName: 'Priya',
     lastName: 'Perera',
     email: 'priya.perera@example.com',
-    phone: '+94 77 456 7890',
+    phoneNumber: '+94 77 456 7890',
     dateOfBirth: '1990-05-20',
     address: '456 Temple Road, Kandy',
-    emergencyContact: '+94 77 123 4567',
+    emergencyContactNumber: '+94 77 123 4567',
     emergencyContactName: 'Sunil Perera',
     profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=300&h=300&fit=crop&crop=face',
     
@@ -169,7 +169,7 @@ const GuideProfile = () => {
   useEffect(() => {
     const fetchPersonal = async () => {
       try {
-        const res = await userServicesApi.get(`/guide/personal?email=${guideData.email}`);
+        const res = await userServicesApi.get(`/guide/profile?email=${guideData.email}`);
         if (res.status === 200 && res.data) {
           setGuideData(prev => ({ ...prev, ...res.data }));
         }
@@ -216,14 +216,14 @@ const GuideProfile = () => {
   // PUT methods for each section
   const handleSavePersonal = async () => {
     try {
-      const res = await userServicesApi.put('/guide/personal', {
+      const res = await userServicesApi.put('/guide/profile', {
         email: guideData.email,
         firstName: guideData.firstName,
         lastName: guideData.lastName,
-        phone: guideData.phone,
+        phoneNumber: guideData.phoneNumber,
         dateOfBirth: guideData.dateOfBirth,
         address: guideData.address,
-        emergencyContact: guideData.emergencyContact,
+        emergencyContactNumber: guideData.emergencyContactNumber,
         emergencyContactName: guideData.emergencyContactName,
         profilePicture: guideData.profilePicture
       });
@@ -473,10 +473,10 @@ const GuideProfile = () => {
                   </label>
                   <input
                     type="tel"
-                    value={guideData.phone}
+                    value={guideData.phoneNumber}
                     disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setGuideData({...guideData, phone: e.target.value})}
+                    onChange={(e) => setGuideData({...guideData, phoneNumber: e.target.value})}
                   />
                 </div>
                 <div>
@@ -519,10 +519,10 @@ const GuideProfile = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact Phone</label>
                   <input
                     type="tel"
-                    value={guideData.emergencyContact}
+                    value={guideData.emergencyContactNumber}
                     disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={e => setGuideData({ ...guideData, emergencyContact: e.target.value })}
+                    onChange={e => setGuideData({ ...guideData, emergencyContactNumber: e.target.value })}
                   />
                 </div>
               </div>
