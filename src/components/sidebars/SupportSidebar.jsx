@@ -12,6 +12,7 @@ import {
   ChartBarIcon,
   UserIcon,
   HeartIcon,
+  StarIcon,
 } from '@heroicons/react/24/outline';
 import { auth } from '../../firebase';
 import { clearUserData } from '../../utils/userStorage';
@@ -32,6 +33,12 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       path: '/support/tickets', 
       icon: TicketIcon,
       description: 'Manage Support Tickets'
+    },
+    { 
+      name: 'Reviews', 
+      path: '/support/reviews', 
+      icon: StarIcon,
+      description: 'Customer Reviews'
     },
     { 
       name: 'Chat & Email', 
