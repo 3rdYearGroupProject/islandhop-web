@@ -832,28 +832,18 @@ const TripItineraryPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
+      {/* Spacer to prevent overlap with fixed/floating navbar */}
+      <div className="h-20 md:h-24 lg:h-28"></div>
       {/* Trip Progress Bar */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 pt-2 pb-1">
           <TripProgressBar currentStep={4} completedSteps={[1, 2, 3]} tripName={tripName} />
         </div>
       </div>
-      
+
       {/* Trip Header removed as per request */}
 
-      {/* Trip Tabs */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-8">
-            <button className="py-4 border-b-2 border-primary-600 text-primary-600 font-medium">
-              Itinerary
-            </button>
-            <button className="py-4 text-gray-500 hover:text-gray-700">
-              For you
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Removed Itinerary tab and horizontal line as per request */}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-8">

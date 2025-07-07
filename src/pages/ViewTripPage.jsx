@@ -454,6 +454,14 @@ const ViewTripPage = () => {
     // Implement favorite functionality
   };
 
+  const handleProceed = () => {
+    navigate('/select-driver-guide', {
+      state: {
+        trip: trip
+      }
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -480,6 +488,55 @@ const ViewTripPage = () => {
       </div>
     );
   }
+
+
+  // --- Expandable Cost Breakdown State ---
+  const [costExpanded, setCostExpanded] = useState({
+    accommodation: false,
+    food: false,
+    activities: false,
+    transportation: false
+  });
+
+  // --- Cost Calculation Helpers ---
+  // Helper to extract numeric value from price string (e.g., "$200/night" or "$25")
+  const parsePrice = (price) => {
+    if (!price) return 0;
+    const match = price.match(/\$([0-9]+(?:\.[0-9]+)?)/);
+    return match ? parseFloat(match[1]) : 0;
+  };
+  // Helper for price ranges (e.g., "$10-20")
+  const parsePriceRange = (range) => {
+    if (!range) return 0;
+    const match = range.match(/\$([0-9]+)(?:-([0-9]+))?/);
+    if (!match) return 0;
+    if (match[2]) return (parseInt(match[1]) + parseInt(match[2])) / 2;
+    return parseInt(match[1]);
+  };
+
+  // Calculate costs per category
+  const accommodationItems = Object.values(trip.itinerary || {}).flatMap(day => day?.places || []);
+  const accommodationTotal = accommodationItems.reduce((sum, place) => sum + parsePrice(place.price), 0);
+
+  const foodItems = Object.values(trip.itinerary || {}).flatMap(day => day?.food || []);
+  const foodTotal = foodItems.reduce((sum, food) => sum + parsePriceRange(food.priceRange), 0);
+
+  const activityItems = Object.values(trip.itinerary || {}).flatMap(day => day?.activities || []);
+  const activityTotal = activityItems.reduce((sum, act) => sum + parsePrice(act.price), 0);
+
+  const transportationItems = Object.values(trip.itinerary || {}).flatMap(day => day?.transportation || []);
+  const transportationTotal = transportationItems.reduce((sum, t) => sum + parsePrice(t.price), 0);
+
+  // For demo, driver/guide costs are fixed
+  const driverCost = 200;
+  const guideCost = 150;
+
+  const grandTotal = accommodationTotal + foodTotal + activityTotal + transportationTotal + driverCost + guideCost;
+
+  // --- Expand/collapse handler ---
+  const toggleCostExpand = (cat) => {
+    setCostExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -680,38 +737,121 @@ const ViewTripPage = () => {
               <div
                 id="trip-summary-card"
                 className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200"
-                style={{ minHeight: '220px' }}
+                style={{ minHeight: '220px', boxShadow: 'none', border: '1px solid #e5e7eb' }}
                 ref={el => (window.tripSummaryCardRef = el)}
               >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Trip Summary</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Trip Cost Breakdown</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Duration</span>
-                    <span className="font-medium">{trip.totalDays} days</span>
+                  {/* Accommodation */}
+                  <div className="flex flex-col border-b border-gray-100 pb-2">
+                    <button
+                      className="flex justify-between items-center w-full text-left focus:outline-none"
+                      onClick={() => toggleCostExpand('accommodation')}
+                    >
+                      <span className="text-gray-600">Accommodation</span>
+                      <span className="font-medium flex items-center">
+                        ${accommodationTotal.toFixed(2)}
+                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.accommodation ? 'rotate-180' : ''}`} />
+                      </span>
+                    </button>
+                    {costExpanded.accommodation && (
+                      <div className="pl-4 mt-2 space-y-1">
+                        {accommodationItems.length === 0 && <span className="text-gray-400 text-sm">No accommodations</span>}
+                        {accommodationItems.map((place, idx) => (
+                          <div key={idx} className="flex justify-between text-sm text-gray-700">
+                            <span>{place.name} <span className="text-gray-400">({place.location})</span></span>
+                            <span>{place.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Destinations</span>
-                    <span className="font-medium">
-                      {Array.isArray(trip.destinations) ? trip.destinations.length : 1} cities
-                    </span>
+                  {/* Food */}
+                  <div className="flex flex-col border-b border-gray-100 pb-2">
+                    <button
+                      className="flex justify-between items-center w-full text-left focus:outline-none"
+                      onClick={() => toggleCostExpand('food')}
+                    >
+                      <span className="text-gray-600">Food</span>
+                      <span className="font-medium flex items-center">
+                        ${foodTotal.toFixed(2)}
+                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.food ? 'rotate-180' : ''}`} />
+                      </span>
+                    </button>
+                    {costExpanded.food && (
+                      <div className="pl-4 mt-2 space-y-1">
+                        {foodItems.length === 0 && <span className="text-gray-400 text-sm">No food entries</span>}
+                        {foodItems.map((food, idx) => (
+                          <div key={idx} className="flex justify-between text-sm text-gray-700">
+                            <span>{food.name} <span className="text-gray-400">({food.location})</span></span>
+                            <span>{food.priceRange}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Activities</span>
-                    <span className="font-medium">
-                      {Object.values(trip.itinerary || {}).reduce((total, day) => total + (day?.activities?.length || 0), 0)}
-                    </span>
+                  {/* Activities */}
+                  <div className="flex flex-col border-b border-gray-100 pb-2">
+                    <button
+                      className="flex justify-between items-center w-full text-left focus:outline-none"
+                      onClick={() => toggleCostExpand('activities')}
+                    >
+                      <span className="text-gray-600">Activities</span>
+                      <span className="font-medium flex items-center">
+                        ${activityTotal.toFixed(2)}
+                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.activities ? 'rotate-180' : ''}`} />
+                      </span>
+                    </button>
+                    {costExpanded.activities && (
+                      <div className="pl-4 mt-2 space-y-1">
+                        {activityItems.length === 0 && <span className="text-gray-400 text-sm">No activities</span>}
+                        {activityItems.map((act, idx) => (
+                          <div key={idx} className="flex justify-between text-sm text-gray-700">
+                            <span>{act.name} <span className="text-gray-400">({act.location})</span></span>
+                            <span>{act.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Accommodations</span>
-                    <span className="font-medium">
-                      {Object.values(trip.itinerary || {}).reduce((total, day) => total + (day?.places?.length || 0), 0)}
-                    </span>
+                  {/* Transportation */}
+                  <div className="flex flex-col border-b border-gray-100 pb-2">
+                    <button
+                      className="flex justify-between items-center w-full text-left focus:outline-none"
+                      onClick={() => toggleCostExpand('transportation')}
+                    >
+                      <span className="text-gray-600">Transportation</span>
+                      <span className="font-medium flex items-center">
+                        ${transportationTotal.toFixed(2)}
+                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.transportation ? 'rotate-180' : ''}`} />
+                      </span>
+                    </button>
+                    {costExpanded.transportation && (
+                      <div className="pl-4 mt-2 space-y-1">
+                        {transportationItems.length === 0 && <span className="text-gray-400 text-sm">No transportation</span>}
+                        {transportationItems.map((t, idx) => (
+                          <div key={idx} className="flex justify-between text-sm text-gray-700">
+                            <span>{t.name} <span className="text-gray-400">({t.type || t.location})</span></span>
+                            <span>{t.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status</span>
-                    <span className={`font-medium ${trip.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`}> 
-                      {trip.status === 'completed' ? 'Completed' : 'Upcoming'}
-                    </span>
+                  {/* Driver */}
+                  <div className="flex justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-600">Driver</span>
+                    <span className="font-medium">${driverCost.toFixed(2)}</span>
+                  </div>
+                  {/* Guide */}
+                  <div className="flex justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-600">Guide</span>
+                    <span className="font-medium">${guideCost.toFixed(2)}</span>
+                  </div>
+                  {/* Grand Total */}
+                  <div className="flex justify-between mt-2">
+                    <span className="text-gray-900 font-bold">Total</span>
+                    <span className="font-bold text-primary-700 text-lg">${grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -723,23 +863,24 @@ const ViewTripPage = () => {
               <div
                 className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200 flex flex-col justify-center"
                 id="actions-card"
-                style={{ minHeight: '220px', height: window.tripSummaryCardRef ? window.tripSummaryCardRef.offsetHeight : undefined }}
+                style={{ minHeight: '220px', height: window.tripSummaryCardRef ? window.tripSummaryCardRef.offsetHeight : undefined, boxShadow: 'none', border: '1px solid #e5e7eb' }}
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Actions</h3>
                 <div className="flex flex-row gap-4 w-full mb-4">
                   <button
                     onClick={handleBack}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors border border-gray-200"
                   >
                     Back
                   </button>
                   <button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors border border-red-200"
                   >
                     Delete
                   </button>
                   <button
-                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                    onClick={handleProceed}
+                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors border border-blue-200"
                   >
                     Proceed
                   </button>

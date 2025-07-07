@@ -39,6 +39,10 @@ const MyTripsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Show selected driver and guide if passed from SelectDriverGuidePage
+  const selectedDriver = location.state?.selectedDriver;
+  const selectedGuide = location.state?.selectedGuide;
+
   // Get current user
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -408,6 +412,31 @@ const MyTripsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+      {/* Show selected driver and guide if available */}
+      {(selectedDriver || selectedGuide) && (
+        <div className="max-w-2xl mx-auto mt-8 mb-4 p-4 bg-white rounded-xl shadow flex flex-col md:flex-row gap-4 items-center border border-blue-200">
+          {selectedDriver && (
+            <div className="flex-1 flex items-center gap-3">
+              <img src={selectedDriver.image} alt={selectedDriver.name} className="w-14 h-14 rounded-full border" />
+              <div>
+                <div className="font-semibold text-blue-900">Driver: {selectedDriver.name}</div>
+                <div className="text-sm text-gray-500">{selectedDriver.vehicle}</div>
+                <div className="text-xs text-yellow-600">★ {selectedDriver.rating}</div>
+              </div>
+            </div>
+          )}
+          {selectedGuide && (
+            <div className="flex-1 flex items-center gap-3">
+              <img src={selectedGuide.image} alt={selectedGuide.name} className="w-14 h-14 rounded-full border" />
+              <div>
+                <div className="font-semibold text-blue-900">Guide: {selectedGuide.name}</div>
+                <div className="text-sm text-gray-500">{selectedGuide.language} Guide</div>
+                <div className="text-xs text-yellow-600">★ {selectedGuide.rating}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {/* Navbar */}
       <Navbar />
 

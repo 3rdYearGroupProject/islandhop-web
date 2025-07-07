@@ -190,6 +190,8 @@ const TripDurationPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Navbar */}
       <Navbar />
+      {/* Spacer to prevent overlap with fixed/floating navbar */}
+      <div className="h-20 md:h-24 lg:h-28 bg-white"></div>
 
       {/* Header Section */}
       <TripProgressBar tripName={tripName} onBack={handleBack} currentStep={2} completedSteps={[1]} />

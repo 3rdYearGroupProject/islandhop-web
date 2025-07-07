@@ -175,7 +175,9 @@ const TripPreferencesPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+      {/* Spacer to prevent overlap with fixed/floating navbar */}
+      <div className="h-20 md:h-24 lg:h-28 bg-white"></div>
+
       <TripProgressBar tripName={tripName} onBack={handleBack} currentStep={3} completedSteps={[1, 2]} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
