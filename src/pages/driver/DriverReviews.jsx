@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { 
-  StarIcon, 
-  ChartBarIcon, 
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  StarIcon,
+  ChartBarIcon,
   FunnelIcon,
   CalendarIcon,
   UserIcon,
-  ChatBubbleLeftIcon
-} from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+  ChatBubbleLeftIcon,
+} from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 const DriverReviews = () => {
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [timeFilter, setTimeFilter] = useState('all');
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Default driver email - this should come from auth context in real app
-  const driverEmail = 'driver1@example.com';
+  const driverEmail = "driver1@example.com";
 
   // Fetch reviews from backend
   useEffect(() => {
@@ -31,8 +31,8 @@ const DriverReviews = () => {
         setReviews(response.data);
         setError(null);
       } catch (error) {
-        console.error('Error fetching reviews:', error);
-        setError('Failed to load reviews. Please try again later.');
+        console.error("Error fetching reviews:", error);
+        setError("Failed to load reviews. Please try again later.");
         setReviews([]);
       } finally {
         setLoading(false);
@@ -53,31 +53,36 @@ const DriverReviews = () => {
           { stars: 4, count: 0, percentage: 0 },
           { stars: 3, count: 0, percentage: 0 },
           { stars: 2, count: 0, percentage: 0 },
-          { stars: 1, count: 0, percentage: 0 }
-        ]
+          { stars: 1, count: 0, percentage: 0 },
+        ],
       };
     }
 
     // For now, we'll use AI confidence score as rating since rating is null
     // You might want to adjust this logic based on your requirements
-    const ratingsFromConfidence = reviews.map(review => Math.round(review.aiConfidenceScore * 5));
+    const ratingsFromConfidence = reviews.map((review) =>
+      Math.round(review.aiConfidenceScore * 5)
+    );
     const totalReviews = reviews.length;
-    const averageRating = ratingsFromConfidence.reduce((sum, rating) => sum + rating, 0) / totalReviews;
+    const averageRating =
+      ratingsFromConfidence.reduce((sum, rating) => sum + rating, 0) /
+      totalReviews;
 
-    const ratingCounts = [1, 2, 3, 4, 5].map(star => 
-      ratingsFromConfidence.filter(rating => rating === star).length
+    const ratingCounts = [1, 2, 3, 4, 5].map(
+      (star) => ratingsFromConfidence.filter((rating) => rating === star).length
     );
 
     const ratingDistribution = [5, 4, 3, 2, 1].map((star, index) => ({
       stars: star,
       count: ratingCounts[star - 1],
-      percentage: totalReviews > 0 ? (ratingCounts[star - 1] / totalReviews) * 100 : 0
+      percentage:
+        totalReviews > 0 ? (ratingCounts[star - 1] / totalReviews) * 100 : 0,
     }));
 
     return {
       averageRating: parseFloat(averageRating.toFixed(1)),
       totalReviews,
-      ratingDistribution
+      ratingDistribution,
     };
   };
 
@@ -85,7 +90,7 @@ const DriverReviews = () => {
 
   // Helper function to format date from API response
   const formatDate = (dateArray) => {
-    if (!dateArray || dateArray.length < 3) return 'N/A';
+    if (!dateArray || dateArray.length < 3) return "N/A";
     const [year, month, day] = dateArray;
     return new Date(year, month - 1, day).toLocaleDateString();
   };
@@ -96,35 +101,37 @@ const DriverReviews = () => {
   };
 
   const filterOptions = [
-    { value: 'all', label: 'All Reviews' },
-    { value: '5', label: '5 Stars' },
-    { value: '4', label: '4 Stars' },
-    { value: '3', label: '3 Stars' },
-    { value: '2', label: '2 Stars' },
-    { value: '1', label: '1 Star' }
+    { value: "all", label: "All Reviews" },
+    { value: "5", label: "5 Stars" },
+    { value: "4", label: "4 Stars" },
+    { value: "3", label: "3 Stars" },
+    { value: "2", label: "2 Stars" },
+    { value: "1", label: "1 Star" },
   ];
 
   const timeFilters = [
-    { value: 'all', label: 'All Time' },
-    { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' },
-    { value: 'quarter', label: 'Last 3 Months' }
+    { value: "all", label: "All Time" },
+    { value: "week", label: "This Week" },
+    { value: "month", label: "This Month" },
+    { value: "quarter", label: "Last 3 Months" },
   ];
 
-  const filteredReviews = reviews.filter(review => {
-    if (selectedFilter === 'all') return true;
+  const filteredReviews = reviews.filter((review) => {
+    if (selectedFilter === "all") return true;
     const rating = getRatingFromConfidence(review.aiConfidenceScore);
     return rating.toString() === selectedFilter;
   });
 
-  const renderStars = (rating, size = 'h-5 w-5') => {
+  const renderStars = (rating, size = "h-5 w-5") => {
     return (
       <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((star) => (
           <StarIconSolid
             key={star}
             className={`${size} ${
-              star <= rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+              star <= rating
+                ? "text-yellow-400"
+                : "text-gray-300 dark:text-gray-600"
             }`}
           />
         ))}
@@ -168,10 +175,13 @@ const DriverReviews = () => {
                 {/* Average Rating */}
                 <div className="text-center">
                   <div className="text-6xl font-bold text-gray-900 dark:text-white mb-2">
-                    {reviewStats.averageRating || 'N/A'}
+                    {reviewStats.averageRating || "N/A"}
                   </div>
                   <div className="flex justify-center mb-2">
-                    {renderStars(Math.round(reviewStats.averageRating), 'h-8 w-8')}
+                    {renderStars(
+                      Math.round(reviewStats.averageRating),
+                      "h-8 w-8"
+                    )}
                   </div>
                   <p className="text-gray-600 dark:text-gray-400">
                     Based on {reviewStats.totalReviews} reviews
@@ -181,9 +191,14 @@ const DriverReviews = () => {
                 {/* Rating Distribution */}
                 <div className="space-y-3">
                   {reviewStats.ratingDistribution.map((item) => (
-                    <div key={item.stars} className="flex items-center space-x-3">
+                    <div
+                      key={item.stars}
+                      className="flex items-center space-x-3"
+                    >
                       <div className="flex items-center space-x-1 w-16">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{item.stars}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {item.stars}
+                        </span>
                         <StarIconSolid className="h-4 w-4 text-yellow-400" />
                       </div>
                       <div className="flex-1 bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
@@ -246,16 +261,18 @@ const DriverReviews = () => {
                   No reviews found
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {reviews.length === 0 
-                    ? "You haven't received any reviews yet." 
-                    : "No reviews match your current filter criteria."
-                  }
+                  {reviews.length === 0
+                    ? "You haven't received any reviews yet."
+                    : "No reviews match your current filter criteria."}
                 </p>
               </div>
             ) : (
               <div className="space-y-6">
                 {filteredReviews.map((review) => (
-                  <div key={review.reviewId} className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6">
+                  <div
+                    key={review.reviewId}
+                    className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6"
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
@@ -269,22 +286,28 @@ const DriverReviews = () => {
                             {review.reviewerEmail}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              review.status === 'APPROVED' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
-                            }`}>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                review.status === "APPROVED"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
+                              }`}
+                            >
                               {review.status}
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              AI Score: {(review.aiConfidenceScore * 100).toFixed(0)}%
+                              AI Score:{" "}
+                              {(review.aiConfidenceScore * 100).toFixed(0)}%
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="flex items-center space-x-2 mb-1">
-                          {renderStars(getRatingFromConfidence(review.aiConfidenceScore), 'h-4 w-4')}
+                          {renderStars(
+                            getRatingFromConfidence(review.aiConfidenceScore),
+                            "h-4 w-4"
+                          )}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {formatDate(review.createdAt)}

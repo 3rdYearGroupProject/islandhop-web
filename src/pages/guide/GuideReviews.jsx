@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { 
-  Star, 
-  ThumbsUp, 
-  MessageSquare, 
-  Filter, 
-  Search, 
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Star,
+  ThumbsUp,
+  MessageSquare,
+  Filter,
+  Search,
   TrendingUp,
   Award,
   Users,
@@ -14,206 +15,156 @@ import {
   Reply,
   Heart,
   Flag,
-  Share2
-} from 'lucide-react';
+  Share2,
+  AlertCircle,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
 
 const GuideReviews = () => {
-  const [filter, setFilter] = useState('all'); // all, 5star, 4star, 3star, 2star, 1star
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState("all"); // all, 5star, 4star, 3star, 2star, 1star
+  const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('recent'); // recent, rating, helpful
+  const [sortBy, setSortBy] = useState("recent"); // recent, rating, helpful
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [reviews, setReviews] = useState([
-    {
-      id: 'rev001',
-      tourist: {
-        name: 'Emily Johnson',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
-        location: 'New York, USA',
-        totalReviews: 24
-      },
-      tour: 'Kandy Cultural Heritage Tour',
-      rating: 5,
-      date: '2024-12-15',
-      title: 'Absolutely Incredible Experience!',
-      content: 'Priya was an amazing guide! Her knowledge of Kandy\'s history and culture was exceptional. The Temple of the Tooth visit was spiritual and enlightening. The traditional lunch was delicious and the cultural show was spectacular. Highly recommend!',
-      images: [
-        'https://images.unsplash.com/photo-1566754827201-e6d9e4a0fc23?w=400&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=300&fit=crop'
-      ],
-      helpful: 12,
-      isHelpful: false,
-      replied: true,
-      replyDate: '2024-12-15',
-      reply: 'Thank you so much Emily! It was a pleasure showing you around Kandy. I\'m thrilled you enjoyed the cultural aspects of the tour. Hope to see you again soon!'
-    },
-    {
-      id: 'rev002',
-      tourist: {
-        name: 'Marco Rodriguez',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-        location: 'Madrid, Spain',
-        totalReviews: 18
-      },
-      tour: 'Ella Adventure Trek',
-      rating: 5,
-      date: '2024-12-12',
-      title: 'Best Adventure Guide Ever!',
-      content: 'What an adventure! The hike to Ella Rock was challenging but so rewarding. Priya kept us motivated and safe throughout. The views from the top were breathtaking. The Nine Arch Bridge visit was the perfect ending. Professional, knowledgeable, and fun!',
-      images: [
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
-      ],
-      helpful: 8,
-      isHelpful: true,
-      replied: true,
-      replyDate: '2024-12-12',
-      reply: 'Muchas gracias Marco! Your enthusiasm made the trek even more enjoyable. Those views from Ella Rock never get old! Safe travels!'
-    },
-    {
-      id: 'rev003',
-      tourist: {
-        name: 'Sarah Chen',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-        location: 'Singapore',
-        totalReviews: 31
-      },
-      tour: 'Colombo Food Discovery',
-      rating: 4,
-      date: '2024-12-10',
-      title: 'Great Food Tour with Minor Issues',
-      content: 'The food tour was fantastic! Priya introduced us to amazing local dishes and hidden gems. The street food was delicious and authentic. Only minor issue was the timing - we felt a bit rushed at some stops. Overall, highly recommended for food lovers!',
-      images: [],
-      helpful: 6,
-      isHelpful: false,
-      replied: true,
-      replyDate: '2024-12-10',
-      reply: 'Thank you Sarah! I really appreciate your feedback about the timing. I\'ll make sure to allow more time at each stop in future tours. So glad you enjoyed the local cuisine!'
-    },
-    {
-      id: 'rev004',
-      tourist: {
-        name: 'James Wilson',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        location: 'London, UK',
-        totalReviews: 42
-      },
-      tour: 'Sigiriya Historical Tour',
-      rating: 5,
-      date: '2024-12-08',
-      title: 'Historical Masterpiece!',
-      content: 'Priya\'s passion for Sri Lankan history shines through every story she tells. The climb up Sigiriya was well-paced and her historical insights made it truly memorable. The ancient frescoes and gardens were explained beautifully. A must-do tour!',
-      images: [
-        'https://images.unsplash.com/photo-1566754827201-e6d9e4a0fc23?w=400&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=300&fit=crop'
-      ],
-      helpful: 15,
-      isHelpful: false,
-      replied: true,
-      replyDate: '2024-12-08',
-      reply: 'Thank you James! History comes alive when shared with enthusiastic guests like you. Sigiriya truly is a wonder of ancient engineering!'
-    },
-    {
-      id: 'rev005',
-      tourist: {
-        name: 'Lisa Anderson',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-        location: 'Sydney, Australia',
-        totalReviews: 19
-      },
-      tour: 'Kandy Cultural Heritage Tour',
-      rating: 3,
-      date: '2024-12-05',
-      title: 'Good Tour but Room for Improvement',
-      content: 'The tour was informative and Priya was knowledgeable. However, the group was quite large which made it difficult to hear at times. The temple visit was beautiful but felt rushed. The lunch was good. With some adjustments, this could be a 5-star experience.',
-      images: [],
-      helpful: 4,
-      isHelpful: false,
-      replied: true,
-      replyDate: '2024-12-05',
-      reply: 'Thank you for the honest feedback Lisa. You\'re absolutely right about the group size. I\'m now limiting groups to 8 people maximum for a more intimate experience.'
-    },
-    {
-      id: 'rev006',
-      tourist: {
-        name: 'David Kim',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-        location: 'Seoul, South Korea',
-        totalReviews: 27
-      },
-      tour: 'Ella Adventure Trek',
-      rating: 5,
-      date: '2024-12-03',
-      title: 'Perfect Adventure Day!',
-      content: 'Outstanding guide and perfect day! Priya was professional, safety-conscious, and incredibly knowledgeable about the local flora and fauna. The trek was challenging but manageable. Photos don\'t do justice to the actual views. Thank you for an unforgettable experience!',
-      images: [
-        'https://images.unsplash.com/photo-1501436513145-30f24e19fcc4?w=400&h=300&fit=crop'
-      ],
-      helpful: 9,
-      isHelpful: true,
-      replied: false
-    }
-  ]);
+  // Mock data as fallback
 
+  // Fetch reviews from backend
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Use default guide email for now - in a real app, this would come from auth context
+        const guideEmail = "guide003@gmail.com";
+        const response = await axios.get(
+          `http://localhost:8082/api/v1/reviews/guides/guide/${guideEmail}`
+        );
+
+        if (response.data && response.data.length > 0) {
+          setReviews(response.data);
+        } else {
+          // Use mock data as fallback
+          setReviews(mockReviewsData);
+        }
+      } catch (err) {
+        console.error("Error fetching guide reviews:", err);
+        setError("Failed to load reviews. Using sample data.");
+        // Use mock data as fallback
+        setReviews(mockReviewsData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
+  // Calculate stats from current reviews data
   const reviewStats = {
     totalReviews: reviews.length,
-    averageRating: reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length,
+    averageRating:
+      reviews.length > 0
+        ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) /
+          reviews.length
+        : 0,
     ratingDistribution: {
-      5: reviews.filter(r => r.rating === 5).length,
-      4: reviews.filter(r => r.rating === 4).length,
-      3: reviews.filter(r => r.rating === 3).length,
-      2: reviews.filter(r => r.rating === 2).length,
-      1: reviews.filter(r => r.rating === 1).length
+      5: reviews.filter((r) => (r.rating || 0) === 5).length,
+      4: reviews.filter((r) => (r.rating || 0) === 4).length,
+      3: reviews.filter((r) => (r.rating || 0) === 3).length,
+      2: reviews.filter((r) => (r.rating || 0) === 2).length,
+      1: reviews.filter((r) => (r.rating || 0) === 1).length,
     },
-    replyRate: (reviews.filter(r => r.replied).length / reviews.length) * 100,
-    totalHelpful: reviews.reduce((sum, review) => sum + review.helpful, 0)
+    replyRate: 0, // Backend doesn't seem to have reply functionality yet
+    totalHelpful: 0, // Backend doesn't seem to have helpful votes yet
   };
 
-  const filteredReviews = reviews.filter(review => {
-    const matchesFilter = filter === 'all' || review.rating === parseInt(filter.replace('star', ''));
-    const matchesSearch = review.tourist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.tour.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.content.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredReviews = reviews.filter((review) => {
+    const rating = review.rating || 0;
+    const matchesFilter =
+      filter === "all" || rating === parseInt(filter.replace("star", ""));
+
+    const reviewerName = `${review.reviewerFirstname || ""} ${
+      review.reviewerLastname || ""
+    }`.trim();
+    const reviewContent = review.review || "";
+
+    const matchesSearch =
+      reviewerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reviewContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (review.reviewerEmail || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const sortedReviews = [...filteredReviews].sort((a, b) => {
     switch (sortBy) {
-      case 'recent':
-        return new Date(b.date) - new Date(a.date);
-      case 'rating':
-        return b.rating - a.rating;
-      case 'helpful':
-        return b.helpful - a.helpful;
+      case "recent":
+        // Convert array format [2025, 7, 7, 20, 27, 49, 256857000] to Date
+        const dateA = a.createdAt
+          ? new Date(
+              a.createdAt[0],
+              a.createdAt[1] - 1,
+              a.createdAt[2],
+              a.createdAt[3] || 0,
+              a.createdAt[4] || 0,
+              a.createdAt[5] || 0
+            )
+          : new Date(0);
+        const dateB = b.createdAt
+          ? new Date(
+              b.createdAt[0],
+              b.createdAt[1] - 1,
+              b.createdAt[2],
+              b.createdAt[3] || 0,
+              b.createdAt[4] || 0,
+              b.createdAt[5] || 0
+            )
+          : new Date(0);
+        return dateB - dateA;
+      case "rating":
+        return (b.rating || 0) - (a.rating || 0);
+      case "helpful":
+        return 0; // No helpful votes in backend yet
       default:
         return 0;
     }
   });
 
   const toggleHelpful = (reviewId) => {
-    setReviews(reviews.map(review => {
-      if (review.id === reviewId) {
-        return {
-          ...review,
-          helpful: review.isHelpful ? review.helpful - 1 : review.helpful + 1,
-          isHelpful: !review.isHelpful
-        };
-      }
-      return review;
-    }));
+    // Helpful votes not implemented in backend yet
+    console.log("Helpful vote for review:", reviewId);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+  const formatDate = (dateArray) => {
+    if (!dateArray || !Array.isArray(dateArray)) {
+      return "Unknown date";
+    }
+    // Convert [2025, 7, 7, 20, 27, 49, 256857000] to readable date
+    const date = new Date(
+      dateArray[0],
+      dateArray[1] - 1, // Month is 0-indexed in JS
+      dateArray[2],
+      dateArray[3] || 0,
+      dateArray[4] || 0,
+      dateArray[5] || 0
+    );
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const getRatingColor = (rating) => {
-    if (rating >= 4.5) return 'text-green-600';
-    if (rating >= 3.5) return 'text-yellow-600';
-    return 'text-red-600';
+    if (rating >= 4.5) return "text-green-600";
+    if (rating >= 3.5) return "text-yellow-600";
+    return "text-red-600";
   };
 
   return (
@@ -222,8 +173,12 @@ const GuideReviews = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Reviews & Ratings</h1>
-            <p className="text-gray-600">Monitor and respond to tourist feedback</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Reviews & Ratings
+            </h1>
+            <p className="text-gray-600">
+              Monitor and respond to tourist feedback
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <div className="relative">
@@ -242,7 +197,11 @@ const GuideReviews = () => {
             >
               <Filter className="h-4 w-4 mr-2" />
               Filters
-              <ChevronDown className={`h-4 w-4 ml-1 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`h-4 w-4 ml-1 transition-transform duration-200 ${
+                  showFilters ? "rotate-180" : ""
+                }`}
+              />
             </button>
           </div>
         </div>
@@ -255,16 +214,26 @@ const GuideReviews = () => {
                 <Star className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Average Rating</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Average Rating
+                </p>
                 <div className="flex items-center">
-                  <p className={`text-2xl font-bold ${getRatingColor(reviewStats.averageRating)}`}>
+                  <p
+                    className={`text-2xl font-bold ${getRatingColor(
+                      reviewStats.averageRating
+                    )}`}
+                  >
                     {reviewStats.averageRating.toFixed(1)}
                   </p>
                   <div className="flex ml-2">
                     {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={`h-4 w-4 ${i < Math.floor(reviewStats.averageRating) ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} 
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < Math.floor(reviewStats.averageRating)
+                            ? "text-yellow-500 fill-current"
+                            : "text-gray-300"
+                        }`}
                       />
                     ))}
                   </div>
@@ -279,8 +248,12 @@ const GuideReviews = () => {
                 <MessageSquare className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Reviews</p>
-                <p className="text-2xl font-bold text-gray-900">{reviewStats.totalReviews}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Reviews
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {reviewStats.totalReviews}
+                </p>
               </div>
             </div>
           </div>
@@ -291,8 +264,12 @@ const GuideReviews = () => {
                 <Reply className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Reply Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{reviewStats.replyRate.toFixed(0)}%</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Approved Reviews
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {reviews.filter((r) => r.status === "APPROVED").length}
+                </p>
               </div>
             </div>
           </div>
@@ -303,8 +280,22 @@ const GuideReviews = () => {
                 <ThumbsUp className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Helpful Votes</p>
-                <p className="text-2xl font-bold text-gray-900">{reviewStats.totalHelpful}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Avg AI Score
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {reviews.length > 0
+                    ? (
+                        (reviews.reduce(
+                          (sum, r) => sum + (r.aiConfidenceScore || 0),
+                          0
+                        ) /
+                          reviews.length) *
+                        100
+                      ).toFixed(0)
+                    : 0}
+                  %
+                </p>
               </div>
             </div>
           </div>
@@ -312,26 +303,35 @@ const GuideReviews = () => {
 
         {/* Rating Distribution */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Rating Distribution</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Rating Distribution
+          </h3>
           <div className="space-y-3">
-            {[5, 4, 3, 2, 1].map(rating => {
+            {[5, 4, 3, 2, 1].map((rating) => {
               const count = reviewStats.ratingDistribution[rating];
-              const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews) * 100 : 0;
-              
+              const percentage =
+                reviewStats.totalReviews > 0
+                  ? (count / reviewStats.totalReviews) * 100
+                  : 0;
+
               return (
                 <div key={rating} className="flex items-center space-x-4">
                   <div className="flex items-center w-20">
-                    <span className="text-sm font-medium text-gray-700">{rating}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {rating}
+                    </span>
                     <Star className="h-4 w-4 text-yellow-500 ml-1" />
                   </div>
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${percentage}%` }}
                     ></div>
                   </div>
                   <span className="text-sm text-gray-600 w-12">{count}</span>
-                  <span className="text-sm text-gray-500 w-12">{percentage.toFixed(0)}%</span>
+                  <span className="text-sm text-gray-500 w-12">
+                    {percentage.toFixed(0)}%
+                  </span>
                 </div>
               );
             })}
@@ -343,7 +343,9 @@ const GuideReviews = () => {
           <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
             <div className="flex flex-wrap items-center gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Rating</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Rating
+                </label>
                 <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
@@ -359,7 +361,9 @@ const GuideReviews = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sort By
+                </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -375,127 +379,171 @@ const GuideReviews = () => {
         )}
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center space-x-3">
+            <RefreshCw className="h-6 w-6 text-blue-600 animate-spin" />
+            <span className="text-gray-600">Loading reviews...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+            <span className="text-yellow-800">{error}</span>
+          </div>
+        </div>
+      )}
+
       {/* Reviews List */}
-      <div className="space-y-6">
-        {sortedReviews.map((review) => (
-          <div key={review.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-start space-x-4">
-                <img
-                  src={review.tourist.avatar}
-                  alt={review.tourist.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">{review.tourist.name}</h3>
-                    <span className="text-sm text-gray-500">•</span>
-                    <span className="text-sm text-gray-500">{review.tourist.location}</span>
+      {!loading && (
+        <div className="space-y-6">
+          {sortedReviews.map((review) => (
+            <div
+              key={review.reviewId}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start space-x-4">
+                  <img
+                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+                    alt={
+                      `${review.reviewerFirstname || ""} ${
+                        review.reviewerLastname || ""
+                      }`.trim() || "Reviewer"
+                    }
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="font-semibold text-gray-900">
+                        {`${review.reviewerFirstname || ""} ${
+                          review.reviewerLastname || ""
+                        }`.trim() || "Anonymous"}
+                      </h3>
+                      <span className="text-sm text-gray-500">•</span>
+                      <span className="text-sm text-gray-500">
+                        {review.reviewerEmail || "Unknown"}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          review.status === "APPROVED"
+                            ? "bg-green-100 text-green-800"
+                            : review.status === "PENDING"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {review.status}
+                      </span>
+                      <span>•</span>
+                      <span>
+                        AI Score:{" "}
+                        {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
+                      </span>
+                      <span>•</span>
+                      <span>{formatDate(review.createdAt)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <span>{review.tourist.totalReviews} reviews</span>
-                    <span>•</span>
-                    <span>{review.tour}</span>
-                    <span>•</span>
-                    <span>{formatDate(review.date)}</span>
-                  </div>
+                </div>
+
+                <div className="flex items-center space-x-1">
+                  {review.rating ? (
+                    <>
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < review.rating
+                              ? "text-yellow-500 fill-current"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-2 font-semibold text-gray-900">
+                        {review.rating.toFixed(1)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">No rating</span>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`h-4 w-4 ${i < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} 
-                  />
-                ))}
-                <span className="ml-2 font-semibold text-gray-900">{review.rating}.0</span>
-              </div>
-            </div>
-
-            {/* Review Content */}
-            <div className="mb-4">
-              <h4 className="font-semibold text-gray-900 mb-2">{review.title}</h4>
-              <p className="text-gray-700 leading-relaxed">{review.content}</p>
-            </div>
-
-            {/* Review Images */}
-            {review.images.length > 0 && (
-              <div className="flex space-x-2 mb-4">
-                {review.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`Review ${index + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Review Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => toggleHelpful(review.id)}
-                  className={`flex items-center space-x-1 text-sm transition-colors duration-200 ${
-                    review.isHelpful ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
-                  }`}
-                >
-                  <ThumbsUp className={`h-4 w-4 ${review.isHelpful ? 'fill-current' : ''}`} />
-                  <span>Helpful ({review.helpful})</span>
-                </button>
-                
-                <button className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200">
-                  <Share2 className="h-4 w-4" />
-                  <span>Share</span>
-                </button>
-                
-                <button className="flex items-center space-x-1 text-sm text-gray-600 hover:text-red-600 transition-colors duration-200">
-                  <Flag className="h-4 w-4" />
-                  <span>Report</span>
-                </button>
+              {/* Review Content */}
+              <div className="mb-4">
+                <p className="text-gray-700 leading-relaxed">
+                  {review.review || "No review content"}
+                </p>
               </div>
 
-              <div className="flex items-center space-x-2">
-                {review.replied && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                    Replied
-                  </span>
-                )}
-                {!review.replied && (
+              {/* AI Analysis */}
+              {review.aiAnalysis && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm font-medium text-blue-800">
+                      AI Analysis
+                    </span>
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                      Confidence:{" "}
+                      {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <p className="text-sm text-blue-700">{review.aiAnalysis}</p>
+                </div>
+              )}
+
+              {/* Review Actions */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => toggleHelpful(review.reviewId)}
+                    className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                    <span>Helpful</span>
+                  </button>
+
+                  <button className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                    <Share2 className="h-4 w-4" />
+                    <span>Share</span>
+                  </button>
+
+                  <button className="flex items-center space-x-1 text-sm text-gray-600 hover:text-red-600 transition-colors duration-200">
+                    <Flag className="h-4 w-4" />
+                    <span>Report</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-2">
                   <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm">
                     Reply
                   </button>
-                )}
+                </div>
               </div>
             </div>
+          ))}
 
-            {/* Guide Reply */}
-            {review.replied && review.reply && (
-              <div className="mt-4 pl-4 border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg">
-                <div className="flex items-center mb-2">
-                  <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">P</span>
-                  </div>
-                  <span className="ml-2 font-semibold text-gray-900">Priya Perera (Guide)</span>
-                  <span className="ml-2 text-sm text-gray-500">• {formatDate(review.replyDate)}</span>
-                </div>
-                <p className="text-gray-700">{review.reply}</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {sortedReviews.length === 0 && (
-        <div className="text-center py-12">
-          <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No reviews found</h3>
-          <p className="text-gray-600">
-            {searchTerm ? 'No reviews match your search criteria.' : 'You haven\'t received any reviews yet.'}
-          </p>
+          {/* Empty State */}
+          {sortedReviews.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No reviews found
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm
+                  ? "No reviews match your search criteria."
+                  : "You haven't received any reviews yet."}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
