@@ -195,7 +195,7 @@ const Hosting = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl ">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
@@ -223,7 +223,7 @@ const Hosting = () => {
         </div>
         <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-neutral-200 dark:border-secondary-700">
           <h4 className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">Running Servers</h4>
-          <div className="text-2xl font-bold text-success-600">{infrastructureMetrics.runningServers}</div>
+          <div className="text-2xl font-bold text-neutral-900">{infrastructureMetrics.runningServers}</div>
         </div>
         <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-neutral-200 dark:border-secondary-700">
           <h4 className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">Avg CPU Usage</h4>

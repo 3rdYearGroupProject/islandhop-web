@@ -114,7 +114,7 @@ const AISettings = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl ">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>

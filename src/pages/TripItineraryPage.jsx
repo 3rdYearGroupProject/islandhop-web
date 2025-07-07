@@ -13,6 +13,148 @@ import TripProgressBar from '../components/TripProgressBar';
 import { getUserUID } from '../utils/userStorage';
 import { tripPlanningApi } from '../api/axios';
 
+// Google Places API integration
+const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
+
+// Sri Lanka boundary for location filtering
+const SRI_LANKA_BOUNDS = {
+  north: 9.8354,
+  south: 5.9169,
+  east: 81.8919,
+  west: 79.6533
+};
+
+// Popular Sri Lankan cities for destination search
+const POPULAR_SRI_LANKAN_CITIES = [
+  { name: 'Colombo', coords: { lat: 6.9271, lng: 79.8612 } },
+  { name: 'Kandy', coords: { lat: 7.2906, lng: 80.6337 } },
+  { name: 'Galle', coords: { lat: 6.0329, lng: 80.217 } },
+  { name: 'Nuwara Eliya', coords: { lat: 6.9497, lng: 80.7891 } },
+  { name: 'Anuradhapura', coords: { lat: 8.3114, lng: 80.4037 } },
+  { name: 'Sigiriya', coords: { lat: 7.9568, lng: 80.7608 } },
+  { name: 'Ella', coords: { lat: 6.8720, lng: 81.0463 } },
+  { name: 'Mirissa', coords: { lat: 5.9487, lng: 80.4565 } },
+  { name: 'Jaffna', coords: { lat: 9.6615, lng: 80.0255 } },
+  { name: 'Negombo', coords: { lat: 7.2083, lng: 79.8358 } },
+  { name: 'Trincomalee', coords: { lat: 8.5922, lng: 81.2357 } },
+  { name: 'Batticaloa', coords: { lat: 7.7167, lng: 81.7000 } },
+  { name: 'Ratnapura', coords: { lat: 6.6806, lng: 80.4022 } },
+  { name: 'Matara', coords: { lat: 5.9486, lng: 80.5428 } },
+  { name: 'Badulla', coords: { lat: 6.9895, lng: 81.0557 } },
+  { name: 'Polonnaruwa', coords: { lat: 7.9329, lng: 81.0081 } },
+  { name: 'Kurunegala', coords: { lat: 7.4800, lng: 80.3600 } },
+  { name: 'Kalutara', coords: { lat: 6.5833, lng: 79.9597 } },
+  { name: 'Hambantota', coords: { lat: 6.1236, lng: 81.1233 } },
+  { name: 'Dambulla', coords: { lat: 7.8536, lng: 80.6519 } },
+  { name: 'Matale', coords: { lat: 7.4667, lng: 80.6167 } },
+  { name: 'Ampara', coords: { lat: 7.2833, lng: 81.6667 } },
+  { name: 'Mannar', coords: { lat: 8.9667, lng: 79.8833 } },
+  { name: 'Vavuniya', coords: { lat: 8.7500, lng: 80.5000 } },
+  { name: 'Puttalam', coords: { lat: 8.0333, lng: 79.8167 } },
+  { name: 'Beruwala', coords: { lat: 6.4733, lng: 79.9844 } },
+  { name: 'Chilaw', coords: { lat: 7.5758, lng: 79.7953 } },
+  { name: 'Gampaha', coords: { lat: 7.0917, lng: 79.9997 } },
+  { name: 'Kegalle', coords: { lat: 7.2533, lng: 80.3436 } },
+  { name: 'Point Pedro', coords: { lat: 9.8167, lng: 80.2333 } },
+  { name: 'Tangalle', coords: { lat: 6.0167, lng: 80.7833 } },
+  { name: 'Monaragala', coords: { lat: 6.8667, lng: 81.3500 } },
+  { name: 'Balangoda', coords: { lat: 6.6500, lng: 80.6833 } },
+  { name: 'Hatton', coords: { lat: 6.8917, lng: 80.5958 } },
+  { name: 'Weligama', coords: { lat: 5.9667, lng: 80.4167 } },
+  { name: 'Arugam Bay', coords: { lat: 6.8500, lng: 81.8333 } },
+  { name: 'Tissamaharama', coords: { lat: 6.2833, lng: 81.2833 } },
+  { name: 'Bentota', coords: { lat: 6.4219, lng: 80.0008 } },
+  { name: 'Kitulgala', coords: { lat: 6.9833, lng: 80.4167 } },
+  { name: 'Hikkaduwa', coords: { lat: 6.1478, lng: 80.1039 } }
+];
+
+// Function to check if coordinates are within Sri Lanka
+const isWithinSriLanka = (lat, lng) => {
+  return lat >= SRI_LANKA_BOUNDS.south && 
+         lat <= SRI_LANKA_BOUNDS.north && 
+         lng >= SRI_LANKA_BOUNDS.west && 
+         lng <= SRI_LANKA_BOUNDS.east;
+};
+
+// Search Sri Lankan cities using Google Places API
+const searchSriLankanCities = async (query = '') => {
+  return new Promise((resolve, reject) => {
+    if (!GOOGLE_PLACES_API_KEY) {
+      console.error('Google Places API key is not configured');
+      resolve(POPULAR_SRI_LANKAN_CITIES.filter(city => 
+        city.name.toLowerCase().includes(query.toLowerCase())
+      ));
+      return;
+    }
+
+    try {
+      const service = new window.google.maps.places.PlacesService(
+        document.createElement('div')
+      );
+
+      // If no query, return popular cities
+      if (!query.trim()) {
+        resolve(POPULAR_SRI_LANKAN_CITIES);
+        return;
+      }
+
+      const request = {
+        query: `${query} Sri Lanka city`,
+        fields: ['place_id', 'name', 'geometry', 'formatted_address', 'photos', 'types'],
+        locationBias: {
+          center: { lat: 7.8731, lng: 80.7718 }, // Center of Sri Lanka
+          radius: 200000 // 200km radius
+        }
+      };
+
+      service.textSearch(request, (results, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+          // Filter results to only include Sri Lankan locations
+          const sriLankanCities = results
+            .filter(place => {
+              if (!place.geometry?.location) return false;
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+              return isWithinSriLanka(lat, lng) && 
+                     place.types.some(type => ['locality', 'administrative_area_level_2', 'administrative_area_level_1'].includes(type));
+            })
+            .map(place => ({
+              id: place.place_id,
+              name: place.name,
+              coords: {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+              },
+              address: place.formatted_address,
+              image: place.photos ? getPhotoUrl(place.photos[0]) : null,
+              place_id: place.place_id
+            }))
+            .slice(0, 10); // Limit to 10 results
+
+          resolve(sriLankanCities);
+        } else {
+          console.warn('Places search failed:', status);
+          // Fallback to popular cities if search fails
+          resolve(POPULAR_SRI_LANKAN_CITIES.filter(city => 
+            city.name.toLowerCase().includes(query.toLowerCase())
+          ));
+        }
+      });
+    } catch (error) {
+      console.error('Error searching cities:', error);
+      resolve(POPULAR_SRI_LANKAN_CITIES.filter(city => 
+        city.name.toLowerCase().includes(query.toLowerCase())
+      ));
+    }
+  });
+};
+
+// Helper function to get photo URL from Google Places photo
+const getPhotoUrl = (photo, maxWidth = 400) => {
+  if (!photo || !photo.getUrl) return null;
+  return photo.getUrl({ maxWidth });
+};
+
 // API Functions for backend integration
 // Search activities with preferences and proximity optimization
 const searchActivities = async (tripId, searchParams) => {
@@ -136,6 +278,11 @@ const TripItineraryPage = () => {
   const [expandedDays, setExpandedDays] = useState({});
   const [selectedStayDates, setSelectedStayDates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Destination management states
+  const [destinations, setDestinations] = useState({}); // dayIndex -> destination
+  const [availableCities, setAvailableCities] = useState([]);
+  const [isSearchingCities, setIsSearchingCities] = useState(false);
   
   // Backend data states
   const [backendSuggestions, setBackendSuggestions] = useState({
@@ -437,15 +584,84 @@ const TripItineraryPage = () => {
     ]
   };
 
+  // Function to check if a day has a destination
+  const dayHasDestination = (dayIndex) => {
+    return destinations[dayIndex] !== undefined;
+  };
+
+  // Function to get destination for a day
+  const getDestinationForDay = (dayIndex) => {
+    return destinations[dayIndex] || null;
+  };
+
+  // Search cities using Google Places API
+  const searchCities = async (query = '') => {
+    setIsSearchingCities(true);
+    try {
+      const cities = await searchSriLankanCities(query);
+      setAvailableCities(cities);
+    } catch (error) {
+      console.error('Error searching cities:', error);
+      setAvailableCities(POPULAR_SRI_LANKAN_CITIES);
+    } finally {
+      setIsSearchingCities(false);
+    }
+  };
+
+  // Initialize cities on component mount
+  useEffect(() => {
+    searchCities();
+  }, []);
+
+  // Search cities when query changes (with debounce)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (showDestinationModal) {
+        searchCities(searchQuery);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, showDestinationModal]);
+  
+  useEffect(() => {
+    // Initialize empty itinerary for each day and expand first few days
+    const initialItinerary = {};
+    const initialExpanded = {};
+    days.forEach((day, index) => {
+      initialItinerary[index] = {
+        date: day,
+        activities: [],
+        places: [],
+        food: [],
+        transportation: []
+      };
+      // Expand first 3 days by default
+      initialExpanded[index] = index < 1;
+    });
+    setItinerary(initialItinerary);
+    setExpandedDays(initialExpanded);
+  }, [days.length]);
+
   const handleAddItem = (category, dayIndex) => {
     console.log('🎯 Add button clicked for category:', category, 'dayIndex:', dayIndex);
     setSelectedCategory(category);
     setCurrentDay(dayIndex);
     
     if (category === 'Destinations') {
-      console.log('🏙️ Opening destination modal (uses mock data)');
+      console.log('🏙️ Opening destination modal with Google Places API');
       setShowDestinationModal(true);
+      // Reset search query when opening destination modal
+      setSearchQuery('');
+      // Load initial cities
+      searchCities('');
     } else {
+      // Check if destination is required for this day
+      if (!dayHasDestination(dayIndex)) {
+        alert('Please add a destination for this day first before adding other activities.');
+        return;
+      }
+      
       console.log('📋 Opening modal for category:', category);
       setShowAddModal(true);
       
@@ -462,6 +678,22 @@ const TripItineraryPage = () => {
 
   // Enhanced addItemToItinerary to sync with backend after add
   const addItemToItinerary = async (item, selectedDates = null) => {
+    // Handle destination selection separately
+    if (showDestinationModal) {
+      console.log('🏙️ Adding destination:', item, 'to day:', currentDay);
+      
+      // Update destinations state
+      setDestinations(prev => ({
+        ...prev,
+        [currentDay]: item
+      }));
+      
+      // Close modal and reset state
+      setShowDestinationModal(false);
+      setSearchQuery('');
+      return;
+    }
+
     // Helper function to get category key
     const getCategoryKey = (category) => {
       if (category === 'activities') return 'activities';
@@ -709,19 +941,10 @@ const TripItineraryPage = () => {
     
     console.log('🔍 getSuggestionsForModal called for:', suggestionsKey, 'searchQuery:', searchQuery);
     
-    // For destinations, return mock data immediately
+    // For destinations, return Google Places API results
     if (showDestinationModal) {
-      if (!searchQuery) {
-        console.log('📋 Returning all cities (no search query)');
-        return mockSuggestions.cities || [];
-      }
-      
-      const filtered = (mockSuggestions.cities || []).filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.region && item.region.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-      console.log('📋 Returning filtered cities:', filtered.length, 'items');
-      return filtered;
+      console.log('📋 Returning available cities from Google Places API:', availableCities.length, 'items');
+      return availableCities;
     }
     
     // For backend categories, return cached data if available
@@ -876,16 +1099,41 @@ const TripItineraryPage = () => {
                     {/* Day Content */}
                     {isExpanded && (
                       <div className="ml-6 pb-8">
-                        {/* Add Location Button */}
-                        <div className="mb-6">
-                        <button 
-                          onClick={() => handleAddItem('Destinations', dayIndex)}
-                          className="flex items-center text-primary-600 hover:text-primary-700 font-medium"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Destination
-                        </button>
-                        </div>
+                        {/* Destination Display */}
+                        {destinations[dayIndex] ? (
+                          <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center">
+                                <MapPin className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-primary-900">{destinations[dayIndex].name}</h4>
+                                <p className="text-sm text-primary-700">
+                                  {destinations[dayIndex].address || 'Sri Lanka'}
+                                </p>
+                              </div>
+                              <button 
+                                onClick={() => handleAddItem('Destinations', dayIndex)}
+                                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                              >
+                                Change
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div className="text-center">
+                              <MapPin className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-600 mb-3">Add a destination for this day first</p>
+                              <button 
+                                onClick={() => handleAddItem('Destinations', dayIndex)}
+                                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm"
+                              >
+                                Add Destination
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Added Items */}
                         {hasItems ? (
@@ -963,39 +1211,68 @@ const TripItineraryPage = () => {
                         )}
 
                         {/* Category Addition Buttons */}
-                        <div className="flex items-center justify-center space-x-4 pt-4 border-t border-gray-200">
-                          <button 
-                            onClick={() => handleAddItem('activities', dayIndex)}
-                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
-                            title="Add Things to Do"
-                          >
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
-                              <Camera className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                        {destinations[dayIndex] ? (
+                          <div className="flex items-center justify-center space-x-4 pt-4 border-t border-gray-200">
+                            <button 
+                              onClick={() => handleAddItem('activities', dayIndex)}
+                              className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                              title="Add Things to Do"
+                            >
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                                <Camera className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                              </div>
+                              <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Things to Do</span>
+                            </button>
+                            <button 
+                              onClick={() => handleAddItem('places', dayIndex)}
+                              className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                              title="Add Places to Stay"
+                            >
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                                <Bed className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                              </div>
+                              <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Places to Stay</span>
+                            </button>
+                            <button 
+                              onClick={() => handleAddItem('food', dayIndex)}
+                              className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
+                              title="Add Dining"
+                            >
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
+                                <Utensils className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
+                              </div>
+                              <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Dining</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="pt-4 border-t border-gray-200">
+                            <div className="text-center py-4">
+                              <p className="text-sm text-gray-500 mb-3">
+                                Please add a destination first to unlock activities, places, and dining options for this day.
+                              </p>
+                              <div className="flex items-center justify-center space-x-4 opacity-50 pointer-events-none">
+                                <div className="flex flex-col items-center p-3 border border-gray-200 w-24 h-20 rounded-lg">
+                                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                                    <Camera className="w-4 h-4 text-gray-400" />
+                                  </div>
+                                  <span className="text-xs text-gray-400 text-center leading-tight">Things to Do</span>
+                                </div>
+                                <div className="flex flex-col items-center p-3 border border-gray-200 w-24 h-20 rounded-lg">
+                                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                                    <Bed className="w-4 h-4 text-gray-400" />
+                                  </div>
+                                  <span className="text-xs text-gray-400 text-center leading-tight">Places to Stay</span>
+                                </div>
+                                <div className="flex flex-col items-center p-3 border border-gray-200 w-24 h-20 rounded-lg">
+                                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                                    <Utensils className="w-4 h-4 text-gray-400" />
+                                  </div>
+                                  <span className="text-xs text-gray-400 text-center leading-tight">Dining</span>
+                                </div>
+                              </div>
                             </div>
-                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Things to Do</span>
-                          </button>
-                          <button 
-                            onClick={() => handleAddItem('places', dayIndex)}
-                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
-                            title="Add Places to Stay"
-                          >
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
-                              <Bed className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                            </div>
-                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Places to Stay</span>
-                          </button>
-                          <button 
-                            onClick={() => handleAddItem('food', dayIndex)}
-                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
-                            title="Add Dining"
-                          >
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
-                              <Utensils className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                            </div>
-                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Dining</span>
-                          </button>
-                          {/* Transportation selection button removed as per UI/UX request */}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1151,6 +1428,7 @@ const TripItineraryPage = () => {
         dayIndex={currentDay}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        isSearchingCities={isSearchingCities}
       />
     </div>
   );

@@ -31,7 +31,7 @@ const SupportDashboard = ({ onPageChange }) => {
       change: '+3 today',
       changeType: 'positive',
       icon: TicketIcon,
-      color: 'primary'
+      color: 'secondary'
     },
     {
       title: 'In Progress',
@@ -39,7 +39,7 @@ const SupportDashboard = ({ onPageChange }) => {
       change: '-2 from yesterday',
       changeType: 'negative',
       icon: ExclamationTriangleIcon,
-      color: 'warning'
+      color: 'secondary'
     },
     {
       title: 'Escalated',
@@ -47,7 +47,7 @@ const SupportDashboard = ({ onPageChange }) => {
       change: '+1 today',
       changeType: 'positive',
       icon: ShieldExclamationIcon,
-      color: 'danger'
+      color: 'secondary'
     },
     {
       title: 'Refunds',
@@ -55,7 +55,7 @@ const SupportDashboard = ({ onPageChange }) => {
       change: 'No change',
       changeType: 'neutral',
       icon: CurrencyDollarIcon,
-      color: 'success'
+      color: 'secondary'
     },
     {
       title: 'Lost Items',
@@ -63,7 +63,7 @@ const SupportDashboard = ({ onPageChange }) => {
       change: '+1 today',
       changeType: 'positive',
       icon: ArchiveBoxXMarkIcon,
-      color: 'info'
+      color: 'secondary'
     },
     {
       title: 'Panic Alerts',
@@ -71,7 +71,7 @@ const SupportDashboard = ({ onPageChange }) => {
       change: 'Active',
       changeType: 'warning',
       icon: ShieldExclamationIcon,
-      color: 'danger'
+      color: 'secondary'
     }
   ];
 
@@ -81,28 +81,28 @@ const SupportDashboard = ({ onPageChange }) => {
       title: 'View All Tickets',
       description: 'See and manage all support tickets',
       icon: TicketIcon,
-      color: 'primary',
+      color: 'secondary',
       action: () => onPageChange && onPageChange('ViewTickets')
     },
     {
       title: 'Handle Chat & Email',
       description: 'Respond to chat and email support',
       icon: ChatBubbleLeftRightIcon,
-      color: 'success',
+      color: 'secondary',
       action: () => onPageChange && onPageChange('ChatEmailSupport')
     },
     {
       title: 'Resolve Complaints',
       description: 'Address customer complaints',
       icon: ExclamationTriangleIcon,
-      color: 'warning',
+      color: 'secondary',
       action: () => onPageChange && onPageChange('ResolveComplaint')
     },
     {
       title: 'Process Refunds',
       description: 'Handle refund and compensation requests',
       icon: CurrencyDollarIcon,
-      color: 'info',
+      color: 'secondary',
       action: () => onPageChange && onPageChange('RefundCompensation')
     },
     {
@@ -116,7 +116,7 @@ const SupportDashboard = ({ onPageChange }) => {
       title: 'Panic Alerts',
       description: 'Handle emergency situations',
       icon: ShieldExclamationIcon,
-      color: 'danger',
+      color: 'secondary',
       action: () => onPageChange && onPageChange('PanicAlerts')
     }
   ];
@@ -135,28 +135,28 @@ const SupportDashboard = ({ onPageChange }) => {
       action: 'Ticket resolved',
       user: 'Ruwan Silva',
       time: '12 min ago',
-      type: 'resolved'
+      type: 'ticket'
     },
     {
       id: 3,
       action: 'Escalated to manager',
       user: 'Ishara Perera',
       time: '20 min ago',
-      type: 'escalated'
+      type: 'ticket'
     },
     {
       id: 4,
       action: 'Refund processed',
       user: 'Nuwan Perera',
       time: '35 min ago',
-      type: 'refund'
+      type: 'ticket'
     },
     {
       id: 5,
       action: 'Lost item reported',
       user: 'Dilani Fernando',
       time: '1 hour ago',
-      type: 'lost-item'
+      type: 'ticket'
     }
   ];
 

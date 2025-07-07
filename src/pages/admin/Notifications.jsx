@@ -259,15 +259,15 @@ const Notifications = () => {
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Alerts</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-danger-600">{notifications.filter(n => n.status === 'active').length}</div>
+              <div className="text-2xl font-bold text-gray-900">{notifications.filter(n => n.status === 'active').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Active</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-warning-600">{notifications.filter(n => n.priority === 'critical' || n.priority === 'high').length}</div>
+              <div className="text-2xl font-bold text-gray-900">{notifications.filter(n => n.priority === 'critical' || n.priority === 'high').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">High Priority</div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-success-600">{notifications.filter(n => n.status === 'resolved').length}</div>
+              <div className="text-2xl font-bold text-gray-900">{notifications.filter(n => n.status === 'resolved').length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Resolved</div>
             </div>
           </div>

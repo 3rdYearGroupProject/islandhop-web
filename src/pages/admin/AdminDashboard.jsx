@@ -45,7 +45,7 @@ const AdminDashboard = ({ onPageChange }) => {
       change: '+12%',
       changeType: 'positive',
       icon: UsersIcon,
-      color: 'primary'
+      color: 'neutral'
     },
     {
       title: 'Active Bookings',
@@ -53,7 +53,7 @@ const AdminDashboard = ({ onPageChange }) => {
       change: '+8%',
       changeType: 'positive',
       icon: PresentationChartBarIcon,
-      color: 'success'
+      color: 'neutral'
     },
     {
       title: 'Revenue',
@@ -61,7 +61,7 @@ const AdminDashboard = ({ onPageChange }) => {
       change: '+15%',
       changeType: 'positive',
       icon: ChartBarIcon,
-      color: 'warning'
+      color: 'neutral'
     },
     {
       title: 'System Health',
@@ -69,7 +69,7 @@ const AdminDashboard = ({ onPageChange }) => {
       change: '+0.1%',
       changeType: 'positive',
       icon: ServerIcon,
-      color: 'info'
+      color: 'neutral'
     }
   ];
 
@@ -85,35 +85,35 @@ const AdminDashboard = ({ onPageChange }) => {
       title: 'Analytics',
       description: 'View detailed system analytics',
       icon: ChartBarIcon,
-      color: 'success',
+      color: 'primary',
       action: () => onPageChange && onPageChange('Analytics')
     },
     {
       title: 'System Settings',
       description: 'Configure system preferences',
       icon: CogIcon,
-      color: 'warning',
+      color: 'primary',
       action: () => onPageChange && onPageChange('SystemSettings')
     },
     {
       title: 'Reviews',
       description: 'Manage user reviews and feedback',
       icon: ShieldCheckIcon,
-      color: 'info',
+      color: 'primary',
       action: () => onPageChange && onPageChange('Reviews')
     },
     {
       title: 'Notifications',
       description: 'System notifications and alerts',
       icon: BellIcon,
-      color: 'danger',
+      color: 'primary',
       action: () => onPageChange && onPageChange('Notifications')
     },
     {
       title: 'System History',
       description: 'View audit logs and history',
       icon: ClockIcon,
-      color: 'neutral',
+      color: 'primary',
       action: () => onPageChange && onPageChange('SystemHistory')
     }
   ];
@@ -263,7 +263,7 @@ const AdminDashboard = ({ onPageChange }) => {
                     <button
                       key={index}
                       onClick={action.action}
-                      className={`p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-secondary-600 hover:border-${action.color}-300 dark:hover:border-${action.color}-600 transition-all group hover:scale-105`}
+                      className={`p-4 rounded-lg border border-gray-200 dark:border-secondary-600 hover:border-${action.color}-300 dark:hover:border-${action.color}-600 transition-all group hover:scale-105 hover:shadow-md`}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`p-2 rounded-lg bg-${action.color}-100 dark:bg-${action.color}-900/20 group-hover:bg-${action.color}-200 dark:group-hover:bg-${action.color}-800/30 transition-colors`}>
