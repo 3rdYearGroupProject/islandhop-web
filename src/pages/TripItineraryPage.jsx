@@ -1158,13 +1158,9 @@ const TripItineraryPage = () => {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         getFilteredSuggestions={getSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
-        days={days}
+        dayIndex={currentDay}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
-        isLoading={false}
-        tripId={tripId}
       />
     </div>
   );
