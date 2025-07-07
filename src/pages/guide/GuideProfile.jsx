@@ -33,10 +33,10 @@ const GuideProfile = () => {
     firstName: 'Priya',
     lastName: 'Perera',
     email: 'priya.perera@example.com',
-    phone: '+94 77 456 7890',
+    phoneNumber: '+94 77 456 7890',
     dateOfBirth: '1990-05-20',
     address: '456 Temple Road, Kandy',
-    emergencyContact: '+94 77 123 4567',
+    emergencyContactNumber: '+94 77 123 4567',
     emergencyContactName: 'Sunil Perera',
     profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=300&h=300&fit=crop&crop=face',
     
@@ -165,13 +165,20 @@ const GuideProfile = () => {
   const [isEditingCerts, setIsEditingCerts] = useState(false);
   const [isEditingLangs, setIsEditingLangs] = useState(false);
 
+  // Track uploaded profile picture file
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+
   // Fetch personal info
   useEffect(() => {
     const fetchPersonal = async () => {
       try {
-        const res = await userServicesApi.get(`/guide/personal?email=${guideData.email}`);
+        const res = await userServicesApi.get(`/guide/profile?email=${guideData.email}`);
         if (res.status === 200 && res.data) {
-          setGuideData(prev => ({ ...prev, ...res.data }));
+          let profilePicture = res.data.profilePicture;
+          if (res.data.profilePictureBase64) {
+            profilePicture = `data:image/jpeg;base64,${res.data.profilePictureBase64}`;
+          }
+          setGuideData(prev => ({ ...prev, ...res.data, profilePicture }));
         }
       } catch (err) {
         showErrorToast('Failed to fetch personal info');
@@ -203,7 +210,9 @@ const GuideProfile = () => {
       try {
         const res = await userServicesApi.get(`/guide/languages?email=${guideData.email}`);
         if (res.status === 200 && Array.isArray(res.data)) {
-          setGuideData(prev => ({ ...prev, languages: res.data }));
+          // Map 'level' to 'proficiency' for UI compatibility
+          const mapped = res.data.map(lang => ({ ...lang, proficiency: lang.level }));
+          setGuideData(prev => ({ ...prev, languages: mapped }));
         }
       } catch (err) {
         showErrorToast('Failed to fetch languages');
@@ -216,20 +225,37 @@ const GuideProfile = () => {
   // PUT methods for each section
   const handleSavePersonal = async () => {
     try {
-      const res = await userServicesApi.put('/guide/personal', {
+      let profilePictureToSend = guideData.profilePicture;
+      if (profilePictureFile) {
+        // Convert file to base64 and strip data URL prefix
+        const toBase64 = file => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            const result = reader.result;
+            // Remove data URL prefix if present
+            const base64 = result.split(',')[1] || result;
+            resolve(base64);
+          };
+          reader.onerror = error => reject(error);
+        });
+        profilePictureToSend = await toBase64(profilePictureFile);
+      }
+      const res = await userServicesApi.put('/guide/profile', {
         email: guideData.email,
         firstName: guideData.firstName,
         lastName: guideData.lastName,
-        phone: guideData.phone,
+        phoneNumber: guideData.phoneNumber,
         dateOfBirth: guideData.dateOfBirth,
         address: guideData.address,
-        emergencyContact: guideData.emergencyContact,
+        emergencyContactNumber: guideData.emergencyContactNumber,
         emergencyContactName: guideData.emergencyContactName,
-        profilePicture: guideData.profilePicture
+        profilePictureBase64: profilePictureToSend
       });
       if (res.status === 200) {
         showSuccessToast('Personal info updated');
         setIsEditingPersonal(false);
+        setProfilePictureFile(null); // Reset after successful upload
       }
     } catch (err) {
       showErrorToast('Failed to update personal info');
@@ -238,9 +264,18 @@ const GuideProfile = () => {
 
   const handleSaveCertificates = async () => {
     try {
+      // Only send backend-required fields for each certificate
+      const certificationsToSend = guideData.certifications.map(cert => ({
+        issuer: cert.issuer,
+        issueDate: cert.issueDate,
+        expiryDate: cert.expiryDate,
+        verificationNumber: cert.verificationNumber,
+        status: cert.status,
+        documentUrl: cert.documentUrl
+      }));
       const res = await userServicesApi.put('/guide/certificates', {
         email: guideData.email,
-        certifications: guideData.certifications
+        certifications: certificationsToSend
       });
       if (res.status === 200) {
         showSuccessToast('Certificates updated');
@@ -254,9 +289,10 @@ const GuideProfile = () => {
   // handleSaveLanguages already exists, just update to setIsEditingLangs(false) on success
   const handleSaveLanguages = async (languages) => {
     try {
+      // Map 'proficiency' to 'level' for backend, and only send language and level
+      const toSend = languages.map(lang => ({ language: lang.language, level: lang.proficiency }));
       const res = await userServicesApi.put('/guide/languages', {
-        email: guideData.email,
-        languages
+        languages: toSend
       });
       if (res.status === 200) {
         setGuideData(prev => ({ ...prev, languages }));
@@ -265,6 +301,47 @@ const GuideProfile = () => {
       }
     } catch (err) {
       showErrorToast('Failed to update languages');
+    }
+  };
+
+  // Add certificate upload logic
+  const handleAddCertificate = async (cert, idx) => {
+    try {
+      let documentBase64 = undefined;
+      if (cert.documentFile) {
+        const toBase64 = file => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            const result = reader.result;
+            const base64 = result.split(',')[1] || result;
+            resolve(base64);
+          };
+          reader.onerror = error => reject(error);
+        });
+        documentBase64 = await toBase64(cert.documentFile);
+      }
+      // Use '-' for empty/null fields
+      const dashIfEmpty = v => (v === undefined || v === null || v === '' ? '-' : v);
+      const body = {
+        issuer: dashIfEmpty(cert.issuer),
+        issueDate: dashIfEmpty(cert.issueDate),
+        expiryDate: dashIfEmpty(cert.expiryDate),
+        verificationNumber: dashIfEmpty(cert.verificationNumber),
+        status: dashIfEmpty(cert.status),
+        documentBase64
+      };
+      const res = await userServicesApi.post('/guide/certificates', body);
+      if (res.status === 200 && res.data) {
+        setGuideData(prev => {
+          const newCerts = [...prev.certifications];
+          newCerts[idx] = res.data;
+          return { ...prev, certifications: newCerts };
+        });
+        showSuccessToast('Certificate uploaded');
+      }
+    } catch (err) {
+      showErrorToast('Failed to upload certificate');
     }
   };
 
@@ -360,7 +437,7 @@ const GuideProfile = () => {
                   onChange={e => {
                     const file = e.target.files[0];
                     if (file) {
-                      // Simulate upload and preview
+                      setProfilePictureFile(file);
                       setGuideData(prev => ({
                         ...prev,
                         profilePicture: URL.createObjectURL(file)
@@ -473,10 +550,10 @@ const GuideProfile = () => {
                   </label>
                   <input
                     type="tel"
-                    value={guideData.phone}
+                    value={guideData.phoneNumber}
                     disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={(e) => setGuideData({...guideData, phone: e.target.value})}
+                    onChange={(e) => setGuideData({...guideData, phoneNumber: e.target.value})}
                   />
                 </div>
                 <div>
@@ -519,10 +596,10 @@ const GuideProfile = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact Phone</label>
                   <input
                     type="tel"
-                    value={guideData.emergencyContact}
+                    value={guideData.emergencyContactNumber}
                     disabled={!isEditingPersonal}
                     className="w-full p-3 border border-gray-300 rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
-                    onChange={e => setGuideData({ ...guideData, emergencyContact: e.target.value })}
+                    onChange={e => setGuideData({ ...guideData, emergencyContactNumber: e.target.value })}
                   />
                 </div>
               </div>
@@ -560,13 +637,13 @@ const GuideProfile = () => {
                       certifications: [
                         ...prev.certifications,
                         {
-                          id: Date.now(),
                           issuer: '',
                           issueDate: '',
                           expiryDate: '',
                           verificationNumber: '',
                           status: 'pending',
-                          documentFile: null
+                          documentFile: null,
+                          isNew: true // Mark as new for POST
                         }
                       ]
                     }))}
@@ -577,9 +654,19 @@ const GuideProfile = () => {
                 )}
               </div>
               <form
-                onSubmit={e => {
+                onSubmit={async e => {
                   e.preventDefault();
-                  // TODO: Add backend PUT call for certificates if needed
+                  // POST all new certificates with a file
+                  if (isEditingCerts) {
+                    const certs = guideData.certifications;
+                    for (let idx = 0; idx < certs.length; idx++) {
+                      const cert = certs[idx];
+                      if (cert.isNew && cert.documentFile) {
+                        await handleAddCertificate(cert, idx);
+                      }
+                    }
+                  }
+                  handleSaveCertificates(); // Always PUT after POSTs
                   setIsEditingCerts(false);
                 }}
               >

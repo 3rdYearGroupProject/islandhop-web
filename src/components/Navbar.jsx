@@ -65,6 +65,7 @@ const Navbar = () => {
   const [lastNameInput, setLastNameInput] = useState(userProfile.lastName);
   const [dobInput, setDobInput] = useState(userProfile.dob);
 
+
   // Load Google Translate script and initialize
   useEffect(() => {
     const initializeGoogleTranslate = () => {
@@ -319,7 +320,7 @@ const Navbar = () => {
               </div>
             )}
           </div>
-          {tempUser ? (
+          {user ? (
             <div className="relative flex items-center space-x-2" ref={userMenuRef}>
               <button
                 className="flex items-center space-x-2 focus:outline-none"
@@ -327,12 +328,16 @@ const Navbar = () => {
                 aria-haspopup="true"
                 aria-expanded={showUserMenu}
               >
-                <span className="text-gray-700 font-medium">{tempUser.displayName}</span>
-                <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-lg font-medium">
-                    {tempUser.displayName?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
+                <span className="text-gray-700 font-medium">{user.displayName || user.email || 'User'}</span>
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="Profile" className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-lg font-medium">
+                      {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </button>
               {(showUserMenu || userMenuAnimation === 'animate-navbar-dropdown-leave') && (
                 <div className={`fixed right-8 top-20 w-44 bg-white border rounded-lg shadow-lg z-50 py-2 transition-all duration-200 ease-out transform ${userMenuAnimation}`}>
