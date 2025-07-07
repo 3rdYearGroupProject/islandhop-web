@@ -1045,16 +1045,7 @@ const TripItineraryPage = () => {
                             </div>
                             <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Dining</span>
                           </button>
-                          <button 
-                            onClick={() => handleAddItem('transportation', dayIndex)}
-                            className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-lg group border border-gray-200 w-24 h-20"
-                            title="Add Transportation"
-                          >
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 mb-1">
-                              <Car className="w-4 h-4 text-gray-600 group-hover:text-primary-600" />
-                            </div>
-                            <span className="text-xs text-gray-600 group-hover:text-primary-600 text-center leading-tight">Transportation</span>
-                          </button>
+                          {/* Transportation selection button removed as per UI/UX request */}
                         </div>
                       </div>
                     )}
