@@ -327,7 +327,7 @@ const SupportProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           
@@ -336,7 +336,7 @@ const SupportProfile = () => {
         {/* Profile Card */}
         <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 overflow-hidden mb-8">
           {/* Cover Section */}
-          <div className="h-12 bg-gradient-to-r from-primary-600 to-primary-800"></div>
+          <div className="h-12 bg-primary-600"></div>
           
           {/* Profile Info Section */}
           <div className="px-6 pb-6">
@@ -454,7 +454,7 @@ const SupportProfile = () => {
             </div>
 
             {/* Contact Information Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
                   <EnvelopeIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
