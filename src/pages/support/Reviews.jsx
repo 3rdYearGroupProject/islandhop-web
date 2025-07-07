@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   MagnifyingGlassIcon,
   StarIcon,
@@ -8,9 +9,9 @@ import {
   TrashIcon,
   EyeIcon,
   ChatBubbleLeftRightIcon,
-  HeartIcon
-} from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+  HeartIcon,
+} from "@heroicons/react/24/outline";
+import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 
 const Reviews = () => {
   const [reviews, setReviews] = useState([]);
@@ -30,23 +31,24 @@ const Reviews = () => {
   const [responseReview, setResponseReview] = useState(null);
   const [responseText, setResponseText] = useState("");
 
-  // Mock data for reviews with support-specific features
-  const mockReviews = [
+  // Mock data for fallback when API is not available
+  const mockReviewsData = [
     {
       id: 1,
       reviewer: {
         name: "John Doe",
         email: "john.doe@email.com",
         avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-        userType: "traveler"
+        userType: "traveler",
       },
       target: {
         type: "driver",
         name: "Kasun Fernando",
-        id: "driver_123"
+        id: "driver_123",
       },
       rating: 5,
-      comment: "Excellent service! Kasun was very professional and knowledgeable about the local attractions. Highly recommended!",
+      comment:
+        "Excellent service! Kasun was very professional and knowledgeable about the local attractions. Highly recommended!",
       date: "2024-06-20",
       status: "approved",
       reported: false,
@@ -55,7 +57,7 @@ const Reviews = () => {
       priority: "low",
       supportResponse: null,
       needsSupport: false,
-      supportTicketId: null
+      supportTicketId: null,
     },
     {
       id: 2,
@@ -63,15 +65,16 @@ const Reviews = () => {
         name: "Sarah Johnson",
         email: "sarah.j@email.com",
         avatar: "https://randomuser.me/api/portraits/women/25.jpg",
-        userType: "traveler"
+        userType: "traveler",
       },
       target: {
         type: "guide",
         name: "Priyantha Silva",
-        id: "guide_789"
+        id: "guide_789",
       },
       rating: 2,
-      comment: "This guide was unprofessional and made inappropriate comments during the tour. Very disappointing experience. I would like a refund.",
+      comment:
+        "This guide was unprofessional and made inappropriate comments during the tour. Very disappointing experience. I would like a refund.",
       date: "2024-06-18",
       status: "reported",
       reported: true,
@@ -79,13 +82,14 @@ const Reviews = () => {
         reportedBy: "customer",
         reportDate: "2024-06-19",
         reason: "Inappropriate behavior & refund request",
-        description: "Customer reports unprofessional behavior and requests refund"
+        description:
+          "Customer reports unprofessional behavior and requests refund",
       },
       tripId: "trip_789",
       priority: "high",
       supportResponse: null,
       needsSupport: true,
-      supportTicketId: "TICKET-001"
+      supportTicketId: "TICKET-001",
     },
     {
       id: 3,
@@ -93,15 +97,16 @@ const Reviews = () => {
         name: "Mike Wilson",
         email: "mike.w@email.com",
         avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-        userType: "traveler"
+        userType: "traveler",
       },
       target: {
         type: "driver",
         name: "Tharaka Perera",
-        id: "driver_101"
+        id: "driver_101",
       },
       rating: 4,
-      comment: "Good driver, safe journey. The vehicle was clean and comfortable. Would book again!",
+      comment:
+        "Good driver, safe journey. The vehicle was clean and comfortable. Would book again!",
       date: "2024-06-15",
       status: "approved",
       reported: false,
@@ -110,7 +115,7 @@ const Reviews = () => {
       priority: "low",
       supportResponse: null,
       needsSupport: false,
-      supportTicketId: null
+      supportTicketId: null,
     },
     {
       id: 4,
@@ -118,15 +123,16 @@ const Reviews = () => {
         name: "Emma Davis",
         email: "emma.d@email.com",
         avatar: "https://randomuser.me/api/portraits/women/35.jpg",
-        userType: "traveler"
+        userType: "traveler",
       },
       target: {
         type: "guide",
         name: "Chaminda Wickramasinghe",
-        id: "guide_202"
+        id: "guide_202",
       },
       rating: 1,
-      comment: "Worst experience ever! The guide was late, didn't show proper locations, and was rude. I want compensation for this terrible service!",
+      comment:
+        "Worst experience ever! The guide was late, didn't show proper locations, and was rude. I want compensation for this terrible service!",
       date: "2024-06-12",
       status: "under-review",
       reported: true,
@@ -134,13 +140,14 @@ const Reviews = () => {
         reportedBy: "customer",
         reportDate: "2024-06-12",
         reason: "Poor service quality & compensation request",
-        description: "Customer reports multiple service issues and requests compensation"
+        description:
+          "Customer reports multiple service issues and requests compensation",
       },
       tripId: "trip_202",
       priority: "high",
       supportResponse: null,
       needsSupport: true,
-      supportTicketId: "TICKET-002"
+      supportTicketId: "TICKET-002",
     },
     {
       id: 5,
@@ -148,15 +155,16 @@ const Reviews = () => {
         name: "David Brown",
         email: "david.b@email.com",
         avatar: "https://randomuser.me/api/portraits/men/28.jpg",
-        userType: "traveler"
+        userType: "traveler",
       },
       target: {
         type: "driver",
         name: "Nimal Rajapakse",
-        id: "driver_303"
+        id: "driver_303",
       },
       rating: 5,
-      comment: "Amazing experience! Nimal went above and beyond to make our trip memorable. His knowledge of the area was impressive.",
+      comment:
+        "Amazing experience! Nimal went above and beyond to make our trip memorable. His knowledge of the area was impressive.",
       date: "2024-06-10",
       status: "approved",
       reported: false,
@@ -165,7 +173,7 @@ const Reviews = () => {
       priority: "low",
       supportResponse: null,
       needsSupport: false,
-      supportTicketId: null
+      supportTicketId: null,
     },
     {
       id: 6,
@@ -173,15 +181,16 @@ const Reviews = () => {
         name: "Lisa Anderson",
         email: "lisa.a@email.com",
         avatar: "https://randomuser.me/api/portraits/women/42.jpg",
-        userType: "traveler"
+        userType: "traveler",
       },
       target: {
         type: "driver",
         name: "Sunil Perera",
-        id: "driver_404"
+        id: "driver_404",
       },
       rating: 3,
-      comment: "Average service. The driver was okay but the vehicle had some issues with air conditioning. Could be improved.",
+      comment:
+        "Average service. The driver was okay but the vehicle had some issues with air conditioning. Could be improved.",
       date: "2024-06-08",
       status: "approved",
       reported: false,
@@ -189,63 +198,134 @@ const Reviews = () => {
       tripId: "trip_404",
       priority: "medium",
       supportResponse: {
-        message: "Thank you for your feedback. We've noted the vehicle maintenance issue and will address it with our partner.",
+        message:
+          "Thank you for your feedback. We've noted the vehicle maintenance issue and will address it with our partner.",
         respondedBy: "Support Agent",
-        respondedAt: "2024-06-09"
+        respondedAt: "2024-06-09",
       },
       needsSupport: false,
-      supportTicketId: null
-    }
+      supportTicketId: null,
+    },
   ];
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setReviews(mockReviews);
-      setFilteredReviews(mockReviews);
-      setLoading(false);
-    }, 1000);
+    // Fetch reviews from API
+    const fetchReviews = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8080/api/pending-reviews"
+        );
+        setReviews(response.data);
+        setFilteredReviews(response.data);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+        // Fallback to mock data if API fails
+        setReviews(mockReviewsData);
+        setFilteredReviews(mockReviewsData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
   }, []);
 
   // Filter and search logic
   useEffect(() => {
-    let filtered = reviews.filter(review => {
-      const matchesSearch = review.reviewer.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           review.target.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           review.comment.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesStatus = filters.status === "all" || review.status === filters.status;
-      const matchesUserType = filters.userType === "all" || review.reviewer.userType === filters.userType;
-      const matchesRating = filters.rating === "all" || review.rating.toString() === filters.rating;
-      const matchesReportStatus = filters.reportStatus === "all" || 
-                                  (filters.reportStatus === "reported" && review.reported) ||
-                                  (filters.reportStatus === "not-reported" && !review.reported);
-      const matchesPriority = filters.priority === "all" || review.priority === filters.priority;
-      
-      return matchesSearch && matchesStatus && matchesUserType && matchesRating && matchesReportStatus && matchesPriority;
+    let filtered = reviews.filter((review) => {
+      const matchesSearch =
+        review.reviewer.name
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        review.target.name
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        review.comment.toLowerCase().includes(filters.search.toLowerCase());
+
+      const matchesStatus =
+        filters.status === "all" || review.status === filters.status;
+      const matchesUserType =
+        filters.userType === "all" ||
+        review.reviewer.userType === filters.userType;
+      const matchesRating =
+        filters.rating === "all" || review.rating.toString() === filters.rating;
+      const matchesReportStatus =
+        filters.reportStatus === "all" ||
+        (filters.reportStatus === "reported" && review.reported) ||
+        (filters.reportStatus === "not-reported" && !review.reported);
+      const matchesPriority =
+        filters.priority === "all" || review.priority === filters.priority;
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesUserType &&
+        matchesRating &&
+        matchesReportStatus &&
+        matchesPriority
+      );
     });
 
     setFilteredReviews(filtered);
   }, [reviews, filters]);
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleApproveReview = (reviewId) => {
-    setReviews(prev => prev.map(review => 
-      review.id === reviewId 
-        ? { ...review, status: 'approved', reported: false, reportDetails: null }
-        : review
-    ));
+  const handleApproveReview = async (reviewId) => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/pending-reviews/${reviewId}/status?status=APPROVED`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Update local state on successful API call
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                status: "approved",
+                reported: false,
+                reportDetails: null,
+              }
+            : review
+        )
+      );
+    } catch (error) {
+      console.error("Error approving review:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
-  const handleRejectReview = (reviewId) => {
-    setReviews(prev => prev.map(review => 
-      review.id === reviewId 
-        ? { ...review, status: 'rejected' }
-        : review
-    ));
+  const handleRejectReview = async (reviewId) => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/pending-reviews/${reviewId}/status?status=REJECTED`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Update local state on successful API call
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId ? { ...review, status: "rejected" } : review
+        )
+      );
+    } catch (error) {
+      console.error("Error rejecting review:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleDeleteReview = (reviewId) => {
@@ -254,7 +334,7 @@ const Reviews = () => {
   };
 
   const confirmDeleteReview = () => {
-    setReviews(prev => prev.filter(review => review.id !== reviewToDelete));
+    setReviews((prev) => prev.filter((review) => review.id !== reviewToDelete));
     setShowDeleteModal(false);
     setReviewToDelete(null);
   };
@@ -266,18 +346,20 @@ const Reviews = () => {
   };
 
   const submitResponse = () => {
-    setReviews(prev => prev.map(review => 
-      review.id === responseReview.id 
-        ? { 
-            ...review, 
-            supportResponse: {
-              message: responseText,
-              respondedBy: "Support Agent",
-              respondedAt: new Date().toISOString().split('T')[0]
+    setReviews((prev) =>
+      prev.map((review) =>
+        review.id === responseReview.id
+          ? {
+              ...review,
+              supportResponse: {
+                message: responseText,
+                respondedBy: "Support Agent",
+                respondedAt: new Date().toISOString().split("T")[0],
+              },
             }
-          }
-        : review
-    ));
+          : review
+      )
+    );
     setShowResponseModal(false);
     setResponseReview(null);
     setResponseText("");
@@ -290,7 +372,10 @@ const Reviews = () => {
         i <= rating ? (
           <StarSolidIcon key={i} className="h-4 w-4 text-yellow-400" />
         ) : (
-          <StarIcon key={i} className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+          <StarIcon
+            key={i}
+            className="h-4 w-4 text-gray-300 dark:text-gray-600"
+          />
         )
       );
     }
@@ -299,27 +384,33 @@ const Reviews = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      'approved': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'under-review': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'reported': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'rejected': 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300'
+      approved:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
+      "under-review":
+        "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      reported:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      rejected:
+        "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300",
     };
     return badges[status] || badges.approved;
   };
 
   const getTargetTypeBadge = (type) => {
     const badges = {
-      'driver': 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300',
-      'guide': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300'
+      driver:
+        "bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300",
+      guide: "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300",
     };
     return badges[type] || badges.driver;
   };
 
   const getPriorityBadge = (priority) => {
     const badges = {
-      'low': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'medium': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'high': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300'
+      low: "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
+      medium:
+        "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      high: "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
     };
     return badges[priority] || badges.low;
   };
@@ -333,7 +424,10 @@ const Reviews = () => {
             <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-8"></div>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 dark:bg-secondary-700 rounded"></div>
+                <div
+                  key={i}
+                  className="h-32 bg-gray-200 dark:bg-secondary-700 rounded"
+                ></div>
               ))}
             </div>
           </div>
@@ -362,30 +456,57 @@ const Reviews = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{reviews.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Reviews</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {reviews.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Total Reviews
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-danger-600">{reviews.filter(r => r.needsSupport).length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Need Support</div>
+              <div className="text-2xl font-bold text-danger-600">
+                {reviews.filter((r) => r.needsSupport).length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Need Support
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-danger-600">{reviews.filter(r => r.priority === 'high').length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">High Priority</div>
+              <div className="text-2xl font-bold text-danger-600">
+                {reviews.filter((r) => r.priority === "high").length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                High Priority
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-warning-600">{reviews.filter(r => r.reported).length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Reported</div>
+              <div className="text-2xl font-bold text-warning-600">
+                {reviews.filter((r) => r.reported).length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Reported
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-success-600">{reviews.filter(r => r.supportResponse).length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Responded</div>
+              <div className="text-2xl font-bold text-success-600">
+                {reviews.filter((r) => r.supportResponse).length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Responded
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
               <div className="text-2xl font-bold text-primary-600">
-                {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}
+                {reviews.length > 0
+                  ? (
+                      reviews.reduce((acc, r) => acc + r.rating, 0) /
+                      reviews.length
+                    ).toFixed(1)
+                  : "0.0"}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Avg Rating</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Avg Rating
+              </div>
             </div>
           </div>
         </div>
@@ -400,13 +521,13 @@ const Reviews = () => {
                 placeholder="Search reviews..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
                 value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
               />
             </div>
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
             >
               <option value="all">All Status</option>
               <option value="approved">Approved</option>
@@ -417,7 +538,7 @@ const Reviews = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.priority}
-              onChange={(e) => handleFilterChange('priority', e.target.value)}
+              onChange={(e) => handleFilterChange("priority", e.target.value)}
             >
               <option value="all">All Priority</option>
               <option value="high">High Priority</option>
@@ -427,7 +548,7 @@ const Reviews = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.rating}
-              onChange={(e) => handleFilterChange('rating', e.target.value)}
+              onChange={(e) => handleFilterChange("rating", e.target.value)}
             >
               <option value="all">All Ratings</option>
               <option value="5">5 Stars</option>
@@ -439,7 +560,9 @@ const Reviews = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.reportStatus}
-              onChange={(e) => handleFilterChange('reportStatus', e.target.value)}
+              onChange={(e) =>
+                handleFilterChange("reportStatus", e.target.value)
+              }
             >
               <option value="all">All Reports</option>
               <option value="reported">Reported</option>
@@ -457,29 +580,40 @@ const Reviews = () => {
         <div className="space-y-4">
           {filteredReviews.length === 0 ? (
             <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No reviews found</h3>
-              <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No reviews found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Try adjusting your search or filter criteria.
+              </p>
             </div>
           ) : (
             filteredReviews.map((review) => (
-              <div 
-                key={review.id} 
+              <div
+                key={review.id}
                 className={`bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 transition-all hover:shadow-md ${
-                  review.needsSupport ? 'border-l-4 border-l-danger-500 bg-danger-50/30 dark:bg-danger-900/10' : 
-                  review.reported ? 'border-l-4 border-l-warning-500' : ''
+                  review.needsSupport
+                    ? "border-l-4 border-l-danger-500 bg-danger-50/30 dark:bg-danger-900/10"
+                    : review.reported
+                    ? "border-l-4 border-l-warning-500"
+                    : ""
                 }`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start space-x-4">
-                    <img 
-                      src={review.reviewer.avatar} 
+                    <img
+                      src={review.reviewer.avatar}
                       alt={review.reviewer.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{review.reviewer.name}</h3>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{review.reviewer.email}</span>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          {review.reviewer.name}
+                        </h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {review.reviewer.email}
+                        </span>
                         {review.needsSupport && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300">
                             <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
@@ -488,24 +622,40 @@ const Reviews = () => {
                         )}
                       </div>
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTargetTypeBadge(review.target.type)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTargetTypeBadge(
+                            review.target.type
+                          )}`}
+                        >
                           {review.target.type}
                         </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">→</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{review.target.name}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          →
+                        </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {review.target.name}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
                       {renderStars(review.rating)}
                     </div>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityBadge(review.priority)}`}>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityBadge(
+                        review.priority
+                      )}`}
+                    >
                       {review.priority} priority
                     </span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(review.status)}`}>
-                      {review.status.replace('-', ' ')}
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                        review.status
+                      )}`}
+                    >
+                      {review.status.replace("-", " ")}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {new Date(review.date).toLocaleDateString()}
@@ -544,7 +694,10 @@ const Reviews = () => {
                           {review.reportDetails.description}
                         </p>
                         <p className="text-xs text-warning-600 dark:text-warning-500">
-                          Reported by {review.reportDetails.reportedBy} on {new Date(review.reportDetails.reportDate).toLocaleDateString()}
+                          Reported by {review.reportDetails.reportedBy} on{" "}
+                          {new Date(
+                            review.reportDetails.reportDate
+                          ).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -564,7 +717,10 @@ const Reviews = () => {
                           {review.supportResponse.message}
                         </p>
                         <p className="text-xs text-success-600 dark:text-success-500">
-                          Responded by {review.supportResponse.respondedBy} on {new Date(review.supportResponse.respondedAt).toLocaleDateString()}
+                          Responded by {review.supportResponse.respondedBy} on{" "}
+                          {new Date(
+                            review.supportResponse.respondedAt
+                          ).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -574,31 +730,19 @@ const Reviews = () => {
                 {/* Action Buttons */}
                 <div className="flex items-center justify-between">
                   <div className="flex space-x-2">
-                    <button
-                      className="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors flex items-center space-x-1"
-                    >
+                    <button className="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors flex items-center space-x-1">
                       <EyeIcon className="h-4 w-4" />
                       <span>View Trip</span>
                     </button>
                     {review.supportTicketId && (
-                      <button
-                        className="text-sm text-info-600 hover:text-info-800 dark:text-info-400 dark:hover:text-info-300 transition-colors flex items-center space-x-1"
-                      >
+                      <button className="text-sm text-info-600 hover:text-info-800 dark:text-info-400 dark:hover:text-info-300 transition-colors flex items-center space-x-1">
                         <span>View Ticket</span>
                       </button>
                     )}
                   </div>
-                  
+
                   <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleRespondToReview(review)}
-                      className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 transition-colors flex items-center space-x-1"
-                    >
-                      <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      <span>{review.supportResponse ? 'Update Response' : 'Respond'}</span>
-                    </button>
-                    
-                    {review.status !== 'approved' && (
+                    {review.status !== "approved" && (
                       <button
                         onClick={() => handleApproveReview(review.id)}
                         className="px-3 py-1 bg-success-600 text-white text-sm rounded hover:bg-success-700 transition-colors flex items-center space-x-1"
@@ -607,8 +751,8 @@ const Reviews = () => {
                         <span>Approve</span>
                       </button>
                     )}
-                    
-                    {review.status !== 'rejected' && (
+
+                    {review.status !== "rejected" && (
                       <button
                         onClick={() => handleRejectReview(review.id)}
                         className="px-3 py-1 bg-warning-600 text-white text-sm rounded hover:bg-warning-700 transition-colors flex items-center space-x-1"
@@ -631,11 +775,13 @@ const Reviews = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Respond to Review
               </h3>
-              
+
               {/* Review Preview */}
               <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-4 mb-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className="font-medium text-gray-900 dark:text-white">{responseReview.reviewer.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {responseReview.reviewer.name}
+                  </span>
                   <div className="flex items-center space-x-1">
                     {renderStars(responseReview.rating)}
                   </div>
@@ -657,7 +803,7 @@ const Reviews = () => {
                   onChange={(e) => setResponseText(e.target.value)}
                 />
               </div>
-              
+
               <div className="flex space-x-3 justify-end">
                 <button
                   onClick={() => setShowResponseModal(false)}
@@ -685,7 +831,8 @@ const Reviews = () => {
                 Confirm Delete
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete this review? This action cannot be undone.
+                Are you sure you want to delete this review? This action cannot
+                be undone.
               </p>
               <div className="flex space-x-3 justify-end">
                 <button
