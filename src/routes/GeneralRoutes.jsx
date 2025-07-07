@@ -10,6 +10,7 @@ import AboutPage from '../pages/AboutPage';
 import TripDurationPage from '../pages/TripDurationPage';
 import TripPreferencesPage from '../pages/TripPreferencesPage';
 import TripItineraryPage from '../pages/TripItineraryPage';
+import ViewTripPage from '../pages/ViewTripPage';
 import MyTripsPage from '../pages/MyTripsPage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
@@ -71,6 +72,11 @@ const GeneralRoutes = () => (
     <Route path="/trip-itinerary" element={
       <PublicRoute>
         <TripItineraryPage />
+      </PublicRoute>
+    } />
+    <Route path="/trip/:tripId" element={
+      <PublicRoute>
+        <ViewTripPage />
       </PublicRoute>
     } />
     

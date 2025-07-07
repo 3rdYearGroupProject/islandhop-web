@@ -347,6 +347,16 @@ const MyTripsPage = () => {
     setIsCreateTripModalOpen(false);
   };
 
+  const handleTripClick = (trip) => {
+    console.log('🔍 Viewing trip:', trip.name);
+    // Navigate to the view trip page with trip data
+    navigate(`/trip/${trip.id}`, { 
+      state: { 
+        trip: trip
+      } 
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Navbar */}
@@ -547,7 +557,7 @@ const MyTripsPage = () => {
                           <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
                             {upcoming.map((trip) => (
                               <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
-                                <TripCard trip={trip} getStatusColor={getStatusColor} />
+                                <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                               </div>
                             ))}
                           </div>
@@ -559,7 +569,7 @@ const MyTripsPage = () => {
                           <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
                             {history.map((trip) => (
                               <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
-                                <TripCard trip={trip} getStatusColor={getStatusColor} />
+                                <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                               </div>
                             ))}
                           </div>
