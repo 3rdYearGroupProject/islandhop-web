@@ -111,6 +111,57 @@ const searchDining = async (tripId, searchParams) => {
   }
 };
 
+// Add place to a specific day with detailed context
+const addPlaceToDay = async (tripId, dayNumber, placeData, userId) => {
+  const response = await fetch(`/api/trip/${tripId}/day/${dayNumber}/add-place`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', // Session required
+    body: JSON.stringify({
+      userId: userId,                             // ← REQUIRED: User identifier
+      placeName: placeData.name,                  // "Sigiriya Rock Fortress"
+      city: placeData.location || placeData.city, // fallback for city/location
+      dayNumber: dayNumber,                       // 3
+      placeType: placeData.type || placeData.category || 'ATTRACTION', // fallback for type
+      estimatedVisitDurationMinutes: placeData.durationMinutes || placeData.duration || 120, // fallback
+      preferredTimeSlot: placeData.timeSlot || 'morning',        // "morning"
+      priority: placeData.priority || 5           // 8
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to add place to day: ${response.status}`);
+  }
+  
+  const result = await response.json();
+  return {
+    message: result.message,
+    tripId: result.tripId,
+    dayNumber: result.dayNumber,
+    placeName: result.placeName,
+    userId: result.userId,
+    trip: result.trip
+  };
+};
+
+// Retrieve complete trip information
+const getTripDetails = async (tripId) => {
+  const response = await fetch(`/api/trip/${tripId}`, {
+    credentials: 'include' // Session required
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to get trip details: ${response.status}`);
+  }
+  
+  const result = await response.json();
+  return {
+    trip: result.trip,
+    userId: result.userId,
+    tripId: result.tripId
+  };
+};
+
 const TripItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
@@ -450,7 +501,62 @@ const TripItineraryPage = () => {
     }
   };
 
-  const addItemToItinerary = (item, selectedDates = null) => {
+  // Enhanced addItemToItinerary to sync with backend after add
+  const addItemToItinerary = async (item, selectedDates = null) => {
+    // Helper function to get category key
+    const getCategoryKey = (category) => {
+      if (category === 'activities') return 'activities';
+      if (category === 'places') return 'places';
+      if (category === 'food') return 'food';
+      if (category === 'transportation') return 'transportation';
+      return 'activities';
+    };
+
+    // Determine which days to add to
+    let daysToAdd = [];
+    if (selectedDates && selectedDates.length > 0) {
+      daysToAdd = selectedDates;
+    } else if (currentDay !== undefined && days && days[currentDay]) {
+      daysToAdd = [days[currentDay]];
+    }
+
+    // Map days to day indices
+    const dayIndices = daysToAdd.map(date => {
+      if (date instanceof Date) {
+        return days.findIndex(d => d.toDateString() === date.toDateString());
+      } else {
+        // If date is already an index
+        return typeof date === 'number' ? date : days.findIndex(d => d.toDateString() === new Date(date).toDateString());
+      }
+    }).filter(idx => idx !== -1);
+
+    // Loading state for add operation
+    setIsLoadingSuggestions(true);
+    let error = null;
+
+    try {
+      // For each day, call backend
+      await Promise.all(dayIndices.map(async (dayIdx) => {
+        await addPlaceToDay(tripId, dayIdx, item, userUid);
+      }));
+      // Fetch latest trip details from backend
+      const tripDetails = await getTripDetails(tripId);
+      // Update local itinerary state from backend trip data
+      if (tripDetails && tripDetails.trip && tripDetails.trip.itinerary) {
+        setItinerary(tripDetails.trip.itinerary);
+      }
+      setShowAddModal(false);
+      setShowDestinationModal(false);
+      setSelectedStayDates([]);
+    } catch (err) {
+      error = err;
+      alert('Failed to add item: ' + err.message);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  const addItemToItineraryOld = (item, selectedDates = null) => {
     // Helper function to get category key
     const getCategoryKey = (category) => {
       switch(category) {
@@ -579,7 +685,7 @@ const TripItineraryPage = () => {
       return result.data || result || [];
     } catch (error) {
       console.error('❌ Failed to fetch backend suggestions:', error);
-      console.log('🔄 Falling back to mock data for category:', category);
+      console.log('🔄 Falling back to mock data on error for category:', category);
       // Fallback to mock data on error
       return mockSuggestions[category] || [];
     } finally {
