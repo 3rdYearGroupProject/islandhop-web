@@ -213,9 +213,10 @@ const Accounts = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl ">
+     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-8 ">
         <div>
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
             Account Management
@@ -549,6 +550,8 @@ const Accounts = () => {
         )}
       </div>
     </div>
+    </div>
+    
   );
 };
 

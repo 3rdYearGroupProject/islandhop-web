@@ -18,6 +18,8 @@ import DriverStatusCard from '../driver/DriverStatusCard';
 import OnlineToggle from '../shared/OnlineToggle';
 import { auth } from '../../firebase';
 import { clearUserData } from '../../utils/userStorage';
+import islandHopIcon from '../../assets/islandHopIcon.png';
+import islandHopLogo from '../../assets/IslandHop.png';
 
 const DriverSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
@@ -111,7 +113,7 @@ const DriverSidebar = ({ isOpen, onClose }) => {
       
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-secondary-900 shadow-2xl transform transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:w-72 border-r border-gray-200 dark:border-secondary-700`}>
-        <div className="flex flex-col h-full pt-16">
+        <div className="flex flex-col h-full ">
           {/* Sidebar Header - Mobile */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-secondary-700 lg:hidden">
             <div className="flex items-center space-x-3">
@@ -140,18 +142,24 @@ const DriverSidebar = ({ isOpen, onClose }) => {
           {/* Driver Portal Header - Desktop */}
           <div className="hidden lg:flex items-center px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg">
-                <TruckIcon className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Driver Portal
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Your Driver Dashboard
-                </p>
-              </div>
+            <div className="p-2 bg-white rounded-lg shadow-lg">
+              <img 
+                src={islandHopIcon} 
+                alt="IslandHop Icon" 
+                className="h-8 w-8 object-contain"
+              />
             </div>
+            <div>
+              <img 
+                src={islandHopLogo} 
+                alt="IslandHop Logo" 
+                className="h-6 object-contain"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Driver Dashboard
+              </p>
+            </div>
+          </div>
           </div>
 
           {/* Driver Status Card - Only on Desktop */}
@@ -219,9 +227,9 @@ const DriverSidebar = ({ isOpen, onClose }) => {
                       {item.badge}
                     </div>
                   )}
-                  {isActive && (
+                  {/* {isActive && (
                     <div className="w-2 h-2 bg-white rounded-full shadow-sm"></div>
-                  )}
+                  )} */}
                 </Link>
               );
             })}
