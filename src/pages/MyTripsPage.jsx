@@ -429,7 +429,7 @@ const MyTripsPage = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto mt-16 md:mt-24">
             <h1 className="text-4xl md:text-6xl font-normal mb-6 leading-tight text-white">
               Your Travel Dreams Come to Life
             </h1>
