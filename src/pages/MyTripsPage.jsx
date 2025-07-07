@@ -27,6 +27,8 @@ import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
+import { tripPlanningApi } from '../api/axios';
+import { getUserUID } from '../utils/userStorage';
 
 const placeholder = 'https://placehold.co/400x250';
 
@@ -36,6 +38,8 @@ const MyTripsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all'); // all, active, completed, draft
   const [sortBy, setSortBy] = useState('recent'); // recent, name, date
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,21 +47,35 @@ const MyTripsPage = () => {
   const selectedDriver = location.state?.selectedDriver;
   const selectedGuide = location.state?.selectedGuide;
 
-  // Get current user
+  // Get current user and fetch their trips
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log('🔐 Current user UID:', user.uid);
         setCurrentUser(user);
+        
+        // Fetch user trips from backend
+        try {
+          const userTrips = await fetchUserTrips(user.uid);
+          console.log('📊 Setting trips from backend:', userTrips.length, 'trips');
+          setTrips(userTrips);
+        } catch (error) {
+          console.warn('⚠️ Failed to fetch trips from backend, using mock data');
+          console.error('Backend fetch error:', error);
+          // Keep the existing mock data as fallback
+          setTrips(mockTrips);
+        }
       } else {
         setCurrentUser(null);
+        setTrips([]); // Clear trips when user logs out
       }
     });
 
     return () => unsubscribe();
   }, []);
   
-  const [trips, setTrips] = useState([
+  // Mock data as fallback
+  const mockTrips = [
     // Trip History (mostly expired, some completed)
     {
       id: 1,
@@ -270,7 +288,10 @@ const MyTripsPage = () => {
       budget: 2000,
       spent: 0
     }
-  ]);
+  ];
+
+  // Initialize trips state (will be populated from backend or fallback to mock)
+  const [trips, setTrips] = useState([]);
 
   // Handle new trip data from the complete trip flow
   useEffect(() => {
@@ -298,6 +319,117 @@ const MyTripsPage = () => {
       navigate('/trips', { replace: true });
     }
   }, [location.state, navigate]);
+
+  // API function to fetch user trips
+  const fetchUserTrips = async (userId) => {
+    console.log('📥 FETCH USER TRIPS START');
+    console.log('👤 Fetching trips for userId:', userId);
+    
+    try {
+      setIsLoadingTrips(true);
+      setApiError(null);
+      
+      console.log('📡 Making MY TRIPS API request to:', `/trip/my-trips?userId=${userId}`);
+      
+      const response = await tripPlanningApi.get(`/trip/my-trips?userId=${userId}`, { 
+        withCredentials: true 
+      });
+      
+      console.log('📨 MY TRIPS API Response status:', response.status);
+      console.log('📦 MY TRIPS API Response data:', response.data);
+      
+      if (response.status !== 200) {
+        throw new Error(`Failed to fetch trips: ${response.status}`);
+      }
+      
+      // Transform backend data to match frontend expected format
+      const backendTrips = response.data?.trips || [];
+      const transformedTrips = backendTrips.map(trip => transformTripData(trip));
+      
+      console.log('✅ FETCH USER TRIPS SUCCESS - Found', transformedTrips.length, 'trips');
+      console.log('📊 Transformed trips:', transformedTrips);
+      
+      return transformedTrips;
+    } catch (error) {
+      console.error('❌ FETCH USER TRIPS FAILED');
+      console.error('❌ Fetch trips error:', error);
+      console.error('❌ Fetch trips error message:', error.message);
+      console.error('❌ Fetch trips error response:', error.response?.data);
+      
+      setApiError(error.message || 'Failed to fetch trips');
+      throw error;
+    } finally {
+      setIsLoadingTrips(false);
+    }
+  };
+
+  // Transform backend trip data to frontend format
+  const transformTripData = (backendTrip) => {
+    console.log('🔄 Transforming trip data:', backendTrip);
+    
+    // Calculate trip status based on dates
+    const calculateTripStatus = (trip) => {
+      if (!trip.startDate || !trip.endDate) return 'draft';
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) return 'upcoming';
+      if (now >= startDate && now <= endDate) return 'active';
+      return 'completed';
+    };
+
+    // Calculate days left for upcoming/active trips
+    const calculateDaysLeft = (trip) => {
+      if (!trip.startDate) return null;
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) {
+        return Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+      }
+      if (now >= startDate && now <= endDate) {
+        return Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      }
+      return 0;
+    };
+
+    // Format dates for display
+    const formatTripDates = (startDate, endDate) => {
+      if (!startDate || !endDate) return 'Dates not set';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
+    };
+
+    const status = calculateTripStatus(backendTrip);
+    
+    return {
+      id: backendTrip.id || backendTrip._id,
+      name: backendTrip.name || backendTrip.tripName || 'Untitled Trip',
+      dates: formatTripDates(backendTrip.startDate, backendTrip.endDate),
+      destination: backendTrip.destination || backendTrip.cities?.[0] || 'Sri Lanka',
+      image: backendTrip.coverImage || placeholder,
+      status: status,
+      progress: backendTrip.progress || (status === 'completed' ? 100 : status === 'active' ? 50 : 10),
+      daysLeft: calculateDaysLeft(backendTrip),
+      travelers: backendTrip.travelers || backendTrip.groupSize || 1,
+      rating: backendTrip.rating || null,
+      memories: backendTrip.photos?.length || 0,
+      highlights: backendTrip.highlights || backendTrip.cities || [],
+      budget: backendTrip.budget || 0,
+      spent: backendTrip.spent || 0,
+      createdAt: backendTrip.createdAt,
+      // Keep backend data for future use
+      _originalData: backendTrip
+    };
+  };
 
   // List all trips for authenticated user
   const getUserTrips = async () => {

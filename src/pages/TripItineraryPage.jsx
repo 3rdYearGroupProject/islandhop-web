@@ -326,6 +326,29 @@ const addPlaceToDay = async (tripId, dayNumber, placeData, userId) => {
   }
 };
 
+// Add a city to a specific day (new endpoint)
+const addCityToDay = async (tripId, dayNumber, city, userId) => {
+  console.log('🏙️ ADD CITY TO DAY START');
+  console.log('📍 Adding city to day:', { tripId, dayNumber, city, userId });
+  try {
+    const response = await tripPlanningApi.post(`/trip/${tripId}/cities/add`, {
+      userId,
+      city,
+      dayNumber
+    }, { withCredentials: true });
+    console.log('📨 ADD CITY TO DAY Response status:', response.status);
+    console.log('📦 ADD CITY TO DAY Response data:', response.data);
+    if (response.status !== 200) {
+      throw new Error(`Failed to add city to day: ${response.status}`);
+    }
+    console.log('✅ ADD CITY TO DAY SUCCESS');
+    return response.data;
+  } catch (error) {
+    console.error('❌ ADD CITY TO DAY FAILED:', error);
+    throw error;
+  }
+};
+
 // Set cities and day allocation for multi-city trips
 const updateTripCities = async (tripId, cityData, userId) => {
   console.log('🏙️ UPDATE TRIP CITIES START');
@@ -832,37 +855,40 @@ const TripItineraryPage = () => {
     if (showDestinationModal) {
       console.log('🏙️ DESTINATION ADDITION FLOW');
       console.log('🏙️ Adding destination:', item, 'to day:', currentDay);
-      
       try {
-        // Call updateTripCities to register this city with the backend
-        const cityData = {
-          cities: [item.name],
-          cityDays: { [item.name]: 1 } // Allocate 1 day to this city for now
-        };
+        // Use new endpoint to add city to a specific day (1-based day number)
+        const dayNumber = currentDay + 1;
+        console.log('📤 Calling addCityToDay with:', { tripId, dayNumber, city: item.name, userId: userUid });
+        const result = await addCityToDay(tripId, dayNumber, item.name, userUid);
+        console.log('✅ Successfully added city to day:', result);
         
-        console.log('📤 Calling updateTripCities with:', cityData);
-        await updateTripCities(tripId, cityData, userUid);
-        console.log('✅ Successfully updated trip cities');
+        // Update destinations state using the response data
+        console.log('🔄 Updating itinerary from addCityToDay response');
+        console.log('📊 Trip data from response:', result.trip);
+        console.log('📍 Day to city map:', result.trip?.dayToCityMap);
         
-        // Update destinations state
-        console.log('🔄 Updating local destinations state');
-        setDestinations(prev => ({
-          ...prev,
-          [currentDay]: item
-        }));
-        
-        // Fetch latest trip details to sync with backend
-        console.log('🔄 Fetching latest trip details after city addition');
-        const tripDetails = await getTripDetails(tripId);
-        if (tripDetails && tripDetails.trip) {
-          console.log('🔄 Synced trip data after city addition');
+        // Update destinations state based on dayToCityMap
+        if (result.trip && result.trip.dayToCityMap) {
+          const newDestinations = {};
+          Object.entries(result.trip.dayToCityMap).forEach(([dayNum, cities]) => {
+            const dayIndex = parseInt(dayNum) - 1; // Convert to 0-based index
+            if (cities && cities.length > 0) {
+              // Use the last city added for this day or find the one we just added
+              const cityForDay = cities.includes(item.name) ? item.name : cities[cities.length - 1];
+              newDestinations[dayIndex] = { name: cityForDay };
+            }
+          });
+          console.log('🗺️ Updated destinations state:', newDestinations);
+          setDestinations(newDestinations);
         }
+        
+        // No need to fetch trip details separately - we have the complete data
+        console.log('✅ City addition complete - using response data directly');
         
       } catch (error) {
         console.error('❌ Failed to add destination:', error);
         alert('Failed to add destination: ' + error.message);
       }
-      
       // Close modal and reset state
       setShowDestinationModal(false);
       setSearchQuery('');

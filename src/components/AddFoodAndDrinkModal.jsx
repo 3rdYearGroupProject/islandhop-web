@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
 
 console.log('AddFoodAndDrinkModal loaded');
@@ -17,15 +17,45 @@ const AddFoodAndDrinkModal = ({
   isLoading = false,
   tripId
 }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
   console.log('AddFoodAndDrinkModal props', {
     show,
     searchQuery,
     selectedStayDates,
     days
   });
-  if (!show) return null;
 
-  const suggestions = getFilteredSuggestions();
+  // Effect to fetch suggestions when modal opens or search changes
+  useEffect(() => {
+    if (!show || !getFilteredSuggestions) return;
+
+    const fetchSuggestions = async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        console.log('🔍 AddFoodAndDrinkModal: Fetching suggestions for query:', searchQuery);
+        const result = getFilteredSuggestions();
+        
+        // Handle both sync and async getFilteredSuggestions
+        const resolvedSuggestions = await Promise.resolve(result);
+        
+        // Ensure we always have an array
+        const validSuggestions = Array.isArray(resolvedSuggestions) ? resolvedSuggestions : [];
+        console.log('📋 AddFoodAndDrinkModal: Got suggestions:', validSuggestions.length, 'items');
+        setSuggestions(validSuggestions);
+      } catch (error) {
+        console.error('❌ AddFoodAndDrinkModal: Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+  }, [show, searchQuery, getFilteredSuggestions]);
+
+  if (!show) return null;
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -57,7 +87,7 @@ const AddFoodAndDrinkModal = ({
         <div className="flex">
           {/* Left Side - Dining Selection */}
           <div className="flex-1 p-6 overflow-y-auto max-h-[calc(90vh-160px)]">
-            {isLoading ? (
+            {(isLoading || isLoadingSuggestions) ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
