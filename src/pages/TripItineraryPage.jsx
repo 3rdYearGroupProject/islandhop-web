@@ -10,35 +10,27 @@ import AddTransportationModal from '../components/AddTransportationModal';
 import Navbar from '../components/Navbar';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
+import { getUserUID } from '../utils/userStorage';
+import { tripPlanningApi } from '../api/axios';
 
 // API Functions for backend integration
 // Search activities with preferences and proximity optimization
 const searchActivities = async (tripId, searchParams) => {
-  console.log('🔍 Searching activities for trip:', tripId, 'with params:', searchParams);
+  const userId = getUserUID();
+  console.log('🔍 Searching activities for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
   const params = new URLSearchParams({
-    query: searchParams.query || '',           // Optional text search
-    city: searchParams.city || '',             // Filter by specific city
-    lastPlaceId: searchParams.lastPlaceId || '', // For proximity recommendations
-    maxResults: searchParams.maxResults || 10   // Pagination support
+    query: searchParams.query || '',
+    city: searchParams.city || '',
+    lastPlaceId: searchParams.lastPlaceId || '',
+    maxResults: searchParams.maxResults || 10,
+    userId: userId || ''
   });
-  
   try {
-    const fullUrl = `/api/trip/${tripId}/search/activities?${params}`;
+    const fullUrl = `/trip/${tripId}/search/activities?${params}`;
     console.log('📡 Making API request to:', fullUrl);
-    
-    const response = await fetch(fullUrl, {
-      credentials: 'include'
-    });
-    
+    const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
     console.log('📨 API Response status:', response.status, response.statusText);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to search activities: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Activities search result:', result);
-    return result;
+    return response.data;
   } catch (error) {
     console.error('❌ Activities search error:', error);
     throw error;
@@ -47,31 +39,21 @@ const searchActivities = async (tripId, searchParams) => {
 
 // Search accommodation with preference-based filtering
 const searchAccommodation = async (tripId, searchParams) => {
-  console.log('🔍 Searching accommodation for trip:', tripId, 'with params:', searchParams);
+  const userId = getUserUID();
+  console.log('🔍 Searching accommodation for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
   const params = new URLSearchParams({
     query: searchParams.query || '',
     city: searchParams.city || '',
     lastPlaceId: searchParams.lastPlaceId || '',
-    maxResults: searchParams.maxResults || 10
+    maxResults: searchParams.maxResults || 10,
+    userId: userId || ''
   });
-  
   try {
-    const fullUrl = `/api/trip/${tripId}/search/accommodation?${params}`;
+    const fullUrl = `/trip/${tripId}/search/accommodation?${params}`;
     console.log('📡 Making API request to:', fullUrl);
-    
-    const response = await fetch(fullUrl, {
-      credentials: 'include'
-    });
-    
+    const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
     console.log('📨 API Response status:', response.status, response.statusText);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to search accommodation: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Accommodation search result:', result);
-    return result;
+    return response.data;
   } catch (error) {
     console.error('❌ Accommodation search error:', error);
     throw error;
@@ -80,31 +62,21 @@ const searchAccommodation = async (tripId, searchParams) => {
 
 // Search dining options with preference and proximity matching
 const searchDining = async (tripId, searchParams) => {
-  console.log('🔍 Searching dining for trip:', tripId, 'with params:', searchParams);
+  const userId = getUserUID();
+  console.log('🔍 Searching dining for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
   const params = new URLSearchParams({
     query: searchParams.query || '',
     city: searchParams.city || '',
     lastPlaceId: searchParams.lastPlaceId || '',
-    maxResults: searchParams.maxResults || 10
+    maxResults: searchParams.maxResults || 10,
+    userId: userId || ''
   });
-  
   try {
-    const fullUrl = `/api/trip/${tripId}/search/dining?${params}`;
+    const fullUrl = `/trip/${tripId}/search/dining?${params}`;
     console.log('📡 Making API request to:', fullUrl);
-    
-    const response = await fetch(fullUrl, {
-      credentials: 'include'
-    });
-    
+    const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
     console.log('📨 API Response status:', response.status, response.statusText);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to search dining: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Dining search result:', result);
-    return result;
+    return response.data;
   } catch (error) {
     console.error('❌ Dining search error:', error);
     throw error;
@@ -113,53 +85,40 @@ const searchDining = async (tripId, searchParams) => {
 
 // Add place to a specific day with detailed context
 const addPlaceToDay = async (tripId, dayNumber, placeData, userId) => {
-  const response = await fetch(`/api/trip/${tripId}/day/${dayNumber}/add-place`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // Session required
-    body: JSON.stringify({
-      userId: userId,                             // ← REQUIRED: User identifier
-      placeName: placeData.name,                  // "Sigiriya Rock Fortress"
-      city: placeData.location || placeData.city, // fallback for city/location
-      dayNumber: dayNumber,                       // 3
-      placeType: placeData.type || placeData.category || 'ATTRACTION', // fallback for type
-      estimatedVisitDurationMinutes: placeData.durationMinutes || placeData.duration || 120, // fallback
-      preferredTimeSlot: placeData.timeSlot || 'morning',        // "morning"
-      priority: placeData.priority || 5           // 8
-    })
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to add place to day: ${response.status}`);
+  try {
+    const response = await tripPlanningApi.post(`/trip/${tripId}/day/${dayNumber}/add-place`, {
+      userId: userId,
+      placeName: placeData.name,
+      city: placeData.location || placeData.city,
+      dayNumber: dayNumber,
+      placeType: placeData.type || placeData.category || 'ATTRACTION',
+      estimatedVisitDurationMinutes: placeData.durationMinutes || placeData.duration || 120,
+      preferredTimeSlot: placeData.timeSlot || 'morning',
+      priority: placeData.priority || 5
+    }, { withCredentials: true });
+    if (response.status !== 200) {
+      throw new Error(`Failed to add place to day: ${response.status}`);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('❌ Add place to day error:', error);
+    throw error;
   }
-  
-  const result = await response.json();
-  return {
-    message: result.message,
-    tripId: result.tripId,
-    dayNumber: result.dayNumber,
-    placeName: result.placeName,
-    userId: result.userId,
-    trip: result.trip
-  };
 };
 
 // Retrieve complete trip information
 const getTripDetails = async (tripId) => {
-  const response = await fetch(`/api/trip/${tripId}`, {
-    credentials: 'include' // Session required
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to get trip details: ${response.status}`);
+  try {
+    console.log('📥 Fetching trip details for tripId:', tripId);
+    const response = await tripPlanningApi.get(`/trip/${tripId}`, { withCredentials: true });
+    if (response.status !== 200) {
+      throw new Error(`Failed to get trip details: ${response.status}`);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('❌ Get trip details error:', error);
+    throw error;
   }
-  
-  const result = await response.json();
-  return {
-    trip: result.trip,
-    userId: result.userId,
-    tripId: result.tripId
-  };
 };
 
 const TripItineraryPage = () => {
