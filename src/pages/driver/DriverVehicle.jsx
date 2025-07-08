@@ -195,8 +195,8 @@ const DriverVehicle = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-      <div className="max-w-6xl mx-auto">
+    
+      <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex justify-between items-start">
@@ -449,7 +449,7 @@ const DriverVehicle = () => {
           </div>
         )}
       </div>
-    </div>
+    
   );
 };
 

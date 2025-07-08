@@ -31,7 +31,7 @@ const DriverDashboardLayout = ({ children }) => {
       
       {/* Main Content */}
       <div className="lg:pl-72">
-        <main className="min-h-screen pt-16">
+        <main className="min-h-screen ">
           <div className="px-4 py-6 lg:px-8">
             {children}
           </div>
