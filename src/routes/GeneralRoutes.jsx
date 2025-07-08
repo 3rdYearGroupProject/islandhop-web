@@ -7,6 +7,7 @@ import LandingPage from '../pages/LandingPage';
 import DiscoverPage from '../pages/Discover';
 import PoolPage from '../pages/PoolPage'; 
 import AboutPage from '../pages/AboutPage'; 
+import ViewPlacePage from '../pages/ViewPlacePage';
 import TripDurationPage from '../pages/TripDurationPage';
 import TripPreferencesPage from '../pages/TripPreferencesPage';
 import TripItineraryPage from '../pages/TripItineraryPage';
@@ -127,6 +128,12 @@ const GeneralRoutes = () => (
       </PublicRoute>
     } />
     
+    {/* Place Detail Route */}
+    <Route path="/place/:placeName" element={
+      <PublicRoute>
+        <ViewPlacePage />
+      </PublicRoute>
+    } />
     {/* Catch-all for general routes */}
     <Route path="*" element={<Navigate to="/" />} />
   </Routes>
