@@ -11,6 +11,7 @@ import TripDurationPage from '../pages/TripDurationPage';
 import TripPreferencesPage from '../pages/TripPreferencesPage';
 import TripItineraryPage from '../pages/TripItineraryPage';
 import ViewTripPage from '../pages/ViewTripPage';
+import ViewPoolPage from '../pages/ViewPoolPage';
 import MyTripsPage from '../pages/MyTripsPage';
 import SelectDriverGuidePage from '../pages/SelectDriverGuidePage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
@@ -78,6 +79,11 @@ const GeneralRoutes = () => (
     <Route path="/trip/:tripId" element={
       <PublicRoute>
         <ViewTripPage />
+      </PublicRoute>
+    } />
+    <Route path="/pool/:poolId" element={
+      <PublicRoute>
+        <ViewPoolPage />
       </PublicRoute>
     } />
     <Route path="/select-driver-guide" element={

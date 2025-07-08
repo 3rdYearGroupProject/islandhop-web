@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PoolCard from '../../components/PoolCard';
 import { 
   MagnifyingGlassIcon
@@ -8,6 +9,7 @@ const FindPools = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDestination, setSelectedDestination] = useState('');
   const [selectedSeats, setSelectedSeats] = useState('');
+  const navigate = useNavigate();
 
   const pools = [
     {
@@ -23,7 +25,39 @@ const FindPools = () => {
       date: 'Aug 15-17, 2025',
       duration: '3 days',
       status: 'open',
-      highlights: ['Tea Plantations', 'Nine Arch Bridge', 'Little Adams Peak']
+      highlights: ['Tea Plantations', 'Nine Arch Bridge', 'Little Adams Peak'],
+      itinerary: [
+        {
+          day: 1,
+          date: 'Aug 15, 2025',
+          location: 'Kandy',
+          activities: [
+            'Temple of the Sacred Tooth visit',
+            'Kandy Lake walk',
+            'Traditional cultural show'
+          ]
+        },
+        {
+          day: 2,
+          date: 'Aug 16, 2025',
+          location: 'Nuwara Eliya',
+          activities: [
+            'Tea plantation tour',
+            'Gregory Lake activities',
+            'Strawberry farm visit'
+          ]
+        },
+        {
+          day: 3,
+          date: 'Aug 17, 2025',
+          location: 'Ella',
+          activities: [
+            'Nine Arch Bridge exploration',
+            'Little Adams Peak hike',
+            'Ella Rock viewpoint'
+          ]
+        }
+      ]
     },
     {
       id: 2,
@@ -38,7 +72,29 @@ const FindPools = () => {
       date: 'Aug 20-21, 2025',
       duration: '2 days',
       status: 'open',
-      highlights: ['Whale Watching', 'Galle Fort', 'Beach Sunset']
+      highlights: ['Whale Watching', 'Galle Fort', 'Beach Sunset'],
+      itinerary: [
+        {
+          day: 1,
+          date: 'Aug 20, 2025',
+          location: 'Colombo & Galle',
+          activities: [
+            'Departure from Colombo',
+            'Galle Fort exploration',
+            'Local seafood lunch'
+          ]
+        },
+        {
+          day: 2,
+          date: 'Aug 21, 2025',
+          location: 'Mirissa',
+          activities: [
+            'Whale watching tour',
+            'Beach relaxation',
+            'Sunset viewing'
+          ]
+        }
+      ]
     },
     {
       id: 3,
@@ -53,7 +109,49 @@ const FindPools = () => {
       date: 'Aug 25-28, 2025',
       duration: '4 days',
       status: 'open',
-      highlights: ['Ancient Ruins', 'Lion Rock', 'Sacred Sites', 'Buddhist Temples']
+      highlights: ['Ancient Ruins', 'Lion Rock', 'Sacred Sites', 'Buddhist Temples'],
+      itinerary: [
+        {
+          day: 1,
+          date: 'Aug 25, 2025',
+          location: 'Anuradhapura',
+          activities: [
+            'Ancient city exploration',
+            'Sacred Bodhi Tree visit',
+            'Ruwanwelisaya Stupa'
+          ]
+        },
+        {
+          day: 2,
+          date: 'Aug 26, 2025',
+          location: 'Sigiriya',
+          activities: [
+            'Lion Rock climb',
+            'Ancient palace ruins',
+            'Sigiriya Museum visit'
+          ]
+        },
+        {
+          day: 3,
+          date: 'Aug 27, 2025',
+          location: 'Polonnaruwa',
+          activities: [
+            'Ancient kingdom tour',
+            'Gal Vihara Buddha statues',
+            'Royal Palace ruins'
+          ]
+        },
+        {
+          day: 4,
+          date: 'Aug 28, 2025',
+          location: 'Return Journey',
+          activities: [
+            'Final temple visits',
+            'Local handicraft shopping',
+            'Departure'
+          ]
+        }
+      ]
     },
     {
       id: 4,
@@ -105,6 +203,16 @@ const FindPools = () => {
   const handleJoinPool = (pool) => {
     console.log('Joining pool:', pool);
     // Add your join pool logic here
+  };
+
+  const handlePoolClick = (pool) => {
+    console.log('🔍 Viewing pool:', pool.name);
+    // Navigate to the view pool page with pool data
+    navigate(`/pool/${pool.id}`, { 
+      state: { 
+        pool: pool
+      } 
+    });
   };
 
   return (
@@ -166,6 +274,7 @@ const FindPools = () => {
             key={pool.id} 
             pool={pool} 
             onJoinPool={handleJoinPool}
+            onClick={handlePoolClick}
           />
         ))}
       </div>

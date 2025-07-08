@@ -161,12 +161,14 @@ const mockGuides = [
   }
 ];
 
+
 const SelectDriverGuidePage = () => {
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [selectedGuide, setSelectedGuide] = useState(null);
+  const [showNoSelectionModal, setShowNoSelectionModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get trip data from previous page
   const trip = location.state?.trip;
 
@@ -182,7 +184,11 @@ const SelectDriverGuidePage = () => {
   };
 
   const handleProceed = () => {
-    // Navigate to the next step, passing selected driver and guide
+    if (!selectedDriver && !selectedGuide) {
+      setShowNoSelectionModal(true);
+      return;
+    }
+    // Proceed as normal if at least one is selected
     navigate('/trips', {
       state: {
         selectedDriver,
@@ -190,6 +196,21 @@ const SelectDriverGuidePage = () => {
         trip
       }
     });
+  };
+
+  const handleModalConfirm = () => {
+    setShowNoSelectionModal(false);
+    navigate('/trips', {
+      state: {
+        selectedDriver: null,
+        selectedGuide: null,
+        trip
+      }
+    });
+  };
+
+  const handleModalCancel = () => {
+    setShowNoSelectionModal(false);
   };
 
   const formatDate = (date) => {
@@ -702,18 +723,41 @@ const SelectDriverGuidePage = () => {
             <div className="flex gap-4 justify-center mt-4">
               <button
                 onClick={() => navigate('/trips')}
-                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors"
+                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-full transition-colors"
               >
                 Back to Trips
               </button>
               <button
                 onClick={handleProceed}
-                disabled={!selectedDriver || !selectedGuide}
-                className="px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+                className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full transition-colors"
               >
-                {!selectedDriver || !selectedGuide ? 'Select Both Driver & Guide' : 'Confirm Selection'}
+                {selectedDriver || selectedGuide ? 'Confirm Selection' : 'Proceed Without Driver/Guide'}
               </button>
             </div>
+            {/* Modal for proceeding without driver/guide */}
+            {showNoSelectionModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full border border-gray-200">
+                  <h2 className="text-xl font-bold mb-4 text-gray-900">Proceed Without Driver or Guide?</h2>
+                  <div className="border-b border-gray-200 mb-4"></div>
+                  <p className="text-gray-700 mb-4">You have not selected a driver or a guide. You can proceed on your own, or facilitate your own driver and guide for this trip. IslandHop will not provide professional assistance for transportation or guided tours unless you select a driver or guide.</p>
+                  <div className="flex justify-end gap-4 mt-6">
+                    <button
+                      onClick={handleModalCancel}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleModalConfirm}
+                      className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full font-semibold"
+                    >
+                      Proceed Anyway
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
