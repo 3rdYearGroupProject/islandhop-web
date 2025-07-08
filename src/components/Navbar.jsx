@@ -252,8 +252,8 @@ const Navbar = () => {
   }, [showProfilePopup, showSettingsPopup]);
 
   return (
-    <nav className="w-full fixed top-0 left-0 right-0 z-50 px-2 py-4">
-      <div className="max-w-[95%] mx-auto bg-white/95 backdrop-blur-md rounded-full shadow pr-4 sm:pr-4 lg:pr-4 pl-8 flex items-center h-20">
+    <nav className="w-full fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow h-20 flex items-center px-0">
+      <div className="w-full flex items-center h-20 px-8">
         {/* Logo - Left Edge */}
         <Link to="/" className="flex items-center ml-2">
           <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-2" />
