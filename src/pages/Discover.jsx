@@ -4,6 +4,7 @@ import Card, { CardBody, CardHeader } from '../components/Card';
 import DestinationCard from '../components/DestinationCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import waterfallVideo from '../assets/waterfall.mp4';
+import Footer from '../components/Footer';
 
 // Import destination images
 import colomboImg from '../assets/destinations/colombo.jpg';
@@ -532,6 +533,8 @@ const Discover = () => {
           </Card>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 };

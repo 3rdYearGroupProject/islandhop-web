@@ -12,6 +12,7 @@ import Navbar from '../components/Navbar';
 import TripProgressBar from '../components/TripProgressBar';
 import { getUserUID } from '../utils/userStorage';
 import { tripPlanningApi } from '../api/axios';
+import Footer from '../components/Footer';
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -1600,8 +1601,7 @@ const TripItineraryPage = () => {
         show={showAddModal && selectedCategory === 'food'}
         onClose={() => {
           console.log('🚪 Closing Food & Drink modal');
-          setShowAddModal(false);
-          setSelectedStayDates([]);
+          setShowAddModal
           setSearchQuery('');
           // Clear cached suggestions for fresh data next time
           setBackendSuggestions(prev => ({

@@ -9,6 +9,7 @@ import ConfirmedPools from './pools/ConfirmedPools';
 import OngoingPools from './pools/OngoingPools';
 import CreatePoolModal from '../components/pools/CreatePoolModal';
 import pool4kVideo from '../assets/pool4k.mp4';
+import Footer from '../components/Footer';
 
 const tabList = [
   { label: 'Find Pools', key: 'find' },
@@ -140,6 +141,8 @@ const PoolPage = () => {
         onClose={() => setIsCreatePoolModalOpen(false)}
         onCreatePool={handleCreatePool}
       />
+
+      <Footer />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import islandHopFooter from '../assets/islandhop footer 1.png';
 
 const Footer = () => {
   return (
@@ -50,7 +51,7 @@ const Footer = () => {
         <div className="border-t border-blue-500 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-6 mb-4 md:mb-0">
-              <img src="/logo192.png" alt="IslandHop" className="h-8 w-8" />
+              <img src={islandHopFooter} alt="IslandHop" className="h-8 w-auto" />
               <div className="text-sm text-blue-100">
                 © 2025 IslandHop LLC All rights reserved.
               </div>

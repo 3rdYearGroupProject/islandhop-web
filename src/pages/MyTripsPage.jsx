@@ -29,6 +29,7 @@ import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
+import Footer from '../components/Footer';
 
 const placeholder = 'https://placehold.co/400x250';
 
@@ -800,6 +801,8 @@ const MyTripsPage = () => {
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateTrip}
       />
+
+      <Footer />
     </div>
   );
 };
