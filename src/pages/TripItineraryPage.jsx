@@ -8,11 +8,10 @@ import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../components/AddTransportationModal';
 
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
-import { getUserUID } from '../utils/userStorage';
-import { tripPlanningApi } from '../api/axios';
-import Footer from '../components/Footer';
+// import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -156,280 +155,6 @@ const getPhotoUrl = (photo, maxWidth = 400) => {
   return photo.getUrl({ maxWidth });
 };
 
-// API Functions for backend integration
-// Search activities with preferences and proximity optimization
-const searchActivities = async (tripId, searchParams) => {
-  const userId = getUserUID();
-  console.log('🎯 ACTIVITIES SEARCH START');
-  console.log('🔍 Searching activities for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
-  console.log('📝 Search parameters breakdown:', {
-    query: searchParams.query || 'NO_QUERY',
-    city: searchParams.city || 'NO_CITY',
-    lastPlaceId: searchParams.lastPlaceId || 'NO_LAST_PLACE',
-    maxResults: searchParams.maxResults || 10,
-    userId: userId || 'NO_USER_ID'
-  });
-  
-  const params = new URLSearchParams({
-    query: searchParams.query || '',
-    city: searchParams.city || '',
-    lastPlaceId: searchParams.lastPlaceId || '',
-    maxResults: searchParams.maxResults || 10,
-    userId: userId || ''
-  });
-  
-  try {
-    const fullUrl = `/trip/${tripId}/search/activities?${params}`;
-    console.log('📡 Making ACTIVITIES API request to:', fullUrl);
-    console.log('🔗 Full URL with params:', fullUrl);
-    
-    const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
-    console.log('📨 ACTIVITIES API Response status:', response.status, response.statusText);
-    console.log('📦 ACTIVITIES response data:', response.data);
-    console.log('✅ ACTIVITIES SEARCH SUCCESS - Found', response.data?.length || 0, 'activities');
-    
-    return response.data;
-  } catch (error) {
-    console.error('❌ ACTIVITIES SEARCH FAILED');
-    console.error('❌ Error details:', error);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error response:', error.response?.data);
-    throw error;
-  }
-};
-
-// Search accommodation with preference-based filtering
-const searchAccommodation = async (tripId, searchParams) => {
-  const userId = getUserUID();
-  console.log('🏨 ACCOMMODATION SEARCH START');
-  console.log('🔍 Searching accommodation for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
-  console.log('📝 Accommodation search parameters:', {
-    query: searchParams.query || 'NO_QUERY',
-    city: searchParams.city || 'NO_CITY',
-    lastPlaceId: searchParams.lastPlaceId || 'NO_LAST_PLACE',
-    maxResults: searchParams.maxResults || 10,
-    userId: userId || 'NO_USER_ID'
-  });
-  
-  const params = new URLSearchParams({
-    query: searchParams.query || '',
-    city: searchParams.city || '',
-    lastPlaceId: searchParams.lastPlaceId || '',
-    maxResults: searchParams.maxResults || 10,
-    userId: userId || ''
-  });
-  
-  try {
-    const fullUrl = `/trip/${tripId}/search/accommodation?${params}`;
-    console.log('📡 Making ACCOMMODATION API request to:', fullUrl);
-    console.log('🔗 Full accommodation URL:', fullUrl);
-    
-    const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
-    console.log('📨 ACCOMMODATION API Response status:', response.status, response.statusText);
-    console.log('📦 ACCOMMODATION response data:', response.data);
-    console.log('✅ ACCOMMODATION SEARCH SUCCESS - Found', response.data?.length || 0, 'places to stay');
-    
-    return response.data;
-  } catch (error) {
-    console.error('❌ ACCOMMODATION SEARCH FAILED');
-    console.error('❌ Accommodation error details:', error);
-    console.error('❌ Accommodation error message:', error.message);
-    console.error('❌ Accommodation error response:', error.response?.data);
-    throw error;
-  }
-};
-
-// Search dining options with preference and proximity matching
-const searchDining = async (tripId, searchParams) => {
-  const userId = getUserUID();
-  console.log('🍽️ DINING SEARCH START');
-  console.log('🔍 Searching dining for trip:', tripId, 'with params:', searchParams, 'userId:', userId);
-  console.log('📝 Dining search parameters:', {
-    query: searchParams.query || 'NO_QUERY',
-    city: searchParams.city || 'NO_CITY',
-    lastPlaceId: searchParams.lastPlaceId || 'NO_LAST_PLACE',
-    maxResults: searchParams.maxResults || 10,
-    userId: userId || 'NO_USER_ID'
-  });
-  
-  const params = new URLSearchParams({
-    query: searchParams.query || '',
-    city: searchParams.city || '',
-    lastPlaceId: searchParams.lastPlaceId || '',
-    maxResults: searchParams.maxResults || 10,
-    userId: userId || ''
-  });
-  
-  try {
-    const fullUrl = `/trip/${tripId}/search/dining?${params}`;
-    console.log('📡 Making DINING API request to:', fullUrl);
-    console.log('🔗 Full dining URL:', fullUrl);
-    
-    const response = await tripPlanningApi.get(fullUrl, { withCredentials: true });
-    console.log('📨 DINING API Response status:', response.status, response.statusText);
-    console.log('📦 DINING response data:', response.data);
-    console.log('✅ DINING SEARCH SUCCESS - Found', response.data?.length || 0, 'dining options');
-    
-    return response.data;
-  } catch (error) {
-    console.error('❌ DINING SEARCH FAILED');
-    console.error('❌ Dining error details:', error);
-    console.error('❌ Dining error message:', error.message);
-    console.error('❌ Dining error response:', error.response?.data);
-    throw error;
-  }
-};
-
-// Add place to a specific day with detailed context
-const addPlaceToDay = async (tripId, dayNumber, placeData, userId) => {
-  console.log('➕ ADD PLACE TO DAY START');
-  console.log('📍 Adding place to day:', { tripId, dayNumber, placeName: placeData.name, userId });
-  console.log('📝 Place data details:', {
-    name: placeData.name,
-    location: placeData.location || placeData.city || 'NO_LOCATION',
-    type: placeData.type || placeData.category || 'ATTRACTION',
-    duration: placeData.durationMinutes || placeData.duration || 120,
-    timeSlot: placeData.timeSlot || 'morning',
-    priority: placeData.priority || 5
-  });
-  
-  try {
-    const requestBody = {
-      userId: userId,
-      placeName: placeData.name,
-      city: placeData.location || placeData.city,
-      dayNumber: dayNumber,
-      placeType: placeData.type || placeData.category || 'ATTRACTION',
-      estimatedVisitDurationMinutes: placeData.durationMinutes || placeData.duration || 120,
-      preferredTimeSlot: placeData.timeSlot || 'morning',
-      priority: placeData.priority || 5
-    };
-    
-    console.log('📤 Sending ADD PLACE request with body:', requestBody);
-    
-    const response = await tripPlanningApi.post(`/trip/${tripId}/day/${dayNumber}/add-place`, requestBody, { withCredentials: true });
-    
-    console.log('📨 ADD PLACE Response status:', response.status);
-    console.log('📦 ADD PLACE Response data:', response.data);
-    
-    if (response.status !== 200) {
-      throw new Error(`Failed to add place to day: ${response.status}`);
-    }
-    
-    console.log('✅ ADD PLACE SUCCESS - Place added to day', dayNumber);
-    return response.data;
-  } catch (error) {
-    console.error('❌ ADD PLACE TO DAY FAILED');
-    console.error('❌ Add place error details:', error);
-    console.error('❌ Add place error message:', error.message);
-    console.error('❌ Add place error response:', error.response?.data);
-    throw error;
-  }
-};
-
-// Add a city to a specific day (new endpoint)
-const addCityToDay = async (tripId, dayNumber, city, userId) => {
-  console.log('🏙️ ADD CITY TO DAY START');
-  console.log('📍 Adding city to day:', { tripId, dayNumber, city, userId });
-  try {
-    const response = await tripPlanningApi.post(`/trip/${tripId}/cities/add`, {
-      userId,
-      city,
-      dayNumber
-    }, { withCredentials: true });
-    console.log('📨 ADD CITY TO DAY Response status:', response.status);
-    console.log('📦 ADD CITY TO DAY Response data:', response.data);
-    if (response.status !== 200) {
-      throw new Error(`Failed to add city to day: ${response.status}`);
-    }
-    console.log('✅ ADD CITY TO DAY SUCCESS');
-    return response.data;
-  } catch (error) {
-    console.error('❌ ADD CITY TO DAY FAILED:', error);
-    throw error;
-  }
-};
-
-// Set cities and day allocation for multi-city trips
-const updateTripCities = async (tripId, cityData, userId) => {
-  console.log('🏙️ UPDATE TRIP CITIES START');
-  console.log('📍 Updating cities for trip:', tripId, 'userId:', userId);
-  console.log('📝 City data details:', {
-    cities: cityData.cities,
-    cityDays: cityData.cityDays,
-    totalCities: cityData.cities?.length || 0
-  });
-  
-  try {
-    const requestBody = {
-      userId: userId,
-      cities: cityData.cities,
-      cityDays: cityData.cityDays
-    };
-    
-    console.log('📤 Sending UPDATE CITIES request with body:', requestBody);
-    
-    const response = await tripPlanningApi.post(`/trip/${tripId}/cities`, requestBody, { withCredentials: true });
-    
-    console.log('📨 UPDATE CITIES Response status:', response.status);
-    console.log('📦 UPDATE CITIES Response data:', response.data);
-    
-    if (response.status !== 200) {
-      throw new Error(`Failed to update cities: ${response.status}`);
-    }
-    
-    console.log('✅ UPDATE TRIP CITIES SUCCESS');
-    
-    return {
-      message: response.data.message,
-      userId: response.data.userId,
-      trip: response.data.trip
-    };
-  } catch (error) {
-    console.error('❌ UPDATE TRIP CITIES FAILED');
-    console.error('❌ Update cities error details:', error);
-    console.error('❌ Update cities error message:', error.message);
-    console.error('❌ Update cities error response:', error.response?.data);
-    throw error;
-  }
-};
-
-// Retrieve complete trip information
-const getTripDetails = async (tripId) => {
-  console.log('📥 GET TRIP DETAILS START');
-  console.log('� Fetching trip details for tripId:', tripId);
-  
-  try {
-    console.log('📡 Making GET TRIP DETAILS API request to:', `/trip/${tripId}`);
-    
-    const response = await tripPlanningApi.get(`/trip/${tripId}`, { withCredentials: true });
-    
-    console.log('📨 GET TRIP DETAILS Response status:', response.status);
-    console.log('📦 GET TRIP DETAILS Response data:', response.data);
-    
-    if (response.status !== 200) {
-      throw new Error(`Failed to get trip details: ${response.status}`);
-    }
-    
-    console.log('✅ GET TRIP DETAILS SUCCESS');
-    console.log('📊 Trip details summary:', {
-      tripId: response.data?.trip?.id || response.data?.tripId,
-      tripName: response.data?.trip?.name,
-      userId: response.data?.userId,
-      hasItinerary: !!response.data?.trip?.itinerary,
-      itineraryDays: Object.keys(response.data?.trip?.itinerary || {}).length
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('❌ GET TRIP DETAILS FAILED');
-    console.error('❌ Get trip details error:', error);
-    console.error('❌ Get trip details error message:', error.message);
-    console.error('❌ Get trip details error response:', error.response?.data);
-    throw error;
-  }
-};
-
 const TripItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
@@ -450,52 +175,9 @@ const TripItineraryPage = () => {
   const [destinations, setDestinations] = useState({}); // dayIndex -> destination
   const [availableCities, setAvailableCities] = useState([]);
   const [isSearchingCities, setIsSearchingCities] = useState(false);
+  const [isSavingTrip, setIsSavingTrip] = useState(false);
   
-  // Backend data states
-  const [backendSuggestions, setBackendSuggestions] = useState({
-    activities: [],
-    places: [],
-    food: []
-  });
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [lastSearchParams, setLastSearchParams] = useState(null);
-
-  // Generate days array from selected dates
-  const generateDays = () => {
-    if (!selectedDates || selectedDates.length < 2) return [];
-    
-    const days = [];
-    const startDate = new Date(selectedDates[0]);
-    const endDate = new Date(selectedDates[1]);
-    
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      days.push(new Date(date));
-    }
-    
-    return days;
-  };
-
-  const days = generateDays();
-
-  useEffect(() => {
-    // Initialize empty itinerary for each day and expand first few days
-    const initialItinerary = {};
-    const initialExpanded = {};
-    days.forEach((day, index) => {
-      initialItinerary[index] = {
-        date: day,
-        activities: [],
-        places: [],
-        food: [],
-        transportation: []
-      };
-      // Expand first 3 days by default
-      initialExpanded[index] = index < 1;
-    });
-    setItinerary(initialItinerary);
-    setExpandedDays(initialExpanded);
-  }, [days.length]);
-
+  // Mock data for trip planning
   const mockSuggestions = {
     activities: [
       { 
@@ -751,46 +433,23 @@ const TripItineraryPage = () => {
     ]
   };
 
-  // Function to check if a day has a destination
-  const dayHasDestination = (dayIndex) => {
-    return destinations[dayIndex] !== undefined;
-  };
-
-  // Function to get destination for a day
-  const getDestinationForDay = (dayIndex) => {
-    return destinations[dayIndex] || null;
-  };
-
-  // Search cities using Google Places API
-  const searchCities = async (query = '') => {
-    setIsSearchingCities(true);
-    try {
-      const cities = await searchSriLankanCities(query);
-      setAvailableCities(cities);
-    } catch (error) {
-      console.error('Error searching cities:', error);
-      setAvailableCities(POPULAR_SRI_LANKAN_CITIES);
-    } finally {
-      setIsSearchingCities(false);
+  // Generate days array from selected dates
+  const generateDays = () => {
+    if (!selectedDates || selectedDates.length < 2) return [];
+    
+    const days = [];
+    const startDate = new Date(selectedDates[0]);
+    const endDate = new Date(selectedDates[1]);
+    
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      days.push(new Date(date));
     }
+    
+    return days;
   };
 
-  // Initialize cities on component mount
-  useEffect(() => {
-    searchCities();
-  }, []);
+  const days = generateDays();
 
-  // Search cities when query changes (with debounce)
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (showDestinationModal) {
-        searchCities(searchQuery);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, showDestinationModal]);
-  
   useEffect(() => {
     // Initialize empty itinerary for each day and expand first few days
     const initialItinerary = {};
@@ -810,6 +469,9 @@ const TripItineraryPage = () => {
     setExpandedDays(initialExpanded);
   }, [days.length]);
 
+  // Remove all backend integration functions
+  // (searchActivities, searchAccommodation, searchDining, addPlaceToDay, addCityToDay, updateTripCities, getTripDetails)
+
   const handleAddItem = (category, dayIndex) => {
     console.log('🎯 Add button clicked for category:', category, 'dayIndex:', dayIndex);
     setSelectedCategory(category);
@@ -820,8 +482,6 @@ const TripItineraryPage = () => {
       setShowDestinationModal(true);
       // Reset search query when opening destination modal
       setSearchQuery('');
-      // Load initial cities
-      searchCities('');
     } else {
       // Check if destination is required for this day
       if (!dayHasDestination(dayIndex)) {
@@ -831,20 +491,11 @@ const TripItineraryPage = () => {
       
       console.log('📋 Opening modal for category:', category);
       setShowAddModal(true);
-      
-      // Fetch backend data when specific category button is clicked
-      if (['activities', 'places', 'food'].includes(category)) {
-        console.log('🚀 Fetching backend data for category:', category);
-        fetchBackendSuggestions(category, { 
-          query: '',  // Start with empty search
-          maxResults: 20 
-        });
-      }
     }
   };
 
-  // Enhanced addItemToItinerary to sync with backend after add
-  const addItemToItinerary = async (item, selectedDates = null) => {
+  // Add item to itinerary using only local state
+  const addItemToItinerary = (item, selectedDates = null) => {
     console.log('🚀 ADD ITEM TO ITINERARY START');
     console.log('📍 Item details:', item);
     console.log('📅 Selected dates:', selectedDates);
@@ -856,41 +507,9 @@ const TripItineraryPage = () => {
     if (showDestinationModal) {
       console.log('🏙️ DESTINATION ADDITION FLOW');
       console.log('🏙️ Adding destination:', item, 'to day:', currentDay);
-      try {
-        // Use new endpoint to add city to a specific day (1-based day number)
-        const dayNumber = currentDay + 1;
-        console.log('📤 Calling addCityToDay with:', { tripId, dayNumber, city: item.name, userId: userUid });
-        const result = await addCityToDay(tripId, dayNumber, item.name, userUid);
-        console.log('✅ Successfully added city to day:', result);
-        
-        // Update destinations state using the response data
-        console.log('🔄 Updating itinerary from addCityToDay response');
-        console.log('📊 Trip data from response:', result.trip);
-        console.log('📍 Day to city map:', result.trip?.dayToCityMap);
-        
-        // Update destinations state based on dayToCityMap
-        if (result.trip && result.trip.dayToCityMap) {
-          const newDestinations = {};
-          Object.entries(result.trip.dayToCityMap).forEach(([dayNum, cities]) => {
-            const dayIndex = parseInt(dayNum) - 1; // Convert to 0-based index
-            if (cities && cities.length > 0) {
-              // Use the last city added for this day or find the one we just added
-              const cityForDay = cities.includes(item.name) ? item.name : cities[cities.length - 1];
-              newDestinations[dayIndex] = { name: cityForDay };
-            }
-          });
-          console.log('🗺️ Updated destinations state:', newDestinations);
-          setDestinations(newDestinations);
-        }
-        
-        // No need to fetch trip details separately - we have the complete data
-        console.log('✅ City addition complete - using response data directly');
-        
-      } catch (error) {
-        console.error('❌ Failed to add destination:', error);
-        alert('Failed to add destination: ' + error.message);
-      }
-      // Close modal and reset state
+      
+      // Add destination to local state only
+      setDestinations(prev => ({ ...prev, [currentDay]: { name: item.name } }));
       setShowDestinationModal(false);
       setSearchQuery('');
       return;
@@ -931,107 +550,24 @@ const TripItineraryPage = () => {
 
     console.log('📊 Day indices to add to:', dayIndices);
 
-    // Loading state for add operation
-    setIsLoadingSuggestions(true);
-    let error = null;
-
-    try {
-      console.log('🔄 Starting backend addition process...');
-      
-      // For each day, call backend
-      await Promise.all(dayIndices.map(async (dayIdx) => {
-        console.log(`➕ Adding item to day ${dayIdx}:`, item.name);
-        await addPlaceToDay(tripId, dayIdx, item, userUid);
-        console.log(`✅ Successfully added ${item.name} to day ${dayIdx}`);
-      }));
-      
-      console.log('🔄 All items added, fetching latest trip details...');
-      
-      // Fetch latest trip details from backend
-      const tripDetails = await getTripDetails(tripId);
-      
-      // Update local itinerary state from backend trip data
-      if (tripDetails && tripDetails.trip && tripDetails.trip.itinerary) {
-        console.log('🔄 Updating local itinerary with backend data');
-        console.log('📊 Updated itinerary:', tripDetails.trip.itinerary);
-        setItinerary(tripDetails.trip.itinerary);
-      }
-      
-      console.log('🎉 ITEM ADDITION COMPLETE - Closing modals');
-      setShowAddModal(false);
-      setShowDestinationModal(false);
-      setSelectedStayDates([]);
-    } catch (err) {
-      error = err;
-      console.error('❌ ITEM ADDITION FAILED:', err);
-      alert('Failed to add item: ' + err.message);
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  };
-
-  const addItemToItineraryOld = (item, selectedDates = null) => {
-    // Helper function to get category key
-    const getCategoryKey = (category) => {
-      switch(category) {
-        case 'Destinations': return 'places';
-        case 'activities': return 'activities';
-        case 'places': return 'places';
-        case 'food': return 'food';
-        case 'transportation': return 'transportation';
-        default: return 'activities';
-      }
-    };
-
-    if (selectedDates && selectedDates.length > 0) {
-      // Add item to multiple selected days
-      selectedDates.forEach(dateIndex => {
-        setItinerary(prev => {
-          const categoryKey = getCategoryKey(selectedCategory);
-          const dayData = prev[dateIndex] || {
-            date: days[dateIndex],
+    // Add to local itinerary state
+    setItinerary(prev => {
+      const updated = { ...prev };
+      dayIndices.forEach(dayIdx => {
+        const categoryKey = getCategoryKey(selectedCategory);
+        if (!updated[dayIdx]) {
+          updated[dayIdx] = {
+            date: days[dayIdx],
             activities: [],
             places: [],
             food: [],
             transportation: []
           };
-          
-          return {
-            ...prev,
-            [dateIndex]: {
-              ...dayData,
-              [categoryKey]: [
-                ...(dayData[categoryKey] || []), 
-                { ...item, selectedDates: selectedDates, isMultiDay: true }
-              ]
-            }
-          };
-        });
+        }
+        updated[dayIdx][categoryKey] = [...(updated[dayIdx][categoryKey] || []), item];
       });
-    } else {
-      // Add to single day (fallback for old logic)
-      setItinerary(prev => {
-        const categoryKey = getCategoryKey(selectedCategory);
-        const dayData = prev[currentDay] || {
-          date: days[currentDay],
-          activities: [],
-          places: [],
-          food: [],
-          transportation: []
-        };
-        
-        return {
-          ...prev,
-          [currentDay]: {
-            ...dayData,
-            [categoryKey]: [
-              ...(dayData[categoryKey] || []), 
-              item
-            ]
-          }
-        };
-      });
-    }
+      return updated;
+    });
     setShowAddModal(false);
     setShowDestinationModal(false);
     setSelectedStayDates([]);
@@ -1057,54 +593,13 @@ const TripItineraryPage = () => {
 
     console.log('🔄 Fetching backend suggestions for category:', category, 'params:', searchParams);
     console.log('🆔 Using tripId:', tripId);
-    setIsLoadingSuggestions(true);
     
-    try {
-      let searchFunction;
-      let cacheKey;
-      
-      switch(category) {
-        case 'activities':
-          searchFunction = searchActivities;
-          cacheKey = 'activities';
-          console.log('🎯 Using activities search function');
-          break;
-        case 'places':
-          searchFunction = searchAccommodation;
-          cacheKey = 'places';
-          console.log('🏨 Using accommodation search function');
-          break;
-        case 'food':
-          searchFunction = searchDining;
-          cacheKey = 'food';
-          console.log('🍽️ Using dining search function');
-          break;
-        default:
-          console.warn('⚠️ Unknown category for backend search:', category);
-          return mockSuggestions[category] || [];
-      }
-
-      const result = await searchFunction(tripId, searchParams);
-      
-      // Update backend suggestions cache
-      setBackendSuggestions(prev => ({
-        ...prev,
-        [cacheKey]: result.data || result || []
-      }));
-      
-      setLastSearchParams({ category, searchParams });
-      console.log('✅ Backend suggestions updated for', category, ':', result);
-      console.log('📊 Cached suggestions count:', (result.data || result || []).length);
-      
-      return result.data || result || [];
-    } catch (error) {
-      console.error('❌ Failed to fetch backend suggestions:', error);
-      console.log('🔄 Falling back to mock data on error for category:', category);
-      // Fallback to mock data on error
-      return mockSuggestions[category] || [];
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
+    // Mocked response for demonstration
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(mockSuggestions[category] || []);
+      }, 500);
+    });
   };
 
   // Enhanced getFilteredSuggestions to use backend data
@@ -1176,8 +671,8 @@ const TripItineraryPage = () => {
       console.log('📊 Backend cached data for', selectedCategory, ':', cachedData.length, 'items');
       
       // If no cached data and not currently loading, show empty state
-      if (cachedData.length === 0 && !isLoadingSuggestions) {
-        console.log('📭 No cached data available and not loading - showing empty state');
+      if (cachedData.length === 0) {
+        console.log('📭 No cached data available - showing empty state');
         return [];
       }
       
@@ -1256,19 +751,37 @@ const TripItineraryPage = () => {
     });
   };
 
-  const handleSaveTrip = () => {
+  const handleSaveTrip = async () => {
+    console.log('💾 Starting comprehensive trip creation process...');
+    
+    setIsSavingTrip(true);
+    // Validate required data
+    if (!tripName || !selectedDates || selectedDates.length < 2 || !userUid) {
+      console.warn('⚠️ Missing required trip data:', { tripName, selectedDates, userUid });
+      alert('Missing required trip information. Please go back and complete all steps.');
+      setIsSavingTrip(false);
+      return;
+    }
+
+    console.log('🚀 Trip already created in preferences, saving itinerary locally...');
+
+    // Trip was already created in TripPreferencesPage, just save locally and navigate
     navigate('/trips', {
       state: {
         newTrip: {
+          id: tripId || Date.now(), // Use tripId from backend or generate one
           name: tripName,
           dates: selectedDates,
           terrains: selectedTerrains,
           activities: selectedActivities,
           itinerary: itinerary,
           createdAt: new Date()
-        }
+        },
+        message: 'Trip itinerary saved successfully!'
       }
     });
+    
+    setIsSavingTrip(false);
   };
 
   if (!tripName || !selectedDates) {
@@ -1570,7 +1083,7 @@ const TripItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
-        isLoading={isLoadingSuggestions}
+        isLoading={false}
         tripId={tripId}
       />
       <AddPlacesToStayModal
@@ -1594,14 +1107,14 @@ const TripItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
-        isLoading={isLoadingSuggestions}
+        isLoading={false}
         tripId={tripId}
       />
       <AddFoodAndDrinkModal
         show={showAddModal && selectedCategory === 'food'}
         onClose={() => {
           console.log('🚪 Closing Food & Drink modal');
-          setShowAddModal
+          setShowAddModal(false);
           setSearchQuery('');
           // Clear cached suggestions for fresh data next time
           setBackendSuggestions(prev => ({
@@ -1617,7 +1130,7 @@ const TripItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
-        isLoading={isLoadingSuggestions}
+        isLoading={false}
         tripId={tripId}
       />
       <AddTransportationModal
@@ -1651,6 +1164,10 @@ const TripItineraryPage = () => {
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
         isSearchingCities={isSearchingCities}
+        // Backend integration props
+        tripId={tripId}
+        userUid={userUid}
+        startDate={selectedDates?.[0]}
       />
 
       <Footer />

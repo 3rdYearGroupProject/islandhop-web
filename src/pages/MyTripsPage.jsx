@@ -28,6 +28,7 @@ import CreateTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
+// import { fetchUserTrips as fetchUserTripsApi } from '../api/tripApi'; // Function moved to TripPreferencesPage
 import { getUserUID } from '../utils/userStorage';
 import Footer from '../components/Footer';
 

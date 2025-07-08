@@ -4,7 +4,7 @@ import { Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin } fro
 import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
 import TripProgressBar from '../components/TripProgressBar';
-import { tripPlanningApi } from '../api/axios';
+
 import Footer from '../components/Footer';
 
 const TripDurationPage = () => {
@@ -95,42 +95,12 @@ const TripDurationPage = () => {
     navigate('/trips');
   };
 
-  // Create basic trip with minimal information to reduce initial friction
-  async function createBasicTrip(tripData) {
-    console.log('🚀 Sending trip creation request to backend...', {
-      userUid: tripData.userUid,
-      tripName: tripData.tripName,
-      startDate: tripData.startDate,
-      endDate: tripData.endDate
-    });
-    
-    try {
-      const response = await tripPlanningApi.post('/trip/create-basic', {
-        userId: tripData.userUid,
-        tripName: tripData.tripName,
-        startDate: tripData.startDate,
-        endDate: tripData.endDate
-      });
-
-      console.log('✅ Trip creation response received:', response.data);
-      
-      return {
-        tripId: response.data.tripId,
-        trip: response.data.trip,
-        message: response.data.message
-      };
-    } catch (error) {
-      console.error('❌ Error creating trip:', error);
-      throw new Error(`HTTP error! status: ${error.response?.status || 'unknown'}`);
-    }
-  }
-
   const handleContinue = async () => {
     if (selectedDates.length > 0) {
       setIsCreatingTrip(true);
       
       try {
-        // Format dates for backend (ISO format)
+        // Format dates for navigation
         const startDateObj = selectedDates[0] instanceof Date ? selectedDates[0] : new Date(selectedDates[0]);
         const endDateObj = selectedDates[selectedDates.length - 1] instanceof Date ? selectedDates[selectedDates.length - 1] : new Date(selectedDates[selectedDates.length - 1]);
         
@@ -141,39 +111,19 @@ const TripDurationPage = () => {
           return;
         }
         
-        const startDate = startDateObj.toISOString().split('T')[0];
-        const endDate = endDateObj.toISOString().split('T')[0];
+        console.log('✅ Dates validated, proceeding to preferences');
         
-        // Only try to create trip in backend if we have userUid
-        let result = null;
-        if (userUid) {
-          try {
-            result = await createBasicTrip({
-              userUid,
-              tripName,
-              startDate,
-              endDate
-            });
-            console.log('🎉 Trip created successfully:', result);
-          } catch (error) {
-            console.error('Failed to create trip in backend:', error);
-            // Continue anyway without backend trip creation
-          }
-        }
-        
-        // Navigate to next step with trip data
+        // Navigate to next step with trip data (no backend call yet)
         navigate('/trip-preferences', { 
           state: { 
             tripName, 
-            selectedDates,
-            tripId: result?.tripId,
-            trip: result?.trip,
+            selectedDates: [startDateObj, endDateObj],
             userUid
           } 
         });
       } catch (error) {
         console.error('Failed to continue:', error);
-        // Fallback navigation without backend data
+        // Fallback navigation
         navigate('/trip-preferences', { 
           state: { 
             tripName, 
