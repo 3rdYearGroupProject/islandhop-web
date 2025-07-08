@@ -1349,7 +1349,7 @@ const TripItineraryPage = () => {
                               <p className="text-sm text-gray-600 mb-3">Add a destination for this day first</p>
                               <button 
                                 onClick={() => handleAddItem('Destinations', dayIndex)}
-                                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm"
+                                className="bg-primary-600 text-white px-4 py-2 rounded-full hover:bg-primary-700 transition-colors font-medium text-sm"
                               >
                                 Add Destination
                               </button>
@@ -1533,13 +1533,13 @@ const TripItineraryPage = () => {
           <div className="flex gap-4 pt-6 border-t border-gray-200">
             <button
               onClick={handleBack}
-              className="bg-white border border-primary-600 text-primary-600 px-6 py-2 rounded-lg shadow hover:bg-primary-50 font-medium transition-colors"
+              className="bg-white border border-primary-600 text-primary-600 px-6 py-2 rounded-full shadow hover:bg-primary-50 font-medium transition-colors"
             >
               Back
             </button>
             <button
               onClick={handleSaveTrip}
-              className="bg-primary-600 text-white px-6 py-2 rounded-lg shadow hover:bg-primary-700 font-medium transition-colors"
+              className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors"
             >
               Save Trip
             </button>

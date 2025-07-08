@@ -11,11 +11,11 @@ const Card = ({
   const baseClasses = 'bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-700 overflow-hidden transition-all duration-200';
 
   const variantClasses = {
-    default: 'rounded-lg shadow-sm',
-    elevated: 'rounded-lg shadow-md',
-    outlined: 'rounded-lg border-2',
-    minimal: 'rounded-lg',
-    glass: 'rounded-lg backdrop-blur-sm bg-white/80 dark:bg-secondary-800/80 border-white/20 dark:border-secondary-700/20',
+    default: 'rounded-2xl shadow-sm',
+    elevated: 'rounded-2xl shadow-md',
+    outlined: 'rounded-2xl border-2',
+    minimal: 'rounded-2xl',
+    glass: 'rounded-2xl backdrop-blur-sm bg-white/80 dark:bg-secondary-800/80 border-white/20 dark:border-secondary-700/20',
   };
 
   const paddingClasses = {

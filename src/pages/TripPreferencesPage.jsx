@@ -298,16 +298,16 @@ const TripPreferencesPage = () => {
           <div className="lg:col-span-2 flex flex-row gap-4 justify-end mt-6">
             <button
               onClick={handleBack}
-              className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="px-6 py-2 rounded-full border border-primary-600 text-primary-600 bg-white hover:bg-primary-50 hover:border-primary-700 transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 text-base"
             >
               Back
             </button>
             <button
               onClick={handleNext}
               disabled={!canProceed()}
-              className={`px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
+              className={`px-6 py-2 rounded-full font-semibold text-base transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 ${
                 canProceed()
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                  ? 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >

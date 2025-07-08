@@ -30,7 +30,7 @@ const Input = ({
   };
 
   const baseClasses = `
-    block w-full border rounded-md shadow-sm placeholder-gray-400 
+    block w-full border rounded-full shadow-sm placeholder-gray-400 
     focus:outline-none focus:ring-2 focus:ring-offset-0 
     transition-colors duration-200
     disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed

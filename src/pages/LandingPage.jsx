@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import ExperienceCard from '../components/ExperienceCard';
 import ExploreCard from '../components/ExploreCard';
 import InterestCard from '../components/InterestCard';
@@ -216,93 +217,8 @@ const LandingPage = () => (
       </div>
     </section>
 
-    {/* Awards Section */}
-    <section className="w-full bg-primary-800 py-16">
-      <div className="content-container flex items-center">
-        <div className="flex-1">
-          <div className="text-yellow-400 text-lg font-bold mb-2">Travelers' Choice Awards Best of the Best</div>
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Among the top 10% of <br />
-            hotels, attractions, and <br />
-            restaurants—decided by <br />
-            you.
-          </h2>
-          <button className="bg-white text-primary-800 rounded-full px-6 py-2 font-semibold hover:bg-gray-100 transition">
-            See winners
-          </button>
-        </div>
-        <div className="flex-1 flex justify-center">
-          <img src={placeholder} alt="Award" className="w-80 h-80 object-cover rounded-full" />
-        </div>
-      </div>
-    </section>
-
     {/* Footer */}
-    <footer className="w-full bg-white py-8 border-t border-gray-200">
-      <div className="footer-container">
-        {/* Footer Links Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">About IslandHop</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><a href="#" className="hover:text-gray-900">About us</a></li>
-              <li><a href="#" className="hover:text-gray-900">Press</a></li>
-              <li><a href="#" className="hover:text-gray-900">Resources and Policies</a></li>
-              <li><a href="#" className="hover:text-gray-900">Careers</a></li>
-              <li><a href="#" className="hover:text-gray-900">Trust & Safety</a></li>
-              <li><a href="#" className="hover:text-gray-900">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">Explore</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><a href="#" className="hover:text-gray-900">Write a review</a></li>
-              <li><a href="#" className="hover:text-gray-900">Add a place</a></li>
-              <li><a href="#" className="hover:text-gray-900">Join</a></li>
-              <li><a href="#" className="hover:text-gray-900">Travelers' Choice</a></li>
-              <li><a href="#" className="hover:text-gray-900">GreenLeaders</a></li>
-              <li><a href="#" className="hover:text-gray-900">Help Centre</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">Do Business With Us</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><a href="#" className="hover:text-gray-900">Owners</a></li>
-              <li><a href="#" className="hover:text-gray-900">Business Advantage</a></li>
-              <li><a href="#" className="hover:text-gray-900">Sponsored Placements</a></li>
-              <li><a href="#" className="hover:text-gray-900">Access our Content API</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">IslandHop Sites</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><a href="#" className="hover:text-gray-900">Book tours and attraction tickets on Viator</a></li>
-              <li><a href="#" className="hover:text-gray-900">Reserve dining at your favorite restaurants</a></li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Footer Bottom */}
-        <div className="border-t border-gray-200 pt-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-6 mb-4 md:mb-0">
-              <img src="/logo192.png" alt="IslandHop" className="h-8 w-8" />
-              <div className="text-sm text-gray-600">
-                © 2025 IslandHop LLC All rights reserved.
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
-              <a href="#" className="hover:text-gray-900">Terms of Use</a>
-              <a href="#" className="hover:text-gray-900">Privacy and Cookie Statement</a>
-              <a href="#" className="hover:text-gray-900">Cookie consent</a>
-              <a href="#" className="hover:text-gray-900">Site Map</a>
-              <a href="#" className="hover:text-gray-900">How the site works</a>
-              <a href="#" className="hover:text-gray-900">Contact us</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
+    <Footer />
   </div>
 );
 

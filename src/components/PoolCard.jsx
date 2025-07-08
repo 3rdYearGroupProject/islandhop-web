@@ -5,7 +5,7 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
   const getStatusColor = (status) => {
     switch (status) {
       case 'open':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-400';
       case 'full':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'closed':
@@ -115,7 +115,7 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
           <div className="flex items-center space-x-2">
-            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full border border-blue-300 transition-colors">
               <Share2 className="h-4 w-4" />
             </button>
           </div>
