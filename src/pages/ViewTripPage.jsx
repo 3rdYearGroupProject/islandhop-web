@@ -3,6 +3,7 @@ import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const ViewTripPage = () => {
   const location = useRouterLocation();
@@ -862,24 +863,24 @@ const ViewTripPage = () => {
               <div
                 className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200 flex flex-col justify-center"
                 id="actions-card"
-                style={{ minHeight: '220px', height: window.tripSummaryCardRef ? window.tripSummaryCardRef.offsetHeight : undefined, boxShadow: 'none', border: '1px solid #e5e7eb' }}
+                style={{ minHeight: '220px', boxShadow: 'none', border: '1px solid #e5e7eb' }}
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Actions</h3>
                 <div className="flex flex-row gap-4 w-full mb-4">
                   <button
                     onClick={handleBack}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors border border-gray-200"
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-full transition-colors border border-gray-400"
                   >
                     Back
                   </button>
                   <button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors border border-red-200"
+                    className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded-full transition-colors border border-red-400"
                   >
                     Delete
                   </button>
                   <button
                     onClick={handleProceed}
-                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors border border-blue-200"
+                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-full transition-colors border border-blue-200"
                   >
                     Proceed
                   </button>
@@ -896,6 +897,7 @@ const ViewTripPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

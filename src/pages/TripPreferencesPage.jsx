@@ -4,6 +4,7 @@ import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2,
 import Navbar from '../components/Navbar';
 import TripProgressBar from '../components/TripProgressBar';
 import { tripPlanningApi } from '../api/axios';
+import Footer from '../components/Footer';
 
 const TripPreferencesPage = () => {
   const location = useLocation();
@@ -316,6 +317,7 @@ const TripPreferencesPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

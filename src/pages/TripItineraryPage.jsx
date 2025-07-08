@@ -1652,6 +1652,8 @@ const TripItineraryPage = () => {
         addItemToItinerary={addItemToItinerary}
         isSearchingCities={isSearchingCities}
       />
+
+      <Footer />
     </div>
   );
 };

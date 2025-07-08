@@ -3,6 +3,7 @@ import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 // Mock participant data (replace with real data as needed)
 const mockParticipants = {
@@ -11,23 +12,35 @@ const mockParticipants = {
   owner: {
     name: 'John Doe',
     avatar: 'https://randomuser.me/api/portraits/men/11.jpg',
-    email: 'john.doe@email.com'
+    email: 'john.doe@email.com',
+    nationality: 'Sri Lankan',
+    languages: ['English', 'Sinhala'],
+    age: 34
   },
   participants: [
     {
       name: 'Alice Smith',
       avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-      email: 'alice.smith@email.com'
+      email: 'alice.smith@email.com',
+      nationality: 'British',
+      languages: ['English', 'French'],
+      age: 28
     },
     {
       name: 'Bob Lee',
       avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      email: 'bob.lee@email.com'
+      email: 'bob.lee@email.com',
+      nationality: 'Singaporean',
+      languages: ['English', 'Mandarin'],
+      age: 31
     },
     {
       name: 'Charlie Kim',
       avatar: 'https://randomuser.me/api/portraits/men/65.jpg',
-      email: 'charlie.kim@email.com'
+      email: 'charlie.kim@email.com',
+      nationality: 'Korean',
+      languages: ['Korean', 'English'],
+      age: 26
     }
   ]
 };
@@ -316,7 +329,7 @@ const ViewPoolPage = () => {
         <Navbar />
       </div>
       {/* Participants Card */}
-    
+      {/* Participants Detail Modal/Section */}
 
       {/* Pool Header - blue background behind navbar, pulled up to be visible behind floating navbar */}
       <div className="relative">
@@ -343,22 +356,9 @@ const ViewPoolPage = () => {
       </div>
 
       <div className="max-w-7xl w-full mx-auto px-4 pt-8 z-10 relative">
-        <div className="bg-white rounded-xl border border-gray-200 flex flex-col md:flex-row items-center px-6 py-4 mb-8 gap-6" style={{ boxShadow: 'none' }}>
-          {/* Owner Info */}
-          <div className="flex flex-col items-center md:items-start min-w-[140px]">
-            <img
-              src={mockParticipants.owner.avatar}
-              alt="Owner avatar"
-              className="w-14 h-14 rounded-full border-2 border-primary-600 shadow object-cover mb-1"
-            />
-            <div className="text-sm font-semibold text-primary-700">Organizer</div>
-            <div className="text-gray-900 font-medium text-base">{mockParticipants.owner.name}</div>
-            <div className="text-xs text-gray-500">{mockParticipants.owner.email}</div>
-          </div>
-          {/* Divider */}
-          <div className="hidden md:block h-16 w-px bg-gray-200 mx-4"></div>
+        <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-8" style={{ boxShadow: 'none' }}>
           {/* Participants Avatars & Progress + Info */}
-          <div className="flex-1 min-w-0 w-full">
+          <div className="w-full">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-lg font-semibold text-gray-900">Participants</div>
               <span className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{mockParticipants.current} / {mockParticipants.max}</span>
@@ -370,19 +370,26 @@ const ViewPoolPage = () => {
                   src={p.avatar}
                   alt={p.name}
                   title={p.name}
-                  className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover -ml-2 first:ml-0"
+                  className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover -ml-2 first:ml-0 cursor-pointer"
                   style={{ zIndex: 10 - idx }}
+                  onClick={() => setSelectedParticipant(idx)}
                 />
               ))}
               {mockParticipants.current < mockParticipants.max && (
                 <span className="w-10 h-10 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xl font-bold -ml-2 bg-gray-50">+</span>
               )}
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-              <div
-                className="bg-primary-600 h-2 rounded-full"
-                style={{ width: `${(mockParticipants.current / mockParticipants.max) * 100}%` }}
-              ></div>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="flex-1 bg-gray-100 rounded-full h-2">
+                <div
+                  className="bg-primary-600 h-2 rounded-full"
+                  style={{ width: `${(mockParticipants.current / mockParticipants.max) * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex flex-col items-end min-w-[80px]">
+                <span className="text-xs text-gray-500">Capacity</span>
+                <span className="font-bold text-primary-700 text-lg">{mockParticipants.max}</span>
+              </div>
             </div>
             {/* Extra Info Row */}
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mt-2">
@@ -407,11 +414,40 @@ const ViewPoolPage = () => {
                 <span>Guide: <span className={"font-semibold " + (true ? 'text-green-600' : 'text-red-500')}>{true ? 'Appointed' : 'Not appointed'}</span></span>
               </div>
             </div>
-          </div>
-          {/* Capacity Info */}
-          <div className="flex flex-col items-end min-w-[80px]">
-            <span className="text-xs text-gray-500">Capacity</span>
-            <span className="font-bold text-primary-700 text-lg">{mockParticipants.max}</span>
+            {/* Participants Detail Table */}
+            <div className="mt-4">
+              <table className="min-w-full text-xs text-left border border-gray-100 rounded-xl overflow-hidden">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 font-semibold text-gray-700">Avatar</th>
+                    <th className="px-3 py-2 font-semibold text-gray-700">Name</th>
+                    <th className="px-3 py-2 font-semibold text-gray-700">Nationality</th>
+                    <th className="px-3 py-2 font-semibold text-gray-700">Languages</th>
+                    <th className="px-3 py-2 font-semibold text-gray-700">Age</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Owner row */}
+                  <tr className="bg-primary-50">
+                    <td className="px-3 py-2"><img src={mockParticipants.owner.avatar} alt={mockParticipants.owner.name} className="w-8 h-8 rounded-full object-cover" /></td>
+                    <td className="px-3 py-2 font-medium text-primary-700">{mockParticipants.owner.name} <span className="text-xs text-gray-400">(Organizer)</span></td>
+                    <td className="px-3 py-2">{mockParticipants.owner.nationality}</td>
+                    <td className="px-3 py-2">{mockParticipants.owner.languages.join(', ')}</td>
+                    <td className="px-3 py-2">{mockParticipants.owner.age}</td>
+                  </tr>
+                  {/* Participants rows */}
+                  {mockParticipants.participants.map((p, idx) => (
+                    <tr key={idx} className="even:bg-gray-50">
+                      <td className="px-3 py-2"><img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full object-cover" /></td>
+                      <td className="px-3 py-2 font-medium">{p.name}</td>
+                      <td className="px-3 py-2">{p.nationality}</td>
+                      <td className="px-3 py-2">{p.languages.join(', ')}</td>
+                      <td className="px-3 py-2">{p.age}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -743,6 +779,8 @@ const ViewPoolPage = () => {
           </div>
         </div>
       </div>
+      {/* Footer at the very bottom */}
+      <Footer />
     </div>
   );
 };

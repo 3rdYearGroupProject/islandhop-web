@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ExperienceCard from '../components/ExperienceCard';
@@ -7,6 +8,7 @@ import InterestCard from '../components/InterestCard';
 import PlaceCard from '../components/PlaceCard';
 import CollectionCard from '../components/CollectionCard';
 import InspirationCard from '../components/InspirationCard';
+import DestinationCard from '../components/DestinationCard';
 import CardGrid from '../components/CardGrid';
 import sriLankaVideo from '../assets/sri-lanka-video.mp4';
 import sigiriyaImg from '../assets/exp-colombo/sigiriya.jpeg';
@@ -16,8 +18,45 @@ import teaPlantationsImg from '../assets/exp-colombo/tea-plantations.jpg';
 import whaleWatchingImg from '../assets/exp-colombo/whale-watching-mirissa.jpg';
 import colomboTourImg from '../assets/exp-colombo/colombo-tour.jpg';
 
+
+// Import landing inspiration images
+import bestBeachesImg from '../assets/landing/best-beaches.jpg';
+import templesImg from '../assets/landing/temples.jpg';
+import wildlifeImg from '../assets/landing/wildlife.webp';
+import hikingImg from '../assets/landing/hiking.jpg';
+import foodImg from '../assets/landing/food.jpg';
+
 const placeholder = 'https://placehold.co/400x250';
 const avatar = 'https://placehold.co/64x64';
+
+// Inspiration destinations with images and descriptions (using assets/landing)
+const inspirationDestinations = [
+  {
+    name: 'Best beaches in Sri Lanka',
+    image: bestBeachesImg,
+    description: 'Discover pristine coastlines and crystal waters'
+  },
+  {
+    name: 'Ancient temples and culture',
+    image: templesImg,
+    description: 'Explore centuries-old Buddhist heritage'
+  },
+  {
+    name: 'Wildlife safari adventures',
+    image: wildlifeImg,
+    description: 'Encounter elephants and leopards in nature'
+  },
+  {
+    name: 'Mountain hiking trails',
+    image: hikingImg,
+    description: 'Trek through misty peaks and tea estates'
+  },
+  {
+    name: 'Local food experiences',
+    image: foodImg,
+    description: 'Taste authentic Sri Lankan street food'
+  }
+];
 
 const LandingPage = () => (
   <div className="min-h-screen bg-white">
@@ -67,15 +106,15 @@ const LandingPage = () => (
         <div className="flex flex-nowrap gap-3 px-2 justify-center">
           {/* Use icons directly instead of InterestCard */}
           {[
-            { name: 'Beach', icon: 'FaUmbrellaBeach' },
-            { name: 'Adventure', icon: 'FaHiking' },
-            { name: 'Cultural', icon: 'FaLandmark' },
-            { name: 'Scenic', icon: 'FaMountain' },
-            { name: 'Wellness', icon: 'FaSpa' },
-            { name: 'Shopping', icon: 'FaShoppingBag' },
-            { name: 'Food', icon: 'FaUtensils' },
+            { name: 'Beach', icon: 'FiUmbrella' },
+            { name: 'Adventure', icon: 'FiActivity' },
+            { name: 'Cultural', icon: 'FiBookOpen' },
+            { name: 'Scenic', icon: 'FiMap' },
+            { name: 'Wellness', icon: 'FiHeart' },
+            { name: 'Shopping', icon: 'FiShoppingBag' },
+            { name: 'Food', icon: 'FiCoffee' },
           ].map(({ name, icon }) => {
-            const Icon = require('react-icons/fa')[icon];
+            const Icon = require('react-icons/fi')[icon];
             return (
               <div key={name} className="flex flex-col items-center justify-end min-w-[6rem] max-w-[6rem] w-24 h-32 mx-1 cursor-pointer group">
                 <Icon className="text-4xl text-primary-600 mb-2 group-hover:text-primary-700 transition" aria-label={name} />
@@ -118,22 +157,53 @@ const LandingPage = () => (
     <section className="w-full py-8">
       <div className="content-container">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Inspiration to get you going</h2>
-        <CardGrid cardType="scroll" maxCards={5}>
-          {[
-            'Best beaches in Sri Lanka',
-            'Ancient temples and culture',
-            'Wildlife safari adventures',
-            'Mountain hiking trails',
-            'Local food experiences'
-          ].map((inspiration, i) => (
-            <InspirationCard 
-              key={i}
-              image={placeholder}
-              title={inspiration}
-              className="min-w-[260px] flex-shrink-0"
-            />
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {inspirationDestinations.map((inspiration, i) => (
+            <div key={i} className="flex-shrink-0 w-64 md:w-72">
+              <DestinationCard
+                destination={inspiration}
+                imageUrl={inspiration.image}
+                onClick={(dest) => console.log('Clicked inspiration:', dest.name)}
+                className="h-48 md:h-56"
+              />
+            </div>
           ))}
-        </CardGrid>
+        </div>
+      </div>
+    </section>
+
+    {/* AI Trip Creation CTA Section */}
+    <section className="w-full py-20 md:py-28 relative overflow-hidden">
+      <img 
+        src={require('../assets/landing/CTA.jpg')} 
+        alt="AI Trip Planner Background" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-0 select-none pointer-events-none" 
+        draggable="false"
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-black/30 z-0 pointer-events-none"></div>
+      <div className="content-container relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 py-8 px-4 md:px-12">
+        <div className="flex-1 text-center md:text-left">
+          <img 
+            src={require('../assets/islandhop footer 1.png')} 
+            alt="IslandHop Logo" 
+            className="mb-8 h-6 md:h-8 lg:h-9 w-auto ml-0 md:ml-0"
+            draggable="false"
+            aria-hidden="true"
+          />
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Let AI Plan Your Dream Trip</h2>
+          <p className="text-lg text-white mb-6 max-w-xl">Not sure where to start? Our AI-powered trip planner can create a personalized itinerary for you in seconds. Just tell us your interests and preferences, and let IslandHop AI do the rest!</p>
+          <button
+            className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+            onClick={() => window.location.href = '/trip/ai-create'}
+          >
+            <Sparkles className="mr-3 h-6 w-6" aria-hidden="true" />
+            Try AI Trip Planner
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <img src="/assets/landing/ai-trip-planner.png" alt="AI Trip Planner" className="w-64 md:w-80 max-w-full rounded-xl bg-white" onError={e => e.target.style.display='none'} />
+        </div>
       </div>
     </section>
 
@@ -191,6 +261,35 @@ const LandingPage = () => (
             />
           ))}
         </CardGrid>
+      </div>
+    </section>
+
+
+    {/* AI Trip Creation CTA Section */}
+    <section className="w-full py-20 md:py-28 relative overflow-hidden">
+      <img 
+        src={require('../assets/landing/CTA.jpg')} 
+        alt="AI Trip Planner Background" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-0 select-none pointer-events-none" 
+        draggable="false"
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-black/30 z-0 pointer-events-none"></div>
+      <div className="content-container relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 py-8 px-4 md:px-12">
+        <div className="flex-1 text-center md:text-left">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Let AI Plan Your Dream Trip</h2>
+          <p className="text-lg text-white mb-6 max-w-xl">Not sure where to start? Our AI-powered trip planner can create a personalized itinerary for you in seconds. Just tell us your interests and preferences, and let IslandHop AI do the rest!</p>
+          <button
+            className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+            onClick={() => window.location.href = '/trip/ai-create'}
+          >
+            <Sparkles className="mr-3 h-6 w-6" aria-hidden="true" />
+            Try AI Trip Planner
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <img src="/assets/landing/ai-trip-planner.png" alt="AI Trip Planner" className="w-64 md:w-80 max-w-full rounded-xl bg-white" onError={e => e.target.style.display='none'} />
+        </div>
       </div>
     </section>
 

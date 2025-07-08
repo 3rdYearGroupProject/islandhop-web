@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
 import TripProgressBar from '../components/TripProgressBar';
 import { tripPlanningApi } from '../api/axios';
+import Footer from '../components/Footer';
 
 const TripDurationPage = () => {
   const location = useLocation();
@@ -344,6 +345,8 @@ const TripDurationPage = () => {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

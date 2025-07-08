@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, MapPin, Clock, Phone, Mail, Car, Users, Award, Shield } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 // ExpandableCostSection component
 
@@ -761,6 +762,7 @@ const SelectDriverGuidePage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
