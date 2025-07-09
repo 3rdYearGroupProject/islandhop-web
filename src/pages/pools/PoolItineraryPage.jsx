@@ -271,6 +271,7 @@ const PoolItineraryPage = () => {
         location: 'Galle', 
         cuisine: 'Local', 
         rating: 4.5,
+        rating: 4.5,
         reviews: 1456,
         image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
         description: 'Charming cafe in historic Galle Fort',
@@ -773,6 +774,7 @@ const PoolItineraryPage = () => {
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
       />
+      <Footer />
     </div>
   );
 };

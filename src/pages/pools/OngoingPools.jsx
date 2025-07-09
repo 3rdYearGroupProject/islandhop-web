@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Card, { CardBody } from '../../components/Card';
 import GroupChat from '../../components/GroupChat';
+import Footer from '../../components/Footer';
 import { 
   MapPinIcon,
   UserGroupIcon,
@@ -366,6 +367,7 @@ const OngoingPools = () => {
         participants={participants}
         poolName={ongoingPool.name}
       />
+      <Footer />
     </div>
   );
 };

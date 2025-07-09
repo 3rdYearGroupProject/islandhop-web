@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MapPin, Share2, Heart, Star, Calendar, Clock, Camera, Users } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -12,6 +12,11 @@ const ViewPlacePage = () => {
   const [reviewFilter, setReviewFilter] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [newReview, setNewReview] = useState({ stars: 5, text: '' });
+
+  // Scroll to top on mount or when place changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [place]);
 
   // Mock reviews for Sigiriya
   const [sigiriyaReviews, setSigiriyaReviews] = useState([
