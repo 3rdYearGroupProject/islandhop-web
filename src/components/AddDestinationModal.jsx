@@ -1,20 +1,160 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
+import { tripPlanningApi } from '../api/axios';
+
+const HARDCODED_CITIES = [
+  {
+    id: 1,
+    name: 'Colombo',
+    region: 'Western Province',
+    description: 'The bustling commercial capital of Sri Lanka, known for its colonial heritage and vibrant city life.',
+    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&h=300&fit=crop',
+    highlights: ['Galle Face Green', 'Gangaramaya Temple', 'Pettah Market']
+  },
+  {
+    id: 2,
+    name: 'Kandy',
+    region: 'Central Province',
+    description: 'A scenic city surrounded by mountains, famous for the Temple of the Tooth and its cultural significance.',
+    image: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?w=400&h=300&fit=crop',
+    highlights: ['Temple of the Tooth', 'Kandy Lake', 'Royal Botanical Gardens']
+  },
+  {
+    id: 3,
+    name: 'Galle',
+    region: 'Southern Province',
+    description: 'A historic city on the southwest coast, known for its Dutch Fort and beautiful beaches.',
+    image: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&h=300&fit=crop',
+    highlights: ['Galle Fort', 'Unawatuna Beach', 'Jungle Beach']
+  },
+  {
+    id: 4,
+    name: 'Sigiriya',
+    region: 'Central Province',
+    description: 'Home to the ancient rock fortress and UNESCO World Heritage Site, Sigiriya.',
+    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
+    highlights: ['Sigiriya Rock', 'Pidurangala Rock', 'Frescoes']
+  },
+  {
+    id: 5,
+    name: 'Nuwara Eliya',
+    region: 'Central Province',
+    description: 'A cool-climate city in the heart of Sri Lanka’s tea country, known as Little England.',
+    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=400&h=300&fit=crop',
+    highlights: ['Tea Plantations', 'Gregory Lake', 'Horton Plains']
+  },
+  {
+    id: 6,
+    name: 'Jaffna',
+    region: 'Northern Province',
+    description: 'A culturally rich city in the north, famous for its unique cuisine and historic sites.',
+    image: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=400&h=300&fit=crop',
+    highlights: ['Jaffna Fort', 'Nallur Kandaswamy Temple', 'Casuarina Beach']
+  },
+  // Add more cities as needed
+];
 
 const AddDestinationModal = ({
   show,
   onClose,
   searchQuery,
   setSearchQuery,
-  getFilteredSuggestions,
   dayIndex,
   formatDate,
   addItemToItinerary,
-  isSearchingCities
+  isSearchingCities,
+  // New props for backend integration
+  tripId,
+  userUid,
+  startDate
 }) => {
+  // Early return BEFORE any hooks to prevent hook order issues
   if (!show) return null;
+  
+  const [loadingCities, setLoadingCities] = useState({}); // Track loading state per city
 
-  const cities = getFilteredSuggestions();
+  // Calculate day number based on dayIndex and startDate
+  const calculateDayNumber = (dayIndex, startDate) => {
+    // dayIndex is 0-based, day number is 1-based
+    return dayIndex + 1;
+  };
+
+  // Function to add city to backend
+  const addCityToBackend = async (cityName, dayIndex) => {
+    if (!tripId || !userUid || !startDate) {
+      console.error('❌ Missing required data for backend API:', { tripId, userUid, startDate });
+      alert('Missing trip information. Please try again.');
+      return false;
+    }
+
+    const dayNumber = calculateDayNumber(dayIndex, startDate);
+    const cityKey = `${cityName}-${dayIndex}`;
+    
+    try {
+      setLoadingCities(prev => ({ ...prev, [cityKey]: true }));
+      
+      console.log('🏙️ Adding city to backend:', {
+        tripId,
+        dayNumber,
+        cityName,
+        userUid
+      });
+
+      const response = await tripPlanningApi.post(
+        `/itinerary/${tripId}/day/${dayNumber}/city`,
+        {
+          userId: userUid,
+          city: cityName
+        }
+      );
+
+      console.log('✅ City added successfully:', response.data);
+      
+      if (response.data.status === 'success') {
+        return true;
+      } else {
+        throw new Error(response.data.message || 'Failed to add city');
+      }
+    } catch (error) {
+      console.error('❌ Error adding city to backend:', error);
+      
+      let errorMessage = 'Failed to add city to trip';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Error: ${errorMessage}`);
+      return false;
+    } finally {
+      setLoadingCities(prev => ({ ...prev, [cityKey]: false }));
+    }
+  };
+
+  // Enhanced addItemToItinerary function that calls backend first
+  const handleAddCityToItinerary = async (city, selectedDates) => {
+    console.log('🚀 Adding city to itinerary:', { city: city.name, dayIndex, selectedDates });
+    
+    // First, try to add to backend
+    const backendSuccess = await addCityToBackend(city.name, dayIndex);
+    
+    if (backendSuccess) {
+      // If backend succeeds, add to local state
+      console.log('✅ Backend update successful, updating local state');
+      addItemToItinerary(city, selectedDates);
+    }
+    // Note: If backend fails, we don't update local state
+  };
+
+  // Filter the hardcoded cities array by search query
+  const filteredCities = useMemo(() => {
+    if (!searchQuery) return HARDCODED_CITIES;
+    return HARDCODED_CITIES.filter(city =>
+      city.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (city.region && city.region.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [searchQuery]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -49,9 +189,8 @@ const AddDestinationModal = ({
           </div>
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getFilteredSuggestions().map((city) => (
+            {filteredCities.map((city) => (
               <div key={city.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
                 <div className="relative">
                   <img 
@@ -88,16 +227,24 @@ const AddDestinationModal = ({
                     </div>
                   )}
                   <button
-                    onClick={() => addItemToItinerary(city, [dayIndex])}
-                    className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                    onClick={() => handleAddCityToItinerary(city, [dayIndex])}
+                    disabled={loadingCities[`${city.name}-${dayIndex}`]}
+                    className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
-                    Add to this day
+                    {loadingCities[`${city.name}-${dayIndex}`] ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Adding...
+                      </>
+                    ) : (
+                      'Add to this day'
+                    )}
                   </button>
                 </div>
               </div>
             ))}
           </div>
-          {cities.length === 0 && !isSearchingCities && (
+          {filteredCities.length === 0 && !isSearchingCities && (
             <div className="text-center py-12 text-gray-500">
               <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium">No cities found</p>

@@ -3,20 +3,20 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2, Book, Building, ChevronLeft, Trees, Camera as CameraIcon } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import TripProgressBar from '../components/TripProgressBar';
-import { tripPlanningApi } from '../api/axios';
+
 import Footer from '../components/Footer';
 
 const TripPreferencesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { tripName, selectedDates, tripId, trip, userUid } = location.state || {};
+  const { tripName, selectedDates, userUid } = location.state || {};
   
-  console.log('📍 TripPreferencesPage received:', { tripName, selectedDates, tripId, userUid });
+  console.log('📍 TripPreferencesPage received:', { tripName, selectedDates, userUid });
   
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTerrainPreferences, setSelectedTerrainPreferences] = useState([]);
   const [selectedActivityPreferences, setSelectedActivityPreferences] = useState([]);
-  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
 
   const terrainPreferences = [
     { id: 'beaches', name: 'Beach', icon: Waves, color: '#007bff' },
@@ -67,32 +67,114 @@ const TripPreferencesPage = () => {
     return false;
   };
 
-  // Update trip preferences with backend request
-  const updateTripPreferences = async (tripId, preferences, userId) => {
-    console.log('🚀 Sending trip preferences update to backend...', {
-      tripId,
-      userId,
-      terrainPreferences: preferences.terrain,
-      activityPreferences: preferences.activities
-    });
-    
+  // Create trip itinerary function - sends data to backend
+  const createTripItinerary = async (tripData) => {
+    // Input validation
+    if (!tripData.userId?.trim()) {
+      throw new Error('User ID is required');
+    }
+    if (!tripData.tripName?.trim()) {
+      throw new Error('Trip name is required');
+    }
+    if (!tripData.startDate) {
+      throw new Error('Start date is required');
+    }
+    if (!tripData.endDate) {
+      throw new Error('End date is required');
+    }
+
+    // Date validation
+    const startDate = new Date(tripData.startDate);
+    const endDate = new Date(tripData.endDate);
+    if (startDate > endDate) {
+      throw new Error('Start date must be before or equal to end date');
+    }
+
+    // Prepare request payload with proper defaults matching backend expectations
+    const requestPayload = {
+      userId: tripData.userId.trim(),
+      tripName: tripData.tripName.trim(),
+      startDate: tripData.startDate,
+      endDate: tripData.endDate,
+      arrivalTime: tripData.arrivalTime || "21:30", // Default hardcoded arrival time
+      baseCity: "Colombo", // Always Colombo as specified
+      multiCityAllowed: true, // Always true as specified
+      activityPacing: "Normal", // Always Normal as specified
+      budgetLevel: "Medium", // Always Medium as specified
+      preferredTerrains: tripData.terrains || [],
+      preferredActivities: tripData.activities || []
+    };
+
     try {
-      const response = await tripPlanningApi.post(`/trip/${tripId}/preferences`, {
-        userId: userId,
-        terrainPreferences: preferences.terrain,
-        activityPreferences: preferences.activities
+      console.log('🚀 Creating trip itinerary...', requestPayload);
+      
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1';
+      const response = await fetch(`${apiBaseUrl}/itinerary/initiate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include', // CORS: Include credentials if needed
+        body: JSON.stringify(requestPayload)
       });
 
-      console.log('✅ Trip preferences update response received:', response.data);
+      const responseData = await response.json();
       
-      return {
-        message: response.data.message,
-        userId: response.data.userId,
-        trip: response.data.trip
-      };
+      if (response.status === 201) {
+        console.log('✅ Trip created successfully:', responseData);
+        return responseData;
+      } else if (response.status === 400) {
+        console.error('❌ Validation error:', responseData);
+        const errorMessages = responseData.errors 
+          ? Object.values(responseData.errors).join(', ')
+          : responseData.message;
+        throw new Error(`Validation failed: ${errorMessages}`);
+      } else if (response.status === 500) {
+        console.error('💥 Server error:', responseData);
+        throw new Error('Server error: Please try again later');
+      } else {
+        console.error('🔴 Unexpected error:', responseData);
+        throw new Error(responseData.message || 'Unexpected error occurred');
+      }
     } catch (error) {
-      console.error('❌ Error updating trip preferences:', error);
-      throw new Error(`Failed to update preferences: ${error.response?.status || 'unknown'}`);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('🌐 Network error - backend may be unavailable:', error);
+        throw new Error('Backend service unavailable. Please check your connection and try again.');
+      }
+      
+      console.error('❌ Trip creation failed:', error);
+      throw error;
+    }
+  };
+
+  // Create trip with preferences using backend request
+  const createTripWithPreferences = async (tripData) => {
+    console.log('🚀 Creating trip with preferences...', tripData);
+    
+    try {
+      // Format dates properly - selectedDates is an array of Date objects
+      const startDate = tripData.selectedDates[0] instanceof Date 
+        ? tripData.selectedDates[0].toISOString().split('T')[0]
+        : tripData.selectedDates[0];
+      const endDate = tripData.selectedDates[1] instanceof Date 
+        ? tripData.selectedDates[1].toISOString().split('T')[0] 
+        : tripData.selectedDates[1];
+
+      const response = await createTripItinerary({
+        userId: tripData.userUid,
+        tripName: tripData.tripName,
+        startDate: startDate,
+        endDate: endDate,
+        terrains: tripData.selectedTerrains,
+        activities: tripData.selectedActivities
+      });
+
+      console.log('✅ Trip created successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error creating trip:', error);
+      throw error;
     }
   };
 
@@ -101,57 +183,58 @@ const TripPreferencesPage = () => {
       if (currentStep < 2) {
         setCurrentStep(currentStep + 1);
       } else {
-        // Both preferences are filled, send request to backend
-        if (tripId && userUid && selectedTerrainPreferences.length > 0 && selectedActivityPreferences.length > 0) {
-          setIsUpdatingPreferences(true);
+        // Both preferences are filled, create trip with backend
+        if (userUid && tripName && selectedDates && selectedTerrainPreferences.length > 0 && selectedActivityPreferences.length > 0) {
+          setIsCreatingTrip(true);
           
           try {
-            const result = await updateTripPreferences(tripId, {
-              terrain: selectedTerrainPreferences,
-              activities: selectedActivityPreferences
-            }, userUid);
+            const tripResponse = await createTripWithPreferences({
+              userUid,
+              tripName,
+              selectedDates,
+              selectedTerrains: selectedTerrainPreferences,
+              selectedActivities: selectedActivityPreferences
+            });
             
-            console.log('🎉 Trip preferences updated successfully:', result);
+            console.log('🎉 Trip created successfully:', tripResponse);
             
-            // Navigate to itinerary planning with updated trip data
+            // Navigate to itinerary planning with the created trip data
             navigate('/trip-itinerary', { 
               state: { 
                 tripName, 
                 selectedDates, 
                 selectedTerrains: selectedTerrainPreferences,
                 selectedActivities: selectedActivityPreferences,
-                tripId,
-                trip: result.trip || trip,
+                tripId: tripResponse.tripId,
+                trip: tripResponse,
                 userUid
               } 
             });
           } catch (error) {
-            console.error('Failed to update trip preferences:', error);
-            // Continue to next page even if backend fails
+            console.error('Failed to create trip:', error);
+            // Show error to user but allow navigation to continue with local state
+            alert(`Failed to create trip: ${error.message}. You can continue planning locally.`);
             navigate('/trip-itinerary', { 
               state: { 
                 tripName, 
                 selectedDates, 
                 selectedTerrains: selectedTerrainPreferences,
                 selectedActivities: selectedActivityPreferences,
-                tripId,
-                trip,
                 userUid
               } 
             });
           } finally {
-            setIsUpdatingPreferences(false);
+            setIsCreatingTrip(false);
           }
         } else {
-          // Missing required data, navigate anyway
+          // Missing required data, navigate anyway with warning
+          console.warn('Missing required data for trip creation:', { userUid, tripName, selectedDates });
           navigate('/trip-itinerary', { 
             state: { 
               tripName, 
               selectedDates, 
               selectedTerrains: selectedTerrainPreferences,
               selectedActivities: selectedActivityPreferences,
-              tripId,
-              trip,
               userUid
             } 
           });
@@ -305,14 +388,14 @@ const TripPreferencesPage = () => {
             </button>
             <button
               onClick={handleNext}
-              disabled={!canProceed()}
+              disabled={!canProceed() || isCreatingTrip}
               className={`px-6 py-2 rounded-full font-semibold text-base transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 ${
-                canProceed()
+                canProceed() && !isCreatingTrip
                   ? 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {currentStep === 2 ? 'Continue with Planning' : 'Next'}
+              {isCreatingTrip ? 'Creating Trip...' : currentStep === 2 ? 'Create Trip & Continue' : 'Next'}
             </button>
           </div>
         </div>

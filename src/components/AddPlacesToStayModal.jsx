@@ -8,14 +8,15 @@ const AddPlacesToStayModal = ({
   onClose,
   searchQuery,
   setSearchQuery,
-  getFilteredSuggestions,
+  fetchSuggestionsForModal,
   selectedStayDates,
   setSelectedStayDates,
   days,
   formatDate,
   addItemToItinerary,
   isLoading = false,
-  tripId
+  tripId,
+  currentDay
 }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
@@ -24,24 +25,22 @@ const AddPlacesToStayModal = ({
     show,
     searchQuery,
     selectedStayDates,
-    days
+    days,
+    currentDay
   });
 
-  // Effect to fetch suggestions when modal opens or search changes
+  // Effect to fetch suggestions when modal opens
   useEffect(() => {
-    if (!show || !getFilteredSuggestions) return;
+    if (!show || !fetchSuggestionsForModal) return;
 
-    const fetchSuggestions = async () => {
+    const fetchData = async () => {
       setIsLoadingSuggestions(true);
       try {
-        console.log('🔍 AddPlacesToStayModal: Fetching suggestions for query:', searchQuery);
-        const result = getFilteredSuggestions();
-        
-        // Handle both sync and async getFilteredSuggestions
-        const resolvedSuggestions = await Promise.resolve(result);
+        console.log('🔍 AddPlacesToStayModal: Fetching suggestions for currentDay:', currentDay);
+        const result = await fetchSuggestionsForModal('places', currentDay);
         
         // Ensure we always have an array
-        const validSuggestions = Array.isArray(resolvedSuggestions) ? resolvedSuggestions : [];
+        const validSuggestions = Array.isArray(result) ? result : [];
         console.log('📋 AddPlacesToStayModal: Got suggestions:', validSuggestions.length, 'items');
         setSuggestions(validSuggestions);
       } catch (error) {
@@ -52,8 +51,39 @@ const AddPlacesToStayModal = ({
       }
     };
 
-    fetchSuggestions();
-  }, [show, searchQuery, getFilteredSuggestions]);
+    fetchData();
+  }, [show, currentDay, fetchSuggestionsForModal]);
+
+  // Effect to filter suggestions when search query changes
+  useEffect(() => {
+    if (!searchQuery) return;
+    
+    // Filter existing suggestions based on search query
+    const fetchData = async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const result = await fetchSuggestionsForModal('places', currentDay);
+        const validSuggestions = Array.isArray(result) ? result : [];
+        
+        // Filter suggestions based on search query
+        const filtered = validSuggestions.filter(item =>
+          item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        
+        setSuggestions(filtered);
+      } catch (error) {
+        console.error('❌ Error filtering suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchData, 300); // Debounce search
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, currentDay, fetchSuggestionsForModal]);
 
   if (!show) return null;
   
@@ -107,22 +137,37 @@ const AddPlacesToStayModal = ({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {suggestions.map((place) => (
-                  <div key={place.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
+                  <div key={place.id} className={`border rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group ${place.isRecommended ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}`}>
+                    {place.isRecommended && (
+                      <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 text-center">
+                        ⭐ RECOMMENDED
+                      </div>
+                    )}
                     <div className="relative">
                       <img 
-                        src={place.image || place.photos?.[0]?.url || 'https://placehold.co/400x250'} 
+                        src={place.image || place.photos?.[0]?.url || 'https://via.placeholder.com/400x300'} 
                         alt={place.name || place.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
                         {place.type || place.category || 'Hotel'}
                       </div>
+                      {place.distanceKm && (
+                        <div className="absolute top-4 left-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
+                          {place.distanceKm.toFixed(1)} km away
+                        </div>
+                      )}
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="font-bold text-lg text-gray-900">{place.name || place.title}</h4>
                           <p className="text-sm text-gray-500">{place.location || place.address}</p>
+                          {place.isOpenNow !== undefined && (
+                            <p className={`text-xs font-medium mt-1 ${place.isOpenNow ? 'text-green-600' : 'text-red-600'}`}>
+                              {place.isOpenNow ? '🟢 Open Now' : '🔴 Closed'}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-gray-900">from</p>
@@ -140,7 +185,7 @@ const AddPlacesToStayModal = ({
                           )}
                           {place.rating && (
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                              ★ {place.rating}
+                              ⭐ {place.rating}
                             </span>
                           )}
                           {place.reviews && (
