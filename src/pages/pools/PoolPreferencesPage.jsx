@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2, Book, Building, ChevronLeft, Trees, Camera as CameraIcon } from 'lucide-react';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
 
 const PoolPreferencesPage = () => {
@@ -102,7 +102,7 @@ const PoolPreferencesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="pt-20 min-h-screen bg-gray-50">
       <Navbar />
       <PoolProgressBar poolName={poolName} onBack={handleBack} currentStep={3} completedSteps={[1, 2]} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -222,24 +222,21 @@ const PoolPreferencesPage = () => {
           <div className="lg:col-span-2 flex flex-row gap-4 justify-end mt-6">
             <button
               onClick={handleBack}
-              className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="bg-white border border-primary-600 text-primary-600 px-8 py-3 rounded-full shadow hover:bg-primary-50 font-medium transition-colors"
             >
               Back
             </button>
             <button
               onClick={handleNext}
               disabled={!canProceed()}
-              className={`px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                canProceed()
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`px-8 py-3 rounded-full shadow font-medium transition-colors border ${canProceed() ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700' : 'bg-gray-200 text-gray-500 border-gray-200 cursor-not-allowed hover:bg-gray-200 hover:text-gray-500 hover:shadow-none'}`}
             >
               {currentStep === 2 ? 'Continue to Itinerary' : 'Next'}
             </button>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
