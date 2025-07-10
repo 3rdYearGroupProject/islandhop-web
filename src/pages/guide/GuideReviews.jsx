@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react";
+import { auth } from "../../firebase";
 
 const GuideReviews = () => {
   const [filter, setFilter] = useState("all"); // all, 5star, 4star, 3star, 2star, 1star
@@ -30,7 +31,8 @@ const GuideReviews = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Mock data as fallback
+  // Use the logged-in user's email instead of hardcoded value
+  const guideEmail = auth.currentUser?.email;
 
   // Fetch reviews from backend
   useEffect(() => {
@@ -39,8 +41,6 @@ const GuideReviews = () => {
         setLoading(true);
         setError(null);
 
-        // Use default guide email for now - in a real app, this would come from auth context
-        const guideEmail = "guide003@gmail.com";
         const response = await axios.get(
           `http://localhost:8082/api/v1/reviews/guides/guide/${guideEmail}`
         );
@@ -48,21 +48,19 @@ const GuideReviews = () => {
         if (response.data && response.data.length > 0) {
           setReviews(response.data);
         } else {
-          // Use mock data as fallback
-          setReviews(mockReviewsData);
+          setReviews([]);
         }
       } catch (err) {
         console.error("Error fetching guide reviews:", err);
-        setError("Failed to load reviews. Using sample data.");
-        // Use mock data as fallback
-        setReviews(mockReviewsData);
+        setError("Failed to load reviews. Please try again later.");
+        setReviews([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchReviews();
-  }, []);
+  }, [guideEmail]);
 
   // Calculate stats from current reviews data
   const reviewStats = {
@@ -105,7 +103,6 @@ const GuideReviews = () => {
   const sortedReviews = [...filteredReviews].sort((a, b) => {
     switch (sortBy) {
       case "recent":
-        // Convert array format [2025, 7, 7, 20, 27, 49, 256857000] to Date
         const dateA = a.createdAt
           ? new Date(
               a.createdAt[0],
@@ -129,8 +126,6 @@ const GuideReviews = () => {
         return dateB - dateA;
       case "rating":
         return (b.rating || 0) - (a.rating || 0);
-      case "helpful":
-        return 0; // No helpful votes in backend yet
       default:
         return 0;
     }
@@ -402,6 +397,7 @@ const GuideReviews = () => {
       {/* Reviews List */}
       {!loading && (
         <div className="space-y-6">
+          {/* Updated review card rendering */}
           {sortedReviews.map((review) => (
             <div
               key={review.reviewId}
@@ -427,7 +423,7 @@ const GuideReviews = () => {
                       </h3>
                       <span className="text-sm text-gray-500">•</span>
                       <span className="text-sm text-gray-500">
-                        {review.reviewerEmail || "Unknown"}
+                        {formatDate(review.createdAt)}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -435,20 +431,17 @@ const GuideReviews = () => {
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           review.status === "APPROVED"
                             ? "bg-green-100 text-green-800"
-                            : review.status === "PENDING"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                            : review.status === "REJECTED"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
                         {review.status}
                       </span>
                       <span>•</span>
                       <span>
-                        AI Score:{" "}
-                        {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
+                        AI Score: {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
                       </span>
-                      <span>•</span>
-                      <span>{formatDate(review.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -491,42 +484,12 @@ const GuideReviews = () => {
                       AI Analysis
                     </span>
                     <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                      Confidence:{" "}
-                      {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
+                      Confidence: {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
                     </span>
                   </div>
                   <p className="text-sm text-blue-700">{review.aiAnalysis}</p>
                 </div>
               )}
-
-              {/* Review Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => toggleHelpful(review.reviewId)}
-                    className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    <span>Helpful</span>
-                  </button>
-
-                  <button className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200">
-                    <Share2 className="h-4 w-4" />
-                    <span>Share</span>
-                  </button>
-
-                  <button className="flex items-center space-x-1 text-sm text-gray-600 hover:text-red-600 transition-colors duration-200">
-                    <Flag className="h-4 w-4" />
-                    <span>Report</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm">
-                    Reply
-                  </button>
-                </div>
-              </div>
             </div>
           ))}
 
