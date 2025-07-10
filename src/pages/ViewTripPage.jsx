@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { tripPlanningApi } from '../api/axios';
+import { getUserUID } from '../utils/userStorage';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -17,6 +22,11 @@ const ViewTripPage = () => {
   const [expandedDays, setExpandedDays] = useState({});
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(null);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka center
+  const [places, setPlaces] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   // --- Expandable Cost Breakdown State ---
   const [costExpanded, setCostExpanded] = useState({
@@ -377,10 +387,131 @@ const ViewTripPage = () => {
   };
 
   useEffect(() => {
-    // Load trip data - either from route state or mock data
-    const loadTrip = () => {
+    // Check for authenticated user
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUserId(user.uid);
+      } else {
+        setCurrentUserId(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Load trip data - either from API, route state or mock data
+    const loadTrip = async () => {
       setLoading(true);
+      setApiError(null);
       
+      try {
+        // If we have both tripId and userId, fetch from API
+        if (tripId && currentUserId) {
+          console.log('🔍 Fetching trip details from API for tripId:', tripId, 'userId:', currentUserId);
+          
+          const response = await tripPlanningApi.get(`/itinerary/${tripId}?userId=${currentUserId}`);
+          
+          if (response.data && response.data.status === 'success') {
+            console.log('✅ API Response:', response.data);
+            
+            // Extract all places from the daily plans for the map
+            const allPlaces = [];
+            response.data.dailyPlans.forEach(day => {
+              // Add attractions
+              if (day.attractions && day.attractions.length > 0) {
+                day.attractions.forEach(attraction => {
+                  if (attraction.location && attraction.location.lat && attraction.location.lng) {
+                    allPlaces.push({
+                      ...attraction,
+                      dayNumber: day.day,
+                      placeType: 'attraction'
+                    });
+                  }
+                });
+              }
+              
+              // Add hotels
+              if (day.hotels && day.hotels.length > 0) {
+                day.hotels.forEach(hotel => {
+                  if (hotel.location && hotel.location.lat && hotel.location.lng) {
+                    allPlaces.push({
+                      ...hotel,
+                      dayNumber: day.day,
+                      placeType: 'hotel'
+                    });
+                  }
+                });
+              }
+              
+              // Add restaurants
+              if (day.restaurants && day.restaurants.length > 0) {
+                day.restaurants.forEach(restaurant => {
+                  if (restaurant.location && restaurant.location.lat && restaurant.location.lng) {
+                    allPlaces.push({
+                      ...restaurant,
+                      dayNumber: day.day,
+                      placeType: 'restaurant'
+                    });
+                  }
+                });
+              }
+            });
+            
+            setPlaces(allPlaces);
+            
+            // If there are places with coordinates, set the map center to the first one
+            if (allPlaces.length > 0 && allPlaces[0].location) {
+              setMapCenter({
+                lat: allPlaces[0].location.lat,
+                lng: allPlaces[0].location.lng
+              });
+            }
+            
+            // Transform API response to match our trip structure
+            const tripData = {
+              id: response.data.tripId,
+              name: `Trip to ${response.data.destination}`,
+              dates: [response.data.startDate, response.data.endDate],
+              terrains: ['Beach', 'Mountains', 'Cultural Sites'],
+              activities: ['Sightseeing', 'Cultural Tours'],
+              createdAt: new Date().toISOString(),
+              status: 'active', // Default to active
+              totalDays: response.data.numberOfDays,
+              destinations: [response.data.destination],
+              coverImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop',
+              apiData: response.data, // Store the original API response
+              // Transform daily plans to match itinerary structure
+              itinerary: transformDailyPlansToItinerary(response.data.dailyPlans)
+            };
+            
+            setTrip(tripData);
+            
+            // Initialize expanded days - expand first few days by default
+            const initialExpanded = {};
+            for (let i = 0; i < tripData.totalDays; i++) {
+              initialExpanded[i] = i < 3; // Expand first 3 days
+            }
+            setExpandedDays(initialExpanded);
+          } else {
+            console.error('❌ Invalid API response:', response);
+            setApiError('Failed to load trip data from API');
+            fallbackToLocalData();
+          }
+        } else {
+          // If no tripId or userId, fall back to local data
+          fallbackToLocalData();
+        }
+      } catch (error) {
+        console.error('❌ Error fetching trip details:', error);
+        setApiError(`Failed to load trip: ${error.message}`);
+        fallbackToLocalData();
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const fallbackToLocalData = () => {
       // Use trip from state if available, otherwise use mock data
       let tripData = tripFromState || mockSavedTrip;
       
@@ -415,12 +546,105 @@ const ViewTripPage = () => {
         initialExpanded[i] = i < 3; // Expand first 3 days
       }
       setExpandedDays(initialExpanded);
-      
-      setLoading(false);
     };
 
     loadTrip();
-  }, [tripFromState, tripId]);
+  }, [tripFromState, tripId, currentUserId]);
+
+  // Transform API daily plans data to match our itinerary format
+  const transformDailyPlansToItinerary = (dailyPlans) => {
+    const itinerary = {};
+    
+    dailyPlans.forEach((day, index) => {
+      const dayIndex = day.day - 1; // Convert 1-indexed to 0-indexed
+      const dayDate = new Date(); // Default to today
+      dayDate.setDate(dayDate.getDate() + dayIndex); // Add days
+      
+      // Initialize itinerary day
+      itinerary[dayIndex] = {
+        date: dayDate,
+        activities: [],
+        places: [],
+        food: [],
+        transportation: []
+      };
+      
+      // Add attractions to activities
+      if (day.attractions && day.attractions.length > 0) {
+        day.attractions.forEach((attraction, i) => {
+          itinerary[dayIndex].activities.push({
+            id: `attraction-${dayIndex}-${i}`,
+            name: attraction.name,
+            location: attraction.location ? `${day.city || 'Sri Lanka'}` : '',
+            duration: `${attraction.visitDurationMinutes ? Math.floor(attraction.visitDurationMinutes / 60) : 1} hours`,
+            rating: attraction.rating || 4.0,
+            description: attraction.type || 'Sightseeing',
+            price: '$0', // Default price if not available
+            time: '10:00', // Default time if not available
+            thumbnailUrl: attraction.thumbnailUrl || '',
+            googlePlaceId: attraction.googlePlaceId || '',
+            coordinates: attraction.location || null
+          });
+        });
+      }
+      
+      // Add hotels to places
+      if (day.hotels && day.hotels.length > 0) {
+        day.hotels.forEach((hotel, i) => {
+          itinerary[dayIndex].places.push({
+            id: `hotel-${dayIndex}-${i}`,
+            name: hotel.name,
+            location: hotel.location ? `${day.city || 'Sri Lanka'}` : '',
+            price: '$100/night', // Default price if not available
+            rating: hotel.rating || 4.0,
+            reviews: 100, // Default reviews if not available
+            description: hotel.type || 'Hotel',
+            checkIn: '15:00', // Default time if not available
+            checkOut: '12:00', // Default time if not available
+            thumbnailUrl: hotel.thumbnailUrl || '',
+            googlePlaceId: hotel.googlePlaceId || '',
+            coordinates: hotel.location || null
+          });
+        });
+      }
+      
+      // Add restaurants to food
+      if (day.restaurants && day.restaurants.length > 0) {
+        day.restaurants.forEach((restaurant, i) => {
+          itinerary[dayIndex].food.push({
+            id: `restaurant-${dayIndex}-${i}`,
+            name: restaurant.name,
+            location: restaurant.location ? `${day.city || 'Sri Lanka'}` : '',
+            cuisine: 'Local', // Default cuisine if not available
+            rating: restaurant.rating || 4.0,
+            reviews: 50, // Default reviews if not available
+            description: restaurant.type || 'Restaurant',
+            priceRange: '$10-25', // Default price range if not available
+            time: '12:30', // Default time if not available
+            thumbnailUrl: restaurant.thumbnailUrl || '',
+            googlePlaceId: restaurant.googlePlaceId || '',
+            coordinates: restaurant.location || null
+          });
+        });
+      }
+      
+      // Add default transportation if none provided
+      if (dayIndex > 0) {
+        itinerary[dayIndex].transportation.push({
+          id: `transport-${dayIndex}`,
+          name: `Transportation to ${day.city || 'next destination'}`,
+          type: 'Car',
+          price: '$30',
+          rating: 4.5,
+          description: 'Comfortable private transfer',
+          time: '09:00',
+          duration: '2 hours'
+        });
+      }
+    });
+    
+    return itinerary;
+  };
 
   // Generate days array from trip dates
   const generateDays = () => {
@@ -492,12 +716,73 @@ const ViewTripPage = () => {
     });
   };
 
+  // Google Maps API loading
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
+  });
+
+  // Google Maps styles and settings
+  const mapContainerStyle = {
+    width: '100%',
+    height: '400px'
+  };
+  
+  // Get map icon based on place type
+  const getMarkerIcon = (placeType) => {
+    switch (placeType) {
+      case 'attraction':
+        return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+      case 'hotel':
+        return 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+      case 'restaurant':
+        return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+      default:
+        return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    }
+  };
+  
+  // Handle marker click
+  const handleMarkerClick = (place) => {
+    setSelectedMarker(place);
+    
+    // Center the map on the selected place
+    if (place.location) {
+      setMapCenter({
+        lat: place.location.lat,
+        lng: place.location.lng
+      });
+    }
+  };
+  
+  // Close info window
+  const handleInfoWindowClose = () => {
+    setSelectedMarker(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading trip details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (apiError) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Error: {apiError}</p>
+          <p className="text-gray-600 mb-4">We encountered an issue loading your trip. Please try again later.</p>
+          <button 
+            onClick={handleBack}
+            className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            Back to Trips
+          </button>
         </div>
       </div>
     );
@@ -570,9 +855,9 @@ const ViewTripPage = () => {
 
       {/* Main Content: Itinerary + Map (sticky/fixed) */}
       <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
-        <div className="flex gap-8 w-full">
-          {/* Left: Itinerary, scrollable - 50% width */}
-          <div className="w-1/2 min-w-0 flex flex-col">
+        <div className="flex flex-col md:flex-row gap-8 w-full">
+          {/* Left: Itinerary, scrollable - 50% width on desktop */}
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
             <button
@@ -716,16 +1001,97 @@ const ViewTripPage = () => {
           </div>
           {/* Trip Summary moved below both columns */}
         </div>
-          {/* Right: Map, sticky/fixed on viewport - exactly 50% width */}
-          <div className="hidden lg:flex w-1/2 min-w-0">
-            <div className="bg-gray-200 rounded-xl w-full h-[calc(100vh-160px)] sticky top-20">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-2" />
-                  <p className="font-medium">Interactive Map</p>
-                  <p className="text-sm">Trip route and locations</p>
+          {/* Right: Interactive Map showing all places from the itinerary */}
+          <div className="w-full md:w-1/2 min-w-0">
+            <div className="bg-white rounded-xl w-full h-[calc(100vh-160px)] md:sticky top-20 shadow-lg border border-gray-200 overflow-hidden">
+              {isLoaded ? (
+                <div className="w-full h-full">
+                  <div className="p-4 border-b border-gray-100">
+                    <h2 className="font-bold text-lg">Trip Map</h2>
+                    <p className="text-sm text-gray-500">Explore your trip destinations</p>
+                  </div>
+                  
+                  <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={mapCenter}
+                    zoom={12}
+                    options={{
+                      fullscreenControl: true,
+                      streetViewControl: true,
+                      mapTypeControl: true,
+                      zoomControl: true,
+                    }}
+                  >
+                    {places.map((place, index) => (
+                      <Marker
+                        key={`${place.name}-${index}`}
+                        position={{
+                          lat: place.location.lat,
+                          lng: place.location.lng
+                        }}
+                        onClick={() => handleMarkerClick(place)}
+                        icon={getMarkerIcon(place.placeType)}
+                        title={place.name}
+                      />
+                    ))}
+                    
+                    {selectedMarker && (
+                      <InfoWindow
+                        position={{
+                          lat: selectedMarker.location.lat,
+                          lng: selectedMarker.location.lng
+                        }}
+                        onCloseClick={handleInfoWindowClose}
+                      >
+                        <div className="p-2">
+                          <h3 className="font-bold">{selectedMarker.name}</h3>
+                          <p className="text-sm">{selectedMarker.type}</p>
+                          {selectedMarker.rating && (
+                            <div className="flex items-center mt-1">
+                              <span className="text-yellow-500">★</span>
+                              <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                            </div>
+                          )}
+                          {selectedMarker.thumbnailUrl && (
+                            <img 
+                              src={selectedMarker.thumbnailUrl} 
+                              alt={selectedMarker.name} 
+                              className="mt-2 w-full h-24 object-cover rounded"
+                            />
+                          )}
+                          <div className="mt-2 text-sm">
+                            <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
+                          </div>
+                        </div>
+                      </InfoWindow>
+                    )}
+                  </GoogleMap>
+                  
+                  <div className="p-3 border-t border-gray-100">
+                    <div className="flex gap-4 flex-wrap">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                        <span className="text-xs">Attractions</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-xs">Hotels</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                        <span className="text-xs">Restaurants</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="font-medium">Loading Map...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
