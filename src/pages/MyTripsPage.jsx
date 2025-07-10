@@ -32,7 +32,10 @@ import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import Footer from '../components/Footer';
 
-const placeholder = 'https://placehold.co/400x250';
+import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
+
+// Always use the placeholder from imageUtils to ensure consistency
+const placeholder = placeholderImage;
 
 const MyTripsPage = () => {
   const [isCreateTripModalOpen, setIsCreateTripModalOpen] = useState(false);
@@ -45,11 +48,8 @@ const MyTripsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-
-  // Remove selected driver/guide from navigation state to prevent showing at top
-  // (If you want to show a toast or confirmation, do it here instead)
-  // const selectedDriver = location.state?.selectedDriver;
-  // const selectedGuide = location.state?.selectedGuide;
+  // State for trips
+  const [trips, setTrips] = useState([]);
 
   // Get current user and fetch their trips
   useEffect(() => {
@@ -78,7 +78,7 @@ const MyTripsPage = () => {
     return () => unsubscribe();
   }, []);
   
-  // Mock data as fallback
+  // Mock data as fallback - updated to use getCityImageUrl consistently
   const mockTrips = [
     // Trip History (mostly expired, some completed)
     {
@@ -86,7 +86,7 @@ const MyTripsPage = () => {
       name: 'Summer Adventure in Sri Lanka',
       dates: 'Jun 11 → Jun 21, 2025',
       destination: 'Sri Lanka',
-      image: require('../assets/destinations/sigiriya.jpg'),
+      image: getCityImageUrl('Sigiriya'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -102,7 +102,7 @@ const MyTripsPage = () => {
       name: 'Wildlife Safari',
       dates: 'May 2 → May 10, 2025',
       destination: 'Yala National Park',
-      image: require('../assets/destinations/anuradhapura.jpg'),
+      image: getCityImageUrl('Yala'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -118,7 +118,7 @@ const MyTripsPage = () => {
       name: 'Hill Country Escape',
       dates: 'Apr 10 → Apr 18, 2025',
       destination: 'Nuwara Eliya',
-      image: require('../assets/destinations/nuwara-eliya.jpg'),
+      image: getCityImageUrl('Nuwara Eliya'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -134,7 +134,7 @@ const MyTripsPage = () => {
       name: 'Historic Wonders',
       dates: 'Mar 1 → Mar 7, 2025',
       destination: 'Anuradhapura',
-      image: require('../assets/destinations/anuradhapura.jpg'),
+      image: getCityImageUrl('Anuradhapura'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -150,7 +150,7 @@ const MyTripsPage = () => {
       name: 'City Lights',
       dates: 'Feb 1 → Feb 5, 2025',
       destination: 'Colombo',
-      image: require('../assets/destinations/colombo.jpg'),
+      image: getCityImageUrl('Colombo'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -166,7 +166,7 @@ const MyTripsPage = () => {
       name: 'Solo Explorer',
       dates: 'Jan 10 → Jan 15, 2025',
       destination: 'Jaffna',
-      image: require('../assets/destinations/ella.jpg'),
+      image: getCityImageUrl('Jaffna'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -182,7 +182,7 @@ const MyTripsPage = () => {
       name: 'Expired Beach Bash',
       dates: 'Dec 1 → Dec 7, 2024',
       destination: 'Mirissa',
-      image: require('../assets/destinations/mirissa.jpg'),
+      image: getCityImageUrl('Mirissa'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -199,7 +199,7 @@ const MyTripsPage = () => {
       name: 'Wellness Getaway',
       dates: 'Nov 10 → Nov 15, 2024',
       destination: 'Kandy',
-      image: require('../assets/destinations/kandy.jpg'),
+      image: getCityImageUrl('Kandy'),
       status: 'completed',
       progress: 100,
       daysLeft: 0,
@@ -216,7 +216,7 @@ const MyTripsPage = () => {
       name: 'Cultural Heritage Tour',
       dates: 'Aug 15 → Aug 25, 2025',
       destination: 'Central Province',
-      image: require('../assets/destinations/kandy.jpg'),
+      image: getCityImageUrl('Kandy'),
       status: 'active',
       progress: 65,
       daysLeft: 12,
@@ -233,7 +233,7 @@ const MyTripsPage = () => {
       name: 'Beach Retreat',
       dates: 'Not set',
       destination: 'Southern Coast',
-      image: require('../assets/destinations/mirissa.jpg'),
+      image: getCityImageUrl('Mirissa'),
       status: 'draft',
       progress: 25,
       daysLeft: null,
@@ -249,7 +249,7 @@ const MyTripsPage = () => {
       name: 'Family Fun Trip',
       dates: 'Dec 20 → Dec 28, 2025',
       destination: 'Colombo',
-      image: require('../assets/destinations/colombo.jpg'),
+      image: getCityImageUrl('Colombo'),
       status: 'upcoming',
       progress: 10,
       daysLeft: 5,
@@ -265,7 +265,7 @@ const MyTripsPage = () => {
       name: 'Adventure with Friends',
       dates: 'Jan 5 → Jan 12, 2026',
       destination: 'Ella',
-      image: require('../assets/destinations/ella.jpg'),
+      image: getCityImageUrl('Ella'),
       status: 'upcoming',
       progress: 0,
       daysLeft: 180,
@@ -281,7 +281,7 @@ const MyTripsPage = () => {
       name: 'Wellness Getaway',
       dates: 'Feb 10 → Feb 15, 2026',
       destination: 'Kandy',
-      image: require('../assets/destinations/kandy.jpg'),
+      image: getCityImageUrl('Kandy'),
       status: 'draft',
       progress: 0,
       daysLeft: null,
@@ -293,9 +293,6 @@ const MyTripsPage = () => {
       spent: 0
     }
   ];
-
-  // Initialize trips state (will be populated from backend or fallback to mock)
-  const [trips, setTrips] = useState([]);
 
   // Handle new trip data from the complete trip flow
   useEffect(() => {
@@ -444,12 +441,37 @@ const MyTripsPage = () => {
 
     const status = calculateTripStatus(backendTrip);
     
+    const destination = backendTrip.destination || backendTrip.cities?.[0] || 'Sri Lanka';
+    
+    // Always prioritize local images for reliability
+    const cityImage = getCityImageUrl(destination);
+    
+    // Check if backendTrip.coverImage is a valid image URL
+    // If not, use our local cityImage instead
+    let coverImage = cityImage;
+    if (backendTrip.coverImage) {
+      try {
+        // If it's an object (already imported) or valid URL, use it
+        if (typeof backendTrip.coverImage === 'object') {
+          coverImage = backendTrip.coverImage;
+        } else {
+          // Test if it's a valid URL
+          new URL(backendTrip.coverImage);
+          // For this component, we prefer local images over remote URLs for reliability
+          coverImage = cityImage;
+        }
+      } catch (e) {
+        // If not a valid URL, use the local image
+        coverImage = cityImage;
+      }
+    }
+    
     return {
       id: backendTrip.id || backendTrip._id,
       name: backendTrip.name || backendTrip.tripName || 'Untitled Trip',
       dates: formatTripDates(backendTrip.startDate, backendTrip.endDate),
-      destination: backendTrip.destination || backendTrip.cities?.[0] || 'Sri Lanka',
-      image: backendTrip.coverImage || placeholder,
+      destination: destination,
+      image: coverImage, // Always use our reliable local image
       status: status,
       progress: backendTrip.progress || (status === 'completed' ? 100 : status === 'active' ? 50 : 10),
       daysLeft: calculateDaysLeft(backendTrip),
@@ -466,6 +488,8 @@ const MyTripsPage = () => {
   };
 
   // Transform backend trip summary data to frontend format (for new API)
+  // getCityImageUrl is now imported from utils/imageUtils
+
   const transformBackendTripSummary = (tripSummary) => {
     console.log('🔄 Transforming trip summary data:', tripSummary);
     
@@ -511,22 +535,43 @@ const MyTripsPage = () => {
     };
 
     const status = calculateTripStatus(tripSummary);
+    // Always use local city images for consistency and reliability
+    const cityImage = getCityImageUrl(tripSummary.destination || 'Sri Lanka');
+    
+    // Extract highlights from the destination or any available data
+    let highlights = [];
+    if (tripSummary.destination) {
+      highlights.push(tripSummary.destination);
+    }
+    if (tripSummary.cities && Array.isArray(tripSummary.cities)) {
+      highlights = [...highlights, ...tripSummary.cities];
+    }
+    if (tripSummary.activities && Array.isArray(tripSummary.activities)) {
+      const activityNames = tripSummary.activities
+        .filter(a => a && a.name)
+        .map(a => a.name)
+        .slice(0, 3);
+      highlights = [...highlights, ...activityNames];
+    }
+    
+    // Remove duplicates from highlights
+    highlights = [...new Set(highlights)];
     
     return {
       id: tripSummary.tripId,
       name: tripSummary.tripName || 'Untitled Trip',
       dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
       destination: tripSummary.destination || 'Sri Lanka',
-      image: placeholder, // Use placeholder since summary doesn't include image
+      image: cityImage, // Use local city image
       status: status,
       progress: status === 'completed' ? 100 : status === 'active' ? 50 : 10,
       daysLeft: calculateDaysLeft(tripSummary),
-      travelers: 1, // Default since not provided in summary
+      travelers: tripSummary.groupSize || 1, // Try to use groupSize if available
       rating: null, // Not provided in summary
       memories: 0, // Not provided in summary
-      highlights: tripSummary.destination ? [tripSummary.destination] : [],
-      budget: 0, // Not provided in summary
-      spent: 0, // Not provided in summary
+      highlights: highlights,
+      budget: tripSummary.budget || 0, 
+      spent: tripSummary.spent || 0,
       numberOfDays: tripSummary.numberOfDays,
       message: tripSummary.message,
       createdAt: tripSummary.startDate,
@@ -564,15 +609,18 @@ const MyTripsPage = () => {
           setTrips(prev => {
             const prevIds = new Set(prev.map(t => t.id));
             const prevNames = new Set(prev.map(t => t.name));
-            const backendFormatted = backend.trips.map(trip => ({
-              ...trip,
-              id: trip.id || trip._id || Date.now() + Math.random(),
-              image: trip.image || placeholder,
-              status: trip.status || 'active',
-              dates: trip.dates || 'Not set',
-              destination: trip.destination || 'Sri Lanka',
-              // Add any other mapping as needed
-            })).filter(trip => !prevNames.has(trip.name));
+            const backendFormatted = backend.trips.map(trip => {
+              const destination = trip.destination || 'Sri Lanka';
+              return {
+                ...trip,
+                id: trip.id || trip._id || Date.now() + Math.random(),
+                image: trip.image || getCityImageUrl(destination),
+                status: trip.status || 'active',
+                dates: trip.dates || 'Not set',
+                destination: destination,
+                // Add any other mapping as needed
+              };
+            }).filter(trip => !prevNames.has(trip.name));
             return [...backendFormatted, ...prev];
           });
         }

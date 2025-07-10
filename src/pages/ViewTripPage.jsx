@@ -6,6 +6,7 @@ import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -68,7 +69,7 @@ const ViewTripPage = () => {
     status: 'completed',
     totalDays: 5,
     destinations: ['Colombo', 'Kandy', 'Ella', 'Galle'],
-    coverImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop',
+    coverImage: getCityImageUrl('Colombo'),
     itinerary: {
       0: {
         date: new Date('2024-02-15'),
@@ -479,7 +480,7 @@ const ViewTripPage = () => {
               status: 'active', // Default to active
               totalDays: response.data.numberOfDays,
               destinations: [response.data.destination],
-              coverImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop',
+              coverImage: getCityImageUrl(response.data.destination),
               apiData: response.data, // Store the original API response
               // Transform daily plans to match itinerary structure
               itinerary: transformDailyPlansToItinerary(response.data.dailyPlans)
@@ -531,7 +532,7 @@ const ViewTripPage = () => {
           terrains: tripFromState.terrains || ['Beach', 'Mountains', 'Cultural Sites'],
           activities: tripFromState.activities || ['Sightseeing', 'Cultural Tours'],
           createdAt: tripFromState.createdAt || new Date().toISOString(),
-          coverImage: tripFromState.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop',
+          coverImage: tripFromState.image || getCityImageUrl(tripFromState.destination || 'Sri Lanka'),
           // Use mock itinerary for now - in a real app this would come from the backend
           itinerary: mockSavedTrip.itinerary
         };
@@ -560,18 +561,26 @@ const ViewTripPage = () => {
       const dayDate = new Date(); // Default to today
       dayDate.setDate(dayDate.getDate() + dayIndex); // Add days
       
+      // Get a city image for the current day's city
+      const cityImage = getCityImageUrl(day.city || 'Sri Lanka');
+      
       // Initialize itinerary day
       itinerary[dayIndex] = {
         date: dayDate,
         activities: [],
         places: [],
         food: [],
-        transportation: []
+        transportation: [],
+        city: day.city || 'Sri Lanka',
+        cityImage: cityImage
       };
       
       // Add attractions to activities
       if (day.attractions && day.attractions.length > 0) {
         day.attractions.forEach((attraction, i) => {
+          // Create a descriptive name for the image based on attraction type and city
+          const imageNameBase = `${attraction.name || 'attraction'} ${day.city || 'Sri Lanka'} ${attraction.type || ''}`.trim();
+          
           itinerary[dayIndex].activities.push({
             id: `attraction-${dayIndex}-${i}`,
             name: attraction.name,
@@ -581,7 +590,8 @@ const ViewTripPage = () => {
             description: attraction.type || 'Sightseeing',
             price: '$0', // Default price if not available
             time: '10:00', // Default time if not available
-            thumbnailUrl: attraction.thumbnailUrl || '',
+            // Always use local image for reliability
+            thumbnailUrl: getCityImageUrl(imageNameBase),
             googlePlaceId: attraction.googlePlaceId || '',
             coordinates: attraction.location || null
           });
@@ -591,6 +601,9 @@ const ViewTripPage = () => {
       // Add hotels to places
       if (day.hotels && day.hotels.length > 0) {
         day.hotels.forEach((hotel, i) => {
+          // Create a descriptive name for the image based on hotel details
+          const imageNameBase = `${hotel.name || 'hotel'} ${day.city || 'Sri Lanka'} accommodation`.trim();
+          
           itinerary[dayIndex].places.push({
             id: `hotel-${dayIndex}-${i}`,
             name: hotel.name,
@@ -601,7 +614,8 @@ const ViewTripPage = () => {
             description: hotel.type || 'Hotel',
             checkIn: '15:00', // Default time if not available
             checkOut: '12:00', // Default time if not available
-            thumbnailUrl: hotel.thumbnailUrl || '',
+            // Always use local image for reliability
+            thumbnailUrl: getCityImageUrl(imageNameBase),
             googlePlaceId: hotel.googlePlaceId || '',
             coordinates: hotel.location || null
           });
@@ -611,6 +625,9 @@ const ViewTripPage = () => {
       // Add restaurants to food
       if (day.restaurants && day.restaurants.length > 0) {
         day.restaurants.forEach((restaurant, i) => {
+          // Create a descriptive name for the image based on restaurant details
+          const imageNameBase = `${restaurant.name || 'restaurant'} ${day.city || 'Sri Lanka'} food`.trim();
+          
           itinerary[dayIndex].food.push({
             id: `restaurant-${dayIndex}-${i}`,
             name: restaurant.name,
@@ -621,7 +638,8 @@ const ViewTripPage = () => {
             description: restaurant.type || 'Restaurant',
             priceRange: '$10-25', // Default price range if not available
             time: '12:30', // Default time if not available
-            thumbnailUrl: restaurant.thumbnailUrl || '',
+            // Always use local image for reliability
+            thumbnailUrl: getCityImageUrl(imageNameBase),
             googlePlaceId: restaurant.googlePlaceId || '',
             coordinates: restaurant.location || null
           });
@@ -1052,13 +1070,15 @@ const ViewTripPage = () => {
                                 <span className="ml-1 text-sm">{selectedMarker.rating}</span>
                               </div>
                             )}
-                            {selectedMarker.thumbnailUrl && (
-                              <img 
-                                src={selectedMarker.thumbnailUrl} 
-                                alt={selectedMarker.name} 
-                                className="mt-2 w-full h-24 object-cover rounded"
-                              />
-                            )}
+                            <img 
+                              src={getCityImageUrl(selectedMarker.name || selectedMarker.location?.city || 'Sri Lanka')}
+                              alt={selectedMarker.name} 
+                              className="mt-2 w-full h-24 object-cover rounded"
+                              onError={(e) => {
+                                logImageError('ViewTripPage InfoWindow', selectedMarker, e.target.src);
+                                e.target.src = placeholderImage;
+                              }}
+                            />
                             <div className="mt-2 text-sm">
                               <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
                             </div>
