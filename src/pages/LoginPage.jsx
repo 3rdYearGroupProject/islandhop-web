@@ -192,7 +192,7 @@ const LoginPage = () => {
             case 'tourist':
               navigate('/trips');
             default:
-              navigate('/login');
+              navigate('/');
               break;
           }
         }, 1000);

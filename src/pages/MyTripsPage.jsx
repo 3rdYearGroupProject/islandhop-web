@@ -335,7 +335,7 @@ const MyTripsPage = () => {
       
       console.log('📡 Making GET ITINERARIES API request to:', `/api/v1/itinerary?userId=${userId}`);
       
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084'}/api/v1/itinerary?userId=${userId}`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary?userId=${userId}`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
