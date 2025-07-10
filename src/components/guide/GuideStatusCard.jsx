@@ -59,7 +59,7 @@ const GuideStatusCard = ({ compact = false, showToggle = true }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-              <AcademicCapIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <AcademicCapIcon className="h-5 w-5 text-primary-600 dark:text-green-400" />
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -82,7 +82,7 @@ const GuideStatusCard = ({ compact = false, showToggle = true }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-            <AcademicCapIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <AcademicCapIcon className="h-6 w-6 text-primary-600 dark:text-green-400" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -98,7 +98,7 @@ const GuideStatusCard = ({ compact = false, showToggle = true }) => {
           <button
             onClick={toggleAvailability}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-              isAvailable ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
+              isAvailable ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
             }`}
           >
             <span

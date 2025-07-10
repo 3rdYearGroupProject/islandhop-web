@@ -393,7 +393,7 @@ const GuideProfile = () => {
             {activeTab === 'personal' && !isEditingPersonal && (
               <button
                 onClick={() => setIsEditingPersonal(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
                 <Edit3 className="h-4 w-4 mr-2 inline" />Edit Personal Info
               </button>
@@ -401,7 +401,7 @@ const GuideProfile = () => {
             {activeTab === 'certifications' && !isEditingCerts && (
               <button
                 onClick={() => setIsEditingCerts(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
                 <Edit3 className="h-4 w-4 mr-2 inline" />Edit Certificates
               </button>
@@ -409,7 +409,7 @@ const GuideProfile = () => {
             {activeTab === 'languages' && !isEditingLangs && (
               <button
                 onClick={() => setIsEditingLangs(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
                 <Edit3 className="h-4 w-4 mr-2 inline" />Edit Languages
               </button>
@@ -428,7 +428,7 @@ const GuideProfile = () => {
               className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
             />
             {isEditingPersonal && (
-              <label className="absolute bottom-0 right-0 bg-green-600 text-white rounded-full p-2 hover:bg-green-700 transition-colors cursor-pointer">
+              <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
                 <Camera className="h-4 w-4" />
                 <input
                   type="file"
@@ -614,7 +614,7 @@ const GuideProfile = () => {
                   </button>
                   <button
                     type="button"
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                     onClick={handleSavePersonal}
                   >
                     <Save className="h-4 w-4 mr-2 inline" />Save Changes
@@ -631,7 +631,7 @@ const GuideProfile = () => {
                 <h3 className="text-lg font-semibold text-gray-900">Professional Certifications</h3>
                 {isEditingCerts && (
                   <button
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
                     onClick={() => setGuideData(prev => ({
                       ...prev,
                       certifications: [
@@ -731,7 +731,7 @@ const GuideProfile = () => {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                     >
                       <Save className="h-4 w-4 mr-2 inline" />Save Certificates
                     </button>
@@ -750,7 +750,7 @@ const GuideProfile = () => {
                   <h3 className="text-lg font-semibold text-gray-900">Languages</h3>
                   {isEditingLangs && (
                     <button
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
                       onClick={() => setGuideData(prev => ({
                         ...prev,
                         languages: [
@@ -835,7 +835,7 @@ const GuideProfile = () => {
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                       >
                         <Save className="h-4 w-4 mr-2 inline" />Save Languages
                       </button>

@@ -117,7 +117,7 @@ const DriverDashboard = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="h-6 w-6 text-green-600" />
+              <DollarSign className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Today's Earnings</p>

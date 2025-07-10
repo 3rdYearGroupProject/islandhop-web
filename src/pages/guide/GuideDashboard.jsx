@@ -178,7 +178,7 @@ const GuideDashboard = () => {
 
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-semibold text-lg">
                     {activeTour.tourist.split(' ').map(n => n[0]).join('')}
                   </span>
@@ -202,7 +202,7 @@ const GuideDashboard = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                   <div 
-                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${activeTour.progress}%` }}
                   ></div>
                 </div>
@@ -212,7 +212,7 @@ const GuideDashboard = () => {
               </div>
 
               <div className="flex space-x-3">
-                <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+                <button className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
                   <Phone className="h-4 w-4 mr-2" />
                   Call Tourist
                 </button>
@@ -273,7 +273,7 @@ const GuideDashboard = () => {
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => handleTourAction(request.id, 'accept')}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors"
+                      className="flex-1 px-3 py-2 bg-primary-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors"
                     >
                       Accept
                     </button>

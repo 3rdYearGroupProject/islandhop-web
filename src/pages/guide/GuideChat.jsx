@@ -263,14 +263,14 @@ const GuideChat = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-8rem)] flex">
+      <div className=" rounded-xl   h-[calc(100vh-8rem)] flex">
         
         {/* Chat List */}
         <div className="w-1/3 border-r border-gray-200 flex flex-col">
           {/* Chat Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-bold text-gray-900">Messages</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
               <div className="flex items-center space-x-2">
                 <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
                   <Filter className="h-4 w-4" />
