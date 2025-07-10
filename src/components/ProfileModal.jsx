@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import logo from '../assets/islandHopIcon.png';
 import logoText from '../assets/IslandHop.png';
 import api from '../api/axios';
+import { getAuth } from 'firebase/auth';
+import '../firebase';
 
 // List of countries (shortened for brevity, use a full list in production)
 const COUNTRIES = [
@@ -30,27 +32,55 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
   const [imagePreview, setImagePreview] = useState(userProfile.profilePicture || '');
   const [languageInput, setLanguageInput] = useState('');
 
+  // Get logged-in user email from Firebase
+  const getFirebaseUserEmail = () => {
+    try {
+      const auth = getAuth();
+      return auth.currentUser?.email || '';
+    } catch {
+      return '';
+    }
+  };
+
   // Fetch latest profile on open
   useEffect(() => {
     if (show) {
       setLoading(true);
-      api.get('/tourist/profile')
+      const email = getFirebaseUserEmail();
+      if (!email) {
+        setError('Not logged in');
+        setLoading(false);
+        return;
+      }
+      api.get('/tourist/profile', {
+        params: { email }
+      })
         .then(res => {
-          setProfile(res.data);
+          const profileData = res.data;
+          setProfile(profileData);
+          
+          // Handle profile picture - it's already a base64 string from backend
+          const profilePicBase64 = profileData.profilePic ? 
+            byteArrayToBase64(profileData.profilePic) : '';
+          
           setForm({
-            firstName: res.data.firstName || '',
-            lastName: res.data.lastName || '',
-            nationality: res.data.nationality || '',
-            email: res.data.email || '',
-            languages: res.data.languages || [],
-            profilePicture: res.data.profilePicture || '',
+            firstName: profileData.firstName || '',
+            lastName: profileData.lastName || '',
+            nationality: profileData.nationality || '',
+            email: profileData.email || '',
+            languages: profileData.languages || [],
+            profilePicture: profilePicBase64,
           });
-          setImagePreview(res.data.profilePicture || '');
+          setImagePreview(profilePicBase64);
+          console.log('Profile loaded with image:', profilePicBase64 ? 'Yes' : 'No');
         })
-        .catch(() => setError('Failed to load profile'))
+        .catch((err) => {
+          console.error('Profile fetch error:', err);
+          setError('Failed to load profile');
+        })
         .finally(() => setLoading(false));
     }
-  }, [show]);
+  }, [show, userProfile.email]);
 
   // Handle form changes
   const handleChange = e => {
@@ -90,25 +120,62 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
     }
   };
 
+  // Convert base64 image to byte array (for backend List<Integer> handling)
+  const base64ToByteArray = (base64) => {
+    if (!base64) return null;
+    // Remove data URL prefix if present
+    const base64String = base64.split(',')[1] || base64;
+    const binaryString = atob(base64String);
+    const len = binaryString.length;
+    const bytes = [];
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes; // Return as regular array for JSON
+  };
+
+  // Convert byte array back to base64 for display
+  const byteArrayToBase64 = (byteArray) => {
+    if (!byteArray) return '';
+    // If it's already a base64 string, return it with data URL prefix
+    if (typeof byteArray === 'string') {
+      return byteArray.startsWith('data:') ? byteArray : `data:image/jpeg;base64,${byteArray}`;
+    }
+    // If it's an array, convert to base64
+    if (Array.isArray(byteArray)) {
+      const binaryString = String.fromCharCode(...byteArray);
+      return `data:image/jpeg;base64,${btoa(binaryString)}`;
+    }
+    return '';
+  };
+
   // Save profile
   const handleSave = async () => {
     setLoading(true);
     setError('');
     setSuccess('');
+    const email = getFirebaseUserEmail();
+    if (!email) {
+      setError('Not logged in');
+      setLoading(false);
+      return;
+    }
     try {
+      const imageByteArray = base64ToByteArray(form.profilePicture);
       const res = await api.put('/tourist/profile', {
         firstName: form.firstName,
         lastName: form.lastName,
         nationality: form.nationality,
         languages: form.languages,
-        email: form.email,
-        profilePicture: form.profilePicture, // base64 string
+        email, // Always send Firebase email for backend auth
+        profilePicture: imageByteArray, // Send as byte array for bytea column
       });
       setProfile(res.data);
       setUserProfile && setUserProfile(res.data);
       setEditing(false);
       setSuccess('Profile updated!');
     } catch (err) {
+      console.error('Profile update error:', err);
       setError('Failed to update profile');
     } finally {
       setLoading(false);
@@ -140,7 +207,7 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
                 <img src={imagePreview} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-primary-500 shadow-lg" />
               ) : (
                 <div className="w-32 h-32 bg-primary-500 rounded-full flex items-center justify-center shadow-lg border-4 border-primary-500">
-                  <span className="text-white text-5xl font-bold">{profile.avatar || (profile.firstName?.[0] || 'U')}</span>
+                  <span className="text-white text-5xl font-bold">{profile.firstName?.[0] || profile.lastName?.[0] || 'U'}</span>
                 </div>
               )}
               {editing && (
@@ -259,14 +326,23 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
                 </button>
                 <button
                   className="px-5 py-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                  onClick={() => { setEditing(false); setForm({
-                    firstName: profile.firstName || '',
-                    lastName: profile.lastName || '',
-                    nationality: profile.nationality || '',
-                    email: profile.email || '',
-                    languages: profile.languages || [],
-                    profilePicture: profile.profilePicture || '',
-                  }); setImagePreview(profile.profilePicture || ''); setError(''); setSuccess(''); }}
+                  onClick={() => { 
+                    setEditing(false); 
+                    // Reset form to current profile data
+                    const profilePicBase64 = profile.profilePic ? 
+                      byteArrayToBase64(profile.profilePic) : '';
+                    setForm({
+                      firstName: profile.firstName || '',
+                      lastName: profile.lastName || '',
+                      nationality: profile.nationality || '',
+                      email: profile.email || '',
+                      languages: profile.languages || [],
+                      profilePicture: profilePicBase64,
+                    }); 
+                    setImagePreview(profilePicBase64); 
+                    setError(''); 
+                    setSuccess(''); 
+                  }}
                   disabled={loading}
                 >
                   Cancel
