@@ -115,7 +115,9 @@ const LoginPage = () => {
               navigate('/driver/dashboard');
               break;
             case 'tourist':
+              console.log('🔄 Redirecting tourist to trips page');
               navigate('/trips');
+              break;
             default:
               navigate('/login');
               break;

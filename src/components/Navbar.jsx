@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { clearUserData } from '../utils/userStorage';
 import logo from '../assets/islandHopIcon.png'; // Icon
 import logoText from '../assets/IslandHop.png'; // Full logo text
 import ProfileModal from './ProfileModal';
@@ -12,6 +13,7 @@ const Navbar = () => {
   const { user } = useAuth();
   const tempUser = user;
   const location = useLocation();
+  const navigate = useNavigate();
   const [showLang, setShowLang] = useState(false);
   const [currentLang, setCurrentLang] = useState('English');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -253,6 +255,12 @@ const Navbar = () => {
     };
   }, [showProfilePopup, showSettingsPopup]);
 
+  // Logout handler
+  const handleLogout = () => {
+    clearUserData();
+    navigate('/');
+  };
+
   return (
     <nav className="fixed top-4 left-4 right-4 z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-full h-18 flex items-center px-6 border border-gray-200">
       <div className="w-full flex items-center h-20 px-6">
@@ -345,7 +353,7 @@ const Navbar = () => {
                 <div className={`fixed right-8 top-20 w-44 bg-white border rounded-lg shadow-lg z-50 py-2 transition-all duration-200 ease-out transform ${userMenuAnimation}`}>
                   <Link to="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={e => {e.preventDefault(); setShowProfilePopup(true); setShowUserMenu(false);}}>Profile</Link>
                   <Link to="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={e => {e.preventDefault(); setShowSettingsPopup(true); setShowUserMenu(false);}}>Settings</Link>
-                  <button className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">Logout</button>
+                  <button className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100" onClick={handleLogout}>Logout</button>
                 </div>
               )}
             </div>
