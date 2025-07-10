@@ -1,11 +1,11 @@
 import React from 'react';
 import { Heart, MoreHorizontal, MapPin, Calendar, Users, Star, Share2, UserPlus, Eye } from 'lucide-react';
 
-const PoolCard = ({ pool, onJoinPool, buttonText = "Join Pool", buttonIcon = UserPlus }) => {
+const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonIcon = UserPlus }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'open':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-400';
       case 'full':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'closed':
@@ -21,10 +21,19 @@ const PoolCard = ({ pool, onJoinPool, buttonText = "Join Pool", buttonIcon = Use
     }
   };
 
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick(pool);
+    }
+  };
+
   const ButtonIcon = buttonIcon;
 
   return (
-    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 transform hover:-translate-y-1 flex flex-col h-[580px] max-h-[580px] min-h-[580px]">
+    <div 
+      className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 transform hover:-translate-y-1 flex flex-col h-[580px] max-h-[580px] min-h-[580px] cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="relative">
         <img 
           src={pool.image} 
@@ -91,12 +100,12 @@ const PoolCard = ({ pool, onJoinPool, buttonText = "Join Pool", buttonIcon = Use
           <div className="mb-4">
             <div className="flex flex-wrap gap-1">
               {pool.highlights.slice(0, 3).map((highlight, index) => (
-                <span key={index} className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md">
+                <span key={index} className="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">
                   {highlight}
                 </span>
               ))}
               {pool.highlights.length > 3 && (
-                <span className="inline-block px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md">
+                <span className="inline-block px-3 py-1 bg-gray-50 text-gray-600 text-xs rounded-full font-medium">
                   +{pool.highlights.length - 3} more
                 </span>
               )}
@@ -105,21 +114,17 @@ const PoolCard = ({ pool, onJoinPool, buttonText = "Join Pool", buttonIcon = Use
         )}
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            {pool.rating && (
-              <div className="flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                <span>{pool.rating}</span>
-              </div>
-            )}
-          </div>
-
           <div className="flex items-center space-x-2">
-            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full border border-blue-300 transition-colors">
               <Share2 className="h-4 w-4" />
             </button>
+          </div>
+          <div className="flex items-center">
             <button 
-              onClick={handleJoinPool}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click
+                handleJoinPool();
+              }}
               className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors"
             >
               <ButtonIcon className="h-4 w-4 mr-1" />

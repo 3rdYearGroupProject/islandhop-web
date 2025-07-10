@@ -126,7 +126,7 @@ const LostItemTracker = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -220,7 +220,7 @@ const LostItemTracker = () => {
                     </button>
                     <button
                       onClick={() => handleContact('email', report.tourist)}
-                      className="flex-1 inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-info-600 text-white hover:bg-info-700 transition-colors duration-200"
+                      className="flex-1 inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-primary-600 text-white hover:bg-primary-700 transition-colors duration-200"
                     >
                       <EnvelopeIcon className="h-3 w-3 mr-1" />
                       Email
@@ -260,7 +260,7 @@ const LostItemTracker = () => {
                       </button>
                       <button
                         onClick={() => handleContact('email', report.driver || report.guide)}
-                        className="flex-1 inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-info-600 text-white hover:bg-info-700 transition-colors duration-200"
+                        className="flex-1 inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-primary-600 text-white hover:bg-primary-700 transition-colors duration-200"
                       >
                         <EnvelopeIcon className="h-3 w-3 mr-1" />
                         Email

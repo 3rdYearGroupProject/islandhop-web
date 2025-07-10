@@ -272,10 +272,10 @@ const GuideTrips = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {[
-            { label: 'Pending', value: trips.filter(t => t.status === 'pending').length, color: 'yellow' },
-            { label: 'Accepted', value: trips.filter(t => t.status === 'accepted').length, color: 'blue' },
-            { label: 'In Progress', value: trips.filter(t => t.status === 'in_progress').length, color: 'purple' },
-            { label: 'Completed', value: trips.filter(t => t.status === 'completed').length, color: 'green' },
+            { label: 'Pending', value: trips.filter(t => t.status === 'pending').length, color: 'indigo' },
+            { label: 'Accepted', value: trips.filter(t => t.status === 'accepted').length, color: 'indigo' },
+            { label: 'In Progress', value: trips.filter(t => t.status === 'in_progress').length, color: 'indigo' },
+            { label: 'Completed', value: trips.filter(t => t.status === 'completed').length, color: 'indigo' },
             { label: 'Total Earnings', value: `$${trips.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.totalAmount, 0)}`, color: 'indigo' }
           ].map((stat, index) => (
             <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -395,7 +395,7 @@ const GuideTrips = () => {
                       <>
                         <button
                           onClick={() => handleAcceptTrip(trip.id)}
-                          className="flex items-center px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm"
+                          className="flex items-center px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm"
                         >
                           <Check className="h-3 w-3 mr-1" />
                           Accept
@@ -423,7 +423,7 @@ const GuideTrips = () => {
                     {trip.status === 'in_progress' && (
                       <button
                         onClick={() => handleCompleteTrip(trip.id)}
-                        className="flex items-center px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm"
+                        className="flex items-center px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm"
                       >
                         <Check className="h-3 w-3 mr-1" />
                         Complete

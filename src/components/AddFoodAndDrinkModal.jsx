@@ -1,19 +1,92 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
+
+console.log('AddFoodAndDrinkModal loaded');
 
 const AddFoodAndDrinkModal = ({
   show,
   onClose,
   searchQuery,
   setSearchQuery,
-  getFilteredSuggestions,
+  fetchSuggestionsForModal,
   selectedStayDates,
   setSelectedStayDates,
   days,
   formatDate,
-  addItemToItinerary
+  addItemToItinerary,
+  isLoading = false,
+  tripId,
+  currentDay
 }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+  console.log('AddFoodAndDrinkModal props', {
+    show,
+    searchQuery,
+    selectedStayDates,
+    days,
+    currentDay
+  });
+
+  // Effect to fetch suggestions when modal opens
+  useEffect(() => {
+    if (!show || !fetchSuggestionsForModal) return;
+
+    const fetchData = async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        console.log('🔍 AddFoodAndDrinkModal: Fetching suggestions for currentDay:', currentDay);
+        const result = await fetchSuggestionsForModal('food', currentDay);
+        
+        // Ensure we always have an array
+        const validSuggestions = Array.isArray(result) ? result : [];
+        console.log('📋 AddFoodAndDrinkModal: Got suggestions:', validSuggestions.length, 'items');
+        setSuggestions(validSuggestions);
+      } catch (error) {
+        console.error('❌ AddFoodAndDrinkModal: Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    fetchData();
+  }, [show, currentDay, fetchSuggestionsForModal]);
+
+  // Effect to filter suggestions when search query changes
+  useEffect(() => {
+    if (!searchQuery) return;
+    
+    // Filter existing suggestions based on search query
+    const fetchData = async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const result = await fetchSuggestionsForModal('food', currentDay);
+        const validSuggestions = Array.isArray(result) ? result : [];
+        
+        // Filter suggestions based on search query
+        const filtered = validSuggestions.filter(item =>
+          item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        
+        setSuggestions(filtered);
+      } catch (error) {
+        console.error('❌ Error filtering suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchData, 300); // Debounce search
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, currentDay, fetchSuggestionsForModal]);
+
   if (!show) return null;
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
@@ -44,65 +117,92 @@ const AddFoodAndDrinkModal = ({
         <div className="flex">
           {/* Left Side - Dining Selection */}
           <div className="flex-1 p-6 overflow-y-auto max-h-[calc(90vh-160px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {getFilteredSuggestions().map((dining) => (
-                <div key={dining.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
-                  <div className="relative">
-                    <img 
-                      src={dining.image} 
-                      alt={dining.name}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
-                      {dining.cuisine || dining.type}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-bold text-lg text-gray-900">{dining.name}</h4>
-                        <p className="text-sm text-gray-500">{dining.location}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">from</p>
-                        <p className="text-lg font-bold text-primary-600">{dining.price}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dining.description}</p>
-                    <div className="mb-4">
-                      <p className="text-xs font-medium text-gray-500 mb-2">SPECIALTIES</p>
-                      <div className="flex flex-wrap gap-1">
-                        {dining.cuisine && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                            {dining.cuisine}
-                          </span>
-                        )}
-                        {dining.rating && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                            ★ {dining.rating}
-                          </span>
-                        )}
-                        {dining.reviews && (
-                          <span className="text-xs text-gray-500">({dining.reviews} reviews)</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => addItemToItinerary(dining, selectedStayDates)}
-                      disabled={selectedStayDates.length === 0}
-                      className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      {selectedStayDates.length === 0 ? 'Select dates first' : `Add to ${selectedStayDates.length} day${selectedStayDates.length !== 1 ? 's' : ''}`}
-                    </button>
-                  </div>
+            {(isLoading || isLoadingSuggestions) ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Searching for dining options...</p>
                 </div>
-              ))}
-            </div>
-            {getFilteredSuggestions().length === 0 && (
+              </div>
+            ) : suggestions.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No dining options found</p>
-                <p>Try searching for a different restaurant or cuisine.</p>
+                <p className="text-lg font-medium">
+                  {tripId ? "No dining options found" : "Ready to search"}
+                </p>
+                <p>
+                  {tripId ? "Try searching for a different restaurant or cuisine." : "Use the search box above to find restaurants."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {suggestions.map((dining) => (
+                  <div key={dining.id} className={`border rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group ${dining.isRecommended ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}`}>
+                    {dining.isRecommended && (
+                      <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 text-center">
+                        ⭐ RECOMMENDED
+                      </div>
+                    )}
+                    <div className="relative">
+                      <img 
+                        src={dining.image || dining.photos?.[0]?.url || 'https://via.placeholder.com/400x300'} 
+                        alt={dining.name || dining.title}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
+                        {dining.cuisine || dining.type || dining.category || 'Restaurant'}
+                      </div>
+                      {dining.distanceKm && (
+                        <div className="absolute top-4 left-4 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-900">
+                          {dining.distanceKm.toFixed(1)} km away
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">{dining.name || dining.title}</h4>
+                          <p className="text-sm text-gray-500">{dining.location || dining.address}</p>
+                          {dining.isOpenNow !== undefined && (
+                            <p className={`text-xs font-medium mt-1 ${dining.isOpenNow ? 'text-green-600' : 'text-red-600'}`}>
+                              {dining.isOpenNow ? '🟢 Open Now' : '🔴 Closed'}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">from</p>
+                          <p className="text-lg font-bold text-primary-600">{dining.price || dining.priceRange || 'Contact'}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dining.description}</p>
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-500 mb-2">SPECIALTIES</p>
+                        <div className="flex flex-wrap gap-1">
+                          {(dining.cuisine || dining.category) && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              {dining.cuisine || dining.category}
+                            </span>
+                          )}
+                          {dining.rating && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              ⭐ {dining.rating}
+                            </span>
+                          )}
+                          {dining.reviews && (
+                            <span className="text-xs text-gray-500">({dining.reviews} reviews)</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => addItemToItinerary(dining, selectedStayDates)}
+                        disabled={selectedStayDates.length === 0}
+                        className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {selectedStayDates.length === 0 ? 'Select dates first' : `Add to ${selectedStayDates.length} day${selectedStayDates.length !== 1 ? 's' : ''}`}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

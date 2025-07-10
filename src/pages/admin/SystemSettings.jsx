@@ -204,8 +204,8 @@ const SystemSettings = () => {
           {/* Performance Settings - 2 columns wide */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-success-100 dark:bg-success-900/20 rounded-lg">
-                <ComputerDesktopIcon className="h-6 w-6 text-success-600 dark:text-success-400" />
+              <div className="p-2 bg-primary-100 dark:bg-success-900/20 rounded-lg">
+                <ComputerDesktopIcon className="h-6 w-6 text-primary-600 dark:text-success-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Performance</h2>
             </div>
@@ -259,8 +259,8 @@ const SystemSettings = () => {
           {/* Security Settings - 2 columns wide */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-warning-100 dark:bg-warning-900/20 rounded-lg">
-                <ShieldCheckIcon className="h-6 w-6 text-warning-600 dark:text-warning-400" />
+              <div className="p-2 bg-primary-100 dark:bg-warning-900/20 rounded-lg">
+                <ShieldCheckIcon className="h-6 w-6 text-primary-600 dark:text-warning-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security</h2>
             </div>
@@ -311,8 +311,8 @@ const SystemSettings = () => {
           {/* Notifications Settings - 2 columns wide (bottom row) */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-info-100 dark:bg-info-900/20 rounded-lg">
-                <BellIcon className="h-6 w-6 text-info-600 dark:text-info-400" />
+              <div className="p-2 bg-primary-100 dark:bg-info-900/20 rounded-lg">
+                <BellIcon className="h-6 w-6 text-primary-600 dark:text-info-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Notifications</h2>
             </div>
@@ -371,8 +371,8 @@ const SystemSettings = () => {
           {/* System Preferences - 2 columns wide (bottom row) */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-                <GlobeAltIcon className="h-6 w-6 text-neutral-600 dark:text-neutral-400" />
+              <div className="p-2 bg-primary-100 dark:bg-neutral-800 rounded-lg">
+                <GlobeAltIcon className="h-6 w-6 text-primary-600 dark:text-neutral-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Preferences</h2>
             </div>
@@ -416,8 +416,8 @@ const SystemSettings = () => {
           {/* Advanced Settings - 2 columns wide (bottom row) */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-danger-100 dark:bg-danger-900/20 rounded-lg">
-                <ClockIcon className="h-6 w-6 text-danger-600 dark:text-danger-400" />
+              <div className="p-2 bg-primary-100 dark:bg-danger-900/20 rounded-lg">
+                <ClockIcon className="h-6 w-6 text-primary-600 dark:text-danger-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Advanced</h2>
             </div>

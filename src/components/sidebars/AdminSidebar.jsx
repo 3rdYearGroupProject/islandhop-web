@@ -16,6 +16,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { auth } from '../../firebase';
 import { clearUserData } from '../../utils/userStorage';
+import islandHopIcon from '../../assets/islandHopIcon.png';
+import islandHopLogo from '../../assets/IslandHop.png';
 
 const AdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
@@ -110,18 +112,24 @@ const AdminSidebar = ({ isOpen, onClose }) => {
   return (
     <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-secondary-900 shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 border-r border-gray-200 dark:border-secondary-700`}>
       <div className="flex flex-col h-full">
-        {/* Sidebar Header */}
+        {/* IslandHop Header (Mobile) */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-secondary-700 lg:hidden">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-              <ServerIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <img 
+                src={islandHopIcon} 
+                alt="IslandHop Icon" 
+                className="h-6 w-6 object-contain"
+              />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Admin Panel
-              </h2>
+              <img 
+                src={islandHopLogo} 
+                alt="IslandHop Logo" 
+                className="h-3 object-contain"
+              />
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                System Management
+                Admin Dashboard
               </p>
             </div>
           </div>
@@ -135,18 +143,24 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Admin Panel Header (Desktop) */}
+        {/* IslandHop Header (Desktop) */}
         <div className="hidden lg:flex items-center px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg shadow-lg">
-              <ServerIcon className="h-6 w-6 text-white" />
+            <div className="p-2 bg-white rounded-lg shadow-lg">
+              <img 
+                src={islandHopIcon} 
+                alt="IslandHop Icon" 
+                className="h-8 w-8 object-contain"
+              />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Admin Panel
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                System Management Dashboard
+              <img 
+                src={islandHopLogo} 
+                alt="IslandHop Logo" 
+                className="h-6 object-contain"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Admin Dashboard
               </p>
             </div>
           </div>
@@ -165,7 +179,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
                 onClick={onClose}
                 className={`group flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300'
+                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-800 hover:text-primary-600 dark:hover:text-primary-400 hover:shadow-md'
                 }`}
               >
@@ -192,9 +206,9 @@ const AdminSidebar = ({ isOpen, onClose }) => {
                     {item.description}
                   </div>
                 </div>
-                {isActive && (
+                {/* {isActive && (
                   <div className="w-2 h-2 bg-white rounded-full shadow-sm"></div>
-                )}
+                )} */}
               </Link>
             );
           })}

@@ -165,7 +165,7 @@ const SupportReports = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 ">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -183,7 +183,7 @@ const SupportReports = () => {
                 <DocumentArrowDownIcon className="h-4 w-4" />
                 <span>Export</span>
               </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:shadow-lg transition-all duration-200">
+              <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:shadow-lg transition-all duration-200">
                 <FunnelIcon className="h-4 w-4" />
                 <span>Filter</span>
               </button>
@@ -223,7 +223,7 @@ const SupportReports = () => {
             icon={CheckCircleIcon}
             trend="up"
             trendValue="8.3%"
-            color="success"
+            color="primary"
           />
           <StatCard
             title="Avg Response Time"
@@ -232,7 +232,7 @@ const SupportReports = () => {
             icon={ClockIcon}
             trend="down"
             trendValue="15.2%"
-            color="warning"
+            color="primary"
           />
           <StatCard
             title="Customer Satisfaction"
@@ -241,7 +241,7 @@ const SupportReports = () => {
             icon={UserGroupIcon}
             trend="up"
             trendValue="3.1%"
-            color="success"
+            color="primary"
           />
         </div>
 

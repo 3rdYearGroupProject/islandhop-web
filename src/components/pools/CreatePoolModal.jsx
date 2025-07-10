@@ -95,43 +95,7 @@ const CreatePoolModal = ({ isOpen, onClose, onCreatePool }) => {
             </div>
           </div>
 
-          {/* Pool Size (Slider) */}
-          <div className="mb-6">
-            <label htmlFor="poolSize" className="block text-sm font-medium text-gray-900 mb-2">
-              How many participants?
-            </label>
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-gray-500 font-medium w-8 text-right">2</span>
-              <div className="flex-1 relative">
-                <input
-                  id="poolSize"
-                  name="poolSize"
-                  type="range"
-                  min={2}
-                  max={8}
-                  step={1}
-                  value={formData.poolSize}
-                  onChange={e => handleInputChange({ target: { name: 'poolSize', value: Number(e.target.value) } })}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all slider-blue-thumb"
-                />
-
-                <div className="flex justify-between text-xs text-gray-400 mt-1 absolute w-full">
-                  {[2,3,4,5,6,7,8].map((n, index) => (
-                    <span key={n} className="transform -translate-x-1/2" style={{ left: `${(index / 6) * 100}%` }}>
-                      {n}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <span className="text-xs text-gray-500 font-medium w-8 text-left">8</span>
-              <span className="ml-4 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-base font-semibold border border-blue-200 shadow-sm">
-                {formData.poolSize}
-              </span>
-            </div>
-            {errors.poolSize && (
-              <span className="text-sm text-red-600 mt-1 block">{errors.poolSize}</span>
-            )}
-          </div>
+          {/* Pool Size (Slider) removed as requested */}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-8">

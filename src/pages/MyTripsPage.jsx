@@ -27,8 +27,15 @@ import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
+import { tripPlanningApi } from '../api/axios';
+// import { fetchUserTrips as fetchUserTripsApi } from '../api/tripApi'; // Function moved to TripPreferencesPage
+import { getUserUID } from '../utils/userStorage';
+import Footer from '../components/Footer';
 
-const placeholder = 'https://placehold.co/400x250';
+import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
+
+// Always use the placeholder from imageUtils to ensure consistency
+const placeholder = placeholderImage;
 
 const MyTripsPage = () => {
   const [isCreateTripModalOpen, setIsCreateTripModalOpen] = useState(false);
@@ -36,31 +43,50 @@ const MyTripsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all'); // all, active, completed, draft
   const [sortBy, setSortBy] = useState('recent'); // recent, name, date
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get current user
+  // State for trips
+  const [trips, setTrips] = useState([]);
+
+  // Get current user and fetch their trips
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log('🔐 Current user UID:', user.uid);
         setCurrentUser(user);
+        
+        // Fetch user trips from backend
+        try {
+          const userTrips = await fetchUserTrips(user.uid);
+          console.log('📊 Setting trips from backend:', userTrips.length, 'trips');
+          setTrips(userTrips);
+        } catch (error) {
+          console.warn('⚠️ Failed to fetch trips from backend, using mock data');
+          console.error('Backend fetch error:', error);
+          // Keep the existing mock data as fallback
+          setTrips(mockTrips);
+        }
       } else {
         setCurrentUser(null);
+        setTrips([]); // Clear trips when user logs out
       }
     });
 
     return () => unsubscribe();
   }, []);
   
-  const [trips, setTrips] = useState([
+  // Mock data as fallback - updated to use getCityImageUrl consistently
+  const mockTrips = [
     // Trip History (mostly expired, some completed)
     {
       id: 1,
       name: 'Summer Adventure in Sri Lanka',
       dates: 'Jun 11 → Jun 21, 2025',
       destination: 'Sri Lanka',
-      image: require('../assets/destinations/sigiriya.jpg'),
+      image: getCityImageUrl('Sigiriya'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -76,7 +102,7 @@ const MyTripsPage = () => {
       name: 'Wildlife Safari',
       dates: 'May 2 → May 10, 2025',
       destination: 'Yala National Park',
-      image: require('../assets/destinations/anuradhapura.jpg'),
+      image: getCityImageUrl('Yala'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -92,7 +118,7 @@ const MyTripsPage = () => {
       name: 'Hill Country Escape',
       dates: 'Apr 10 → Apr 18, 2025',
       destination: 'Nuwara Eliya',
-      image: require('../assets/destinations/nuwara-eliya.jpg'),
+      image: getCityImageUrl('Nuwara Eliya'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -108,7 +134,7 @@ const MyTripsPage = () => {
       name: 'Historic Wonders',
       dates: 'Mar 1 → Mar 7, 2025',
       destination: 'Anuradhapura',
-      image: require('../assets/destinations/anuradhapura.jpg'),
+      image: getCityImageUrl('Anuradhapura'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -124,7 +150,7 @@ const MyTripsPage = () => {
       name: 'City Lights',
       dates: 'Feb 1 → Feb 5, 2025',
       destination: 'Colombo',
-      image: require('../assets/destinations/colombo.jpg'),
+      image: getCityImageUrl('Colombo'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -140,7 +166,7 @@ const MyTripsPage = () => {
       name: 'Solo Explorer',
       dates: 'Jan 10 → Jan 15, 2025',
       destination: 'Jaffna',
-      image: require('../assets/destinations/ella.jpg'),
+      image: getCityImageUrl('Jaffna'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -156,7 +182,7 @@ const MyTripsPage = () => {
       name: 'Expired Beach Bash',
       dates: 'Dec 1 → Dec 7, 2024',
       destination: 'Mirissa',
-      image: require('../assets/destinations/mirissa.jpg'),
+      image: getCityImageUrl('Mirissa'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -173,7 +199,7 @@ const MyTripsPage = () => {
       name: 'Wellness Getaway',
       dates: 'Nov 10 → Nov 15, 2024',
       destination: 'Kandy',
-      image: require('../assets/destinations/kandy.jpg'),
+      image: getCityImageUrl('Kandy'),
       status: 'completed',
       progress: 100,
       daysLeft: 0,
@@ -190,7 +216,7 @@ const MyTripsPage = () => {
       name: 'Cultural Heritage Tour',
       dates: 'Aug 15 → Aug 25, 2025',
       destination: 'Central Province',
-      image: require('../assets/destinations/kandy.jpg'),
+      image: getCityImageUrl('Kandy'),
       status: 'active',
       progress: 65,
       daysLeft: 12,
@@ -207,7 +233,7 @@ const MyTripsPage = () => {
       name: 'Beach Retreat',
       dates: 'Not set',
       destination: 'Southern Coast',
-      image: require('../assets/destinations/mirissa.jpg'),
+      image: getCityImageUrl('Mirissa'),
       status: 'draft',
       progress: 25,
       daysLeft: null,
@@ -223,7 +249,7 @@ const MyTripsPage = () => {
       name: 'Family Fun Trip',
       dates: 'Dec 20 → Dec 28, 2025',
       destination: 'Colombo',
-      image: require('../assets/destinations/colombo.jpg'),
+      image: getCityImageUrl('Colombo'),
       status: 'upcoming',
       progress: 10,
       daysLeft: 5,
@@ -239,7 +265,7 @@ const MyTripsPage = () => {
       name: 'Adventure with Friends',
       dates: 'Jan 5 → Jan 12, 2026',
       destination: 'Ella',
-      image: require('../assets/destinations/ella.jpg'),
+      image: getCityImageUrl('Ella'),
       status: 'upcoming',
       progress: 0,
       daysLeft: 180,
@@ -255,7 +281,7 @@ const MyTripsPage = () => {
       name: 'Wellness Getaway',
       dates: 'Feb 10 → Feb 15, 2026',
       destination: 'Kandy',
-      image: require('../assets/destinations/kandy.jpg'),
+      image: getCityImageUrl('Kandy'),
       status: 'draft',
       progress: 0,
       daysLeft: null,
@@ -266,7 +292,7 @@ const MyTripsPage = () => {
       budget: 2000,
       spent: 0
     }
-  ]);
+  ];
 
   // Handle new trip data from the complete trip flow
   useEffect(() => {
@@ -294,6 +320,317 @@ const MyTripsPage = () => {
       navigate('/trips', { replace: true });
     }
   }, [location.state, navigate]);
+
+  // API function to fetch user trips
+  const fetchUserTrips = async (userId) => {
+    console.log('📥 FETCH USER TRIPS START');
+    console.log('👤 Fetching trips for userId:', userId);
+    
+    try {
+      setIsLoadingTrips(true);
+      setApiError(null);
+      
+      console.log('📡 Making GET ITINERARIES API request to:', `/api/v1/itinerary?userId=${userId}`);
+      
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary?userId=${userId}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      console.log('📨 GET ITINERARIES API Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        
+        if (response.status === 400) {
+          alert(`Invalid user ID: ${errorData.message || 'Please check your login status'}`);
+          throw new Error(`Invalid userId: ${errorData.message}`);
+        } else if (response.status === 404) {
+          console.log('📝 No trips found for user');
+          alert('No trips found. Start planning your first adventure!');
+          return []; // Return empty array for no trips
+        } else if (response.status === 500) {
+          alert(`Server error: ${errorData.message || 'Please try again later'}`);
+          throw new Error(`Server error: ${errorData.message}`);
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+      
+      const data = await response.json();
+      console.log('📦 GET ITINERARIES API Response data:', data);
+      
+      // Transform backend trip summaries to match frontend expected format
+      const backendTrips = Array.isArray(data) ? data : [];
+      const transformedTrips = backendTrips.map(trip => transformBackendTripSummary(trip));
+      
+      console.log('✅ FETCH USER TRIPS SUCCESS - Found', transformedTrips.length, 'trips');
+      console.log('📊 Transformed trips:', transformedTrips);
+      
+      return transformedTrips;
+    } catch (error) {
+      console.error('❌ FETCH USER TRIPS FAILED');
+      console.error('❌ Fetch trips error:', error);
+      console.error('❌ Fetch trips error message:', error.message);
+      
+      setApiError(error.message || 'Failed to fetch trips');
+      
+      // Don't show alert for network errors to avoid double alerts
+      if (!error.message.includes('Invalid userId') && 
+          !error.message.includes('Server error') && 
+          !error.message.includes('No trips found')) {
+        alert(`Failed to fetch trips: ${error.message}`);
+      }
+      
+      throw error;
+    } finally {
+      setIsLoadingTrips(false);
+    }
+  };
+
+  // Transform backend trip data to frontend format
+  const transformTripData = (backendTrip) => {
+    console.log('🔄 Transforming trip data:', backendTrip);
+    
+    // Calculate trip status based on dates
+    const calculateTripStatus = (trip) => {
+      if (!trip.startDate || !trip.endDate) return 'draft';
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) return 'upcoming';
+      if (now >= startDate && now <= endDate) return 'active';
+      return 'completed';
+    };
+
+    // Calculate days left for upcoming/active trips
+    const calculateDaysLeft = (trip) => {
+      if (!trip.startDate) return null;
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) {
+        return Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+      }
+      if (now >= startDate && now <= endDate) {
+        return Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      }
+      return 0;
+    };
+
+    // Format dates for display
+    const formatTripDates = (startDate, endDate) => {
+      if (!startDate || !endDate) return 'Dates not set';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
+    };
+
+    const status = calculateTripStatus(backendTrip);
+    
+    const destination = backendTrip.destination || backendTrip.cities?.[0] || 'Sri Lanka';
+    
+    // Always prioritize local images for reliability
+    const cityImage = getCityImageUrl(destination);
+    
+    // Check if backendTrip.coverImage is a valid image URL
+    // If not, use our local cityImage instead
+    let coverImage = cityImage;
+    if (backendTrip.coverImage) {
+      try {
+        // If it's an object (already imported) or valid URL, use it
+        if (typeof backendTrip.coverImage === 'object') {
+          coverImage = backendTrip.coverImage;
+        } else {
+          // Test if it's a valid URL
+          new URL(backendTrip.coverImage);
+          // For this component, we prefer local images over remote URLs for reliability
+          coverImage = cityImage;
+        }
+      } catch (e) {
+        // If not a valid URL, use the local image
+        coverImage = cityImage;
+      }
+    }
+    
+    return {
+      id: backendTrip.id || backendTrip._id,
+      name: backendTrip.name || backendTrip.tripName || 'Untitled Trip',
+      dates: formatTripDates(backendTrip.startDate, backendTrip.endDate),
+      destination: destination,
+      image: coverImage, // Always use our reliable local image
+      status: status,
+      progress: backendTrip.progress || (status === 'completed' ? 100 : status === 'active' ? 50 : 10),
+      daysLeft: calculateDaysLeft(backendTrip),
+      travelers: backendTrip.travelers || backendTrip.groupSize || 1,
+      rating: backendTrip.rating || null,
+      memories: backendTrip.photos?.length || 0,
+      highlights: backendTrip.highlights || backendTrip.cities || [],
+      budget: backendTrip.budget || 0,
+      spent: backendTrip.spent || 0,
+      createdAt: backendTrip.createdAt,
+      // Keep backend data for future use
+      _originalData: backendTrip
+    };
+  };
+
+  // Transform backend trip summary data to frontend format (for new API)
+  // getCityImageUrl is now imported from utils/imageUtils
+
+  const transformBackendTripSummary = (tripSummary) => {
+    console.log('🔄 Transforming trip summary data:', tripSummary);
+    
+    // Calculate trip status based on dates
+    const calculateTripStatus = (trip) => {
+      if (!trip.startDate || !trip.endDate) return 'draft';
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) return 'upcoming';
+      if (now >= startDate && now <= endDate) return 'active';
+      return 'completed';
+    };
+
+    // Calculate days left for upcoming/active trips
+    const calculateDaysLeft = (trip) => {
+      if (!trip.startDate) return null;
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) {
+        return Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+      }
+      if (now >= startDate && now <= endDate) {
+        return Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      }
+      return 0;
+    };
+
+    // Format dates for display
+    const formatTripDates = (startDate, endDate) => {
+      if (!startDate || !endDate) return 'Dates not set';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
+    };
+
+    const status = calculateTripStatus(tripSummary);
+    // Always use local city images for consistency and reliability
+    const cityImage = getCityImageUrl(tripSummary.destination || 'Sri Lanka');
+    
+    // Extract highlights from the destination or any available data
+    let highlights = [];
+    if (tripSummary.destination) {
+      highlights.push(tripSummary.destination);
+    }
+    if (tripSummary.cities && Array.isArray(tripSummary.cities)) {
+      highlights = [...highlights, ...tripSummary.cities];
+    }
+    if (tripSummary.activities && Array.isArray(tripSummary.activities)) {
+      const activityNames = tripSummary.activities
+        .filter(a => a && a.name)
+        .map(a => a.name)
+        .slice(0, 3);
+      highlights = [...highlights, ...activityNames];
+    }
+    
+    // Remove duplicates from highlights
+    highlights = [...new Set(highlights)];
+    
+    return {
+      id: tripSummary.tripId,
+      name: tripSummary.tripName || 'Untitled Trip',
+      dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
+      destination: tripSummary.destination || 'Sri Lanka',
+      image: cityImage, // Use local city image
+      status: status,
+      progress: status === 'completed' ? 100 : status === 'active' ? 50 : 10,
+      daysLeft: calculateDaysLeft(tripSummary),
+      travelers: tripSummary.groupSize || 1, // Try to use groupSize if available
+      rating: null, // Not provided in summary
+      memories: 0, // Not provided in summary
+      highlights: highlights,
+      budget: tripSummary.budget || 0, 
+      spent: tripSummary.spent || 0,
+      numberOfDays: tripSummary.numberOfDays,
+      message: tripSummary.message,
+      createdAt: tripSummary.startDate,
+      // Keep backend data for future use
+      _originalData: tripSummary
+    };
+  };
+
+  // List all trips for authenticated user
+  const getUserTrips = async () => {
+    const response = await fetch('/api/trip/my-trips', {
+      credentials: 'include' // Session required
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get user trips: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return {
+      trips: result.trips,
+      userId: result.userId,
+      count: result.count
+    };
+  };
+
+  // Fetch backend trips and merge with hardcoded trips
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTrips = async () => {
+      try {
+        const backend = await getUserTrips();
+        if (backend && backend.trips) {
+          // Avoid duplicates by id or name
+          setTrips(prev => {
+            const prevIds = new Set(prev.map(t => t.id));
+            const prevNames = new Set(prev.map(t => t.name));
+            const backendFormatted = backend.trips.map(trip => {
+              const destination = trip.destination || 'Sri Lanka';
+              return {
+                ...trip,
+                id: trip.id || trip._id || Date.now() + Math.random(),
+                image: trip.image || getCityImageUrl(destination),
+                status: trip.status || 'active',
+                dates: trip.dates || 'Not set',
+                destination: destination,
+                // Add any other mapping as needed
+              };
+            }).filter(trip => !prevNames.has(trip.name));
+            return [...backendFormatted, ...prev];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch user trips:', err);
+      }
+    };
+    fetchTrips();
+    return () => { isMounted = false; };
+  }, []);
 
   // Filter and sort trips
   const filteredTrips = trips.filter(trip => {
@@ -347,13 +684,24 @@ const MyTripsPage = () => {
     setIsCreateTripModalOpen(false);
   };
 
+  const handleTripClick = (trip) => {
+    console.log('🔍 Viewing trip:', trip.name);
+    // Navigate to the view trip page with trip data
+    navigate(`/trip/${trip.id}`, { 
+      state: { 
+        trip: trip
+      } 
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+      {/* Removed driver/guide confirmation banner at top */}
       {/* Navbar */}
       <Navbar />
 
       {/* Enhanced Hero Video Section */}
-      <section className="relative w-full h-[18vh] md:h-[37.5vh] overflow-hidden">
+      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover scale-105"
           autoPlay 
@@ -370,7 +718,7 @@ const MyTripsPage = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto mt-16 md:mt-24">
             <h1 className="text-4xl md:text-6xl font-normal mb-6 leading-tight text-white">
               Your Travel Dreams Come to Life
             </h1>
@@ -403,15 +751,25 @@ const MyTripsPage = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end space-y-4 lg:space-y-0">
               <div className="flex flex-col sm:flex-row gap-4 w-full justify-end">
                 {/* Search */}
-                <div className="relative flex-[3_3_0%] min-w-[340px] max-w-2xl">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search trips..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base"
-                  />
+                <div className="relative flex-[3_3_0%] min-w-[500px] md:min-w-[600px] lg:min-w-[700px]">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
+                  <form onSubmit={e => { e.preventDefault(); }} className="w-full">
+                    <div className="relative w-full">
+                      <input
+                        type="text"
+                        placeholder="Search trips..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base bg-white"
+                      />
+                      <button
+                        type="submit"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </form>
                 </div>
                 {/* Filter */}
                 <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
@@ -537,7 +895,7 @@ const MyTripsPage = () => {
                           <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
                             {upcoming.map((trip) => (
                               <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
-                                <TripCard trip={trip} getStatusColor={getStatusColor} />
+                                <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                               </div>
                             ))}
                           </div>
@@ -549,7 +907,7 @@ const MyTripsPage = () => {
                           <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
                             {history.map((trip) => (
                               <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
-                                <TripCard trip={trip} getStatusColor={getStatusColor} />
+                                <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                               </div>
                             ))}
                           </div>
@@ -569,7 +927,7 @@ const MyTripsPage = () => {
                             </p>
                             <button
                               onClick={() => setIsCreateTripModalOpen(true)}
-                              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              className="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full font-semibold text-base hover:bg-blue-700 transition-colors shadow"
                             >
                               <Plus className="mr-2 h-5 w-5" />
                               Create Your First Trip
@@ -592,6 +950,8 @@ const MyTripsPage = () => {
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateTrip}
       />
+
+      <Footer />
     </div>
   );
 };

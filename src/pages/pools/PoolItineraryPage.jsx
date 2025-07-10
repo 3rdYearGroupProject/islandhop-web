@@ -7,6 +7,7 @@ import AddPlacesToStayModal from '../../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../../components/AddTransportationModal';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
 
 const PoolItineraryPage = () => {
@@ -271,6 +272,7 @@ const PoolItineraryPage = () => {
         location: 'Galle', 
         cuisine: 'Local', 
         rating: 4.5,
+        rating: 4.5,
         reviews: 1456,
         image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
         description: 'Charming cafe in historic Galle Fort',
@@ -449,12 +451,28 @@ const PoolItineraryPage = () => {
     });
   };
 
+  // Helper to check if itinerary is valid (at least one item per day)
+  const canSavePool = () => {
+    if (!days.length) return false;
+    // Each day must have at least one item in any category
+    return days.every((_, dayIndex) => {
+      const day = itinerary[dayIndex];
+      if (!day) return false;
+      return (
+        (day.activities && day.activities.length > 0) ||
+        (day.places && day.places.length > 0) ||
+        (day.food && day.food.length > 0) ||
+        (day.transportation && day.transportation.length > 0)
+      );
+    });
+  };
+
   if (!poolName || !selectedDates) {
     return <div>Loading...</div>;
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="pt-20 min-h-screen bg-white">
       <Navbar />
       {/* Pool Progress Bar */}
       <div className="bg-white border-b border-gray-100">
@@ -464,20 +482,6 @@ const PoolItineraryPage = () => {
       </div>
       
       {/* Pool Header removed as per request */}
-
-      {/* Pool Tabs */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-8">
-            <button className="py-4 border-b-2 border-primary-600 text-primary-600 font-medium">
-              Itinerary
-            </button>
-            <button className="py-4 text-gray-500 hover:text-gray-700">
-              For you
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -677,13 +681,14 @@ const PoolItineraryPage = () => {
           <div className="flex gap-4 pt-6 border-t border-gray-200">
             <button
               onClick={handleBack}
-              className="bg-white border border-primary-600 text-primary-600 px-6 py-2 rounded-lg shadow hover:bg-primary-50 font-medium transition-colors"
+              className="bg-white border border-primary-600 text-primary-600 px-8 py-3 rounded-full shadow hover:bg-primary-50 font-medium transition-colors"
             >
               Back
             </button>
             <button
               onClick={handleSavePool}
-              className="bg-primary-600 text-white px-6 py-2 rounded-lg shadow hover:bg-primary-700 font-medium transition-colors"
+              disabled={!canSavePool()}
+              className={`bg-primary-600 text-white px-8 py-3 rounded-full shadow hover:bg-primary-700 font-medium transition-colors ${!canSavePool() ? 'bg-gray-200 text-gray-500 border border-gray-200 cursor-not-allowed hover:bg-gray-200 hover:text-gray-500 hover:shadow-none' : ''}`}
             >
               Save Pool
             </button>
@@ -773,6 +778,7 @@ const PoolItineraryPage = () => {
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
       />
+      <Footer />
     </div>
   );
 };

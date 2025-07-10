@@ -188,8 +188,8 @@ const DriverHistory = () => {
   const stats = calculateStats();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -421,7 +421,7 @@ const DriverHistory = () => {
           </div>
         </div>
       </div>
-    </div>
+    
   );
 };
 

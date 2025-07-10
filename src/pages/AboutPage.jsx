@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import aboutVideo from '../assets/about.mp4';
+import Footer from '../components/Footer';
 
 const AboutPage = () => {
   const [activeDriverIndex, setActiveDriverIndex] = useState(0);
@@ -227,8 +228,8 @@ const AboutPage = () => {
       <Navbar />
       
       {/* Hero Video Section */}
-      <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden">
-        <video 
+      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
+        <video
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 
           muted 
@@ -244,12 +245,14 @@ const AboutPage = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-normal mb-6">
-            About IslandHop
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
-            Connecting travelers with authentic Sri Lankan experiences through verified local professionals
-          </p>
+          <div className="mt-16 md:mt-24">
+            <h1 className="text-4xl md:text-6xl font-normal mb-6">
+              About IslandHop
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
+              Connecting travelers with authentic Sri Lankan experiences through verified local professionals
+            </p>
+          </div>
         </div>
       </section>
 
@@ -586,6 +589,8 @@ const AboutPage = () => {
           </div>
         </section>
       </div>
+
+      <Footer />
     </div>
   );
 };

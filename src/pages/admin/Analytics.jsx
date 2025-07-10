@@ -17,7 +17,11 @@ import {
   UsersIcon,
   CurrencyDollarIcon,
   ChartBarIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  TruckIcon,
+  UserIcon,
+  BuildingOfficeIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 ChartJS.register(
@@ -179,7 +183,7 @@ const Analytics = () => {
       change: '+8.3%',
       changeType: 'positive',
       icon: UsersIcon,
-      color: 'success'
+      color: 'primary'
     },
     {
       title: 'Revenue',
@@ -187,7 +191,7 @@ const Analytics = () => {
       change: '+15.2%',
       changeType: 'positive',
       icon: CurrencyDollarIcon,
-      color: 'warning'
+      color: 'primary'
     },
     {
       title: 'Conversion Rate',
@@ -216,10 +220,10 @@ const Analytics = () => {
   ];
 
   const serviceProviders = [
-    { type: 'Drivers', count: 156, icon: '🚗', trend: '+5' },
-    { type: 'Guides', count: 89, icon: '👤', trend: '+3' },
-    { type: 'Hotels', count: 234, icon: '🏨', trend: '+12' },
-    { type: 'Activities', count: 45, icon: '🎯', trend: '+2' }
+    { type: 'Drivers', count: 156, icon: TruckIcon, trend: '+5' },
+    { type: 'Guides', count: 89, icon: UserIcon, trend: '+3' },
+    { type: 'Hotels', count: 234, icon: BuildingOfficeIcon, trend: '+12' },
+    { type: 'Activities', count: 45, icon: SparklesIcon, trend: '+2' }
   ];
 
   const getMetricCardColor = (color) => {
@@ -416,26 +420,29 @@ const Analytics = () => {
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Service Providers</h3>
             <div className="space-y-3">
-              {serviceProviders.map((provider, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-gray-100 dark:bg-secondary-600 rounded-lg">
-                      <span className="text-lg">{provider.icon}</span>
+              {serviceProviders.map((provider, index) => {
+                const IconComponent = provider.icon;
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-gray-100 dark:bg-secondary-600 rounded-lg">
+                        <IconComponent className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {provider.type}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {provider.count} registered
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {provider.type}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {provider.count} registered
-                      </p>
-                    </div>
+                    <span className="text-sm font-semibold text-success-600 dark:text-success-400">
+                      {provider.trend}
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-success-600 dark:text-success-400">
-                    {provider.trend}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

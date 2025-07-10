@@ -369,7 +369,7 @@ const DriverTrips = () => {
                           </button>
                           <button
                             onClick={() => handleTripAction(trip.id, 'complete')}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center"
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center"
                           >
                             <Check className="h-4 w-4 mr-1" />
                             Complete Trip

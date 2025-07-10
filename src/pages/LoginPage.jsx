@@ -4,9 +4,7 @@ import { auth } from '../firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useToast } from '../components/ToastProvider';
 import sriLankaVideo from '../assets/sri-lanka-video.mp4';
-import islandHopLogo from '../assets/IslandHopWhite.png';
-import islandHopLogoWhite from '../assets/IslandHopWhite.png';
-import islandHopIcon from '../assets/islandHopIcon.png';
+import islandhopFooterLogo from '../assets/islandhop footer 1.png';
 import api from '../api/axios';
 import { encryptUserData } from '../utils/userStorage';
 import errorLogger from '../utils/errorLogger';
@@ -117,8 +115,9 @@ const LoginPage = () => {
               navigate('/driver/dashboard');
               break;
             case 'tourist':
+              navigate('/trips');
             default:
-              navigate('/tourist/dashboard');
+              navigate('/login');
               break;
           }
         }, 1000);
@@ -191,8 +190,9 @@ const LoginPage = () => {
               navigate('/driver/dashboard');
               break;
             case 'tourist':
+              navigate('/trips');
             default:
-              navigate('/tourist/dashboard');
+              navigate('/');
               break;
           }
         }, 1000);
@@ -229,12 +229,10 @@ const LoginPage = () => {
       
       {/* Top left logo */}
       <div 
-        className="absolute top-8 left-8 z-20 flex items-center gap-3 cursor-pointer"
+        className="absolute top-2 left-2 md:top-4 md:left-4 lg:top-6 lg:left-6 z-20 flex items-center cursor-pointer p-2 md:p-3 lg:p-4"
         onClick={handleLogoClick}
       >
-        <img src={islandHopIcon} alt="IslandHop Icon" className="h-10 w-10" />
-        <img src={islandHopLogoWhite} alt="IslandHop" className="h-7 block md:hidden" />
-        <img src={islandHopLogo} alt="IslandHop" className="h-7 hidden md:block" />
+        <img src={islandhopFooterLogo} alt="IslandHop" className="h-7 md:h-8 lg:h-9 xl:h-10" />
       </div>
 
       {/* Left side - Video section */}

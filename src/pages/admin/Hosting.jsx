@@ -265,7 +265,8 @@ const Hosting = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
@@ -307,6 +308,7 @@ const Hosting = () => {
           <div className="text-2xl font-bold text-success-600">
             {infrastructureMetrics.runningServers}
           </div>
+
         </div>
         <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-neutral-200 dark:border-secondary-700">
           <h4 className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
@@ -504,6 +506,7 @@ const Hosting = () => {
           })}
         </div>
       )}
+    </div>
     </div>
   );
 };

@@ -63,7 +63,7 @@ const ConfirmedPools = () => {
     <div className="space-y-8">
       {/* Trip Summary - MyPools Style Card */}
       <div className="mb-12">
-        <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-200 hover:border-green-400 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-4xl mx-auto">
+        <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-400 hover:border-green-600 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-4xl mx-auto">
           {/* Image on the left */}
           <div className="relative w-full lg:w-1/3 h-56 lg:h-auto flex-shrink-0">
             <img
@@ -135,6 +135,9 @@ const ConfirmedPools = () => {
                 ))}
               </div>
             </div>
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+              {confirmedPool.itinerary.length} destinations over {confirmedPool.itinerary.length} days
+            </p>
             <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 {/* You can add a rating or other info here if needed */}
@@ -158,6 +161,9 @@ const ConfirmedPools = () => {
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Itinerary
           </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Your trip spans {confirmedPool.itinerary.length} days. Here's a glance at your planned destinations.
+          </p>
           <div className="flex items-start justify-center">
             {confirmedPool.itinerary.map((item, index) => (
               <React.Fragment key={item.destination}>
@@ -322,34 +328,30 @@ const ConfirmedPools = () => {
         </Card>
       </div>
 
-      {/* Notes Section */}
-      <Card className="bg-info-50 dark:bg-info-900/20 border border-info-200 dark:border-info-700 rounded-xl">
-        <CardBody>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-            <ClockIcon className="h-6 w-6 mr-2" />
-            Important Notes
-          </h3>
-          <div>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              {confirmedPool.notes}
-            </p>
-          </div>
-        </CardBody>
-      </Card>
-
       {/* Action Buttons */}
       <Card className="rounded-xl">
         <CardBody>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button className="flex-1 bg-green-200 text-green-900 py-3 px-6 rounded-full font-medium hover:bg-green-300 transition-colors border border-green-400">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <button className="flex-1 bg-green-200 text-green-900 py-3 px-6 rounded-full font-medium hover:bg-green-300 transition-colors border border-green-400 flex items-center justify-center gap-2">
+              <UserIcon className="h-5 w-5" />
               Contact Guide
             </button>
-            <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-full font-medium hover:bg-blue-700 transition-colors">
+            <button className="flex-1 bg-blue-100 text-blue-800 py-3 px-6 rounded-full font-medium hover:bg-blue-200 transition-colors border border-blue-300 flex items-center justify-center gap-2">
+              <PhoneIcon className="h-5 w-5" />
               Contact Driver
             </button>
-            <button className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors">
+            <button className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex items-center justify-center gap-2 border border-gray-400 dark:border-secondary-500">
+              <IdentificationIcon className="h-5 w-5" />
               Download Itinerary
             </button>
+          </div>
+          
+          {/* Important Notes */}
+          <div className="p-0 mt-2">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Important Notes</h4>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {confirmedPool.notes}
+            </p>
           </div>
         </CardBody>
       </Card>

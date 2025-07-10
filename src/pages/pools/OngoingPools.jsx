@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Card, { CardBody } from '../../components/Card';
 import GroupChat from '../../components/GroupChat';
+import Footer from '../../components/Footer';
 import { 
   MapPinIcon,
   UserGroupIcon,
@@ -63,7 +64,7 @@ const OngoingPools = () => {
     <div className="space-y-8">
       {/* Trip Summary - ConfirmedPools style, but with Ongoing details */}
       <div className="mb-12">
-        <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-200 hover:border-green-400 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-4xl mx-auto">
+        <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-400 hover:border-green-600 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-4xl mx-auto">
           {/* Image on the left */}
           <div className="relative w-full lg:w-1/3 h-56 lg:h-auto flex-shrink-0">
             <img
@@ -143,7 +144,7 @@ const OngoingPools = () => {
                 <button className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors">
                   View Details
                 </button>
-                <button className="flex items-center px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors">
+                <button className="flex items-center px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors border border-gray-400 dark:border-secondary-500">
                   Contact Group
                 </button>
               </div>
@@ -294,7 +295,7 @@ const OngoingPools = () => {
                       {participant.role} • Online
                     </div>
                   </div>
-                  <button className="bg-green-600 text-white px-3 py-1 rounded-full text-sm hover:bg-green-700 transition-colors">
+                  <button className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm hover:bg-green-300 transition-colors border border-green-400">
                     Message
                   </button>
                 </div>
@@ -342,16 +343,16 @@ const OngoingPools = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={() => setIsGroupChatOpen(true)}
-              className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 bg-green-200 text-green-800 py-3 px-6 rounded-full font-medium hover:bg-green-300 transition-colors flex items-center justify-center gap-2 border border-green-400"
             >
               <ChatBubbleLeftRightIcon className="h-5 w-5" />
               Group Chat
             </button>
-            <button className="flex-1 bg-yellow-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-yellow-700 transition-colors flex items-center justify-center gap-2">
+            <button className="flex-1 bg-red-200 text-red-800 py-3 px-6 rounded-full font-medium hover:bg-red-300 transition-colors flex items-center justify-center gap-2 border border-red-400">
               <PhoneIcon className="h-5 w-5" />
               Emergency Call
             </button>
-            <button className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex items-center justify-center gap-2">
+            <button className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex items-center justify-center gap-2 border border-gray-400 dark:border-secondary-500">
               <MapIcon className="h-5 w-5" />
               Share Location
             </button>
@@ -366,6 +367,7 @@ const OngoingPools = () => {
         participants={participants}
         poolName={ongoingPool.name}
       />
+      <Footer />
     </div>
   );
 };

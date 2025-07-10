@@ -109,7 +109,7 @@ const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
               type="submit"
               variant="primary"
               disabled={!formData.name.trim()}
-              className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+              className={`px-6 py-2 rounded-full font-semibold transition-colors ${
                 !formData.name.trim()
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -118,6 +118,24 @@ const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
               Create Trip
             </Button>
           </div>
+        {/* Pool Option Section */}
+        <div className="mt-10 pt-6 border-t border-gray-200">
+          <div className="flex flex-col items-center text-center">
+            <span className="text-lg font-medium text-gray-900 mb-2">Would you like to make this a pool trip?</span>
+            <span className="text-gray-600 mb-4 text-sm">Pool trips allow you to share your adventure with others and split costs.</span>
+            <Button
+              type="button"
+              variant="primary"
+              className="px-6 py-2 rounded-full font-semibold bg-blue-600 text-white hover:bg-blue-700"
+              onClick={() => {
+                // Redirect to pool creation flow, matching PoolPage's Create New Pool button
+                window.location.href = '/pool-duration';
+              }}
+            >
+              Yes, Make this a Pool
+            </Button>
+          </div>
+        </div>
         </form>
       </div>
     </Modal>

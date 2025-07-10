@@ -197,7 +197,7 @@ const PoolDurationPage = () => {
             <div className="flex flex-row gap-4 justify-end mt-6">
               <button
                 onClick={handleBack}
-                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="bg-white border border-primary-600 text-primary-600 px-8 py-3 rounded-full shadow hover:bg-primary-50 font-medium transition-colors"
                 style={{ minWidth: '120px' }}
               >
                 Back
@@ -205,11 +205,7 @@ const PoolDurationPage = () => {
               <button
                 onClick={handleNext}
                 disabled={!selectedDates || selectedDates.length === 0 || !selectedDates[0] || isCreatingPool}
-                className={`px-8 py-3 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                  !selectedDates || selectedDates.length === 0 || !selectedDates[0] || isCreatingPool
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
-                }`}
+                className={`bg-primary-600 text-white px-8 py-3 rounded-full shadow hover:bg-primary-700 font-medium transition-colors ${(!selectedDates || selectedDates.length === 0 || !selectedDates[0] || isCreatingPool) ? 'bg-gray-200 text-gray-500 border border-gray-200 cursor-not-allowed hover:bg-gray-200 hover:text-gray-500 hover:shadow-none' : ''}`}
                 style={{ minWidth: '180px' }}
               >
                 {isCreatingPool ? 'Processing...' : 'Continue to Preferences'}

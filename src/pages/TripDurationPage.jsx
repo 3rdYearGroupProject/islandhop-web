@@ -4,14 +4,13 @@ import { Calendar as CalendarIcon, Plane, Clock, DollarSign, Users, MapPin } fro
 import Navbar from '../components/Navbar';
 import Calendar from '../components/Calendar';
 import TripProgressBar from '../components/TripProgressBar';
-import { tripPlanningApi } from '../api/axios';
+
+import Footer from '../components/Footer';
 
 const TripDurationPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { tripName, userUid } = location.state || {};
-  
-  console.log('📍 TripDurationPage received:', { tripName, userUid });
   
   const [selectedDates, setSelectedDates] = useState([]);
   const [flightData, setFlightData] = useState([]);
@@ -19,6 +18,9 @@ const TripDurationPage = () => {
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const leftCardRef = useRef(null);
   const [leftCardHeight, setLeftCardHeight] = useState('auto');
+
+  console.log('📍 TripDurationPage received:', { tripName, userUid });
+  console.log('📊 Current state - selectedDates:', selectedDates.length, 'userUid:', userUid, 'isCreatingTrip:', isCreatingTrip);
 
   // Mock flight data
   const mockFlightData = {
@@ -43,7 +45,13 @@ const TripDurationPage = () => {
     if (selectedDates.length > 0) {
       setIsLoading(true);
       const startDate = selectedDates[0];
-      const dateKey = startDate.toISOString().split('T')[0];
+      // Ensure startDate is a valid Date object
+      const dateObj = startDate instanceof Date ? startDate : new Date(startDate);
+      if (isNaN(dateObj.getTime())) {
+        setIsLoading(false);
+        return;
+      }
+      const dateKey = dateObj.toISOString().split('T')[0];
       
       // Simulate API call delay
       setTimeout(() => {
@@ -59,12 +67,13 @@ const TripDurationPage = () => {
     }
   }, [selectedDates, isLoading, flightData]);
 
-  const handleDateSelect = (date) => {
-    // Start new range selection
-    setSelectedDates([date]);
+  const handleDateSelect = (dates) => {
+    // This handles both single date and range selection
+    setSelectedDates(dates);
   };
 
   const handleDateRangeSelect = (dates) => {
+    // This is called when a range is completed
     setSelectedDates(dates);
   };
 
@@ -87,38 +96,34 @@ const TripDurationPage = () => {
   };
 
   const handleContinue = async () => {
-    if (selectedDates.length > 0 && userUid) {
+    if (selectedDates.length > 0) {
       setIsCreatingTrip(true);
       
       try {
-        // Format dates for backend (ISO format)
-        const startDate = selectedDates[0].toISOString().split('T')[0];
-        const endDate = selectedDates[selectedDates.length - 1].toISOString().split('T')[0];
+        // Format dates for navigation
+        const startDateObj = selectedDates[0] instanceof Date ? selectedDates[0] : new Date(selectedDates[0]);
+        const endDateObj = selectedDates[selectedDates.length - 1] instanceof Date ? selectedDates[selectedDates.length - 1] : new Date(selectedDates[selectedDates.length - 1]);
         
-        // Create basic trip in backend
-        const result = await createBasicTrip({
-          userUid,
-          tripName,
-          startDate,
-          endDate
-        });
+        // Validate dates
+        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+          console.error('Invalid dates selected');
+          setIsCreatingTrip(false);
+          return;
+        }
         
-        console.log('🎉 Trip created successfully:', result);
+        console.log('✅ Dates validated, proceeding to preferences');
         
-        // Navigate to next step with trip data
+        // Navigate to next step with trip data (no backend call yet)
         navigate('/trip-preferences', { 
           state: { 
             tripName, 
-            selectedDates,
-            tripId: result.tripId,
-            trip: result.trip,
+            selectedDates: [startDateObj, endDateObj],
             userUid
           } 
         });
       } catch (error) {
-        console.error('Failed to create trip:', error);
-        // You might want to show a toast error here
-        // For now, continue without backend trip creation
+        console.error('Failed to continue:', error);
+        // Fallback navigation
         navigate('/trip-preferences', { 
           state: { 
             tripName, 
@@ -132,40 +137,12 @@ const TripDurationPage = () => {
     }
   };
 
-  // Create basic trip with minimal information to reduce initial friction
-  const createBasicTrip = async (tripData) => {
-    console.log('🚀 Sending trip creation request to backend...', {
-      userUid: tripData.userUid,
-      tripName: tripData.tripName,
-      startDate: tripData.startDate,
-      endDate: tripData.endDate
-    });
-    
-    try {
-      const response = await tripPlanningApi.post('/trip/create-basic', {
-        userId: tripData.userUid,
-        tripName: tripData.tripName,
-        startDate: tripData.startDate,
-        endDate: tripData.endDate
-      });
-
-      console.log('✅ Trip creation response received:', response.data);
-      
-      return {
-        tripId: response.data.tripId,
-        trip: response.data.trip,
-        message: response.data.message
-      };
-    } catch (error) {
-      console.error('❌ Error creating trip:', error);
-      throw new Error(`HTTP error! status: ${error.response?.status || 'unknown'}`);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Navbar */}
       <Navbar />
+      {/* Spacer to prevent overlap with fixed/floating navbar */}
+      <div className="h-20 md:h-24 lg:h-28 bg-white"></div>
 
       {/* Header Section */}
       <TripProgressBar tripName={tripName} onBack={handleBack} currentStep={2} completedSteps={[1]} />
@@ -189,7 +166,6 @@ const TripDurationPage = () => {
                 <Calendar
                   selectedDates={selectedDates}
                   onDateSelect={handleDateSelect}
-                  onDateRangeSelect={handleDateRangeSelect}
                   mode="range"
                   minDate={new Date()}
                   className="w-full"
@@ -298,17 +274,17 @@ const TripDurationPage = () => {
             <div className="flex flex-row gap-4 justify-end mt-6">
               <button
                 onClick={handleBack}
-                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-blue-300 hover:text-blue-700 transition-all duration-200 font-semibold order-1 sm:order-none shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="px-6 py-2 rounded-full border border-primary-600 text-primary-600 bg-white hover:bg-primary-50 hover:border-primary-700 transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 text-base"
                 style={{ minWidth: '120px' }}
               >
                 Back
               </button>
               <button
                 onClick={handleContinue}
-                disabled={selectedDates.length === 0 || isCreatingTrip || !userUid}
-                className={`px-8 py-3 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                  selectedDates.length > 0 && !isCreatingTrip && userUid
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                disabled={selectedDates.length === 0 || isCreatingTrip}
+                className={`px-6 py-2 rounded-full font-semibold text-base transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 ${
+                  selectedDates.length > 0 && !isCreatingTrip
+                    ? 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
                     : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
                 style={{ minWidth: '180px' }}
@@ -319,6 +295,8 @@ const TripDurationPage = () => {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

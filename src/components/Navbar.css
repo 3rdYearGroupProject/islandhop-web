@@ -1,0 +1,38 @@
+
+.animate-navbar-dropdown {
+  opacity: 0;
+  transform: translateY(-16px);
+  animation: navbarDropdownDown 0.2s ease-out forwards;
+}
+
+/* Make the navbar taller */
+nav.fixed.top-4.left-4.right-4 {
+  min-height: 5.5rem;
+  height: 5.5rem;
+  padding-right: 1.25rem; /* Default px-6 = 1.5rem, but we want a custom gap for the button */
+}
+
+/* Add extra right margin to the signup button for visual balance */
+.navbar-signup-btn {
+  margin-right: 12px;
+}
+
+@keyframes navbarDropdownDown {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-navbar-dropdown-leave {
+  opacity: 1;
+  transform: translateY(0);
+  animation: navbarDropdownUp 0.18s ease-in forwards;
+}
+
+@keyframes navbarDropdownUp {
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
