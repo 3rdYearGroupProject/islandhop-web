@@ -176,9 +176,28 @@ const LandingPage = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 mb-8">
-            <button className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center">
-              <Sparkles className="mr-3 h-6 w-6" aria-hidden="true" />
-              Start Your Journey
+            <button
+              className="relative inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white rounded-full font-bold text-lg transition-all duration-300 justify-center overflow-hidden bg-white hover:bg-gray-200 group"
+              style={{}}
+            >
+              {/* The text and icon as a cutout */}
+              <span
+                className="absolute inset-0 flex items-center justify-center select-none"
+                style={{
+                  WebkitMaskImage: 'linear-gradient(white, white)',
+                  maskImage: 'linear-gradient(white, white)',
+                  WebkitMaskComposite: 'destination-out',
+                  color: 'black',
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                  mixBlendMode: 'destination-out',
+                }}
+              >
+                <Sparkles className="mr-3 h-6 w-6" aria-hidden="true" />
+                <span>Start Your Journey</span>
+              </span>
+              {/* Fallback text for accessibility, visually hidden */}
+              <span className="opacity-0">Start Your Journey</span>
             </button>
             <button className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center">
               <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,12 +265,14 @@ const LandingPage = () => {
       <ColomboExperiences />
 
       {/* AI Trip Creation CTA Section */}
-      <AiTripCta />
+      <div className="mb-12">
+        <AiTripCta />
+      </div>
 
       {/* Secondary Showcase: Iconic places */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Must-Visit Iconic Places</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Must-Visit Iconic Places</h2>
           <CardGrid cardType="scroll" maxCards={6}>
             {[
               { title: 'Sigiriya Rock Fortress', rating: 4.9, reviewCount: 1500, price: '$45', image: sigiriyaImg },
@@ -279,7 +300,7 @@ const LandingPage = () => {
       {/* Inspiration Section */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Discover Sri Lanka's Best</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Discover Sri Lanka's Best</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {inspirationDestinations.map((inspiration, i) => (
               <div key={i} className="flex-shrink-0 w-64 md:w-72">
@@ -296,26 +317,68 @@ const LandingPage = () => {
       </section>
 
       {/* Pool CTA - pooling feature */}
-      <PoolCta />
+      <div className="mb-12">
+        <PoolCta />
+      </div>
 
       {/* Things to do right now */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Popular Activities</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Popular Activities</h2>
           <CardGrid cardType="scroll" maxCards={6}>
             {[
-              'Sunset at Galle Face Green',
-              'Visit Gangaramaya Temple',
-              'Shopping at Pettah Market',
-              'Colombo National Museum',
-              'Viharamahadevi Park stroll',
-              'Street food tour in Fort'
+              {
+                title: 'Zip Lining in Flying Ravana',
+                rating: 4.9,
+                reviewCount: 420,
+                price: '$20',
+                image: require('../assets/activities/ziplining.jpg')
+              },
+              {
+                title: 'White Water Rafting in Kitulgala',
+                rating: 4.8,
+                reviewCount: 350,
+                price: '$25',
+                image: require('../assets/activities/rafting.jpg')
+              },
+              {
+                title: 'Surfing in Arugam Bay',
+                rating: 4.7,
+                reviewCount: 390,
+                price: '$15',
+                image: require('../assets/activities/surfing.jpg')
+              },
+              {
+                title: 'Hot Air Ballooning in Dambulla',
+                rating: 4.8,
+                reviewCount: 210,
+                price: '$120',
+                image: require('../assets/activities/balloning.png')
+              },
+              {
+                title: 'Scuba Diving in Hikkaduwa',
+                rating: 4.6,
+                reviewCount: 180,
+                price: '$40',
+                image: require('../assets/activities/scubadiving.jpg')
+              },
+              {
+                title: 'Safari at Yala National Park',
+                rating: 4.9,
+                reviewCount: 500,
+                price: '$60',
+                image: require('../assets/activities/safari.jpg')
+              }
             ].map((activity, i) => (
-              <InspirationCard 
+              <ExploreCard
                 key={i}
-                image={placeholder}
-                title={activity}
-                className="min-w-[260px] flex-shrink-0"
+                image={activity.image}
+                title={activity.title}
+                rating={activity.rating}
+                reviewCount={activity.reviewCount}
+                price={activity.price}
+                className="flex-shrink-0"
+                onClick={() => {}}
               />
             ))}
           </CardGrid>
@@ -325,23 +388,45 @@ const LandingPage = () => {
       {/* Themed collections */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Browse themed collections</h2>
-          <CardGrid cardType="collection" maxCards={5}>
-            {[  
-              'Tea Plantation Tours',
-              'Ancient Temple Trails',
-              'Wildlife Safari Adventures',
-              'Coastal Beach Escapes',
-              'Hill Country Retreats'
-            ].map((collection) => (
-              <CollectionCard 
-                key={collection}
-                image={placeholder}
-                title={collection}
-                className="w-full max-w-[220px]"
-              />
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Browse themed collections</h2>
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {[
+              {
+                name: 'Tea Plantation Tours',
+                image: require('../assets/exp-colombo/tea-plantations.jpg'),
+                description: 'Tour lush tea estates and scenic hills'
+              },
+              {
+                name: 'Ancient Temple Trails',
+                image: require('../assets/landing/temples.jpg'),
+                description: 'Walk through centuries of history'
+              },
+              {
+                name: 'Wildlife Safari Adventures',
+                image: require('../assets/landing/wildlife.webp'),
+                description: 'See elephants, leopards, and more'
+              },
+              {
+                name: 'Coastal Beach Escapes',
+                image: require('../assets/landing/best-beaches.jpg'),
+                description: 'Relax on golden sands and blue seas'
+              },
+              {
+                name: 'Hill Country Retreats',
+                image: require('../assets/landing/hiking.jpg'),
+                description: 'Unwind in cool, misty mountains'
+              }
+            ].map((collection, i) => (
+              <div key={i} className="flex-shrink-0 w-64 md:w-72">
+                <DestinationCard
+                  destination={collection}
+                  imageUrl={collection.image}
+                  onClick={() => {}}
+                  className="h-48 md:h-56"
+                />
+              </div>
             ))}
-          </CardGrid>
+          </div>
         </div>
       </section>
 

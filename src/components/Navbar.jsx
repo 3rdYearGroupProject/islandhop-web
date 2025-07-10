@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import logo from '../assets/islandHopIcon.png'; // Icon
 import logoText from '../assets/IslandHop.png'; // Full logo text
+import ProfileModal from './ProfileModal';
+import SettingsModal from './SettingsModal';
 import './GoogleTranslate.css'; // Import Google Translate styles
 import './Navbar.css'; // Import Navbar styles for dropdown animations
 
@@ -350,309 +352,29 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/login" className="text-gray-700 hover:text-primary-600 font-medium">Sign in</Link>
-              <Link to="/signup" className="ml-2 px-4 py-3 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition">Sign up</Link>
+              <Link to="/signup" className="ml-2 px-4 py-3 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition navbar-signup-btn">Sign up</Link>
             </>
           )}
         </div>
       </div>
 
       {/* Profile Popup Modal - Business Card Style */}
-      {showProfilePopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-lg relative animate-navbar-dropdown overflow-hidden border border-gray-200">
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl transition-colors z-10" onClick={() => setShowProfilePopup(false)} aria-label="Close profile">&times;</button>
-            
-            {/* Business Card Header with Company Branding */}
-            <div className="bg-white h-20 w-full flex items-center justify-between px-6">
-              <div className="flex items-center">
-                <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-3" />
-                <img src={logoText} alt="IslandHop" className="h-6" />
-              </div>
-            </div>
-            
-            {/* Business Card Body */}
-            <div className="p-6">
-              {/* Profile Section - Centered */}
-              <div className="flex flex-col items-center text-center mb-6">
-                <div className="relative w-28 h-28 mb-4">
-                  <div className="w-28 h-28 bg-primary-500 rounded-full flex items-center justify-center shadow-md">
-                    <span className="text-white text-4xl font-bold">{userProfile.avatar}</span>
-                  </div>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-primary-500 flex items-center justify-center text-primary-600 hover:text-primary-700 hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm mb-2">{userProfile.email}</p>
-                  <div className="flex items-center justify-center text-xs text-gray-500 mb-2">
-                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                    </svg>
-                    {userProfile.nationality}
-                    <button className="ml-2 text-primary-600 hover:text-primary-700 transition-colors">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Contact Information */}
-              <div className="pt-4">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                      First Name
-                      {editingFirstName ? (
-                        <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
-                          setUserProfile(p => ({ ...p, firstName: firstNameInput }));
-                          setEditingFirstName(false);
-                        }} title="Save">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                      ) : (
-                        <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingFirstName(true); setFirstNameInput(userProfile.firstName); }} title="Edit">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <div className="font-semibold text-gray-700 text-sm">
-                      {editingFirstName ? (
-                        <input
-                          className="border rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
-                          value={firstNameInput}
-                          onChange={e => setFirstNameInput(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, firstName: firstNameInput })); setEditingFirstName(false); } }}
-                          autoFocus
-                        />
-                      ) : (
-                        userProfile.firstName
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                      Last Name
-                      {editingLastName ? (
-                        <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
-                          setUserProfile(p => ({ ...p, lastName: lastNameInput }));
-                          setEditingLastName(false);
-                        }} title="Save">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                      ) : (
-                        <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingLastName(true); setLastNameInput(userProfile.lastName); }} title="Edit">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <div className="font-semibold text-gray-700 text-sm">
-                      {editingLastName ? (
-                        <input
-                          className="border rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
-                          value={lastNameInput}
-                          onChange={e => setLastNameInput(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, lastName: lastNameInput })); setEditingLastName(false); } }}
-                          autoFocus
-                        />
-                      ) : (
-                        userProfile.lastName
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                      Date of Birth
-                      {editingDob ? (
-                        <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
-                          setUserProfile(p => ({ ...p, dob: dobInput }));
-                          setEditingDob(false);
-                        }} title="Save">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                      ) : (
-                        <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingDob(true); setDobInput(userProfile.dob); }} title="Edit">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <div className="font-semibold text-gray-700 text-sm">
-                      {editingDob ? (
-                        <input
-                          type="date"
-                          className="border rounded px-2 py-1 text-sm w-32 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
-                          value={dobInput}
-                          onChange={e => setDobInput(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, dob: dobInput })); setEditingDob(false); } }}
-                          autoFocus
-                        />
-                      ) : (
-                        userProfile.dob
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                      Languages
-                      <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="font-semibold text-gray-700 text-sm">{userProfile.languages.join(', ')}</div>
-                  </div>
-                </div>
-                
-                {/* Travel Stats */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="text-lg font-bold text-primary-600">12</div>
-                      <div className="text-xs text-gray-500">Trips</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-primary-600">8</div>
-                      <div className="text-xs text-gray-500">Cities</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProfileModal
+        show={showProfilePopup}
+        onClose={() => setShowProfilePopup(false)}
+        userProfile={userProfile}
+        setUserProfile={setUserProfile}
+      />
 
       {/* Settings Popup Modal */}
-      {showSettingsPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-lg relative animate-navbar-dropdown overflow-hidden border border-gray-200">
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl transition-colors z-10" onClick={() => setShowSettingsPopup(false)} aria-label="Close settings">&times;</button>
-            {/* Settings Header */}
-            <div className="bg-white h-20 w-full flex items-center justify-center px-6 border-b border-gray-100">
-              <div className="text-2xl font-bold text-gray-800 tracking-tight">Settings</div>
-            </div>
-            {/* Settings Body */}
-            <div className="p-6">
-              {/* Settings Options */}
-              <div className="space-y-4">
-                {/* Change Password */}
-                <button className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 border-2 border-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-800">Change Password</div>
-                      <div className="text-xs text-gray-500">Update your account password</div>
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                {/* Change Currency */}
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center mb-3">
-                    <div className="w-10 h-10 border-2 border-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-semibold text-gray-800">Currency</div>
-                      <div className="text-xs text-gray-500">Select your preferred currency</div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['USD', 'EUR', 'GBP', 'LKR', 'INR', 'AUD'].map((currency) => (
-                      <button
-                        key={currency}
-                        onClick={() => setCurrentCurrency(currency)}
-                        className={`p-2 rounded-full text-sm font-medium transition-colors ${
-                          currentCurrency === currency 
-                            ? 'bg-primary-500 text-white' 
-                            : 'bg-white border text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {currency}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Change Units */}
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center mb-3">
-                    <div className="w-10 h-10 border-2 border-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                      </svg>
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-semibold text-gray-800">Units</div>
-                      <div className="text-xs text-gray-500">Choose measurement system</div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['Imperial', 'Metric'].map((unit) => (
-                      <button
-                        key={unit}
-                        onClick={() => setCurrentUnits(unit)}
-                        className={`p-2 rounded-full text-sm font-medium transition-colors ${
-                          currentUnits === unit 
-                            ? 'bg-primary-500 text-white' 
-                            : 'bg-white border text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {unit}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Deactivate Account */}
-                <button className="w-full flex items-center justify-between p-4 bg-red-50 hover:bg-red-100 rounded-full transition-colors border border-red-200">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 border-2 border-red-500 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-red-700">Deactivate Account</div>
-                      <div className="text-xs text-red-500">Permanently disable your account</div>
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SettingsModal
+        show={showSettingsPopup}
+        onClose={() => setShowSettingsPopup(false)}
+        currentCurrency={currentCurrency}
+        setCurrentCurrency={setCurrentCurrency}
+        currentUnits={currentUnits}
+        setCurrentUnits={setCurrentUnits}
+      />
     </nav>
   );
 };

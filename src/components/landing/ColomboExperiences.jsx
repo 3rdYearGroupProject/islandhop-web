@@ -19,7 +19,7 @@ const DEFAULT_EXPERIENCES = [
 const ColomboExperiences = ({ experiences = DEFAULT_EXPERIENCES }) => (
   <section className="w-full py-8">
     <div className="content-container">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Explore experiences near Colombo</h2>
+      <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Explore experiences near Colombo</h2>
       <CardGrid cardType="scroll" maxCards={6}>
         {experiences.map((exp, i) => (
           <ExploreCard
