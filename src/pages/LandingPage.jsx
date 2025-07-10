@@ -121,99 +121,137 @@ const LandingPage = () => {
       <Navbar />
 
       {/* Hero Video Section */}
-      <section className="relative w-full h-[55vh] md:h-[65vh] overflow-hidden">
+      <section className="relative w-full h-screen overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 
           muted 
           loop
           playsInline
+          preload="auto"
+          onLoadedData={(e) => {
+            // Ensure smooth looping by setting playback rate and handling end event
+            e.target.playbackRate = 1.0;
+          }}
+          onEnded={(e) => {
+            // Force smooth restart if loop fails
+            e.target.currentTime = 0;
+            e.target.play();
+          }}
         >
           <source src={sriLankaVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         
-        {/* Video Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+        {/* Enhanced Video Overlay with Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/50"></div>
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          {/* ...existing content... */}
-          <h1 className="text-5xl md:text-7xl font-normal mb-6">
-            Ready For Your<br />
-            Next Adventure?
+          {/* Logo/Brand */}
+          <div className="mb-8">
+            <img 
+              src={require('../assets/islandhop footer 1.png')} 
+              alt="IslandHop" 
+              className="h-12 md:h-16 w-auto mx-auto mb-4"
+              draggable="false"
+            />
+          </div>
+          
+          {/* Main Heading */}
+          <h1 className="text-6xl md:text-8xl font-light mb-6 tracking-tight leading-tight">
+            Your Sri Lankan<br />
+            <span className="font-semibold text-primary-600">
+              Adventure
+            </span> Awaits
           </h1>
-          <p className="text-lg md:text-xl mb-8 max-w-2xl">
-            Get an experience like never before with IslandHop
+          
+          {/* Subheading */}
+          <p className="text-xl md:text-2xl mb-4 max-w-4xl font-light opacity-90">
+            Discover the pearl of the Indian Ocean with verified local guides
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button className="px-8 py-3 bg-white text-gray-900 font-semibold rounded-full hover:bg-gray-100 transition">
-              Start Planning
+          <p className="text-lg md:text-xl mb-12 max-w-3xl opacity-75">
+            From ancient temples to pristine beaches, create unforgettable memories with IslandHop
+          </p>
+          
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-6 mb-8">
+            <button className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center">
+              <Sparkles className="mr-3 h-6 w-6" aria-hidden="true" />
+              Start Your Journey
             </button>
-            <button className="px-8 py-3 border-2 border-white text-white font-semibold rounded-full hover:bg-white hover:text-gray-900 transition">
+            <button className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center">
+              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1a3 3 0 000-6h-1m5 6h1a3 3 0 000-6h-1m-7 6h7m-7 0v8a2 2 0 002 2h10a2 2 0 002-2v-8m-9 0V9a2 2 0 012-2h5a2 2 0 012 2v3.028M12 17.5V21" />
+              </svg>
               Join a Pool
             </button>
           </div>
+          
+          {/* Trust indicators */}
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm opacity-80">
+            <div className="flex items-center gap-2">
+              <div className="flex text-yellow-400">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <span>4.8 rating from 10K+ travelers</span>
+            </div>
+            <div className="hidden sm:block w-1 h-1 bg-white/60 rounded-full"></div>
+            <div>500+ verified professionals</div>
+            <div className="hidden sm:block w-1 h-1 bg-white/60 rounded-full"></div>
+            <div>Available 24/7</div>
+          </div>
+        </div>
+        
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/70 animate-bounce">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
         </div>
       </section>
 
-      {/* Interest Cards */}
-      <InterestCards />
-
-      {/* Experiences Near Colombo */}
-      <ColomboExperiences />
-
-      {/* Inspiration Section */}
-      <section className="w-full py-8">
-        <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Inspiration to get you going</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {inspirationDestinations.map((inspiration, i) => (
-              <div key={i} className="flex-shrink-0 w-64 md:w-72">
-                <DestinationCard
-                  destination={inspiration}
-                  imageUrl={inspiration.image}
-                  onClick={(dest) => console.log('Clicked inspiration:', dest.name)}
-                  className="h-48 md:h-56"
-                />
-              </div>
-            ))}
+      {/* Problem/Solution Statement */}
+      <section className="w-full py-16 bg-gray-50">
+        <div className="content-container text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Planning a Sri Lankan Adventure Shouldn't Be Overwhelming
+          </h2>
+          <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+            From finding trusted guides to discovering hidden gems, IslandHop connects you with verified local professionals 
+            and like-minded travelers to create unforgettable experiences across Sri Lanka.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition">
+              Start Your Journey
+            </button>
+            <button className="px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-full hover:bg-primary-600 hover:text-white transition">
+              Learn More
+            </button>
           </div>
         </div>
       </section>
+
+      {/* Why Choose IslandHop section - Key Features */}
+      <WhyChooseIslandHop />
+
+      {/* Interest Cards - What you can explore */}
+      <InterestCards />
+
+      {/* Main Showcase: Experiences Near Colombo */}
+      <ColomboExperiences />
 
       {/* AI Trip Creation CTA Section */}
       <AiTripCta />
 
-      {/* Things to do right now */}
-      {/* Things to do right now */}
+      {/* Secondary Showcase: Iconic places */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Things to do—right now</h2>
-          <CardGrid cardType="scroll" maxCards={6}>
-            {[
-              'Sunset at Galle Face Green',
-              'Visit Gangaramaya Temple',
-              'Shopping at Pettah Market',
-              'Colombo National Museum',
-              'Viharamahadevi Park stroll',
-              'Street food tour in Fort'
-            ].map((activity, i) => (
-              <InspirationCard 
-                key={i}
-                image={placeholder}
-                title={activity}
-                className="min-w-[260px] flex-shrink-0"
-              />
-            ))}
-          </CardGrid>
-        </div>
-      </section>
-
-      {/* Iconic places */}
-      <section className="w-full py-8">
-        <div className="content-container">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Iconic places you need to see</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Must-Visit Iconic Places</h2>
           <CardGrid cardType="scroll" maxCards={6}>
             {[
               { title: 'Sigiriya Rock Fortress', rating: 4.9, reviewCount: 1500, price: '$45', image: sigiriyaImg },
@@ -238,11 +276,121 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Why Choose IslandHop section (imported from AboutPage) */}
-      <WhyChooseIslandHop />
+      {/* Inspiration Section */}
+      <section className="w-full py-8">
+        <div className="content-container">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Discover Sri Lanka's Best</h2>
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {inspirationDestinations.map((inspiration, i) => (
+              <div key={i} className="flex-shrink-0 w-64 md:w-72">
+                <DestinationCard
+                  destination={inspiration}
+                  imageUrl={inspiration.image}
+                  onClick={(dest) => console.log('Clicked inspiration:', dest.name)}
+                  className="h-48 md:h-56"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Pool CTA - pooling feature */}
       <PoolCta />
+
+      {/* Things to do right now */}
+      <section className="w-full py-8">
+        <div className="content-container">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Popular Activities</h2>
+          <CardGrid cardType="scroll" maxCards={6}>
+            {[
+              'Sunset at Galle Face Green',
+              'Visit Gangaramaya Temple',
+              'Shopping at Pettah Market',
+              'Colombo National Museum',
+              'Viharamahadevi Park stroll',
+              'Street food tour in Fort'
+            ].map((activity, i) => (
+              <InspirationCard 
+                key={i}
+                image={placeholder}
+                title={activity}
+                className="min-w-[260px] flex-shrink-0"
+              />
+            ))}
+          </CardGrid>
+        </div>
+      </section>
+
+      {/* Themed collections */}
+      <section className="w-full py-8">
+        <div className="content-container">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Browse themed collections</h2>
+          <CardGrid cardType="collection" maxCards={5}>
+            {[  
+              'Tea Plantation Tours',
+              'Ancient Temple Trails',
+              'Wildlife Safari Adventures',
+              'Coastal Beach Escapes',
+              'Hill Country Retreats'
+            ].map((collection) => (
+              <CollectionCard 
+                key={collection}
+                image={placeholder}
+                title={collection}
+                className="w-full max-w-[220px]"
+              />
+            ))}
+          </CardGrid>
+        </div>
+      </section>
+
+      {/* Social Proof Section */}
+      <section className="w-full py-16 bg-gray-50">
+        <div className="content-container text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-12">
+            Trusted by Thousands of Travelers
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary-600 mb-2">10K+</div>
+              <div className="text-gray-600">Happy Travelers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary-600 mb-2">500+</div>
+              <div className="text-gray-600">Verified Professionals</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary-600 mb-2">4.8★</div>
+              <div className="text-gray-600">Average Rating</div>
+            </div>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg p-8 shadow-sm">
+              <div className="flex items-center justify-center mb-4">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+              </div>
+              <p className="text-lg text-gray-600 mb-4">
+                "IslandHop made our Sri Lankan adventure absolutely incredible. The local guide was knowledgeable, 
+                friendly, and showed us places we never would have discovered on our own."
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <img src={avatar} alt="Customer" className="w-12 h-12 rounded-full" />
+                <div>
+                  <div className="font-semibold text-gray-900">Sarah Johnson</div>
+                  <div className="text-sm text-gray-600">Traveled to Kandy & Ella</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
       <Footer />

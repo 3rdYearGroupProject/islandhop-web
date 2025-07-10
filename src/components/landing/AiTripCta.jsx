@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 
 const AiTripCta = () => (
-  <section className="w-full py-20 md:py-28 relative overflow-hidden">
+  <section className="w-full py-12 md:py-20 relative overflow-hidden">
     <img
       src={require('../../assets/landing/CTAAI.jpg')}
       alt="AI Trip Planner Background"

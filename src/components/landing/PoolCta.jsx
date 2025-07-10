@@ -2,7 +2,7 @@ import React from 'react';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
 
 const PoolCta = () => (
-  <section className="w-full py-20 md:py-28 relative overflow-hidden">
+  <section className="w-full py-12 md:py-20 relative overflow-hidden">
     <img
       src={require('../../assets/landing/CTApool.jpg')}
       alt="Travel Pool Background"
