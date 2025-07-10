@@ -333,22 +333,45 @@ const MyTripsPage = () => {
       setIsLoadingTrips(true);
       setApiError(null);
       
-      console.log('📡 Making MY TRIPS API request to:', `/trip/my-trips?userId=${userId}`);
+      console.log('📡 Making GET ITINERARIES API request to:', `/api/v1/itinerary?userId=${userId}`);
       
-      const response = await tripPlanningApi.get(`/trip/my-trips?userId=${userId}`, { 
-        withCredentials: true 
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084'}/api/v1/itinerary?userId=${userId}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
       
-      console.log('📨 MY TRIPS API Response status:', response.status);
-      console.log('📦 MY TRIPS API Response data:', response.data);
+      console.log('📨 GET ITINERARIES API Response status:', response.status);
       
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch trips: ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        
+        if (response.status === 400) {
+          alert(`Invalid user ID: ${errorData.message || 'Please check your login status'}`);
+          throw new Error(`Invalid userId: ${errorData.message}`);
+        } else if (response.status === 404) {
+          console.log('📝 No trips found for user');
+          alert('No trips found. Start planning your first adventure!');
+          return []; // Return empty array for no trips
+        } else if (response.status === 500) {
+          alert(`Server error: ${errorData.message || 'Please try again later'}`);
+          throw new Error(`Server error: ${errorData.message}`);
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
       }
       
-      // Transform backend data to match frontend expected format
-      const backendTrips = response.data?.trips || [];
-      const transformedTrips = backendTrips.map(trip => transformTripData(trip));
+      const data = await response.json();
+      console.log('📦 GET ITINERARIES API Response data:', data);
+      
+      // Transform backend trip summaries to match frontend expected format
+      const backendTrips = Array.isArray(data) ? data : [];
+      const transformedTrips = backendTrips.map(trip => transformBackendTripSummary(trip));
       
       console.log('✅ FETCH USER TRIPS SUCCESS - Found', transformedTrips.length, 'trips');
       console.log('📊 Transformed trips:', transformedTrips);
@@ -358,9 +381,16 @@ const MyTripsPage = () => {
       console.error('❌ FETCH USER TRIPS FAILED');
       console.error('❌ Fetch trips error:', error);
       console.error('❌ Fetch trips error message:', error.message);
-      console.error('❌ Fetch trips error response:', error.response?.data);
       
       setApiError(error.message || 'Failed to fetch trips');
+      
+      // Don't show alert for network errors to avoid double alerts
+      if (!error.message.includes('Invalid userId') && 
+          !error.message.includes('Server error') && 
+          !error.message.includes('No trips found')) {
+        alert(`Failed to fetch trips: ${error.message}`);
+      }
+      
       throw error;
     } finally {
       setIsLoadingTrips(false);
@@ -432,6 +462,76 @@ const MyTripsPage = () => {
       createdAt: backendTrip.createdAt,
       // Keep backend data for future use
       _originalData: backendTrip
+    };
+  };
+
+  // Transform backend trip summary data to frontend format (for new API)
+  const transformBackendTripSummary = (tripSummary) => {
+    console.log('🔄 Transforming trip summary data:', tripSummary);
+    
+    // Calculate trip status based on dates
+    const calculateTripStatus = (trip) => {
+      if (!trip.startDate || !trip.endDate) return 'draft';
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) return 'upcoming';
+      if (now >= startDate && now <= endDate) return 'active';
+      return 'completed';
+    };
+
+    // Calculate days left for upcoming/active trips
+    const calculateDaysLeft = (trip) => {
+      if (!trip.startDate) return null;
+      
+      const now = new Date();
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      
+      if (now < startDate) {
+        return Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+      }
+      if (now >= startDate && now <= endDate) {
+        return Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      }
+      return 0;
+    };
+
+    // Format dates for display
+    const formatTripDates = (startDate, endDate) => {
+      if (!startDate || !endDate) return 'Dates not set';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
+    };
+
+    const status = calculateTripStatus(tripSummary);
+    
+    return {
+      id: tripSummary.tripId,
+      name: tripSummary.tripName || 'Untitled Trip',
+      dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
+      destination: tripSummary.destination || 'Sri Lanka',
+      image: placeholder, // Use placeholder since summary doesn't include image
+      status: status,
+      progress: status === 'completed' ? 100 : status === 'active' ? 50 : 10,
+      daysLeft: calculateDaysLeft(tripSummary),
+      travelers: 1, // Default since not provided in summary
+      rating: null, // Not provided in summary
+      memories: 0, // Not provided in summary
+      highlights: tripSummary.destination ? [tripSummary.destination] : [],
+      budget: 0, // Not provided in summary
+      spent: 0, // Not provided in summary
+      numberOfDays: tripSummary.numberOfDays,
+      message: tripSummary.message,
+      createdAt: tripSummary.startDate,
+      // Keep backend data for future use
+      _originalData: tripSummary
     };
   };
 
