@@ -21,3 +21,7 @@ tripadvisor/screencapture-tripadvisor-Trips-2025-07-03-10_40_57.png
 tripadvisor/screencapture-tripadvisor-Trips-2025-07-03-10_41_10.png
 tripadvisor/screencapture-tripadvisor-Trips-2025-07-03-10_43_38.png
 tripadvisor/screencapture-tripadvisor-Trips-2025-07-03-10_43_53.png
+
+# Ignore environment variable files
+.env
+.env.*
