@@ -262,7 +262,11 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-4 left-4 right-4 z-50 bg-white/95 backdrop-blur-md shadow-lg rounded-full h-18 flex items-center px-6 border border-gray-200">
+    <nav className="fixed top-4 left-4 right-4 z-50 bg-white/95 shadow-lg rounded-full h-18 flex items-center px-6 border border-gray-200">
+      {/* Blur overlay when profile popup is open */}
+      {showProfilePopup && (
+        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}></div>
+      )}
       <div className="w-full flex items-center h-20 px-6">
         {/* Logo - Left Edge */}
         <Link to="/" className="flex items-center ml-2">

@@ -1,192 +1,285 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logo from '../assets/islandHopIcon.png';
 import logoText from '../assets/IslandHop.png';
+import api from '../api/axios';
+
+// List of countries (shortened for brevity, use a full list in production)
+const COUNTRIES = [
+  'Sri Lanka', 'India', 'United States', 'United Kingdom', 'Australia', 'Canada', 'France', 'Germany', 'Japan', 'China', 'Singapore', 'Malaysia', 'Italy', 'Spain', 'Russia', 'Brazil', 'South Africa', 'New Zealand', 'Thailand', 'Nepal', 'Maldives', 'Pakistan', 'Bangladesh', 'Indonesia', 'Vietnam', 'Philippines', 'Turkey', 'UAE', 'Saudi Arabia', 'Egypt', 'Argentina', 'Mexico', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Netherlands', 'Belgium', 'Austria', 'Greece', 'Portugal', 'Ireland', 'Poland', 'Czech Republic', 'Hungary', 'Romania', 'Bulgaria', 'Croatia', 'Slovenia', 'Slovakia', 'Estonia', 'Latvia', 'Lithuania', 'Ukraine', 'Belarus', 'Georgia', 'Armenia', 'Azerbaijan', 'Israel', 'Jordan', 'Lebanon', 'Qatar', 'Kuwait', 'Oman', 'Bahrain', 'Morocco', 'Tunisia', 'Algeria', 'Nigeria', 'Kenya', 'Ghana', 'Ethiopia', 'Tanzania', 'Uganda', 'Zimbabwe', 'Zambia', 'Botswana', 'Namibia', 'Mozambique', 'Angola', 'Chile', 'Colombia', 'Peru', 'Venezuela', 'Ecuador', 'Paraguay', 'Uruguay', 'Bolivia', 'Costa Rica', 'Panama', 'Cuba', 'Jamaica', 'Trinidad and Tobago', 'Barbados', 'Bahamas', 'Fiji', 'Samoa', 'Tonga', 'Papua New Guinea', 'Other'
+];
+
+// List of languages (shortened for brevity, use a full list in production)
+const LANGUAGES = [
+  'English', 'සිංහල', 'தமிழ்', 'Hindi', 'Mandarin', 'French', 'German', 'Spanish', 'Japanese', 'Korean', 'Arabic', 'Russian', 'Portuguese', 'Italian', 'Dutch', 'Bengali', 'Urdu', 'Malay', 'Thai', 'Vietnamese', 'Filipino', 'Swahili', 'Greek', 'Polish', 'Czech', 'Hungarian', 'Romanian', 'Turkish', 'Hebrew', 'Other'
+];
 
 const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
-  const [editingFirstName, setEditingFirstName] = useState(false);
-  const [editingLastName, setEditingLastName] = useState(false);
-  const [editingDob, setEditingDob] = useState(false);
-  const [firstNameInput, setFirstNameInput] = useState(userProfile.firstName);
-  const [lastNameInput, setLastNameInput] = useState(userProfile.lastName);
-  const [dobInput, setDobInput] = useState(userProfile.dob);
+  const [profile, setProfile] = useState(userProfile);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    firstName: userProfile.firstName || '',
+    lastName: userProfile.lastName || '',
+    nationality: userProfile.nationality || '',
+    email: userProfile.email || '',
+    languages: userProfile.languages || [],
+    profilePicture: userProfile.profilePicture || '', // base64 or url
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [imagePreview, setImagePreview] = useState(userProfile.profilePicture || '');
+  const [languageInput, setLanguageInput] = useState('');
+
+  // Fetch latest profile on open
+  useEffect(() => {
+    if (show) {
+      setLoading(true);
+      api.get('/tourist/profile')
+        .then(res => {
+          setProfile(res.data);
+          setForm({
+            firstName: res.data.firstName || '',
+            lastName: res.data.lastName || '',
+            nationality: res.data.nationality || '',
+            email: res.data.email || '',
+            languages: res.data.languages || [],
+            profilePicture: res.data.profilePicture || '',
+          });
+          setImagePreview(res.data.profilePicture || '');
+        })
+        .catch(() => setError('Failed to load profile'))
+        .finally(() => setLoading(false));
+    }
+  }, [show]);
+
+  // Handle form changes
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+  };
+
+  // Handle nationality dropdown
+  const handleNationalityChange = e => {
+    setForm(f => ({ ...f, nationality: e.target.value }));
+  };
+
+  // Handle language dropdown add
+  const handleAddLanguage = e => {
+    const lang = e.target.value;
+    if (lang && !form.languages.includes(lang)) {
+      setForm(f => ({ ...f, languages: [...f.languages, lang] }));
+    }
+    setLanguageInput('');
+  };
+
+  // Remove a language
+  const handleRemoveLanguage = lang => {
+    setForm(f => ({ ...f, languages: f.languages.filter(l => l !== lang) }));
+  };
+
+  // Handle image upload
+  const handleImageChange = e => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm(f => ({ ...f, profilePicture: reader.result })); // base64 string
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Save profile
+  const handleSave = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await api.put('/tourist/profile', {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        nationality: form.nationality,
+        languages: form.languages,
+        email: form.email,
+        profilePicture: form.profilePicture, // base64 string
+      });
+      setProfile(res.data);
+      setUserProfile && setUserProfile(res.data);
+      setEditing(false);
+      setSuccess('Profile updated!');
+    } catch (err) {
+      setError('Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-lg animate-navbar-dropdown overflow-hidden border border-gray-200"
-        style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', margin: 0 }}
-      >
-        <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl transition-colors z-10" onClick={onClose} aria-label="Close profile">&times;</button>
-        {/* Business Card Header with Company Branding */}
-        <div className="bg-white h-20 w-full flex items-center justify-between px-6">
-          <div className="flex items-center">
-            <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-3" />
-            <img src={logoText} alt="IslandHop" className="h-6" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+      <div className="mt-12 sm:mt-20 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative animate-navbar-dropdown">
+        {/* Close Button */}
+        <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl transition-colors z-10" onClick={onClose} aria-label="Close profile">&times;</button>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-700 dark:to-primary-800 h-24 flex items-center px-8">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="IslandHop Icon" className="h-10 w-10 rounded-full bg-white p-1 shadow" />
+            <img src={logoText} alt="IslandHop" className="h-7" />
           </div>
         </div>
-        {/* Business Card Body */}
-        <div className="p-6">
-          {/* Profile Section - Centered */}
-          <div className="flex flex-col items-center text-center mb-6">
-            <div className="relative w-28 h-28 mb-4">
-              <div className="w-28 h-28 bg-primary-500 rounded-full flex items-center justify-center shadow-md">
-                <span className="text-white text-4xl font-bold">{userProfile.avatar}</span>
-              </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-primary-500 flex items-center justify-center text-primary-600 hover:text-primary-700 hover:bg-gray-50 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              </button>
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm mb-2">{userProfile.email}</p>
-              <div className="flex items-center justify-center text-xs text-gray-500 mb-2">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                </svg>
-                {userProfile.nationality}
-                <button className="ml-2 text-primary-600 hover:text-primary-700 transition-colors">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="p-8 pt-4">
+          {loading && <div className="text-center text-gray-500 mb-2">Loading...</div>}
+          {error && <div className="text-center text-red-500 mb-2">{error}</div>}
+          {success && <div className="text-center text-green-600 mb-2">{success}</div>}
+          {/* Profile Image */}
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="relative w-32 h-32 mb-2">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-primary-500 shadow-lg" />
+              ) : (
+                <div className="w-32 h-32 bg-primary-500 rounded-full flex items-center justify-center shadow-lg border-4 border-primary-500">
+                  <span className="text-white text-5xl font-bold">{profile.avatar || (profile.firstName?.[0] || 'U')}</span>
+                </div>
+              )}
+              {editing && (
+                <label className="absolute bottom-2 right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg border-2 border-primary-500 flex items-center justify-center text-primary-600 hover:text-primary-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                </button>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                </label>
+              )}
+            </div>
+            <div className="text-gray-600 dark:text-gray-300 text-sm mb-1">{profile.email}</div>
+          </div>
+          {/* Section: Personal Info */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-primary-700 dark:text-primary-300 mb-4">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs text-gray-400 uppercase mb-1">First Name</label>
+                {editing ? (
+                  <input
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleChange}
+                    className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-300 dark:bg-gray-800 dark:text-white"
+                    placeholder="First Name"
+                  />
+                ) : (
+                  <div className="font-semibold text-gray-700 dark:text-white text-base">{profile.firstName}</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase mb-1">Last Name</label>
+                {editing ? (
+                  <input
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleChange}
+                    className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-300 dark:bg-gray-800 dark:text-white"
+                    placeholder="Last Name"
+                  />
+                ) : (
+                  <div className="font-semibold text-gray-700 dark:text-white text-base">{profile.lastName}</div>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs text-gray-400 uppercase mb-1">Nationality</label>
+                {editing ? (
+                  <select
+                    name="nationality"
+                    value={form.nationality}
+                    onChange={handleNationalityChange}
+                    className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-300 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Select country...</option>
+                    {COUNTRIES.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="font-semibold text-gray-700 dark:text-white text-base">{profile.nationality}</div>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs text-gray-400 uppercase mb-1">Email</label>
+                <div className="font-semibold text-gray-700 dark:text-white text-base">{profile.email}</div>
               </div>
             </div>
           </div>
-          {/* Contact Information */}
-          <div className="pt-4">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="text-center">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                  First Name
-                  {editingFirstName ? (
-                    <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
-                      setUserProfile(p => ({ ...p, firstName: firstNameInput }));
-                      setEditingFirstName(false);
-                    }} title="Save">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingFirstName(true); setFirstNameInput(userProfile.firstName); }} title="Edit">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  )}
+          {/* Section: Languages */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-primary-700 dark:text-primary-300 mb-4">Spoken Languages</h3>
+            {editing ? (
+              <div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.languages.map(lang => (
+                    <span key={lang} className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+                      {lang}
+                      <button type="button" className="ml-2 text-blue-600 hover:text-red-600 dark:text-blue-300 dark:hover:text-red-400" onClick={() => handleRemoveLanguage(lang)} title="Remove">
+                        &times;
+                      </button>
+                    </span>
+                  ))}
                 </div>
-                <div className="font-semibold text-gray-700 text-sm">
-                  {editingFirstName ? (
-                    <input
-                      className="border rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
-                      value={firstNameInput}
-                      onChange={e => setFirstNameInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, firstName: firstNameInput })); setEditingFirstName(false); } }}
-                      autoFocus
-                    />
-                  ) : (
-                    userProfile.firstName
-                  )}
-                </div>
+                <select
+                  value={languageInput}
+                  onChange={e => { setLanguageInput(e.target.value); handleAddLanguage(e); }}
+                  className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-300 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="">Add language...</option>
+                  {LANGUAGES.filter(l => !form.languages.includes(l)).map(lang => (
+                    <option key={lang} value={lang}>{lang}</option>
+                  ))}
+                </select>
               </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                  Last Name
-                  {editingLastName ? (
-                    <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
-                      setUserProfile(p => ({ ...p, lastName: lastNameInput }));
-                      setEditingLastName(false);
-                    }} title="Save">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingLastName(true); setLastNameInput(userProfile.lastName); }} title="Edit">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <div className="font-semibold text-gray-700 text-sm">
-                  {editingLastName ? (
-                    <input
-                      className="border rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
-                      value={lastNameInput}
-                      onChange={e => setLastNameInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, lastName: lastNameInput })); setEditingLastName(false); } }}
-                      autoFocus
-                    />
-                  ) : (
-                    userProfile.lastName
-                  )}
-                </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(profile.languages || []).map(lang => (
+                  <span key={lang} className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+                    {lang}
+                  </span>
+                ))}
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="text-center">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                  Date of Birth
-                  {editingDob ? (
-                    <button className="ml-1 text-green-600 hover:text-green-700 transition-colors" onClick={() => {
-                      setUserProfile(p => ({ ...p, dob: dobInput }));
-                      setEditingDob(false);
-                    }} title="Save">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors" onClick={() => { setEditingDob(true); setDobInput(userProfile.dob); }} title="Edit">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <div className="font-semibold text-gray-700 text-sm">
-                  {editingDob ? (
-                    <input
-                      type="date"
-                      className="border rounded px-2 py-1 text-sm w-32 text-center focus:outline-none focus:ring-2 focus:ring-primary-300"
-                      value={dobInput}
-                      onChange={e => setDobInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { setUserProfile(p => ({ ...p, dob: dobInput })); setEditingDob(false); } }}
-                      autoFocus
-                    />
-                  ) : (
-                    userProfile.dob
-                  )}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center justify-center">
-                  Languages
-                  <button className="ml-1 text-primary-600 hover:text-primary-700 transition-colors">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="font-semibold text-gray-700 text-sm">{userProfile.languages.join(', ')}</div>
-              </div>
-            </div>
-            {/* Travel Stats */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-lg font-bold text-primary-600">12</div>
-                  <div className="text-xs text-gray-500">Trips</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-primary-600">8</div>
-                  <div className="text-xs text-gray-500">Cities</div>
-                </div>
-              </div>
-            </div>
+            )}
+          </div>
+          {/* Edit/Save Buttons */}
+          <div className="flex justify-end mt-8 gap-2">
+            {editing ? (
+              <>
+                <button
+                  className="px-5 py-2 rounded-full bg-primary-600 text-white font-semibold hover:bg-primary-700 transition"
+                  onClick={handleSave}
+                  disabled={loading}
+                >
+                  Save
+                </button>
+                <button
+                  className="px-5 py-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                  onClick={() => { setEditing(false); setForm({
+                    firstName: profile.firstName || '',
+                    lastName: profile.lastName || '',
+                    nationality: profile.nationality || '',
+                    email: profile.email || '',
+                    languages: profile.languages || [],
+                    profilePicture: profile.profilePicture || '',
+                  }); setImagePreview(profile.profilePicture || ''); setError(''); setSuccess(''); }}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                className="px-5 py-2 rounded-full bg-primary-600 text-white font-semibold hover:bg-primary-700 transition"
+                onClick={() => setEditing(true)}
+              >
+                Edit Profile
+              </button>
+            )}
           </div>
         </div>
       </div>
