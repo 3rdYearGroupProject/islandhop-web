@@ -115,8 +115,9 @@ const LoginPage = () => {
               navigate('/driver/dashboard');
               break;
             case 'tourist':
+              navigate('/trips');
             default:
-              navigate('/tourist/dashboard');
+              navigate('/login');
               break;
           }
         }, 1000);
@@ -189,8 +190,9 @@ const LoginPage = () => {
               navigate('/driver/dashboard');
               break;
             case 'tourist':
+              navigate('/trips');
             default:
-              navigate('/tourist/dashboard');
+              navigate('/login');
               break;
           }
         }, 1000);
