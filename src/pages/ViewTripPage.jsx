@@ -725,7 +725,8 @@ const ViewTripPage = () => {
   // Google Maps styles and settings
   const mapContainerStyle = {
     width: '100%',
-    height: '400px'
+    height: '100%', // Changed from 400px to 100% to fill parent
+    minHeight: '400px', // Ensures minimum height for usability
   };
   
   // Get map icon based on place type
@@ -1002,72 +1003,71 @@ const ViewTripPage = () => {
           {/* Trip Summary moved below both columns */}
         </div>
           {/* Right: Interactive Map showing all places from the itinerary */}
-          <div className="w-full md:w-1/2 min-w-0">
-            <div className="bg-white rounded-xl w-full h-[calc(100vh-160px)] md:sticky top-20 shadow-lg border border-gray-200 overflow-hidden">
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)]">
+            <div className="bg-white rounded-xl w-full h-full md:sticky top-20 shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               {isLoaded ? (
-                <div className="w-full h-full">
-                  <div className="p-4 border-b border-gray-100">
+                <div className="flex-1 flex flex-col">
+                  <div className="p-4 border-b border-gray-100 shrink-0">
                     <h2 className="font-bold text-lg">Trip Map</h2>
                     <p className="text-sm text-gray-500">Explore your trip destinations</p>
                   </div>
-                  
-                  <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={mapCenter}
-                    zoom={12}
-                    options={{
-                      fullscreenControl: true,
-                      streetViewControl: true,
-                      mapTypeControl: true,
-                      zoomControl: true,
-                    }}
-                  >
-                    {places.map((place, index) => (
-                      <Marker
-                        key={`${place.name}-${index}`}
-                        position={{
-                          lat: place.location.lat,
-                          lng: place.location.lng
-                        }}
-                        onClick={() => handleMarkerClick(place)}
-                        icon={getMarkerIcon(place.placeType)}
-                        title={place.name}
-                      />
-                    ))}
-                    
-                    {selectedMarker && (
-                      <InfoWindow
-                        position={{
-                          lat: selectedMarker.location.lat,
-                          lng: selectedMarker.location.lng
-                        }}
-                        onCloseClick={handleInfoWindowClose}
-                      >
-                        <div className="p-2">
-                          <h3 className="font-bold">{selectedMarker.name}</h3>
-                          <p className="text-sm">{selectedMarker.type}</p>
-                          {selectedMarker.rating && (
-                            <div className="flex items-center mt-1">
-                              <span className="text-yellow-500">★</span>
-                              <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                  <div className="flex-1 min-h-[400px]">
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={mapCenter}
+                      zoom={12}
+                      options={{
+                        fullscreenControl: true,
+                        streetViewControl: true,
+                        mapTypeControl: true,
+                        zoomControl: true,
+                      }}
+                    >
+                      {places.map((place, index) => (
+                        <Marker
+                          key={`${place.name}-${index}`}
+                          position={{
+                            lat: place.location.lat,
+                            lng: place.location.lng
+                          }}
+                          onClick={() => handleMarkerClick(place)}
+                          icon={getMarkerIcon(place.placeType)}
+                          title={place.name}
+                        />
+                      ))}
+                      {selectedMarker && (
+                        <InfoWindow
+                          position={{
+                            lat: selectedMarker.location.lat,
+                            lng: selectedMarker.location.lng
+                          }}
+                          onCloseClick={handleInfoWindowClose}
+                        >
+                          <div className="p-2">
+                            <h3 className="font-bold">{selectedMarker.name}</h3>
+                            <p className="text-sm">{selectedMarker.type}</p>
+                            {selectedMarker.rating && (
+                              <div className="flex items-center mt-1">
+                                <span className="text-yellow-500">★</span>
+                                <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                              </div>
+                            )}
+                            {selectedMarker.thumbnailUrl && (
+                              <img 
+                                src={selectedMarker.thumbnailUrl} 
+                                alt={selectedMarker.name} 
+                                className="mt-2 w-full h-24 object-cover rounded"
+                              />
+                            )}
+                            <div className="mt-2 text-sm">
+                              <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
                             </div>
-                          )}
-                          {selectedMarker.thumbnailUrl && (
-                            <img 
-                              src={selectedMarker.thumbnailUrl} 
-                              alt={selectedMarker.name} 
-                              className="mt-2 w-full h-24 object-cover rounded"
-                            />
-                          )}
-                          <div className="mt-2 text-sm">
-                            <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
                           </div>
-                        </div>
-                      </InfoWindow>
-                    )}
-                  </GoogleMap>
-                  
-                  <div className="p-3 border-t border-gray-100">
+                        </InfoWindow>
+                      )}
+                    </GoogleMap>
+                  </div>
+                  <div className="p-3 border-t border-gray-100 shrink-0">
                     <div className="flex gap-4 flex-wrap">
                       <div className="flex items-center">
                         <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
