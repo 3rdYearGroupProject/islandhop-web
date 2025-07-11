@@ -20,188 +20,32 @@ const Reviews = () => {
     userType: "all",
     rating: "all",
     reportStatus: "all",
+    reviewType: "drivers",
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
 
-  // Mock data for reviews with reported comments
-  const mockReviews = [
-    {
-      id: 1,
-      reviewer: {
-        name: "John Doe",
-        email: "john.doe@email.com",
-        avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-        userType: "traveler"
-      },
-      target: {
-        type: "driver",
-        name: "Kasun Fernando",
-        id: "driver_123"
-      },
-      rating: 5,
-      comment: "Excellent service! Kasun was very professional and knowledgeable about the local attractions. Highly recommended!",
-      date: "2024-06-20",
-      status: "approved",
-      reported: false,
-      reportDetails: null,
-      tripId: "trip_456"
-    },
-    {
-      id: 2,
-      reviewer: {
-        name: "Sarah Johnson",
-        email: "sarah.j@email.com",
-        avatar: "https://randomuser.me/api/portraits/women/25.jpg",
-        userType: "traveler"
-      },
-      target: {
-        type: "guide",
-        name: "Priyantha Silva",
-        id: "guide_789"
-      },
-      rating: 2,
-      comment: "This guide was unprofessional and made inappropriate comments during the tour. Very disappointing experience.",
-      date: "2024-06-18",
-      status: "reported",
-      reported: true,
-      reportDetails: {
-        reportedBy: "admin",
-        reportDate: "2024-06-19",
-        reason: "Inappropriate content",
-        description: "Review contains allegations of unprofessional behavior"
-      },
-      tripId: "trip_789"
-    },
-    {
-      id: 3,
-      reviewer: {
-        name: "Mike Wilson",
-        email: "mike.w@email.com",
-        avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-        userType: "traveler"
-      },
-      target: {
-        type: "driver",
-        name: "Tharaka Perera",
-        id: "driver_101"
-      },
-      rating: 4,
-      comment: "Good driver, safe journey. The vehicle was clean and comfortable. Would book again!",
-      date: "2024-06-15",
-      status: "approved",
-      reported: false,
-      reportDetails: null,
-      tripId: "trip_101"
-    },
-    {
-      id: 4,
-      reviewer: {
-        name: "Emma Davis",
-        email: "emma.d@email.com",
-        avatar: "https://randomuser.me/api/portraits/women/35.jpg",
-        userType: "traveler"
-      },
-      target: {
-        type: "guide",
-        name: "Chaminda Wickramasinghe",
-        id: "guide_202"
-      },
-      rating: 1,
-      comment: "Worst experience ever! This is clearly a fake service and I demand a refund immediately!",
-      date: "2024-06-12",
-      status: "under-review",
-      reported: true,
-      reportDetails: {
-        reportedBy: "system",
-        reportDate: "2024-06-12",
-        reason: "Potential spam/fake review",
-        description: "Review flagged by automated systems for suspicious content"
-      },
-      tripId: "trip_202"
-    },
-    {
-      id: 5,
-      reviewer: {
-        name: "David Brown",
-        email: "david.b@email.com",
-        avatar: "https://randomuser.me/api/portraits/men/28.jpg",
-        userType: "traveler"
-      },
-      target: {
-        type: "driver",
-        name: "Nimal Rajapakse",
-        id: "driver_303"
-      },
-      rating: 5,
-      comment: "Amazing experience! Nimal went above and beyond to make our trip memorable. His knowledge of the area was impressive.",
-      date: "2024-06-10",
-      status: "approved",
-      reported: false,
-      reportDetails: null,
-      tripId: "trip_303"
-    }
-  ];
-
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setReviews(mockReviews);
-      setFilteredReviews(mockReviews);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        const endpoint =
+          filters.reviewType === "drivers"
+            ? "http://localhost:8082/api/v1/reviews/drivers/low-confidence"
+            : "http://localhost:8082/api/v1/reviews/guides/low-confidence";
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        setReviews(data);
+        setFilteredReviews(data);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Filter and search logic
-  useEffect(() => {
-    let filtered = reviews.filter(review => {
-      const matchesSearch = review.reviewer.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           review.target.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           review.comment.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesStatus = filters.status === "all" || review.status === filters.status;
-      const matchesUserType = filters.userType === "all" || review.reviewer.userType === filters.userType;
-      const matchesRating = filters.rating === "all" || review.rating.toString() === filters.rating;
-      const matchesReportStatus = filters.reportStatus === "all" || 
-                                  (filters.reportStatus === "reported" && review.reported) ||
-                                  (filters.reportStatus === "not-reported" && !review.reported);
-      
-      return matchesSearch && matchesStatus && matchesUserType && matchesRating && matchesReportStatus;
-    });
-
-    setFilteredReviews(filtered);
-  }, [reviews, filters]);
-
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleApproveReview = (reviewId) => {
-    setReviews(prev => prev.map(review => 
-      review.id === reviewId 
-        ? { ...review, status: 'approved', reported: false, reportDetails: null }
-        : review
-    ));
-  };
-
-  const handleRejectReview = (reviewId) => {
-    setReviews(prev => prev.map(review => 
-      review.id === reviewId 
-        ? { ...review, status: 'rejected' }
-        : review
-    ));
-  };
-
-  const handleDeleteReview = (reviewId) => {
-    setReviewToDelete(reviewId);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteReview = () => {
-    setReviews(prev => prev.filter(review => review.id !== reviewToDelete));
-    setShowDeleteModal(false);
-    setReviewToDelete(null);
-  };
+    fetchReviews();
+  }, [filters.reviewType]);
 
   const renderStars = (rating) => {
     const stars = [];
@@ -217,41 +61,28 @@ const Reviews = () => {
     return stars;
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      'approved': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'under-review': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'reported': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'rejected': 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300'
-    };
-    return badges[status] || badges.approved;
-  };
-
-  const getTargetTypeBadge = (type) => {
-    const badges = {
-      'driver': 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300',
-      'guide': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300'
-    };
-    return badges[type] || badges.driver;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-secondary-700 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-8"></div>
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 dark:bg-secondary-700 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+  const formatDate = (dateArray) => {
+    if (!dateArray || !Array.isArray(dateArray)) {
+      return "Unknown date";
+    }
+    const date = new Date(
+      dateArray[0],
+      dateArray[1] - 1,
+      dateArray[2],
+      dateArray[3] || 0,
+      dateArray[4] || 0,
+      dateArray[5] || 0
     );
-  }
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
@@ -298,7 +129,7 @@ const Reviews = () => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
             <div className="relative">
               <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -341,6 +172,14 @@ const Reviews = () => {
               <option value="reported">Reported</option>
               <option value="not-reported">Not Reported</option>
             </select>
+            <select
+              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+              value={filters.reviewType}
+              onChange={(e) => handleFilterChange("reviewType", e.target.value)}
+            >
+              <option value="drivers">Drivers</option>
+              <option value="guides">Guides</option>
+            </select>
             <div className="flex items-center justify-end">
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {filteredReviews.length} of {reviews.length} reviews
@@ -358,43 +197,37 @@ const Reviews = () => {
             </div>
           ) : (
             filteredReviews.map((review) => (
-              <div 
-                key={review.id} 
-                className={`bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 transition-all hover:shadow-md ${
-                  review.reported ? 'border-l-4 border-l-danger-500' : ''
-                }`}
+              <div
+                key={review.reviewId}
+                className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 transition-all hover:shadow-md"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start space-x-4">
-                    <img 
-                      src={review.reviewer.avatar} 
-                      alt={review.reviewer.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{review.reviewer.name}</h3>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{review.reviewer.email}</span>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          {`${review.reviewerFirstname || ""} ${
+                            review.reviewerLastname || ""
+                          }`.trim() || "Anonymous"}
+                        </h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {review.reviewerEmail || "Unknown"}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTargetTypeBadge(review.target.type)}`}>
-                          {review.target.type}
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatDate(review.createdAt)}
                         </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">→</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{review.target.name}</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
                       {renderStars(review.rating)}
                     </div>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(review.status)}`}>
-                      {review.status.replace('-', ' ')}
-                    </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(review.date).toLocaleDateString()}
+                      {review.status.replace("_", " ")}
                     </span>
                   </div>
                 </div>
@@ -402,24 +235,23 @@ const Reviews = () => {
                 {/* Review Comment */}
                 <div className="mb-4">
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    "{review.comment}"
+                    "{review.review || "No review content"}"
                   </p>
                 </div>
 
-                {/* Report Information */}
-                {review.reported && review.reportDetails && (
-                  <div className="bg-danger-50 dark:bg-danger-900/10 border border-danger-200 dark:border-danger-800 rounded-lg p-4 mb-4">
+                {/* AI Analysis */}
+                {review.aiAnalysis && (
+                  <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
                     <div className="flex items-start space-x-2">
-                      <ExclamationTriangleIcon className="h-5 w-5 text-danger-600 dark:text-danger-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium text-danger-800 dark:text-danger-300 mb-1">
-                          Reported: {review.reportDetails.reason}
+                        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
+                          AI Analysis
                         </h4>
-                        <p className="text-sm text-danger-700 dark:text-danger-400 mb-2">
-                          {review.reportDetails.description}
+                        <p className="text-sm text-blue-700 dark:text-blue-400 mb-2">
+                          {review.aiAnalysis}
                         </p>
-                        <p className="text-xs text-danger-600 dark:text-danger-500">
-                          Reported by {review.reportDetails.reportedBy} on {new Date(review.reportDetails.reportDate).toLocaleDateString()}
+                        <p className="text-xs text-blue-600 dark:text-blue-500">
+                          Confidence Score: {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
                         </p>
                       </div>
                     </div>
