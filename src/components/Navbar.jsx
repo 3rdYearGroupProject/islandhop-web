@@ -8,6 +8,8 @@ import ProfileModal from './ProfileModal';
 import SettingsModal from './SettingsModal';
 import './GoogleTranslate.css'; // Import Google Translate styles
 import './Navbar.css'; // Import Navbar styles for dropdown animations
+import api from '../api/axios';
+import { getAuth } from 'firebase/auth';
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -261,6 +263,42 @@ const Navbar = () => {
     navigate('/');
   };
 
+  // Fetch profile from backend on mount or when user changes
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const auth = getAuth();
+        const email = auth.currentUser?.email || tempUser?.email || '';
+        if (!email) return;
+        const res = await api.get('/tourist/profile', { params: { email } });
+        const profileData = res.data;
+        // Convert profilePic byte array to base64
+        let profilePicture = '';
+        if (profileData.profilePic) {
+          if (typeof profileData.profilePic === 'string') {
+            profilePicture = profileData.profilePic.startsWith('data:') ? profileData.profilePic : `data:image/jpeg;base64,${profileData.profilePic}`;
+          } else if (Array.isArray(profileData.profilePic)) {
+            const binaryString = String.fromCharCode(...profileData.profilePic);
+            profilePicture = `data:image/jpeg;base64,${btoa(binaryString)}`;
+          }
+        }
+        setUserProfile({
+          firstName: profileData.firstName || '',
+          lastName: profileData.lastName || '',
+          dob: profileData.dob || '',
+          nationality: profileData.nationality || '',
+          email: profileData.email || email,
+          languages: profileData.languages || [],
+          profilePicture,
+          avatar: profileData.firstName?.[0]?.toUpperCase() || 'U',
+        });
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+    };
+    fetchProfile();
+  }, [tempUser]);
+
   return (
     <nav className="fixed top-4 left-4 right-4 z-50 bg-white/95 shadow-lg rounded-full h-18 flex items-center px-6 border border-gray-200">
       {/* Blur overlay when profile popup is open */}
@@ -343,12 +381,12 @@ const Navbar = () => {
                 aria-expanded={showUserMenu}
               >
                 <span className="text-gray-700 font-medium">{user.displayName || user.email || 'User'}</span>
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" className="w-12 h-12 rounded-full object-cover" />
+                {user.photoURL || userProfile.profilePicture ? (
+                  <img src={userProfile.profilePicture || user.photoURL} alt="Profile" className="w-12 h-12 rounded-full object-cover" />
                 ) : (
                   <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-lg font-medium">
-                      {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                      {(user.displayName?.[0] || user.email?.[0] || userProfile.firstName?.[0] || 'U').toUpperCase()}
                     </span>
                   </div>
                 )}
