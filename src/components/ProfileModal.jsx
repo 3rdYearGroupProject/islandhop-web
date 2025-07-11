@@ -21,6 +21,7 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
   const [form, setForm] = useState({
     firstName: userProfile.firstName || '',
     lastName: userProfile.lastName || '',
+    dob: userProfile.dob || '',
     nationality: userProfile.nationality || '',
     email: userProfile.email || '',
     languages: userProfile.languages || [],
@@ -66,6 +67,7 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
           setForm({
             firstName: profileData.firstName || '',
             lastName: profileData.lastName || '',
+            dob: profileData.dob || '',
             nationality: profileData.nationality || '',
             email: profileData.email || '',
             languages: profileData.languages || [],
@@ -165,6 +167,7 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
       const res = await api.put('/tourist/profile', {
         firstName: form.firstName,
         lastName: form.lastName,
+        dob: form.dob,
         nationality: form.nationality,
         languages: form.languages,
         email, // Always send Firebase email for backend auth
@@ -253,7 +256,22 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
                   <div className="font-semibold text-gray-700 dark:text-white text-base">{profile.lastName}</div>
                 )}
               </div>
-              <div className="md:col-span-2">
+              <div>
+                <label className="block text-xs text-gray-400 uppercase mb-1">Date of Birth</label>
+                {editing ? (
+                  <input
+                    name="dob"
+                    type="date"
+                    value={form.dob}
+                    onChange={handleChange}
+                    className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-300 dark:bg-gray-800 dark:text-white"
+                    placeholder="Date of Birth"
+                  />
+                ) : (
+                  <div className="font-semibold text-gray-700 dark:text-white text-base">{profile.dob}</div>
+                )}
+              </div>
+              <div>
                 <label className="block text-xs text-gray-400 uppercase mb-1">Nationality</label>
                 {editing ? (
                   <select
@@ -334,6 +352,7 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
                     setForm({
                       firstName: profile.firstName || '',
                       lastName: profile.lastName || '',
+                      dob: profile.dob || '',
                       nationality: profile.nationality || '',
                       email: profile.email || '',
                       languages: profile.languages || [],
