@@ -1,57 +1,41 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
-  Star,
-  ThumbsUp,
-  MessageSquare,
-  Filter,
-  Search,
-  TrendingUp,
-  Award,
-  Users,
-  Calendar,
-  ChevronDown,
-  Eye,
-  Reply,
-  Heart,
-  Flag,
-  Share2,
-  AlertCircle,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
+  StarIcon,
+  ChartBarIcon,
+  FunnelIcon,
+  CalendarIcon,
+  UserIcon,
+  ChatBubbleLeftIcon,
+} from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import { useAuth } from "../../hooks/useAuth";
 import { auth } from "../../firebase";
 
-const GuideReviews = () => {
-  const [filter, setFilter] = useState("all"); // all, 5star, 4star, 3star, 2star, 1star
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState("recent"); // recent, rating, helpful
+const DriverReviews = () => {
+  const { user } = useAuth();
+
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Use the logged-in user's email instead of hardcoded value
-  const guideEmail = auth.currentUser?.email;
+  const driverEmail = auth.currentUser?.email;
 
   // Fetch reviews from backend
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        setError(null);
-
         const response = await axios.get(
-          `http://localhost:8082/api/v1/reviews/guides/guide/${guideEmail}`
+          `http://localhost:8082/api/v1/reviews/guides/guide/${driverEmail}`
         );
-
-        if (response.data && response.data.length > 0) {
-          setReviews(response.data);
-        } else {
-          setReviews([]);
-        }
-      } catch (err) {
-        console.error("Error fetching guide reviews:", err);
+        setReviews(response.data);
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
         setError("Failed to load reviews. Please try again later.");
         setReviews([]);
       } finally {
@@ -60,457 +44,265 @@ const GuideReviews = () => {
     };
 
     fetchReviews();
-  }, [guideEmail]);
+  }, [driverEmail]);
 
-  // Calculate stats from current reviews data
-  const reviewStats = {
-    totalReviews: reviews.length,
-    averageRating:
-      reviews.length > 0
-        ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) /
-          reviews.length
-        : 0,
-    ratingDistribution: {
-      5: reviews.filter((r) => (r.rating || 0) === 5).length,
-      4: reviews.filter((r) => (r.rating || 0) === 4).length,
-      3: reviews.filter((r) => (r.rating || 0) === 3).length,
-      2: reviews.filter((r) => (r.rating || 0) === 2).length,
-      1: reviews.filter((r) => (r.rating || 0) === 1).length,
-    },
-    replyRate: 0, // Backend doesn't seem to have reply functionality yet
-    totalHelpful: 0, // Backend doesn't seem to have helpful votes yet
+  // Calculate review statistics
+  const calculateReviewStats = () => {
+    if (reviews.length === 0) {
+      return {
+        averageRating: 0,
+        totalReviews: 0,
+        ratingDistribution: [
+          { stars: 5, count: 0, percentage: 0 },
+          { stars: 4, count: 0, percentage: 0 },
+          { stars: 3, count: 0, percentage: 0 },
+          { stars: 2, count: 0, percentage: 0 },
+          { stars: 1, count: 0, percentage: 0 },
+        ],
+      };
+    }
+
+    const totalReviews = reviews.length;
+    const averageRating =
+      reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
+
+    const ratingCounts = [1, 2, 3, 4, 5].map(
+      (star) => reviews.filter((review) => review.rating === star).length
+    );
+
+    const ratingDistribution = [5, 4, 3, 2, 1].map((star, index) => ({
+      stars: star,
+      count: ratingCounts[star - 1],
+      percentage:
+        totalReviews > 0 ? (ratingCounts[star - 1] / totalReviews) * 100 : 0,
+    }));
+
+    return {
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      totalReviews,
+      ratingDistribution,
+    };
   };
+
+  const reviewStats = calculateReviewStats();
+
+  // Helper function to format date from API response
+  const formatDate = (dateArray) => {
+    if (!dateArray || dateArray.length < 3) return "N/A";
+    const [year, month, day] = dateArray;
+    return new Date(year, month - 1, day).toLocaleDateString();
+  };
+
+  // Helper function to get rating from AI confidence score
+  const getRatingFromConfidence = (confidenceScore) => {
+    return Math.round(confidenceScore * 5);
+  };
+
+  const filterOptions = [
+    { value: "all", label: "All Reviews" },
+    { value: "5", label: "5 Stars" },
+    { value: "4", label: "4 Stars" },
+    { value: "3", label: "3 Stars" },
+    { value: "2", label: "2 Stars" },
+    { value: "1", label: "1 Star" },
+  ];
+
+  const timeFilters = [
+    { value: "all", label: "All Time" },
+    { value: "week", label: "This Week" },
+    { value: "month", label: "This Month" },
+    { value: "quarter", label: "Last 3 Months" },
+  ];
 
   const filteredReviews = reviews.filter((review) => {
-    const rating = review.rating || 0;
-    const matchesFilter =
-      filter === "all" || rating === parseInt(filter.replace("star", ""));
-
-    const reviewerName = `${review.reviewerFirstname || ""} ${
-      review.reviewerLastname || ""
-    }`.trim();
-    const reviewContent = review.review || "";
-
-    const matchesSearch =
-      reviewerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reviewContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (review.reviewerEmail || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    if (selectedFilter === "all") return true;
+    return review.rating.toString() === selectedFilter;
   });
 
-  const sortedReviews = [...filteredReviews].sort((a, b) => {
-    switch (sortBy) {
-      case "recent":
-        const dateA = a.createdAt
-          ? new Date(
-              a.createdAt[0],
-              a.createdAt[1] - 1,
-              a.createdAt[2],
-              a.createdAt[3] || 0,
-              a.createdAt[4] || 0,
-              a.createdAt[5] || 0
-            )
-          : new Date(0);
-        const dateB = b.createdAt
-          ? new Date(
-              b.createdAt[0],
-              b.createdAt[1] - 1,
-              b.createdAt[2],
-              b.createdAt[3] || 0,
-              b.createdAt[4] || 0,
-              b.createdAt[5] || 0
-            )
-          : new Date(0);
-        return dateB - dateA;
-      case "rating":
-        return (b.rating || 0) - (a.rating || 0);
-      default:
-        return 0;
-    }
-  });
-
-  const toggleHelpful = (reviewId) => {
-    // Helpful votes not implemented in backend yet
-    console.log("Helpful vote for review:", reviewId);
-  };
-
-  const formatDate = (dateArray) => {
-    if (!dateArray || !Array.isArray(dateArray)) {
-      return "Unknown date";
-    }
-    // Convert [2025, 7, 7, 20, 27, 49, 256857000] to readable date
-    const date = new Date(
-      dateArray[0],
-      dateArray[1] - 1, // Month is 0-indexed in JS
-      dateArray[2],
-      dateArray[3] || 0,
-      dateArray[4] || 0,
-      dateArray[5] || 0
+  const renderStars = (rating, size = "h-5 w-5") => {
+    return (
+      <div className="flex items-center">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <StarIconSolid
+            key={star}
+            className={`${size} ${
+              star <= rating
+                ? "text-yellow-400"
+                : "text-gray-300 dark:text-gray-600"
+            }`}
+          />
+        ))}
+      </div>
     );
-    return date.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const getRatingColor = (rating) => {
-    if (rating >= 4.5) return "text-green-600";
-    if (rating >= 3.5) return "text-yellow-600";
-    return "text-red-600";
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Reviews & Ratings
-            </h1>
-            <p className="text-gray-600">
-              Monitor and respond to tourist feedback
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search reviews..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-              />
-            </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              <ChevronDown
-                className={`h-4 w-4 ml-1 transition-transform duration-200 ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Star className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Average Rating
-                </p>
-                <div className="flex items-center">
-                  <p
-                    className={`text-2xl font-bold ${getRatingColor(
-                      reviewStats.averageRating
-                    )}`}
-                  >
-                    {reviewStats.averageRating.toFixed(1)}
-                  </p>
-                  <div className="flex ml-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < Math.floor(reviewStats.averageRating)
-                            ? "text-yellow-500 fill-current"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Reviews
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {reviewStats.totalReviews}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Reply className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Approved Reviews
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {reviews.filter((r) => r.status === "APPROVED").length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <ThumbsUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Avg AI Score
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {reviews.length > 0
-                    ? (
-                        (reviews.reduce(
-                          (sum, r) => sum + (r.aiConfidenceScore || 0),
-                          0
-                        ) /
-                          reviews.length) *
-                        100
-                      ).toFixed(0)
-                    : 0}
-                  %
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Rating Distribution */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Rating Distribution
-          </h3>
-          <div className="space-y-3">
-            {[5, 4, 3, 2, 1].map((rating) => {
-              const count = reviewStats.ratingDistribution[rating];
-              const percentage =
-                reviewStats.totalReviews > 0
-                  ? (count / reviewStats.totalReviews) * 100
-                  : 0;
-
-              return (
-                <div key={rating} className="flex items-center space-x-4">
-                  <div className="flex items-center w-20">
-                    <span className="text-sm font-medium text-gray-700">
-                      {rating}
-                    </span>
-                    <Star className="h-4 w-4 text-yellow-500 ml-1" />
-                  </div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm text-gray-600 w-12">{count}</span>
-                  <span className="text-sm text-gray-500 w-12">
-                    {percentage.toFixed(0)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Filters */}
-        {showFilters && (
-          <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filter by Rating
-                </label>
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">All Ratings</option>
-                  <option value="5star">5 Stars</option>
-                  <option value="4star">4 Stars</option>
-                  <option value="3star">3 Stars</option>
-                  <option value="2star">2 Stars</option>
-                  <option value="1star">1 Star</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sort By
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="recent">Most Recent</option>
-                  <option value="rating">Highest Rating</option>
-                  <option value="helpful">Most Helpful</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Reviews & Ratings
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          See what passengers are saying about your service
+        </p>
       </div>
 
       {/* Loading State */}
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="flex items-center space-x-3">
-            <RefreshCw className="h-6 w-6 text-blue-600 animate-spin" />
-            <span className="text-gray-600">Loading reviews...</span>
-          </div>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-            <span className="text-yellow-800">{error}</span>
-          </div>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-8">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
 
-      {/* Reviews List */}
-      {!loading && (
-        <div className="space-y-6">
-          {/* Updated review card rendering */}
-          {sortedReviews.map((review) => (
-            <div
-              key={review.reviewId}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start space-x-4">
-                  <img
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-                    alt={
-                      `${review.reviewerFirstname || ""} ${
-                        review.reviewerLastname || ""
-                      }`.trim() || "Reviewer"
-                    }
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">
-                        {`${review.reviewerFirstname || ""} ${
-                          review.reviewerLastname || ""
-                        }`.trim() || "Anonymous"}
-                      </h3>
-                      <span className="text-sm text-gray-500">•</span>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(review.createdAt)}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          review.status === "APPROVED"
-                            ? "bg-green-100 text-green-800"
-                            : review.status === "REJECTED"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {review.status}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        AI Score: {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
+      {/* Content - only show when not loading */}
+      {!loading && !error && (
+        <>
+          {/* Rating Overview */}
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Average Rating */}
+              <div className="text-center">
+                <div className="text-6xl font-bold text-gray-900 dark:text-white mb-2">
+                  {reviewStats.averageRating || "N/A"}
                 </div>
-
-                <div className="flex items-center space-x-1">
-                  {review.rating ? (
-                    <>
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < review.rating
-                              ? "text-yellow-500 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                      <span className="ml-2 font-semibold text-gray-900">
-                        {review.rating.toFixed(1)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-gray-500">No rating</span>
+                <div className="flex justify-center mb-2">
+                  {renderStars(
+                    Math.round(reviewStats.averageRating),
+                    "h-8 w-8"
                   )}
                 </div>
-              </div>
-
-              {/* Review Content */}
-              <div className="mb-4">
-                <p className="text-gray-700 leading-relaxed">
-                  {review.review || "No review content"}
+                <p className="text-gray-600 dark:text-gray-400">
+                  Based on {reviewStats.totalReviews} reviews
                 </p>
               </div>
 
-              {/* AI Analysis */}
-              {review.aiAnalysis && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center mb-2">
-                    <span className="text-sm font-medium text-blue-800">
-                      AI Analysis
-                    </span>
-                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                      Confidence: {((review.aiConfidenceScore || 0) * 100).toFixed(0)}%
+              {/* Rating Distribution */}
+              <div className="space-y-3">
+                {reviewStats.ratingDistribution.map((item) => (
+                  <div
+                    key={item.stars}
+                    className="flex items-center space-x-3"
+                  >
+                    <div className="flex items-center space-x-1 w-16">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {item.stars}
+                      </span>
+                      <StarIconSolid className="h-4 w-4 text-yellow-400" />
+                    </div>
+                    <div className="flex-1 bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
+                      <div
+                        className="bg-yellow-400 h-2 rounded-full"
+                        style={{ width: `${item.percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400 w-12">
+                      {item.count}
                     </span>
                   </div>
-                  <p className="text-sm text-blue-700">{review.aiAnalysis}</p>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          ))}
+          </div>
 
-          {/* Empty State */}
-          {sortedReviews.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {/* Filters */}
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Filter by Rating
+                </label>
+                <select
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                >
+                  {filterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Time Period
+                </label>
+                <select
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                >
+                  {timeFilters.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Reviews List */}
+          {filteredReviews.length === 0 ? (
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-12 text-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No reviews found
               </h3>
-              <p className="text-gray-600">
-                {searchTerm
-                  ? "No reviews match your search criteria."
-                  : "You haven't received any reviews yet."}
+              <p className="text-gray-600 dark:text-gray-400">
+                {reviews.length === 0
+                  ? "You haven't received any reviews yet."
+                  : "No reviews match your current filter criteria."}
               </p>
             </div>
+          ) : (
+            <div className="space-y-6">
+              {filteredReviews.map((review) => (
+                <div
+                  key={review.reviewId}
+                  className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-6"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                        <UserIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          {review.reviewerFirstname} {review.reviewerLastname}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2 mb-1">
+                        {renderStars(review.rating, "h-4 w-4")}
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(review.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                      {review.review}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
 };
 
-export default GuideReviews;
+export default DriverReviews;
