@@ -84,6 +84,71 @@ const Reviews = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleApproveReview = async (reviewId) => {
+    try {
+      await fetch(`http://localhost:8082/api/v1/reviews/guides/${reviewId}/status?status=1`, {
+        method: 'PUT',
+      });
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.reviewId === reviewId
+            ? { ...review, status: 'approved' }
+            : review
+        )
+      );
+      setFilteredReviews((prev) =>
+        prev.map((review) =>
+          review.reviewId === reviewId
+            ? { ...review, status: 'approved' }
+            : review
+        )
+      );
+    } catch (error) {
+      console.error('Error approving review:', error);
+    }
+  };
+
+  const handleRejectReview = async (reviewId) => {
+    try {
+      await fetch(`http://localhost:8082/api/v1/reviews/guides/${reviewId}/status?status=2`, {
+        method: 'PUT',
+      });
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.reviewId === reviewId
+            ? { ...review, status: 'rejected' }
+            : review
+        )
+      );
+      setFilteredReviews((prev) =>
+        prev.map((review) =>
+          review.reviewId === reviewId
+            ? { ...review, status: 'rejected' }
+            : review
+        )
+      );
+    } catch (error) {
+      console.error('Error rejecting review:', error);
+    }
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!reviewToDelete) return;
+
+    try {
+      await fetch(`http://localhost:8082/api/v1/reviews/${reviewToDelete}`, {
+        method: 'DELETE',
+      });
+      setReviews((prev) => prev.filter((review) => review.reviewId !== reviewToDelete));
+      setFilteredReviews((prev) => prev.filter((review) => review.reviewId !== reviewToDelete));
+    } catch (error) {
+      console.error('Error deleting review:', error);
+    } finally {
+      setShowDeleteModal(false);
+      setReviewToDelete(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
       <div className="max-w-7xl mx-auto">
@@ -256,7 +321,7 @@ const Reviews = () => {
                   <div className="flex space-x-2">
                     {review.status !== 'approved' && (
                       <button
-                        onClick={() => handleApproveReview(review.id)}
+                        onClick={() => handleApproveReview(review.reviewId)}
                         className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-success-700 transition-colors flex items-center space-x-1"
                       >
                         <CheckIcon className="h-4 w-4" />
@@ -265,7 +330,7 @@ const Reviews = () => {
                     )}
                     {review.status !== 'rejected' && (
                       <button
-                        onClick={() => handleRejectReview(review.id)}
+                        onClick={() => handleRejectReview(review.reviewId)}
                         className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-warning-700 transition-colors flex items-center space-x-1"
                       >
                         <XMarkIcon className="h-4 w-4" />
