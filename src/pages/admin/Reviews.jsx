@@ -129,17 +129,7 @@ const Reviews = () => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
-            <div className="relative">
-              <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search reviews..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.status}
@@ -162,15 +152,6 @@ const Reviews = () => {
               <option value="3">3 Stars</option>
               <option value="2">2 Stars</option>
               <option value="1">1 Star</option>
-            </select>
-            <select
-              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
-              value={filters.reportStatus}
-              onChange={(e) => handleFilterChange('reportStatus', e.target.value)}
-            >
-              <option value="all">All Reports</option>
-              <option value="reported">Reported</option>
-              <option value="not-reported">Not Reported</option>
             </select>
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
@@ -223,12 +204,24 @@ const Reviews = () => {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-1">
+                    {review.status === 'TO_SUPPORT_AGENTS' && (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                        To Support Agents
+                      </span>
+                    )}
+                    {review.status === 'REJECTED' && (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300">
+                        Rejected
+                      </span>
+                    )}
+                    {review.status !== 'TO_SUPPORT_AGENTS' && review.status !== 'REJECTED' && (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {review.status.replace("_", " ")}
+                      </span>
+                    )}
+                    <div className="flex items-center space-x-1 mt-2">
                       {renderStars(review.rating)}
                     </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {review.status.replace("_", " ")}
-                    </span>
                   </div>
                 </div>
 
@@ -259,14 +252,7 @@ const Reviews = () => {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-between">
-                  <button
-                    className="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors flex items-center space-x-1"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                    <span>View Trip</span>
-                  </button>
-                  
+                <div className="flex items-center justify-end">
                   <div className="flex space-x-2">
                     {review.status !== 'approved' && (
                       <button
@@ -277,7 +263,6 @@ const Reviews = () => {
                         <span>Approve</span>
                       </button>
                     )}
-                    
                     {review.status !== 'rejected' && (
                       <button
                         onClick={() => handleRejectReview(review.id)}
@@ -287,14 +272,6 @@ const Reviews = () => {
                         <span>Reject</span>
                       </button>
                     )}
-                    
-                    <button
-                      onClick={() => handleDeleteReview(review.id)}
-                      className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-danger-700 transition-colors flex items-center space-x-1"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                      <span>Delete</span>
-                    </button>
                   </div>
                 </div>
               </div>
