@@ -15,6 +15,7 @@ import AISettings from '../pages/admin/AISettings';
 import Hosting from '../pages/admin/Hosting';
 import Accounts from '../pages/admin/Accounts';
 import UpdateUserProfile from '../pages/admin/UpdateUserProfile';
+import Communications from '../pages/admin/Communications';
 
 const AdminRoutes = () => {
   return (
@@ -23,6 +24,7 @@ const AdminRoutes = () => {
         <Route path="/" element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="accounts" element={<Accounts />} />
+        <Route path="communications" element={<Communications />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="settings" element={<SystemSettings />} />
         <Route path="ai-settings" element={<AISettings />} />

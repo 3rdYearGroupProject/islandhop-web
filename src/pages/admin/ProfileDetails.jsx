@@ -22,6 +22,7 @@ const ProfileDetails = () => {
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [authToken, setAuthToken] = useState('');
 
   // Function to format the last active time
   const formatLastActive = (timestamp) => {
@@ -55,7 +56,7 @@ const ProfileDetails = () => {
     // Check Firebase for current user metadata
     const currentUser = auth.currentUser;
     if (currentUser) {
-      currentUser.reload().then(() => {
+      currentUser.reload().then(async () => {
         if (currentUser.metadata) {
           const lastLoginTime = currentUser.metadata.lastSignInTime;
           setUser(prev => ({
@@ -63,6 +64,13 @@ const ProfileDetails = () => {
             email: currentUser.email || prev.email,
             lastActive: formatLastActive(new Date(lastLoginTime)) || prev.lastActive,
           }));
+        }
+        // Get Firebase auth token for development
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          setAuthToken('Error fetching token');
         }
       }).catch(err => {
         console.error('Error fetching user metadata:', err);
@@ -190,6 +198,11 @@ const ProfileDetails = () => {
             {toastMessage}
           </div>
         )}
+      </div>
+      {/* Firebase Auth Token (Development Only) */}
+      <div className="mt-8 p-4 bg-gray-100 dark:bg-secondary-800 rounded-xl text-xs text-gray-700 dark:text-gray-300 break-all">
+        <span className="font-semibold text-primary-600 dark:text-primary-400">Firebase Auth Token (Dev):</span>
+        <div className="mt-2 select-all">{authToken || 'Loading token...'}</div>
       </div>
     </div>
   );

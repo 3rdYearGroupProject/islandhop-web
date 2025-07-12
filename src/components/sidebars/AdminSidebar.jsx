@@ -12,7 +12,8 @@ import {
   ClockIcon,
   WrenchScrewdriverIcon,
   ComputerDesktopIcon,
-  CircleStackIcon
+  CircleStackIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { auth } from '../../firebase';
 import { clearUserData } from '../../utils/userStorage';
@@ -35,6 +36,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       path: '/admin/accounts',
       icon: UsersIcon,
       description: 'Manage Users'
+    },
+    { 
+      name: 'Communications', 
+      path: '/admin/communications', 
+      icon: ChatBubbleLeftRightIcon,
+      description: 'Chat with Support'
     },
     { 
       name: 'Analytics', 
