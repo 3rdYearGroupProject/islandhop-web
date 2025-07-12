@@ -23,7 +23,7 @@ const Communications = () => {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Mock data for chats (personal only, system group will be dynamic)
+  // Chats state: system group and personal conversations from backend
   const [chats, setChats] = useState([
     {
       id: 'system',
@@ -35,99 +35,84 @@ const Communications = () => {
       unreadCount: 0,
       isOnline: true,
       participants: []
-    },
-    {
-      id: 'agent-1',
-      name: 'Sarah Johnson',
-      type: 'personal',
-      avatar: null,
-      lastMessage: 'The database issue has been resolved',
-      lastTime: '15 min ago',
-      unreadCount: 0,
-      isOnline: true,
-      role: 'Senior Support Agent'
-    },
-    {
-      id: 'agent-2',
-      name: 'Mike Chen',
-      type: 'personal',
-      avatar: null,
-      lastMessage: 'Can you review the new API documentation?',
-      lastTime: '1 hour ago',
-      unreadCount: 1,
-      isOnline: false,
-      role: 'Technical Support'
-    },
-    {
-      id: 'agent-3',
-      name: 'Emma Davis',
-      type: 'personal',
-      avatar: null,
-      lastMessage: 'Thanks for the quick response!',
-      lastTime: '3 hours ago',
-      unreadCount: 0,
-      isOnline: true,
-      role: 'Customer Support'
     }
   ]);
+  const [personalConversations, setPersonalConversations] = useState([]);
+  const [personalMessages, setPersonalMessages] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({});
 
-  // Personal messages remain mock, system group is dynamic
-  const [messages, setMessages] = useState({
-    'agent-1': [
-      {
-        id: 1,
-        sender: 'Sarah Johnson',
-        content: 'Hi! I wanted to update you on the database optimization',
-        timestamp: '9:15 AM',
-        isOwn: false,
-        status: 'read'
-      },
-      {
-        id: 2,
-        sender: 'Admin',
-        content: 'How are the performance improvements?',
-        timestamp: '9:20 AM',
-        isOwn: true,
-        status: 'read'
-      },
-      {
-        id: 3,
-        sender: 'Sarah Johnson',
-        content: 'The database issue has been resolved. Query times improved by 40%',
-        timestamp: '10:45 AM',
-        isOwn: false,
-        status: 'delivered'
+  // Remove old mock messages state
+  // Fetch personal conversations for current user
+  useEffect(() => {
+    if (authToken && auth.currentUser) {
+        console.log(`Fetching personal conversations for user: ${auth.currentUser.uid}`);
+      const userId = auth.currentUser.uid;
+      fetch(`http://localhost:8090/api/v1/chat/personal/conversations/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setPersonalConversations(Array.isArray(data) ? data : []);
+          // Add to chats state
+          setChats(prev => [
+            prev[0], // system group
+            ...data.map(conv => ({
+              id: conv.conversationId,
+              name: conv.receiverName || conv.receiverId,
+              type: 'personal',
+              avatar: null,
+              lastMessage: conv.lastMessage || '',
+              lastTime: conv.lastMessageTime ? new Date(conv.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+              unreadCount: 0,
+              isOnline: conv.isOnline || false,
+              role: conv.receiverRole || ''
+            }))
+          ]);
+        });
+      // Fetch unread counts
+      fetch(`http://localhost:8090/api/v1/chat/personal/unread-count/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setUnreadCounts(data || {});
+        });
+    }
+  }, [authToken, auth.currentUser]);
+  // Fetch personal messages for selected chat
+  useEffect(() => {
+    if (selectedChat !== 'system' && authToken && auth.currentUser) {
+      const userId = auth.currentUser.uid;
+      const conversation = chats.find(c => c.id === selectedChat);
+      if (!conversation) return;
+      // Safely get receiverId
+      let receiverId = '';
+      if (typeof conversation.receiverId === 'string' && conversation.receiverId) {
+        receiverId = conversation.receiverId;
+      } else if (typeof conversation.id === 'string' && conversation.id) {
+        receiverId = conversation.id.replace(userId, '').replace(/-/g, '');
       }
-    ],
-    'agent-2': [
-      {
-        id: 1,
-        sender: 'Mike Chen',
-        content: 'Can you review the new API documentation?',
-        timestamp: '9:30 AM',
-        isOwn: false,
-        status: 'delivered'
-      }
-    ],
-    'agent-3': [
-      {
-        id: 1,
-        sender: 'Admin',
-        content: 'How is the customer feedback looking?',
-        timestamp: '8:15 AM',
-        isOwn: true,
-        status: 'read'
-      },
-      {
-        id: 2,
-        sender: 'Emma Davis',
-        content: 'Thanks for the quick response! Customer satisfaction is up 20%',
-        timestamp: '8:45 AM',
-        isOwn: false,
-        status: 'read'
-      }
-    ]
-  });
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setPersonalMessages(prev => ({
+            ...prev,
+            [selectedChat]: Array.isArray(data.content) ? data.content : []
+          }));
+        });
+    }
+  }, [selectedChat, authToken, chats, auth.currentUser]);
 
   // Get Firebase auth token
   useEffect(() => {
@@ -185,7 +170,7 @@ const Communications = () => {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, groupMessages, selectedChat]);
+  }, [groupMessages, personalMessages, selectedChat]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -202,7 +187,7 @@ const Communications = () => {
           },
           body: JSON.stringify({
             groupId: '6872785e3372e21e0948ecc8',
-            senderId: 'islandhopdev@gmail.com',
+            senderId: auth.currentUser.uid,
             content: messageInput,
             messageType: 'TEXT',
             senderName: auth.currentUser?.displayName || 'Admin'
@@ -225,24 +210,45 @@ const Communications = () => {
       } catch (err) {}
       setSending(false);
     } else {
-      // Personal chat (mock)
-      const newMessage = {
-        id: Date.now(),
-        sender: 'Admin',
-        content: messageInput,
-        timestamp: new Date().toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit',
-          hour12: true 
-        }),
-        isOwn: true,
-        status: 'sent'
-      };
-      setMessages(prev => ({
-        ...prev,
-        [selectedChat]: [...(prev[selectedChat] || []), newMessage]
-      }));
-      setMessageInput('');
+      // Personal chat
+      setSending(true);
+      const userId = auth.currentUser.uid;
+      const conversation = chats.find(c => c.id === selectedChat);
+      if (!conversation) return;
+      const receiverId = conversation.receiverId || conversation.id.replace(userId, '').replace('-', '');
+      try {
+        const res = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            senderId: userId,
+            receiverId,
+            content: messageInput,
+            messageType: 'TEXT'
+          })
+        });
+        if (res.ok) {
+          setMessageInput('');
+          // Refresh personal messages
+          fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          })
+            .then(res => res.json())
+            .then(data => {
+              setPersonalMessages(prev => ({
+                ...prev,
+                [selectedChat]: Array.isArray(data.content) ? data.content : []
+              }));
+            });
+        }
+      } catch (err) {}
+      setSending(false);
     }
   };
 
@@ -270,18 +276,27 @@ const Communications = () => {
   };
 
   const filteredChats = chats.filter(chat =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (chat.name ? chat.name.toLowerCase() : '').includes(searchQuery.toLowerCase())
   );
 
   const currentChat = chats.find(chat => chat.id === selectedChat);
-  const currentMessages = selectedChat === 'system' ? groupMessages.map(msg => ({
-    id: msg.id,
-    sender: msg.senderName || msg.senderId,
-    content: msg.content,
-    timestamp: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
-    isOwn: msg.senderId === auth.currentUser?.uid,
-    status: 'read'
-  })) : (messages[selectedChat] || []);
+  const currentMessages = selectedChat === 'system'
+    ? groupMessages.map(msg => ({
+        id: msg.id,
+        sender: msg.senderName || msg.senderId,
+        content: msg.content,
+        timestamp: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+        isOwn: msg.senderId === auth.currentUser?.uid,
+        status: 'read'
+      }))
+    : (personalMessages[selectedChat] || []).map(msg => ({
+        id: msg.id,
+        sender: msg.senderName || msg.senderId,
+        content: msg.content,
+        timestamp: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+        isOwn: msg.senderId === auth.currentUser?.uid,
+        status: msg.read ? 'read' : 'delivered'
+      }));
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-secondary-900">
