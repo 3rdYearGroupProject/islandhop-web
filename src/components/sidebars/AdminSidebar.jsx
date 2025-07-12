@@ -32,15 +32,9 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     },
     { 
       name: 'User Accounts', 
-      path: '/admin/users', 
+      path: '/admin/accounts',
       icon: UsersIcon,
       description: 'Manage Users'
-    },
-    { 
-      name: 'Account Management', 
-      path: '/admin/accounts', 
-      icon: UserIcon,
-      description: 'Account Settings'
     },
     { 
       name: 'Analytics', 

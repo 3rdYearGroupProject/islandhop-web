@@ -4,7 +4,6 @@ import AdminDashboardLayout from '../components/AdminDashboardLayout';
 
 // Import admin page components
 import AdminDashboard from '../pages/admin/AdminDashboard';
-import UserAccounts from '../pages/admin/UserAccounts';
 import Analytics from '../pages/admin/Analytics';
 import SystemSettings from '../pages/admin/SystemSettings';
 import Reviews from '../pages/admin/Reviews';
@@ -23,7 +22,6 @@ const AdminRoutes = () => {
       <Routes>
         <Route path="/" element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="users" element={<UserAccounts />} />
         <Route path="accounts" element={<Accounts />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="settings" element={<SystemSettings />} />
