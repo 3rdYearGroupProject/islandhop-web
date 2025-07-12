@@ -24,6 +24,10 @@ const Reviews = () => {
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [reviewToApprove, setReviewToApprove] = useState(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [reviewToReject, setReviewToReject] = useState(null);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -86,49 +90,37 @@ const Reviews = () => {
 
   const handleApproveReview = async (reviewId) => {
     try {
-      await fetch(`http://localhost:8082/api/v1/reviews/guides/${reviewId}/status?status=1`, {
+      const endpoint =
+        filters.reviewType === "drivers"
+          ? `http://localhost:8082/api/v1/reviews/drivers/${reviewId}/status?status=1`
+          : `http://localhost:8082/api/v1/reviews/guides/${reviewId}/status?status=1`;
+      await fetch(endpoint, {
         method: 'PUT',
       });
-      setReviews((prev) =>
-        prev.map((review) =>
-          review.reviewId === reviewId
-            ? { ...review, status: 'approved' }
-            : review
-        )
-      );
-      setFilteredReviews((prev) =>
-        prev.map((review) =>
-          review.reviewId === reviewId
-            ? { ...review, status: 'approved' }
-            : review
-        )
-      );
+      window.location.reload();
     } catch (error) {
       console.error('Error approving review:', error);
+    } finally {
+      setShowApproveModal(false);
+      setReviewToApprove(null);
     }
   };
 
   const handleRejectReview = async (reviewId) => {
     try {
-      await fetch(`http://localhost:8082/api/v1/reviews/guides/${reviewId}/status?status=2`, {
+      const endpoint =
+        filters.reviewType === "drivers"
+          ? `http://localhost:8082/api/v1/reviews/drivers/${reviewId}/status?status=2`
+          : `http://localhost:8082/api/v1/reviews/guides/${reviewId}/status?status=2`;
+      await fetch(endpoint, {
         method: 'PUT',
       });
-      setReviews((prev) =>
-        prev.map((review) =>
-          review.reviewId === reviewId
-            ? { ...review, status: 'rejected' }
-            : review
-        )
-      );
-      setFilteredReviews((prev) =>
-        prev.map((review) =>
-          review.reviewId === reviewId
-            ? { ...review, status: 'rejected' }
-            : review
-        )
-      );
+      window.location.reload();
     } catch (error) {
       console.error('Error rejecting review:', error);
+    } finally {
+      setShowRejectModal(false);
+      setReviewToReject(null);
     }
   };
 
@@ -321,8 +313,8 @@ const Reviews = () => {
                   <div className="flex space-x-2">
                     {review.status !== 'approved' && (
                       <button
-                        onClick={() => handleApproveReview(review.reviewId)}
-                        className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-success-700 transition-colors flex items-center space-x-1"
+                        onClick={() => { setShowApproveModal(true); setReviewToApprove(review.reviewId); }}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center space-x-1"
                       >
                         <CheckIcon className="h-4 w-4" />
                         <span>Approve</span>
@@ -330,8 +322,8 @@ const Reviews = () => {
                     )}
                     {review.status !== 'rejected' && (
                       <button
-                        onClick={() => handleRejectReview(review.reviewId)}
-                        className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-warning-700 transition-colors flex items-center space-x-1"
+                        onClick={() => { setShowRejectModal(true); setReviewToReject(review.reviewId); }}
+                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors flex items-center space-x-1"
                       >
                         <XMarkIcon className="h-4 w-4" />
                         <span>Reject</span>
@@ -366,6 +358,62 @@ const Reviews = () => {
                   className="px-4 py-2 bg-danger-600 text-white hover:bg-danger-700 rounded transition-colors"
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Approve Confirmation Modal */}
+        {showApproveModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Confirm Approve
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to approve this review?
+              </p>
+              <div className="flex space-x-3 justify-end">
+                <button
+                  onClick={() => { setShowApproveModal(false); setReviewToApprove(null); }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700 rounded transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleApproveReview(reviewToApprove)}
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors"
+                >
+                  Approve
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reject Confirmation Modal */}
+        {showRejectModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Confirm Reject
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to reject this review?
+              </p>
+              <div className="flex space-x-3 justify-end">
+                <button
+                  onClick={() => { setShowRejectModal(false); setReviewToReject(null); }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700 rounded transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleRejectReview(reviewToReject)}
+                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded transition-colors"
+                >
+                  Reject
                 </button>
               </div>
             </div>
