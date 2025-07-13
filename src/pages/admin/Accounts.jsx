@@ -240,6 +240,70 @@ const Accounts = () => {
     }
   };
 
+  const sendEmailToGroup = async (email) => {
+    try {
+      const auth = getAuth(); // Initialize Firebase auth
+      const authToken = await auth.currentUser.getIdToken();
+      const requesterId = auth.currentUser.uid;
+
+      const response = await fetch('http://localhost:8091/api/v1/firebase/user/email-to-group', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          email,
+          groupId: '6872785e3372e21e0948ecc8',
+          requesterId
+        })
+      });
+
+      if (response.ok) {
+        console.log(`Email successfully sent to group for ${email}`);
+      } else {
+        console.error(`Failed to send email to group for ${email}:`, response.status);
+      }
+    } catch (error) {
+      console.error(`Error sending email to group for ${email}:`, error);
+    }
+  };
+
+  // Update the account creation logic
+  const handleCreateSupportAccount = async () => {
+    setAddLoading(true);
+    setAddError("");
+    setAddSuccess("");
+    if (!addEmail) {
+      setAddError("Email is required");
+      setAddLoading(false);
+      return;
+    }
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("Not authenticated");
+      const token = await user.getIdToken();
+      const response = await userServicesApi.post("/admin/create/support", { email: addEmail }, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+      if (response.status === 200 && response.data.message) {
+        setAddSuccess(response.data.message);
+        setAddEmail("");
+        // Send email to group
+        await sendEmailToGroup(addEmail);
+      } else if (response.status === 409) {
+        setAddError("Account already exists");
+      } else {
+        setAddError(response.data.message || "Failed to create account");
+      }
+    } catch (err) {
+      setAddError(err?.response?.data?.message || err.message || "Error creating account");
+    }
+    setAddLoading(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -300,38 +364,7 @@ const Accounts = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={async () => {
-                    setAddLoading(true);
-                    setAddError("");
-                    setAddSuccess("");
-                    if (!addEmail) {
-                      setAddError("Email is required");
-                      setAddLoading(false);
-                      return;
-                    }
-                    try {
-                      const auth = getAuth();
-                      const user = auth.currentUser;
-                      if (!user) throw new Error("Not authenticated");
-                      const token = await user.getIdToken();
-                      const response = await userServicesApi.post("/admin/create/support", { email: addEmail }, {
-                        headers: { Authorization: `Bearer ${token}` },
-                        withCredentials: true,
-                      });
-                      if (response.status === 200 && response.data.message) {
-                        setAddSuccess(response.data.message);
-                        setAddEmail("");
-                        // Optionally refresh accounts list here
-                      } else if (response.status === 409) {
-                        setAddError("Account already exists");
-                      } else {
-                        setAddError(response.data.message || "Failed to create account");
-                      }
-                    } catch (err) {
-                      setAddError(err?.response?.data?.message || err.message || "Error creating account");
-                    }
-                    setAddLoading(false);
-                  }}
+                  onClick={handleCreateSupportAccount}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
                   disabled={addLoading}
                 >

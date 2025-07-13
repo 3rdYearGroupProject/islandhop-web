@@ -40,8 +40,44 @@ const Communications = () => {
   const [personalConversations, setPersonalConversations] = useState([]);
   const [personalMessages, setPersonalMessages] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [userDisplayNames, setUserDisplayNames] = useState({});
 
   // Remove old mock messages state
+  
+  // Function to fetch display name from backend
+  const fetchDisplayNameFromBackend = async (userId) => {
+    console.log(`Fetching display name for user: ${userId}`);
+    if (userDisplayNames[userId]) {
+      console.log(`Display name already cached for ${userId}: ${userDisplayNames[userId]}`);
+      return userDisplayNames[userId];
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8091/api/v1/firebase/user/display-name/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (response.ok) {
+        const displayName = await response.text();
+        console.log(`Fetched display name for ${userId}: ${displayName}`);
+        setUserDisplayNames(prev => ({
+          ...prev,
+          [userId]: displayName
+        }));
+        return displayName;
+      } else {
+        console.error(`Failed to fetch display name for ${userId}:`, response.status);
+        return userId; // Fallback to userId
+      }
+    } catch (error) {
+      console.error(`Error fetching display name for ${userId}:`, error);
+      return userId; // Fallback to userId
+    }
+  };
+
   // Fetch personal conversations for current user
   useEffect(() => {
     if (authToken && auth.currentUser) {
@@ -54,23 +90,33 @@ const Communications = () => {
         }
       })
         .then(res => res.json())
-        .then(data => {
+        .then(async (data) => {
+          console.log('Fetched personal conversations:', data);
           setPersonalConversations(Array.isArray(data) ? data : []);
+          
+          // Fetch display names for all receivers
+          const conversationsWithNames = await Promise.all(
+            data.map(async (conv) => {
+              const displayName = await fetchDisplayNameFromBackend(conv.receiverId);
+              return {
+                id: conv.conversationId,
+                name: displayName,
+                type: 'personal',
+                avatar: null,
+                lastMessage: conv.lastMessage || '',
+                lastTime: conv.lastMessageTime ? new Date(conv.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+                unreadCount: 0,
+                isOnline: conv.isOnline || false,
+                role: conv.receiverRole || '',
+                receiverId: conv.receiverId // Store the actual receiverId
+              };
+            })
+          );
+          
           // Add to chats state
           setChats(prev => [
             prev[0], // system group
-            ...data.map(conv => ({
-              id: conv.conversationId,
-              name: conv.receiverName || conv.receiverId,
-              type: 'personal',
-              avatar: null,
-              lastMessage: conv.lastMessage || '',
-              lastTime: conv.lastMessageTime ? new Date(conv.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
-              unreadCount: 0,
-              isOnline: conv.isOnline || false,
-              role: conv.receiverRole || '',
-              receiverId: conv.receiverId // Store the actual receiverId
-            }))
+            ...conversationsWithNames
           ]);
         });
       // Fetch unread counts
@@ -85,7 +131,7 @@ const Communications = () => {
           setUnreadCounts(data || {});
         });
     }
-  }, [authToken, auth.currentUser]);
+  }, [authToken, auth.currentUser, userDisplayNames]);
   // Fetch personal messages for selected chat
   useEffect(() => {
     if (selectedChat !== 'system' && authToken && auth.currentUser) {
@@ -106,14 +152,28 @@ const Communications = () => {
         }
       })
         .then(res => res.json())
-        .then(data => {
+        .then(async (data) => {
+          console.log('Fetched personal messages:', data);
+          const messages = Array.isArray(data.content) ? data.content : [];
+          
+          // Fetch display names for all message senders
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
           setPersonalMessages(prev => ({
             ...prev,
-            [selectedChat]: Array.isArray(data.content) ? data.content : []
+            [selectedChat]: messagesWithNames
           }));
         });
     }
-  }, [selectedChat, authToken, chats, auth.currentUser]);
+  }, [selectedChat, authToken, chats, auth.currentUser, userDisplayNames]);
 
   // Get Firebase auth token
   useEffect(() => {
@@ -161,13 +221,27 @@ const Communications = () => {
         }
       })
         .then(res => res.json())
-        .then(data => {
-          setGroupMessages(Array.isArray(data.content) ? data.content : []);
+        .then(async (data) => {
+          console.log('Fetched group messages:', data);
+          const messages = Array.isArray(data.content) ? data.content : [];
+          
+          // Fetch display names for all message senders
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
+          setGroupMessages(messagesWithNames);
           setLoadingMessages(false);
         })
         .catch(() => setLoadingMessages(false));
     }
-  }, [selectedChat, authToken]);
+  }, [selectedChat, authToken, userDisplayNames]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -178,24 +252,31 @@ const Communications = () => {
     e.preventDefault();
     if (!messageInput.trim()) return;
 
+    console.log(`Sending message to ${selectedChat}:`, messageInput);
+
     if (selectedChat === 'system') {
       setSending(true);
       try {
+        const messagePayload = {
+          groupId: '6872785e3372e21e0948ecc8',
+          senderId: auth.currentUser.uid,
+          content: messageInput,
+          messageType: 'TEXT',
+          senderName: auth.currentUser?.displayName || 'Admin'
+        };
+        console.log('Group message payload:', messagePayload);
+        
         const res = await fetch('http://localhost:8090/api/v1/chat/group/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({
-            groupId: '6872785e3372e21e0948ecc8',
-            senderId: auth.currentUser.uid,
-            content: messageInput,
-            messageType: 'TEXT',
-            senderName: auth.currentUser?.displayName || 'Admin'
-          })
+          body: JSON.stringify(messagePayload)
         });
+        
         if (res.ok) {
+          console.log('Group message sent successfully');
           setMessageInput('');
           // Refresh group messages
           fetch('http://localhost:8090/api/v1/chat/group/6872785e3372e21e0948ecc8/messages?page=0&size=20', {
@@ -205,11 +286,29 @@ const Communications = () => {
             }
           })
             .then(res => res.json())
-            .then(data => {
-              setGroupMessages(Array.isArray(data.content) ? data.content : []);
+            .then(async (data) => {
+              console.log('Refreshed group messages:', data);
+              const messages = Array.isArray(data.content) ? data.content : [];
+              
+              // Fetch display names for all message senders
+              const messagesWithNames = await Promise.all(
+                messages.map(async (msg) => {
+                  if (!msg.senderName && msg.senderId) {
+                    const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                    return { ...msg, senderName: displayName };
+                  }
+                  return msg;
+                })
+              );
+              
+              setGroupMessages(messagesWithNames);
             });
+        } else {
+          console.error('Failed to send group message:', res.status);
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Error sending group message:', err);
+      }
       setSending(false);
     } else {
       // Personal chat
@@ -218,21 +317,28 @@ const Communications = () => {
       const conversation = chats.find(c => c.id === selectedChat);
       if (!conversation) return;
       const receiverId = conversation.receiverId || conversation.id.replace(userId, '').replace('-', '');
+      
       try {
+        const messagePayload = {
+          senderId: userId,
+          receiverId,
+          content: messageInput,
+          messageType: 'TEXT',
+          senderName: auth.currentUser?.displayName || 'Admin'
+        };
+        console.log('Personal message payload:', messagePayload);
+        
         const res = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({
-            senderId: userId,
-            receiverId,
-            content: messageInput,
-            messageType: 'TEXT'
-          })
+          body: JSON.stringify(messagePayload)
         });
+        
         if (res.ok) {
+          console.log('Personal message sent successfully');
           setMessageInput('');
           // Refresh personal messages
           fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
@@ -242,14 +348,32 @@ const Communications = () => {
             }
           })
             .then(res => res.json())
-            .then(data => {
+            .then(async (data) => {
+              console.log('Refreshed personal messages:', data);
+              const messages = Array.isArray(data.content) ? data.content : [];
+              
+              // Fetch display names for all message senders
+              const messagesWithNames = await Promise.all(
+                messages.map(async (msg) => {
+                  if (!msg.senderName && msg.senderId) {
+                    const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                    return { ...msg, senderName: displayName };
+                  }
+                  return msg;
+                })
+              );
+              
               setPersonalMessages(prev => ({
                 ...prev,
-                [selectedChat]: Array.isArray(data.content) ? data.content : []
+                [selectedChat]: messagesWithNames
               }));
             });
+        } else {
+          console.error('Failed to send personal message:', res.status);
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Error sending personal message:', err);
+      }
       setSending(false);
     }
   };
