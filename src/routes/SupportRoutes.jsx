@@ -14,6 +14,7 @@ import LostItemTracker from "../pages/support/LostItemTracker";
 import PanicAlerts from "../pages/support/PanicAlerts";
 import SupportReports from "../pages/support/SupportReports";
 import SupportProfile from "../pages/support/SupportProfile";
+import Communications from '../pages/admin/Communications';
 
 const SupportRoutes = () => {
   return (
@@ -24,6 +25,7 @@ const SupportRoutes = () => {
         <Route path="tickets" element={<ViewTickets />} />
         <Route path="reviews" element={<Reviews />} />
         <Route path="chat-email" element={<ChatEmailSupport />} />
+        <Route path="communications" element={<Communications />} />
         <Route path="resolve-complaint" element={<ResolveComplaint />} />
         <Route path="escalate-issue" element={<EscalateIssue />} />
         <Route path="refund-compensation" element={<RefundCompensation />} />

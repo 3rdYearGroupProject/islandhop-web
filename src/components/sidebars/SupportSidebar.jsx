@@ -50,6 +50,12 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       icon: ChatBubbleLeftRightIcon,
       description: "Live Support",
     },
+    { 
+          name: 'Communications', 
+          path: '/support/communications', 
+          icon: ChatBubbleLeftRightIcon,
+          description: 'Chat with System Admin & Support Agents'
+  },
     {
       name: "Resolve Complaints",
       path: "/support/resolve-complaint",

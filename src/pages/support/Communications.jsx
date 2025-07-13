@@ -68,8 +68,7 @@ const Communications = () => {
               lastTime: conv.lastMessageTime ? new Date(conv.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
               unreadCount: 0,
               isOnline: conv.isOnline || false,
-              role: conv.receiverRole || '',
-              receiverId: conv.receiverId // Store the actual receiverId
+              role: conv.receiverRole || ''
             }))
           ]);
         });
@@ -123,7 +122,6 @@ const Communications = () => {
         try {
           const token = await currentUser.getIdToken();
           setAuthToken(token);
-          console.log('Display name:', currentUser.displayName);
         } catch (err) {
           setAuthToken('');
         }

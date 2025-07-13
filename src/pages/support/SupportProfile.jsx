@@ -11,7 +11,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { auth } from '../../firebase';
-import { sendPasswordResetEmail, onAuthStateChanged, deleteUser as firebaseDeleteUser } from 'firebase/auth';
+import { sendPasswordResetEmail, onAuthStateChanged, deleteUser as firebaseDeleteUser, updateProfile } from 'firebase/auth';
 import api from '../../api/axios';
 import profilePic from '../../assets/islandHopIcon.png';
 
@@ -149,20 +149,28 @@ const SupportProfile = () => {
       formData.append('lastName', editedUser.lastName);
       formData.append('contactNo', editedUser.phone);
       formData.append('address', editedUser.address);
-      
+
       if (avatarPreview !== user.avatar) {
         const fileInput = document.querySelector('input[type="file"]');
         if (fileInput && fileInput.files[0]) {
           formData.append('profilePicture', fileInput.files[0]);
         }
       }
-      
+
       const response = await api.put('/support/profile', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
+      // Update Firebase displayName if first or last name changed
+      if (auth.currentUser) {
+        const newDisplayName = `${editedUser.firstName} ${editedUser.lastName}`;
+        if (auth.currentUser.displayName !== newDisplayName) {
+          await updateProfile(auth.currentUser, { displayName: newDisplayName });
+        }
+      }
+
       if (response.status === 200) {
         const updatedProfile = response.data;
         setUser(prev => ({
@@ -173,11 +181,11 @@ const SupportProfile = () => {
           address: editedUser.address,
           avatar: updatedProfile.profilePicture || prev.avatar
         }));
-        
+
         if (updatedProfile.profilePicture) {
           setAvatarPreview(updatedProfile.profilePicture);
         }
-        
+
         setIsEditing(false);
         notify('Profile updated successfully!');
       } else {
