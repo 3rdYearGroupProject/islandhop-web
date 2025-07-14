@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Car, Bus, Truck } from 'lucide-react';
 
 const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuide, numPassengers, setNumPassengers, userId, tripId }) => {
   const [vehicles, setVehicles] = useState([]);
@@ -94,17 +95,30 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuid
                   {vehicles.map(vehicle => {
                     const isSelected = selectedVehicle === vehicle.typeName;
                     const isInvalid = isSelected && vehicle.capacity < numPassengers;
+                    let icon = null;
+                    if (/car/i.test(vehicle.typeName)) {
+                      icon = <Car className="mr-3" size={28} strokeWidth={2.2} />;
+                    } else if (/van/i.test(vehicle.typeName)) {
+                      icon = <Truck className="mr-3" size={28} strokeWidth={2.2} />;
+                    } else if (/bus/i.test(vehicle.typeName)) {
+                      icon = <Bus className="mr-3" size={28} strokeWidth={2.2} />;
+                    } else {
+                      icon = <Car className="mr-3" size={28} strokeWidth={2.2} />;
+                    }
                     return (
                       <button
                         key={vehicle.id}
                         type="button"
-                        className={`w-full px-5 py-4 rounded-lg border-2 font-semibold transition-colors duration-150 focus:outline-none text-left
-                          ${isSelected ? (isInvalid ? 'border-red-600 bg-white text-red-600' : 'bg-primary-600 text-white border-primary-600') : 'bg-white text-gray-800 border-gray-300 hover:bg-primary-50'}`}
+                        className={`w-full px-5 py-4 rounded-lg border-2 font-semibold transition-colors duration-150 focus:outline-none text-left flex items-center
+                          ${isSelected ? (isInvalid ? 'border-red-600 bg-white text-red-600' : 'bg-blue-100 text-blue-900 border-blue-600') : 'bg-white text-gray-800 border-gray-300 hover:bg-primary-50'}`}
                         onClick={() => setSelectedVehicle(vehicle.typeName)}
                         disabled={submitting}
                       >
-                        <span className="block font-bold">{vehicle.typeName}</span>
-                        <span className={`block text-xs ${isSelected ? (isInvalid ? 'text-red-600' : 'text-white') : 'text-gray-500'}`}>Capacity: {vehicle.capacity} passengers</span>
+                        {icon}
+                        <div className="flex flex-col">
+                          <span className="font-bold">{vehicle.typeName}</span>
+                        <span className={`text-xs ${isSelected ? (isInvalid ? 'text-red-600' : 'text-blue-800') : 'text-gray-500'}`}>Capacity: {vehicle.capacity} passengers</span>
+                        </div>
                       </button>
                     );
                   })}
