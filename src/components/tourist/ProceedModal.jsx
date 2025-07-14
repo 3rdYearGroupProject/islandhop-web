@@ -9,8 +9,10 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuid
 
   useEffect(() => {
     const fetchVehicles = async () => {
+      console.log('Fetching vehicles...');
       try {
         const response = await axios.get('http://localhost:8091/api/v1/admin/vehicle-types');
+        console.log('Fetched vehicles:', response.data);
         if (response.status === 200 && response.data && response.data.data) {
           setVehicles(response.data.data);
         } else {
@@ -74,8 +76,8 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuid
                   >
                     <option value="" disabled>Select vehicle type</option>
                     {vehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.type} className="bg-white text-gray-800 font-medium">
-                        {vehicle.type} ({vehicle.maxPassengers} passengers)
+                      <option key={vehicle.id} value={vehicle.typeName} className="bg-white text-gray-800 font-medium">
+                        {vehicle.typeName} ({vehicle.capacity} passengers)
                       </option>
                     ))}
                   </select>
@@ -95,8 +97,8 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuid
                   >
                     {selectedVehicle
                       ? (() => {
-                          const vehicleObj = vehicles.find(v => v.type === selectedVehicle);
-                          const max = vehicleObj ? vehicleObj.maxPassengers : 15;
+                          const vehicleObj = vehicles.find(v => v.typeName === selectedVehicle);
+                          const max = vehicleObj ? vehicleObj.capacity : 15;
                           return Array.from({ length: max }, (_, i) => (
                             <option key={i + 1} value={i + 1} className="bg-white text-gray-800 font-medium">
                               {i + 1} Passenger{i === 0 ? '' : 's'}
