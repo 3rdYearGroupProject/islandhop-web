@@ -246,7 +246,7 @@ const Accounts = () => {
       const authToken = await auth.currentUser.getIdToken();
       const requesterId = auth.currentUser.uid;
 
-      const response = await fetch('http://localhost:8091/api/v1/firebase/user/email-to-group', {
+      const response = await fetch('http://localhost:8093/api/v1/firebase/user/email-to-group', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
