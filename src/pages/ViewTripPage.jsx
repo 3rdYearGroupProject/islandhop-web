@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// ...existing imports...
+import ProceedModal from '../components/tourist/ProceedModal';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
@@ -726,12 +728,38 @@ const ViewTripPage = () => {
     // Implement favorite functionality
   };
 
+  // Modal state
+  const [showProceedModal, setShowProceedModal] = useState(false);
+  const [proceedMessage, setProceedMessage] = useState('');
+  const [numPassengers, setNumPassengers] = useState(1);
+
   const handleProceed = () => {
+    let message = '';
+    if (needDriver && needGuide) {
+      message = 'Are you sure you want to proceed with both a driver and a guide?';
+    } else if (needDriver && !needGuide) {
+      message = 'Are you sure you want to proceed with only a driver?';
+    } else if (!needDriver && needGuide) {
+      message = 'Are you sure you want to proceed with only a guide?';
+    } else {
+      message = 'Are you sure you want to proceed without a driver or guide?';
+    }
+    setProceedMessage(message);
+    setShowProceedModal(true);
+  };
+
+  const confirmProceed = () => {
+    setShowProceedModal(false);
     navigate('/select-driver-guide', {
       state: {
-        trip: trip
+        trip: trip,
+        numPassengers: needDriver ? numPassengers : undefined
       }
     });
+  };
+
+  const cancelProceed = () => {
+    setShowProceedModal(false);
   };
 
   // Google Maps API loading
@@ -778,6 +806,13 @@ const ViewTripPage = () => {
   const handleInfoWindowClose = () => {
     setSelectedMarker(null);
   };
+
+  const [needDriver, setNeedDriver] = useState(true);
+  const [needGuide, setNeedGuide] = useState(true);
+
+  const driverCost = needDriver ? 200 : 0;
+  const guideCost = needGuide ? 150 : 0;
+  const grandTotal = driverCost + guideCost;
 
   if (loading) {
     return (
@@ -835,12 +870,6 @@ const ViewTripPage = () => {
 
   const transportationItems = Object.values(trip?.itinerary || {}).flatMap(day => day?.transportation || []);
   const transportationTotal = transportationItems.reduce((sum, t) => sum + parsePrice(t.price), 0);
-
-  // For demo, driver/guide costs are fixed
-  const driverCost = 200;
-  const guideCost = 150;
-
-  const grandTotal = accommodationTotal + foodTotal + activityTotal + transportationTotal + driverCost + guideCost;
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -1127,103 +1156,30 @@ const ViewTripPage = () => {
                 ref={el => (window.tripSummaryCardRef = el)}
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Trip Cost Breakdown</h3>
+                {/* Driver/Guide Selection */}
+                <div className="flex gap-6 mb-4 items-center">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={needDriver}
+                      onChange={e => setNeedDriver(e.target.checked)}
+                      className={`h-5 w-5 rounded border-2 border-primary-600 focus:ring-2 focus:ring-primary-500 transition-all duration-150 ${needDriver ? 'bg-primary-600' : 'bg-white'}`}
+                      style={{ accentColor: needDriver ? '#2563eb' : undefined, backgroundColor: needDriver ? '#2563eb' : '#fff' }}
+                    />
+                    <span className="text-gray-800 font-medium">I need a driver</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={needGuide}
+                      onChange={e => setNeedGuide(e.target.checked)}
+                      className={`h-5 w-5 rounded border-2 border-primary-600 focus:ring-2 focus:ring-primary-500 transition-all duration-150 ${needGuide ? 'bg-primary-600' : 'bg-white'}`}
+                      style={{ accentColor: needGuide ? '#2563eb' : undefined, backgroundColor: needGuide ? '#2563eb' : '#fff' }}
+                    />
+                    <span className="text-gray-800 font-medium">I need a guide</span>
+                  </label>
+                </div>
                 <div className="space-y-3">
-                  {/* Accommodation */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('accommodation')}
-                    >
-                      <span className="text-gray-600">Accommodation</span>
-                      <span className="font-medium flex items-center">
-                        ${accommodationTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.accommodation ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.accommodation && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {accommodationItems.length === 0 && <span className="text-gray-400 text-sm">No accommodations</span>}
-                        {accommodationItems.map((place, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{place.name} <span className="text-gray-400">({place.location})</span></span>
-                            <span>{place.price}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Food */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('food')}
-                    >
-                      <span className="text-gray-600">Food</span>
-                      <span className="font-medium flex items-center">
-                        ${foodTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.food ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.food && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {foodItems.length === 0 && <span className="text-gray-400 text-sm">No food entries</span>}
-                        {foodItems.map((food, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{food.name} <span className="text-gray-400">({food.location})</span></span>
-                            <span>{food.priceRange}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Activities */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('activities')}
-                    >
-                      <span className="text-gray-600">Activities</span>
-                      <span className="font-medium flex items-center">
-                        ${activityTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.activities ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.activities && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {activityItems.length === 0 && <span className="text-gray-400 text-sm">No activities</span>}
-                        {activityItems.map((act, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{act.name} <span className="text-gray-400">({act.location})</span></span>
-                            <span>{act.price}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Transportation */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('transportation')}
-                    >
-                      <span className="text-gray-600">Transportation</span>
-                      <span className="font-medium flex items-center">
-                        ${transportationTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.transportation ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.transportation && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {transportationItems.length === 0 && <span className="text-gray-400 text-sm">No transportation</span>}
-                        {transportationItems.map((t, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{t.name} <span className="text-gray-400">({t.type || t.location})</span></span>
-                            <span>{t.price}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                   {/* Driver */}
                   <div className="flex justify-between border-b border-gray-100 pb-2">
                     <span className="text-gray-600">Driver</span>
@@ -1239,6 +1195,12 @@ const ViewTripPage = () => {
                     <span className="text-gray-900 font-bold">Total</span>
                     <span className="font-bold text-primary-700 text-lg">${grandTotal.toFixed(2)}</span>
                   </div>
+                  {/* Advance Payment */}
+                  <div className="flex justify-between mt-2">
+                    <span className="text-gray-900 font-bold">Advance Payment (50%)</span>
+                    <span className="font-bold text-primary-600 text-lg">${(grandTotal * 0.5).toFixed(2)}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2">You must pay 50% of the total cost before the start of your trip.</div>
                 </div>
               </div>
             </div>
@@ -1281,6 +1243,16 @@ const ViewTripPage = () => {
               </div>
             </div>
           </div>
+          {/* Proceed Modal */}
+          <ProceedModal
+            open={showProceedModal}
+            message={proceedMessage}
+            onConfirm={confirmProceed}
+            onCancel={cancelProceed}
+            needDriver={needDriver}
+            numPassengers={numPassengers}
+            setNumPassengers={setNumPassengers}
+          />
         </div>
       </div>
       <Footer />

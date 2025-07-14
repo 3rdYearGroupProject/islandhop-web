@@ -14,7 +14,6 @@ import TripItineraryPage from '../pages/TripItineraryPage';
 import ViewTripPage from '../pages/ViewTripPage';
 import ViewPoolPage from '../pages/ViewPoolPage';
 import MyTripsPage from '../pages/MyTripsPage';
-import SelectDriverGuidePage from '../pages/SelectDriverGuidePage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
@@ -87,11 +86,6 @@ const GeneralRoutes = () => (
         <ViewPoolPage />
       </PublicRoute>
     } />
-    <Route path="/select-driver-guide" element={
-      <PublicRoute>
-        <SelectDriverGuidePage />
-      </PublicRoute>
-    } />
     
     {/* Pool Creation Routes */}
     <Route path="/pool-duration" element={
@@ -122,7 +116,7 @@ const GeneralRoutes = () => (
         <SignupPage />
       </PublicRoute>
     } />
-    <Route path="/signup/professional" element={
+    <Route path="/professional-signup" element={
       <PublicRoute>
         <ProfessionalSignupPage />
       </PublicRoute>
