@@ -66,18 +66,20 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuid
           {needDriver && (
             <>
               <div className="mt-4 relative w-full max-w-xs flex items-center">
-                <label className="block text-sm font-medium text-gray-800 mb-2">Vehicle Type</label>
+                <label className="block text-sm font-medium text-gray-800 mb-2">Number of Passengers</label>
                 <div className="relative w-full">
                   <select
-                    value={selectedVehicle}
-                    onChange={e => setSelectedVehicle(e.target.value)}
-                    className="px-5 py-2 rounded-full border-2 border-gray-300 bg-white text-gray-800 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-150 appearance-none w-full pr-10 mb-2"
+                    value={numPassengers}
+                    onChange={e => {
+                      setNumPassengers(Number(e.target.value));
+                      setSelectedVehicle(''); // Reset vehicle selection when passenger count changes
+                    }}
+                    className="px-5 py-2 rounded-full border-2 border-gray-300 bg-white text-gray-800 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-150 appearance-none w-full pr-10"
                     style={{ minWidth: '140px', boxShadow: '0 2px 8px rgba(37,99,235,0.08)', WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                   >
-                    <option value="" disabled>Select vehicle type</option>
-                    {vehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.typeName} className="bg-white text-gray-800 font-medium">
-                        {vehicle.typeName} ({vehicle.capacity} passengers)
+                    {[...Array(15)].map((_, i) => (
+                      <option key={i + 1} value={i + 1} className="bg-white text-gray-800 font-medium">
+                        {i + 1} Passenger{i === 0 ? '' : 's'}
                       </option>
                     ))}
                   </select>
@@ -86,34 +88,36 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, needGuid
                   </span>
                 </div>
               </div>
-              <div className="mt-4 relative w-full max-w-xs flex items-center">
-                <label className="block text-sm font-medium text-gray-800 mb-2">Number of Passengers</label>
-                <div className="relative w-full">
-                  <select
-                    value={numPassengers}
-                    onChange={e => setNumPassengers(Number(e.target.value))}
-                    className="px-5 py-2 rounded-full border-2 border-gray-300 bg-white text-gray-800 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-150 appearance-none w-full pr-10"
-                    style={{ minWidth: '140px', boxShadow: '0 2px 8px rgba(37,99,235,0.08)', WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
-                  >
-                    {selectedVehicle
-                      ? (() => {
-                          const vehicleObj = vehicles.find(v => v.typeName === selectedVehicle);
-                          const max = vehicleObj ? vehicleObj.capacity : 15;
-                          return Array.from({ length: max }, (_, i) => (
-                            <option key={i + 1} value={i + 1} className="bg-white text-gray-800 font-medium">
-                              {i + 1} Passenger{i === 0 ? '' : 's'}
-                            </option>
-                          ));
-                        })()
-                      : [...Array(15)].map((_, i) => (
-                          <option key={i + 1} value={i + 1} className="bg-white text-gray-800 font-medium">
-                            {i + 1} Passenger{i === 0 ? '' : 's'}
-                          </option>
-                        ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-4 inset-y-0 flex items-center text-gray-400">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </span>
+              <div className="mt-4 w-full max-w-xs">
+                <label className="block text-sm font-medium text-gray-800 mb-2">Vehicle Type</label>
+                <div className="flex flex-col gap-3 w-full">
+                  {vehicles.map(vehicle => {
+                    const isSelected = selectedVehicle === vehicle.typeName;
+                    const isInvalid = isSelected && vehicle.capacity < numPassengers;
+                    return (
+                      <button
+                        key={vehicle.id}
+                        type="button"
+                        className={`w-full px-5 py-4 rounded-lg border-2 font-semibold transition-colors duration-150 focus:outline-none text-left
+                          ${isSelected ? (isInvalid ? 'border-red-600 bg-white text-red-600' : 'bg-primary-600 text-white border-primary-600') : 'bg-white text-gray-800 border-gray-300 hover:bg-primary-50'}`}
+                        onClick={() => setSelectedVehicle(vehicle.typeName)}
+                        disabled={submitting}
+                      >
+                        <span className="block font-bold">{vehicle.typeName}</span>
+                        <span className={`block text-xs ${isSelected ? (isInvalid ? 'text-red-600' : 'text-white') : 'text-gray-500'}`}>Capacity: {vehicle.capacity} passengers</span>
+                      </button>
+                    );
+                  })}
+                  {vehicles.filter(vehicle => vehicle.capacity >= numPassengers).length === 0 && (
+                    <span className="text-sm text-red-500">No vehicles available for {numPassengers} passengers.</span>
+                  )}
+                  {selectedVehicle && (() => {
+                    const vehicleObj = vehicles.find(v => v.typeName === selectedVehicle);
+                    if (vehicleObj && vehicleObj.capacity < numPassengers) {
+                      return <div className="mt-2 text-sm text-red-600 font-semibold">Selected vehicle cannot accommodate {numPassengers} passengers. Please choose another.</div>;
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </>
