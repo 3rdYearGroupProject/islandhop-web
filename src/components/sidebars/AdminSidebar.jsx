@@ -61,6 +61,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       icon: WrenchScrewdriverIcon,
       description: 'AI Configuration'
     },
+    {
+      name: 'System Data',
+      path: '/admin/system-data',
+      icon: ServerIcon,
+      description: 'Manage System Data'
+    },
     { 
       name: 'Hosting', 
       path: '/admin/hosting', 
@@ -97,6 +103,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       icon: UserIcon,
       description: 'Admin Profile'
     },
+
   ];
 
   // Sign out handler
