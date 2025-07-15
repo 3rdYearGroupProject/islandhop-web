@@ -667,14 +667,14 @@ const Communications = () => {
                 </div>
                 
                 {/* Support Agents Section */}
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wide">Support Team</h3>
                     {loadingSupportAgents && (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
                     {supportAgents.map((agent) => (
                       <button
                         key={agent.email}
@@ -708,7 +708,7 @@ const Communications = () => {
               </div>
 
               {/* Chat List */}
-              <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
                 <div className="mb-4">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Recent Conversations</h3>
                 </div>
