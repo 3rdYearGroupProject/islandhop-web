@@ -629,10 +629,10 @@ const Communications = () => {
       }));
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6 flex flex-col">
+      <div className="max-w-7xl mx-auto flex-1 flex flex-col">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -645,58 +645,60 @@ const Communications = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
           {/* Sidebar - Chat List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
+          <div className="lg:col-span-1 min-h-0">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-full flex flex-col max-h-[calc(100vh-12rem)]">
               {/* Sidebar content */}
               {/* Header */}
-              <div className="p-4 border-b border-gray-200 dark:border-secondary-700">
+              <div className="p-6 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-700 flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
-                    <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2 text-primary-500" />
-                    Chats
+                  <h2 className="text-xl font-bold text-primary-900 dark:text-primary-100 flex items-center">
+                    <ChatBubbleLeftRightIcon className="h-6 w-6 mr-3 text-primary-600 dark:text-primary-400" />
+                    Communications
                   </h2>
                   <button 
                     onClick={fetchSupportAgents}
                     disabled={loadingSupportAgents}
-                    className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors"
+                    className="p-2 rounded-xl text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-white/50 dark:hover:bg-primary-800/30 transition-all duration-200 shadow-sm"
                   >
                     <EllipsisVerticalIcon className="h-5 w-5" />
                   </button>
                 </div>
                 
                 {/* Support Agents Section */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Support Agents</h3>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wide">Support Team</h3>
                     {loadingSupportAgents && (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
                     {supportAgents.map((agent) => (
                       <button
                         key={agent.email}
                         onClick={() => setSelectedChat(`support_${agent.email}`)}
-                        className={`w-full p-2 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors ${
-                          selectedChat === `support_${agent.email}` ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700' : 'border border-transparent'
+                        className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] ${
+                          selectedChat === `support_${agent.email}` 
+                            ? 'bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600' 
+                            : 'hover:bg-white/60 dark:hover:bg-secondary-700/50 border-2 border-transparent'
                         }`}
                       >
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <div className="relative">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                              <UserIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shadow-sm">
+                              <UserIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                             </div>
                             {agent.status === 'ACTIVE' && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800"></div>
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                               {agent.firstName} {agent.lastName}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Support Agent</p>
+                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Support Agent</p>
                           </div>
                         </div>
                       </button>
@@ -706,21 +708,24 @@ const Communications = () => {
               </div>
 
               {/* Chat List */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="mb-2">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 px-4 mb-2">System & Conversations</h3>
+              <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
+                <div className="mb-4 pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Recent Conversations</h3>
                 </div>
-                {chats.filter(chat => chat.type !== 'support').map((chat) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => setSelectedChat(chat.id)}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-secondary-700 border-b border-gray-100 dark:border-secondary-700 transition-colors ${
-                      selectedChat === chat.id ? 'bg-primary-50 dark:bg-primary-900/20 border-r-4 border-primary-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                <div className="space-y-3">
+                  {chats.filter(chat => chat.type !== 'support').map((chat) => (
+                    <div
+                      key={chat.id}
+                      onClick={() => setSelectedChat(chat.id)}
+                      className={`p-4 cursor-pointer rounded-xl transition-all duration-200 transform hover:scale-[1.02] ${
+                        selectedChat === chat.id 
+                          ? 'bg-primary-50 dark:bg-primary-900/30 shadow-md border-2 border-primary-300 dark:border-primary-600' 
+                          : 'hover:bg-gray-50 dark:hover:bg-secondary-700/50 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="relative">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
                           chat.type === 'group' 
                             ? 'bg-primary-100 dark:bg-primary-900/30' 
                             : 'bg-gray-100 dark:bg-secondary-600'
@@ -732,32 +737,32 @@ const Communications = () => {
                           )}
                         </div>
                         {chat.isOnline && chat.type === 'personal' && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800"></div>
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
                         )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-1">
                           <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                             {chat.name}
                           </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
                             {chat.lastTime}
                           </span>
                         </div>
                         
                         {chat.type === 'personal' && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
                             {chat.role}
                           </p>
                         )}
                         
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                            {chat.lastMessage}
+                            {chat.lastMessage || 'No messages yet'}
                           </p>
                           {chat.unreadCount > 0 && (
-                            <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 ml-2">
+                            <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 ml-2 font-semibold shadow-sm">
                               {chat.unreadCount}
                             </span>
                           )}
@@ -772,15 +777,15 @@ const Communications = () => {
 
           {/* Main Chat Area */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-full flex flex-col">
               {currentChat ? (
                 <>
                   {/* Chat Header */}
-                  <div className="p-4 border-b border-gray-200 dark:border-secondary-700 bg-white dark:bg-secondary-800">
+                  <div className="p-6 bg-gray-50 dark:bg-secondary-700 border-b border-gray-200 dark:border-secondary-600">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-4">
                         <div className="relative">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
                             currentChat.type === 'group' 
                               ? 'bg-primary-100 dark:bg-primary-900/30' 
                               : currentChat.type === 'support'
@@ -788,9 +793,9 @@ const Communications = () => {
                               : 'bg-gray-100 dark:bg-secondary-600'
                           }`}>
                             {currentChat.type === 'group' ? (
-                              <UserGroupIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                              <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                             ) : (
-                              <UserIcon className={`h-5 w-5 ${
+                              <UserIcon className={`h-6 w-6 ${
                                 currentChat.type === 'support' 
                                   ? 'text-purple-600 dark:text-purple-400'
                                   : 'text-gray-600 dark:text-gray-400'
@@ -798,65 +803,77 @@ const Communications = () => {
                             )}
                           </div>
                           {currentChat.isOnline && currentChat.type !== 'group' && (
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800"></div>
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
                           )}
                         </div>
                         <div>
-                          <h2 className="font-semibold text-gray-900 dark:text-white">
+                          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                             {currentChat.name}
                           </h2>
                           {currentChat.type === 'group' ? (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {groupDetails ? (groupDetails.members || []).join(', ') : currentChat.participants?.join(', ') || ''}
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {groupDetails ? (groupDetails.members || []).join(', ') : currentChat.participants?.join(', ') || 'System Group Chat'}
                             </p>
                           ) : (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {currentChat.isOnline ? 'Online' : 'Last seen recently'} • {currentChat.role}
-                            </p>
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-2 h-2 rounded-full ${currentChat.isOnline ? 'bg-success-500' : 'bg-gray-400'}`}></div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {currentChat.isOnline ? 'Online' : 'Last seen recently'} • {currentChat.role}
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <button className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors">
+                      <button className="p-2 rounded-xl text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-secondary-600 transition-all duration-200">
                         <EllipsisVerticalIcon className="h-5 w-5" />
                       </button>
                     </div>
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-secondary-900">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-secondary-900">
                     {loadingMessages && selectedChat === 'system' ? (
-                      <div className="text-center text-gray-500 dark:text-gray-400">Loading messages...</div>
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-3"></div>
+                          <p className="text-gray-500 dark:text-gray-400">Loading messages...</p>
+                        </div>
+                      </div>
                     ) : selectedChat.startsWith('support_') ? (
-                      <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                        <UserIcon className="h-12 w-12 mx-auto mb-3 text-purple-400" />
-                        <p>Start a conversation with this support agent</p>
-                        <p className="text-sm mt-1">Type a message below to begin</p>
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center max-w-md">
+                          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                            <UserIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start a Conversation</h3>
+                          <p className="text-gray-600 dark:text-gray-400">Send a message to begin chatting with this support agent</p>
+                        </div>
                       </div>
                     ) : (
                       currentMessages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
+                          className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'} mb-4`}
                         >
-                          <div className="max-w-xs lg:max-w-md">
+                          <div className={`max-w-xs lg:max-w-md ${message.isOwn ? 'order-2' : 'order-1'}`}>
                             {!message.isOwn && (
-                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 ml-1">
                                 {message.sender}
                               </p>
                             )}
                             <div
-                              className={`rounded-2xl px-4 py-2 ${
+                              className={`rounded-2xl px-4 py-3 shadow-sm ${
                                 message.isOwn
-                                  ? 'bg-primary-500 text-white rounded-br-sm'
-                                  : 'bg-white dark:bg-secondary-800 text-gray-900 dark:text-white rounded-bl-sm shadow-sm'
+                                  ? 'bg-primary-500 text-white rounded-br-md ml-auto'
+                                  : 'bg-white dark:bg-secondary-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-secondary-600'
                               }`}
                             >
-                              <p className="text-sm">{message.content}</p>
+                              <p className="text-sm leading-relaxed">{message.content}</p>
                             </div>
-                            <div className={`flex items-center space-x-1 mt-1 ${
+                            <div className={`flex items-center space-x-2 mt-2 ${
                               message.isOwn ? 'justify-end' : 'justify-start'
                             }`}>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
                                 {message.timestamp}
                               </span>
                               {message.isOwn && getStatusIcon(message.status)}
@@ -869,11 +886,11 @@ const Communications = () => {
                   </div>
 
                   {/* Message Input */}
-                  <div className="p-4 border-t border-gray-200 dark:border-secondary-700 bg-white dark:bg-secondary-800">
-                    <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
+                  <div className="p-6 bg-white dark:bg-secondary-800 border-t border-gray-200 dark:border-secondary-600">
+                    <form onSubmit={handleSendMessage} className="flex items-center space-x-4">
                       <button
                         type="button"
-                        className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-colors"
+                        className="p-3 rounded-xl text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200 shadow-sm border border-gray-200 dark:border-secondary-600"
                       >
                         <PaperClipIcon className="h-5 w-5" />
                       </button>
@@ -882,17 +899,17 @@ const Communications = () => {
                           type="text"
                           value={messageInput}
                           onChange={(e) => setMessageInput(e.target.value)}
-                          placeholder="Type a message..."
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                          placeholder="Type your message here..."
+                          className="w-full px-6 py-3 border-2 border-gray-200 dark:border-secondary-600 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-gray-50 dark:bg-secondary-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 shadow-sm"
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={!messageInput.trim() || sending}
-                        className="p-2 rounded-full bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="p-3 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:hover:scale-100"
                       >
                         {sending ? (
-                          <span className="text-xs">Sending...</span>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                         ) : (
                           <PaperAirplaneIcon className="h-5 w-5" />
                         )}
@@ -902,13 +919,15 @@ const Communications = () => {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-secondary-900">
-                  <div className="text-center">
-                    <ChatBubbleLeftRightIcon className="h-16 w-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Select a chat to start messaging
+                  <div className="text-center max-w-md mx-auto">
+                    <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                      <ChatBubbleLeftRightIcon className="h-10 w-10 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                      Welcome to Communications
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Choose from your existing conversations or start a new one
+                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                      Select a conversation from the sidebar to start messaging with your team members or support agents.
                     </p>
                   </div>
                 </div>
