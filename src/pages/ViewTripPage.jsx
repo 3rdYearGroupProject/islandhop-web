@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 // ...existing imports...
-import ProceedModal from '../components/tourist/ProceedModal';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
@@ -728,55 +727,13 @@ const ViewTripPage = () => {
     // Implement favorite functionality
   };
 
-  // Modal state
-  const [showProceedModal, setShowProceedModal] = useState(false);
-  const [needDriver, setNeedDriver] = useState(false);
-  const [needGuide, setNeedGuide] = useState(false);
-  const [numPassengers, setNumPassengers] = useState(1);
-
   const handleProceed = () => {
-    setShowProceedModal(true);
-  };
-
-  const confirmProceed = () => {
-    setShowProceedModal(false);
-    // Build payload for trip initiation
-    const payload = {
-      tripId: trip?.id,
-      userId: currentUserId,
-      needDriver,
-      needGuide,
-      numPassengers: needDriver ? numPassengers : undefined
-    };
-
-    // Send POST request to initiate trip
-    fetch('http://localhost:8095/api/v1/trips/initiate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to initiate trip: ${errorText}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        // Handle success (navigate or show confirmation)
-        // For now, navigate to a confirmation page or refresh
-        navigate('/trips');
-      })
-      .catch((error) => {
-        // Handle error (show error message)
-        setApiError(error.message);
-      });
-  };
-
-  const cancelProceed = () => {
-    setShowProceedModal(false);
+    navigate(`/trip/${tripId}/booking`, { 
+      state: { 
+        trip: trip,
+        tripId: tripId 
+      } 
+    });
   };
 
   // Google Maps API loading
@@ -1196,19 +1153,6 @@ const ViewTripPage = () => {
               </div>
             </div>
           </div>
-          {/* Proceed Modal */}
-          <ProceedModal
-            open={showProceedModal}
-            message="Please select your preferences for this trip:"
-            onConfirm={confirmProceed}
-            onCancel={cancelProceed}
-            needDriver={needDriver}
-            setNeedDriver={setNeedDriver}
-            needGuide={needGuide}
-            setNeedGuide={setNeedGuide}
-            numPassengers={numPassengers}
-            setNumPassengers={setNumPassengers}
-          />
         </div>
       </div>
       <Footer />
