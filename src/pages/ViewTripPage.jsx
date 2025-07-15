@@ -730,32 +730,49 @@ const ViewTripPage = () => {
 
   // Modal state
   const [showProceedModal, setShowProceedModal] = useState(false);
-  const [proceedMessage, setProceedMessage] = useState('');
+  const [needDriver, setNeedDriver] = useState(false);
+  const [needGuide, setNeedGuide] = useState(false);
   const [numPassengers, setNumPassengers] = useState(1);
 
   const handleProceed = () => {
-    let message = '';
-    if (needDriver && needGuide) {
-      message = 'Are you sure you want to proceed with both a driver and a guide?';
-    } else if (needDriver && !needGuide) {
-      message = 'Are you sure you want to proceed with only a driver?';
-    } else if (!needDriver && needGuide) {
-      message = 'Are you sure you want to proceed with only a guide?';
-    } else {
-      message = 'Are you sure you want to proceed without a driver or guide?';
-    }
-    setProceedMessage(message);
     setShowProceedModal(true);
   };
 
   const confirmProceed = () => {
     setShowProceedModal(false);
-    navigate('/select-driver-guide', {
-      state: {
-        trip: trip,
-        numPassengers: needDriver ? numPassengers : undefined
-      }
-    });
+    // Build payload for trip initiation
+    const payload = {
+      tripId: trip?.id,
+      userId: currentUserId,
+      needDriver,
+      needGuide,
+      numPassengers: needDriver ? numPassengers : undefined
+    };
+
+    // Send POST request to initiate trip
+    fetch('http://localhost:8095/api/v1/trips/initiate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to initiate trip: ${errorText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Handle success (navigate or show confirmation)
+        // For now, navigate to a confirmation page or refresh
+        navigate('/trips');
+      })
+      .catch((error) => {
+        // Handle error (show error message)
+        setApiError(error.message);
+      });
   };
 
   const cancelProceed = () => {
@@ -806,13 +823,6 @@ const ViewTripPage = () => {
   const handleInfoWindowClose = () => {
     setSelectedMarker(null);
   };
-
-  const [needDriver, setNeedDriver] = useState(true);
-  const [needGuide, setNeedGuide] = useState(true);
-
-  const driverCost = needDriver ? 200 : 0;
-  const guideCost = needGuide ? 150 : 0;
-  const grandTotal = driverCost + guideCost;
 
   if (loading) {
     return (
@@ -1189,7 +1199,7 @@ const ViewTripPage = () => {
           {/* Proceed Modal */}
           <ProceedModal
             open={showProceedModal}
-            message={proceedMessage}
+            message="Please select your preferences for this trip:"
             onConfirm={confirmProceed}
             onCancel={cancelProceed}
             needDriver={needDriver}

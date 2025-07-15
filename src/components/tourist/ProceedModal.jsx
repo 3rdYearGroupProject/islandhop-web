@@ -1,12 +1,108 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Car, Bus, Truck, ShipWheel, Compass } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { getUserData } from '../../utils/userStorage';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedDriver, needGuide, setNeedGuide, numPassengers, setNumPassengers, userId, tripId }) => {
+// Initialize Stripe with provided publishable key
+const stripePromise = loadStripe('pk_test_51Rl8KYIijd8SxuvTR5m5qkFPN559A3goZbGE6nUo2v2vuND49wcyLOR0Gbb1qyJ2SaRVC0w44gjRbL2yJrbqHvWH00qGmjDd52');
+
+// Payment Form Component
+const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [paymentError, setPaymentError] = useState(null);
+
+  const handlePayment = async () => {
+    if (!stripe || !elements) {
+      setPaymentError('Stripe has not loaded yet. Please try again.');
+      return;
+    }
+
+    setSubmitting(true);
+    setPaymentError(null);
+
+    const cardElement = elements.getElement(CardElement);
+
+    try {
+      // Create payment intent on your backend
+      const { data } = await axios.post('http://localhost:8095/api/v1/payments/create-payment-intent', {
+        amount: Math.round(totalAmount * 100), // Convert to cents
+        currency: 'usd'
+      });
+
+      // Confirm payment with Stripe
+      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: 'Customer Name', // You can get this from user data
+          },
+        },
+      });
+
+      if (error) {
+        setPaymentError(error.message);
+        onPaymentError(error.message);
+      } else if (paymentIntent.status === 'succeeded') {
+        onPaymentSuccess(paymentIntent.id);
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Payment failed. Please try again.';
+      setPaymentError(errorMessage);
+      onPaymentError(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="border border-gray-300 rounded-lg p-4">
+        <label className="block text-sm font-medium text-gray-800 mb-2">Card Details</label>
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+            },
+          }}
+        />
+      </div>
+      {paymentError && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          {paymentError}
+        </div>
+      )}
+      <button
+        onClick={handlePayment}
+        disabled={!stripe || submitting}
+        className="w-full px-6 py-3 rounded-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? 'Processing Payment...' : `Pay $${totalAmount.toFixed(2)}`}
+      </button>
+    </div>
+  );
+};
+
+const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedDriver, needGuide, setNeedGuide, numPassengers, setNumPassengers }) => {
+  const { tripId } = useParams();
+  const userData = getUserData();
+  const userId = userData?.uid || null;
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentIntentId, setPaymentIntentId] = useState(null);
 
   useEffect(() => {
     // Prevent background scroll when modal is open
@@ -43,28 +139,57 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedD
   }, [needDriver, open]);
 
   const handleProceed = async () => {
+    if (!paymentCompleted) {
+      // Show payment form if payment hasn't been completed
+      setShowPayment(true);
+      return;
+    }
+
+    // If payment is completed, proceed with trip initiation
     setSubmitting(true);
     let preferredVehicleTypeId = null;
     if (needDriver && selectedVehicle) {
-      const vehicleObj = vehicles.find(v => v.type === selectedVehicle);
+      const vehicleObj = vehicles.find(v => v.typeName === selectedVehicle);
       preferredVehicleTypeId = vehicleObj ? vehicleObj.id : null;
     }
     const payload = {
-      userId: userId || null,
-      tripId: tripId || null,
-      preferredVehicleTypeId: preferredVehicleTypeId,
+      userId,
+      tripId,
+      preferredVehicleTypeId,
       setGuide: needGuide ? 1 : 0,
-      setDriver: needDriver ? 1 : 0
+      setDriver: needDriver ? 1 : 0,
+      paymentIntentId // Include payment intent ID
     };
-    console.log('🚀 Proceed button clicked - JSON payload:', JSON.stringify(payload, null, 2));
     try {
-      await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
+      console.log('Making API call to initiate trip...');
+      const response = await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
+      console.log('API response:', response);
       if (onConfirm) onConfirm();
     } catch (err) {
-      alert('Failed to initiate trip. Please try again.');
+      console.error('API error:', err);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePaymentSuccess = (paymentId) => {
+    setPaymentIntentId(paymentId);
+    setPaymentCompleted(true);
+    setShowPayment(false);
+    console.log('Payment successful:', paymentId);
+  };
+
+  const handlePaymentError = (error) => {
+    console.error('Payment failed:', error);
+    setShowPayment(false);
+  };
+
+  const calculateTotal = () => {
+    return (needDriver ? 200 : 0) + (needGuide ? 150 : 0);
+  };
+
+  const calculateAdvancePayment = () => {
+    return calculateTotal() * 0.5;
   };
 
   if (!open) return null;
@@ -182,6 +307,11 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedD
                   </div>
                 </>
               )}
+              {!needDriver && (
+                <div className="mt-4 text-sm text-blue-700 font-semibold bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  To choose a vehicle type, please select <span className="font-bold">Driver</span> above.
+                </div>
+              )}
             </div>
           </div>
           {/* Vertical Divider */}
@@ -200,30 +330,82 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedD
               </div>
               <div className="flex justify-between mt-2">
                 <span className="text-gray-900 font-bold">Total</span>
-                <span className="font-bold text-primary-700 text-lg">${(needDriver ? 200 : 0) + (needGuide ? 150 : 0)}.00</span>
+                <span className="font-bold text-primary-700 text-lg">${calculateTotal()}.00</span>
               </div>
               <div className="flex justify-between mt-2">
                 <span className="text-gray-900 font-bold">Advance Payment (50%)</span>
-                <span className="font-bold text-primary-600 text-lg">${((needDriver ? 200 : 0) + (needGuide ? 150 : 0)) * 0.5}.00</span>
+                <span className="font-bold text-primary-600 text-lg">${calculateAdvancePayment()}.00</span>
               </div>
+              {paymentCompleted && (
+                <div className="flex justify-between mt-2 text-green-600">
+                  <span className="font-bold">Payment Status</span>
+                  <span className="font-bold">✓ Paid</span>
+                </div>
+              )}
               <div className="text-xs text-gray-500 mt-2">You must pay 50% of the total cost before the start of your trip.</div>
+              
+              {/* Payment Form */}
+              {showPayment && calculateAdvancePayment() > 0 && (
+                <Elements stripe={stripePromise}>
+                  <PaymentForm
+                    totalAmount={calculateAdvancePayment()}
+                    onPaymentSuccess={handlePaymentSuccess}
+                    onPaymentError={handlePaymentError}
+                    submitting={submitting}
+                    setSubmitting={setSubmitting}
+                  />
+                </Elements>
+              )}
             </div>
-            {/* Moved button group to bottom */}
+            {/* Button group */}
             <div className="flex gap-4 justify-end mt-auto pt-8">
               <button
-                onClick={onCancel}
+                onClick={() => {
+                  setShowPayment(false);
+                  setPaymentCompleted(false);
+                  setPaymentIntentId(null);
+                  onCancel();
+                }}
                 className="px-6 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold border border-gray-400 transition-colors whitespace-nowrap"
                 disabled={submitting}
               >
                 Cancel
               </button>
-              <button
-                onClick={handleProceed}
-                className="px-6 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-semibold border border-blue-200 transition-colors whitespace-nowrap"
-                disabled={submitting || (needDriver && !selectedVehicle)}
-              >
-                {submitting ? 'Processing...' : 'Yes, Proceed'}
-              </button>
+              {!showPayment && (
+                <button
+                  onClick={() => {
+                    console.log('🔍 Button click attempted!');
+                    console.log('Button disabled status:', submitting || (needDriver && !selectedVehicle));
+                    console.log('submitting:', submitting);
+                    console.log('needDriver:', needDriver);
+                    console.log('selectedVehicle:', selectedVehicle);
+                    console.log('paymentCompleted:', paymentCompleted);
+                    console.log('Condition breakdown:', {
+                      submitting,
+                      needDriver,
+                      selectedVehicle,
+                      paymentCompleted,
+                      isDisabled: submitting || (needDriver && !selectedVehicle)
+                    });
+                    handleProceed();
+                  }}
+                  className={`px-6 py-2 rounded-full font-semibold border transition-colors whitespace-nowrap ${
+                    paymentCompleted 
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-200'
+                      : 'bg-primary-600 hover:bg-primary-700 text-white border-blue-200'
+                  }`}
+                  disabled={submitting || (needDriver && !selectedVehicle)}
+                >
+                  {submitting 
+                    ? 'Processing...' 
+                    : paymentCompleted 
+                      ? 'Complete Booking' 
+                      : calculateAdvancePayment() > 0 
+                        ? `Pay $${calculateAdvancePayment()}.00 & Proceed`
+                        : 'Yes, Proceed'
+                  }
+                </button>
+              )}
             </div>
           </div>
         </div>
