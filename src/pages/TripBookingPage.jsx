@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { Car, Bus, Truck, ShipWheel, Compass } from 'lucide-react';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import axios from 'axios';
 import { getUserData } from '../utils/userStorage';
 import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
@@ -13,9 +11,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import PaymentForm from '../components/PaymentForm';
-
-// Initialize Stripe with provided publishable key
-const stripePromise = loadStripe('pk_test_51Rl8KYIijd8SxuvTR5m5qkFPN559A3goZbGE6nUo2v2vuND49wcyLOR0Gbb1qyJ2SaRVC0w44gjRbL2yJrbqHvWH00qGmjDd52');
 
 const TripBookingPage = () => {
   const location = useLocation();
@@ -35,7 +30,10 @@ const TripBookingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [paymentOrderId, setPaymentOrderId] = useState(null);
+  const [priceData, setPriceData] = useState(null);
+  const [fetchingPrices, setFetchingPrices] = useState(false);
+  const [priceError, setPriceError] = useState(null);
 
   // Map state
   const [places, setPlaces] = useState([]);
@@ -49,6 +47,18 @@ const TripBookingPage = () => {
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
   });
+
+  // Load PayHere script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://www.payhere.lk/lib/payhere.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   // Check for authenticated user
   useEffect(() => {
@@ -173,6 +183,56 @@ const TripBookingPage = () => {
     }
   }, [needDriver]);
 
+  // Fetch cost breakdown when preferences change
+  useEffect(() => {
+    const fetchCostBreakdown = async () => {
+      if (!needDriver && !needGuide) {
+        setPriceData(null);
+        return;
+      }
+
+      if (needDriver && !selectedVehicle) {
+        setPriceData(null);
+        return;
+      }
+
+      setFetchingPrices(true);
+      setPriceError(null);
+
+      try {
+        let preferredVehicleTypeId = null;
+        if (needDriver && selectedVehicle) {
+          const vehicleObj = vehicles.find((v) => v.typeName === selectedVehicle);
+          preferredVehicleTypeId = vehicleObj ? vehicleObj.id : null;
+        }
+
+        const payload = {
+          userId,
+          tripId,
+          preferredVehicleTypeId,
+          setGuide: needGuide ? 1 : 0,
+          setDriver: needDriver ? 1 : 0,
+        };
+
+        const response = await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
+        console.log('Cost breakdown response:', response.data);
+
+        if (response.data) {
+          setPriceData(response.data);
+        } else {
+          setPriceError('Failed to fetch cost breakdown');
+        }
+      } catch (err) {
+        console.error('Error fetching cost breakdown:', err);
+        setPriceError('Failed to fetch cost breakdown. Please try again.');
+      } finally {
+        setFetchingPrices(false);
+      }
+    };
+
+    fetchCostBreakdown();
+  }, [needDriver, needGuide, selectedVehicle, vehicles, tripId, userId]);
+
   // Map functions
   const mapContainerStyle = {
     width: '100%',
@@ -209,18 +269,19 @@ const TripBookingPage = () => {
 
   // Booking functions
   const calculateTotal = () => {
-    return (needDriver ? 200 : 0) + (needGuide ? 150 : 0);
+    if (!priceData) return 0;
+    return (priceData.averageDriverCost || 0) + (priceData.averageGuideCost || 0);
   };
 
   const calculateAdvancePayment = () => {
     return calculateTotal() * 0.5;
   };
 
-  const handlePaymentSuccess = (paymentId) => {
-    setPaymentIntentId(paymentId);
+  const handlePaymentSuccess = (orderId) => {
+    setPaymentOrderId(orderId);
     setPaymentCompleted(true);
     setShowPayment(false);
-    console.log('Payment successful:', paymentId);
+    console.log('Payment successful:', orderId);
   };
 
   const handlePaymentError = (error) => {
@@ -247,7 +308,7 @@ const TripBookingPage = () => {
       preferredVehicleTypeId,
       setGuide: needGuide ? 1 : 0,
       setDriver: needDriver ? 1 : 0,
-      paymentIntentId
+      paymentOrderId
     };
 
     try {
@@ -417,19 +478,19 @@ const TripBookingPage = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between border-b border-gray-200 pb-2">
                     <span className="text-gray-600">Driver</span>
-                    <span className="font-medium">${needDriver ? '200.00' : '0.00'}</span>
+                    <span className="font-medium">LKR {priceData ? priceData.averageDriverCost.toLocaleString() : '0.00'}</span>
                   </div>
                   <div className="flex justify-between border-b border-gray-200 pb-2">
                     <span className="text-gray-600">Guide</span>
-                    <span className="font-medium">${needGuide ? '150.00' : '0.00'}</span>
+                    <span className="font-medium">LKR {priceData ? priceData.averageGuideCost.toLocaleString() : '0.00'}</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="text-gray-900 font-bold">Total</span>
-                    <span className="font-bold text-primary-700 text-lg">${calculateTotal()}.00</span>
+                    <span className="font-bold text-primary-700 text-lg">LKR {calculateTotal().toLocaleString()}.00</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="text-gray-900 font-bold">Advance Payment (50%)</span>
-                    <span className="font-bold text-primary-600 text-lg">${calculateAdvancePayment()}.00</span>
+                    <span className="font-bold text-primary-600 text-lg">LKR {calculateAdvancePayment().toLocaleString()}.00</span>
                   </div>
                   {paymentCompleted && (
                     <div className="flex justify-between mt-2 text-green-600">
@@ -447,15 +508,13 @@ const TripBookingPage = () => {
               {showPayment && calculateAdvancePayment() > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-bold mb-4">Payment Details</h3>
-                  <Elements stripe={stripePromise}>
-                    <PaymentForm
-                      totalAmount={calculateAdvancePayment()}
-                      onPaymentSuccess={handlePaymentSuccess}
-                      onPaymentError={handlePaymentError}
-                      submitting={submitting}
-                      setSubmitting={setSubmitting}
-                    />
-                  </Elements>
+                  <PaymentForm
+                    totalAmount={calculateAdvancePayment()}
+                    onPaymentSuccess={handlePaymentSuccess}
+                    onPaymentError={handlePaymentError}
+                    submitting={submitting}
+                    setSubmitting={setSubmitting}
+                  />
                 </div>
               )}
 
@@ -483,7 +542,7 @@ const TripBookingPage = () => {
                       : paymentCompleted 
                         ? 'Complete Booking' 
                         : calculateAdvancePayment() > 0 
-                          ? `Pay $${calculateAdvancePayment()}.00 & Proceed`
+                          ? `Pay LKR ${calculateAdvancePayment().toLocaleString()}.00 & Proceed`
                           : 'Yes, Proceed'
                     }
                   </button>

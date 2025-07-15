@@ -13,6 +13,8 @@ import TripPreferencesPage from '../pages/TripPreferencesPage';
 import TripItineraryPage from '../pages/TripItineraryPage';
 import ViewTripPage from '../pages/ViewTripPage';
 import TripBookingPage from '../pages/TripBookingPage';
+import PaymentReturnPage from '../pages/PaymentReturnPage';
+import PaymentCancelPage from '../pages/PaymentCancelPage';
 import ViewPoolPage from '../pages/ViewPoolPage';
 import MyTripsPage from '../pages/MyTripsPage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
@@ -86,6 +88,16 @@ const GeneralRoutes = () => (
     <Route path="/trip/:tripId/booking" element={
       <PublicRoute>
         <TripBookingPage />
+      </PublicRoute>
+    } />
+    <Route path="/payment/return" element={
+      <PublicRoute>
+        <PaymentReturnPage />
+      </PublicRoute>
+    } />
+    <Route path="/payment/cancel" element={
+      <PublicRoute>
+        <PaymentCancelPage />
       </PublicRoute>
     } />
     <Route path="/pool/:poolId" element={
