@@ -55,7 +55,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
         customerDetails: customerDetails
       };
 
-      const { data } = await axios.post('http://localhost:8095/api/v1/payments/create-payhere-payment', paymentData);
+      const { data } = await axios.post('http://localhost:8088/api/v1/payments/create-payhere-payment', paymentData);
 
       if (data.success) {
         // Initialize PayHere payment
