@@ -648,10 +648,10 @@ const Communications = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sidebar - Chat List */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-[600px] flex flex-col">
               {/* Sidebar content */}
               {/* Header */}
-              <div className="p-6 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-700">
+              <div className="p-6 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-700 flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-primary-900 dark:text-primary-100 flex items-center">
                     <ChatBubbleLeftRightIcon className="h-6 w-6 mr-3 text-primary-600 dark:text-primary-400" />
