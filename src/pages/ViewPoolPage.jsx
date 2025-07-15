@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SharePoolModal from '../components/SharePoolModal';
+import JoinPoolModal from '../components/JoinPoolModal';
 
 // Mock participant data (replace with real data as needed)
 const mockParticipants = {
@@ -52,11 +54,52 @@ const ViewPoolPage = () => {
   
   // Get pool data from route state or use mock data if none provided
   const poolFromState = location.state?.pool;
+  const sourcePage = location.state?.sourcePage;
   
   const [currentDay, setCurrentDay] = useState(0);
   const [expandedDays, setExpandedDays] = useState({});
   const [pool, setPool] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  // Mock join requests data
+  const mockJoinRequests = [
+    {
+      name: 'Emily Carter',
+      avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+      email: 'emily.carter@email.com',
+      nationality: 'Australian',
+      languages: ['English'],
+      age: 29
+    },
+    {
+      name: 'David Brown',
+      avatar: 'https://randomuser.me/api/portraits/men/77.jpg',
+      email: 'david.brown@email.com',
+      nationality: 'Canadian',
+      languages: ['English', 'French'],
+      age: 35
+    }
+  ];
+
+  const handleAcceptRequest = (email, name) => {
+    // Implement accept logic here
+    console.log(`Accepting join request from ${name} (${email})`);
+    // In a real app, this would make an API call to accept the request
+    // For now, show a success message and remove from pending requests
+    alert(`✅ Accepted join request from ${name}!`);
+    // You could update the mockJoinRequests state here to remove the accepted request
+  };
+
+  const handleRejectRequest = (email, name) => {
+    // Implement reject logic here
+    console.log(`Rejecting join request from ${name} (${email})`);
+    // In a real app, this would make an API call to reject the request
+    alert(`❌ Rejected join request from ${name}`);
+    // You could update the mockJoinRequests state here to remove the rejected request
+  };
 
   // --- Expandable Cost Breakdown State ---
   const [costExpanded, setCostExpanded] = useState({
@@ -259,8 +302,12 @@ const ViewPoolPage = () => {
   };
 
   const handleShare = () => {
-    console.log('Share pool:', pool.name);
-    // Implement share functionality
+    setShareModalOpen(true);
+  };
+
+  const handleInvite = (emails) => {
+    // Implement invite logic here (e.g., send emails)
+    console.log('Inviting:', emails);
   };
 
   const handleFavorite = () => {
@@ -269,12 +316,27 @@ const ViewPoolPage = () => {
   };
 
   const handleProceed = () => {
-    navigate('/join-pool', {
-      state: {
-        pool: pool
-      }
-    });
+    setJoinModalOpen(true);
   };
+
+  const handleRequestJoin = () => {
+    // Implement request to join logic here
+    console.log('Request to join pool:', pool?.name);
+    setJoinModalOpen(false);
+  };
+
+  // Prevent background scroll when join requests modal is open
+  useEffect(() => {
+    if (joinRequestsModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    // Clean up on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [joinRequestsModalOpen]);
 
   if (loading) {
     return (
@@ -324,6 +386,18 @@ const ViewPoolPage = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <SharePoolModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        participants={[mockParticipants.owner, ...mockParticipants.participants]}
+        onInvite={handleInvite}
+      />
+      <JoinPoolModal
+        open={joinModalOpen}
+        onClose={() => setJoinModalOpen(false)}
+        participants={[mockParticipants.owner, ...mockParticipants.participants]}
+        onRequestJoin={handleRequestJoin}
+      />
       {/* Floating Bill-shaped Navbar overlays the top, so pull content down and let blue header go behind */}
       <div className="relative z-10">
         <Navbar />
@@ -350,12 +424,131 @@ const ViewPoolPage = () => {
                 {formatDate(new Date(pool.dates[0]))} - {formatDate(new Date(pool.dates[1]))}
               </p>
             </div>
-            {/* Removed edit, share, and like buttons */}
+            {/* Share/Join Pool Button */}
+            <div className="flex items-center gap-2">
+              {sourcePage === 'findPools' ? (
+                <button
+                  onClick={() => setJoinModalOpen(true)}
+                  className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                  title="Join Pool"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Join Pool
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                    title="Share Pool"
+                  >
+                    <Share2 className="w-5 h-5 mr-2" />
+                    Share Pool
+                  </button>
+                  <button
+                    onClick={() => setJoinRequestsModalOpen(true)}
+                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                    title="Join Requests"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Join Requests
+                  </button>
+                  {/* Join Requests Modal */}
+                  {joinRequestsModalOpen && (
+                    <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+                      <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+                        <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
+                          <button
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                            onClick={() => setJoinRequestsModalOpen(false)}
+                            aria-label="Close"
+                          >
+                            <span className="text-2xl">×</span>
+                          </button>
+                          
+                          <div className="flex items-center gap-3 mb-6">
+                            <Users className="w-6 h-6 text-primary-600" />
+                            <h2 className="text-2xl font-bold text-gray-900">Join Requests</h2>
+                            <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
+                              {mockJoinRequests.length} pending
+                            </span>
+                          </div>
+                          
+                          {mockJoinRequests.length === 0 ? (
+                            <div className="text-center py-12">
+                              <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                              <p className="text-gray-500 text-lg mb-2">No join requests</p>
+                              <p className="text-gray-400 text-sm">When people request to join your pool, they'll appear here.</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4 max-h-96 overflow-y-auto">
+                              {mockJoinRequests.map((req, idx) => (
+                                <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <div className="flex items-start gap-4">
+                                    <img 
+                                      src={req.avatar} 
+                                      alt={req.name} 
+                                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between">
+                                        <div>
+                                          <h3 className="font-semibold text-gray-900 text-lg">{req.name}</h3>
+                                          <p className="text-gray-600 text-sm">{req.email}</p>
+                                        </div>
+                                        <div className="flex gap-2 ml-4">
+                                          <button
+                                            onClick={() => handleRejectRequest(req.email, req.name)}
+                                            className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                                          >
+                                            Reject
+                                          </button>
+                                          <button
+                                            onClick={() => handleAcceptRequest(req.email, req.name)}
+                                            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
+                                          >
+                                            Accept
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                          <span className="text-gray-500 block">Nationality</span>
+                                          <span className="font-medium">{req.nationality}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500 block">Languages</span>
+                                          <span className="font-medium">{req.languages.join(', ')}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500 block">Age</span>
+                                          <span className="font-medium">{req.age} years</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="mt-6 pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-500 text-center">
+                              Pool capacity: {mockParticipants.current}/{mockParticipants.max} participants
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl w-full mx-auto px-4 pt-8 z-10 relative">
+      <div className="max-w-7xl w-full mx-auto px-4 pt-8 relative" style={{ zIndex: 0 }}>
         <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-8" style={{ boxShadow: 'none' }}>
           {/* Participants Avatars & Progress + Info */}
           <div className="w-full">
@@ -760,12 +953,13 @@ const ViewPoolPage = () => {
                     Back
                   </button>
                   {/* Delete button removed as requested */}
-                  <button
-                    onClick={handleProceed}
-                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-full transition-colors border border-blue-200"
-                  >
-                    Join Pool
-                  </button>
+                <button
+                  onClick={sourcePage === 'findPools' ? undefined : handleProceed}
+                  className={`flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-full transition-colors border border-blue-200 ${sourcePage === 'findPools' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={sourcePage === 'findPools'}
+                >
+                  Join Pool
+                </button>
                 </div>
                 {/* Disclaimers and info */}
                 <div className="text-xs text-gray-500 mt-2 space-y-1">

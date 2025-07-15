@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '../../components/Card';
 import PoolCard from '../../components/PoolCard';
 import { 
@@ -13,6 +14,7 @@ import {
 import { Eye } from 'lucide-react';
 
 const MyPools = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDestination, setSelectedDestination] = useState('');
   const [selectedSeats, setSelectedSeats] = useState('');
@@ -293,18 +295,19 @@ const MyPools = () => {
           Upcoming Pools
         </h2>
         <div className="overflow-x-auto pb-2">
-          <div className="flex gap-6 min-w-[600px]">
-            {upcomingPools.map((pool) => (
-              <div className="min-w-[340px] max-w-[340px] flex-shrink-0" key={pool.id}>
-                <PoolCard 
-                  pool={pool} 
-                  onJoinPool={handlePoolAction}
-                  buttonText="View Details"
-                  buttonIcon={Eye}
-                />
-              </div>
-            ))}
-          </div>
+        <div className="flex gap-6 min-w-[600px]">
+          {upcomingPools.map((pool) => (
+            <div className="min-w-[340px] max-w-[340px] flex-shrink-0" key={pool.id}>
+              <PoolCard 
+                pool={pool} 
+                onJoinPool={handlePoolAction}
+                buttonText="View Details"
+                buttonIcon={Eye}
+                onClick={() => navigate(`/pool/${pool.id}`, { state: { pool } })}
+              />
+            </div>
+          ))}
+        </div>
         </div>
       </div>
 

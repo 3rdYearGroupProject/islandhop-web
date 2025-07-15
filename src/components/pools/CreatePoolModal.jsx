@@ -6,7 +6,8 @@ import Input from '../Input';
 const CreatePoolModal = ({ isOpen, onClose, onCreatePool }) => {
   const [formData, setFormData] = useState({
     name: '',
-    poolSize: 4
+    poolSize: 4,
+    privacy: 'public', // default to public
   });
 
   const [errors, setErrors] = useState({});
@@ -45,7 +46,7 @@ const CreatePoolModal = ({ isOpen, onClose, onCreatePool }) => {
     if (validateForm()) {
       onCreatePool(formData);
       // Reset form
-      setFormData({ name: '', poolSize: 4 });
+      setFormData({ name: '', poolSize: 4, privacy: 'public' });
       setErrors({});
       onClose();
     }
@@ -53,7 +54,7 @@ const CreatePoolModal = ({ isOpen, onClose, onCreatePool }) => {
 
   const handleCancel = () => {
     // Reset form and close
-    setFormData({ name: '', poolSize: 4 });
+    setFormData({ name: '', poolSize: 4, privacy: 'public' });
     setErrors({});
     onClose();
   };
@@ -95,7 +96,35 @@ const CreatePoolModal = ({ isOpen, onClose, onCreatePool }) => {
             </div>
           </div>
 
-          {/* Pool Size (Slider) removed as requested */}
+          {/* Pool Privacy Option - Styled Button Group */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Pool Privacy
+            </label>
+            <div className="flex w-full gap-3">
+              <button
+                type="button"
+                className={`w-1/2 px-4 py-3 rounded-lg border-2 font-semibold transition-colors duration-150 focus:outline-none text-center flex flex-col items-center justify-center
+                  ${formData.privacy === 'public' ? 'bg-blue-100 text-blue-900 border-blue-600' : 'bg-white text-gray-800 border-gray-300 hover:bg-primary-50'}`}
+                onClick={() => setFormData(prev => ({ ...prev, privacy: 'public' }))}
+                aria-pressed={formData.privacy === 'public'}
+              >
+                <span className="font-bold text-base">Public</span>
+                <span className={`text-xs mt-1 ${formData.privacy === 'public' ? 'text-blue-800' : 'text-gray-500'}`}>Visible to everyone</span>
+              </button>
+              <button
+                type="button"
+                className={`w-1/2 px-4 py-3 rounded-lg border-2 font-semibold transition-colors duration-150 focus:outline-none text-center flex flex-col items-center justify-center
+                  ${formData.privacy === 'private' ? 'bg-blue-100 text-blue-900 border-blue-600' : 'bg-white text-gray-800 border-gray-300 hover:bg-primary-50'}`}
+                onClick={() => setFormData(prev => ({ ...prev, privacy: 'private' }))}
+                aria-pressed={formData.privacy === 'private'}
+              >
+                <span className="font-bold text-base">Private</span>
+                <span className={`text-xs mt-1 ${formData.privacy === 'private' ? 'text-blue-800' : 'text-gray-500'}`}>Accessible by invite</span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Choose who can join your pool.</p>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-8">
