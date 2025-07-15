@@ -651,7 +651,7 @@ const Communications = () => {
             <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden">
               {/* Sidebar content */}
               {/* Header */}
-              <div className="p-6 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-b border-primary-200 dark:border-primary-700">
+              <div className="p-6 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-700">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-primary-900 dark:text-primary-100 flex items-center">
                     <ChatBubbleLeftRightIcon className="h-6 w-6 mr-3 text-primary-600 dark:text-primary-400" />
@@ -687,7 +687,7 @@ const Communications = () => {
                       >
                         <div className="flex items-center space-x-3">
                           <div className="relative">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shadow-sm">
                               <UserIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                             </div>
                             {agent.status === 'ACTIVE' && (
@@ -715,10 +715,9 @@ const Communications = () => {
                 {chats.filter(chat => chat.type !== 'support').map((chat) => (
                   <div
                     key={chat.id}
-                    onClick={() => setSelectedChat(chat.id)}
-                    className={`p-4 cursor-pointer rounded-xl mb-3 transition-all duration-200 transform hover:scale-[1.02] ${
+                    onClick={() => setSelectedChat(chat.id)}                        className={`p-4 cursor-pointer rounded-xl mb-3 transition-all duration-200 transform hover:scale-[1.02] ${
                       selectedChat === chat.id 
-                        ? 'bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 shadow-md border-2 border-primary-300 dark:border-primary-600' 
+                        ? 'bg-primary-50 dark:bg-primary-900/30 shadow-md border-2 border-primary-300 dark:border-primary-600' 
                         : 'hover:bg-gray-50 dark:hover:bg-secondary-700/50 border-2 border-transparent'
                     }`}
                   >
@@ -726,8 +725,8 @@ const Communications = () => {
                       <div className="relative">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
                           chat.type === 'group' 
-                            ? 'bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30' 
-                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-secondary-600 dark:to-secondary-700'
+                            ? 'bg-primary-100 dark:bg-primary-900/30' 
+                            : 'bg-gray-100 dark:bg-secondary-600'
                         }`}>
                           {chat.type === 'group' ? (
                             <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -780,16 +779,16 @@ const Communications = () => {
               {currentChat ? (
                 <>
                   {/* Chat Header */}
-                  <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-secondary-700 dark:to-secondary-800 border-b border-gray-200 dark:border-secondary-600">
+                  <div className="p-6 bg-gray-50 dark:bg-secondary-700 border-b border-gray-200 dark:border-secondary-600">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="relative">
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
                             currentChat.type === 'group' 
-                              ? 'bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30' 
+                              ? 'bg-primary-100 dark:bg-primary-900/30' 
                               : currentChat.type === 'support'
-                              ? 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30'
-                              : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-secondary-600 dark:to-secondary-700'
+                              ? 'bg-purple-100 dark:bg-purple-900/30'
+                              : 'bg-gray-100 dark:bg-secondary-600'
                           }`}>
                             {currentChat.type === 'group' ? (
                               <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -830,7 +829,7 @@ const Communications = () => {
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-secondary-900 dark:to-secondary-800">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-secondary-900">
                     {loadingMessages && selectedChat === 'system' ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-center">
@@ -841,7 +840,7 @@ const Communications = () => {
                     ) : selectedChat.startsWith('support_') ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-center max-w-md">
-                          <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
                             <UserIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                           </div>
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start a Conversation</h3>
@@ -863,7 +862,7 @@ const Communications = () => {
                             <div
                               className={`rounded-2xl px-4 py-3 shadow-sm ${
                                 message.isOwn
-                                  ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-br-md ml-auto'
+                                  ? 'bg-primary-500 text-white rounded-br-md ml-auto'
                                   : 'bg-white dark:bg-secondary-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-secondary-600'
                               }`}
                             >
@@ -905,7 +904,7 @@ const Communications = () => {
                       <button
                         type="submit"
                         disabled={!messageInput.trim() || sending}
-                        className="p-3 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:hover:scale-100"
+                        className="p-3 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:hover:scale-100"
                       >
                         {sending ? (
                           <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
@@ -917,9 +916,9 @@ const Communications = () => {
                   </div>
                 </>
               ) : (
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white dark:from-secondary-900 dark:to-secondary-800">
+                <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-secondary-900">
                   <div className="text-center max-w-md mx-auto">
-                    <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
                       <ChatBubbleLeftRightIcon className="h-10 w-10 text-primary-600 dark:text-primary-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
