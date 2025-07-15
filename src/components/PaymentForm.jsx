@@ -46,64 +46,56 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
     setPaymentError(null);
 
     try {
-      // Create payment with backend
-      const paymentData = {
-        amount: totalAmount,
-        currency: 'LKR',
-        orderId: `ORDER_${Date.now()}`,
-        itemName: 'Trip Booking Advance Payment',
-        customerDetails: customerDetails
+      // Setup PayHere event handlers
+      window.payhere.onCompleted = function onCompleted(orderId) {
+        console.log("Payment completed. OrderID:" + orderId);
+        onPaymentSuccess(orderId);
       };
 
-      const { data } = await axios.post('http://localhost:8088/api/v1/payments/create-payhere-payment', paymentData);
+      window.payhere.onDismissed = function onDismissed() {
+        console.log("Payment dismissed");
+        setPaymentError("Payment was cancelled");
+        onPaymentError("Payment was cancelled");
+      };
 
-      if (data.success) {
-        // Initialize PayHere payment
-        const payment = {
-          sandbox: true, // Set to false for production
-          merchant_id: data.merchantId,
-          return_url: `${window.location.origin}/payment/return`,
-          cancel_url: `${window.location.origin}/payment/cancel`,
-          notify_url: data.notifyUrl,
-          order_id: data.orderId,
-          items: data.itemName,
-          amount: data.amount,
-          currency: data.currency,
-          hash: data.hash,
-          first_name: customerDetails.firstName,
-          last_name: customerDetails.lastName,
-          email: customerDetails.email,
-          phone: customerDetails.phone,
-          address: customerDetails.address,
-          city: customerDetails.city,
-          country: customerDetails.country
-        };
+      window.payhere.onError = function onError(error) {
+        console.log("Error:" + error);
+        setPaymentError("Payment failed: " + error);
+        onPaymentError("Payment failed: " + error);
+      };
 
-        // PayHere payment callbacks
-        window.payhere.onCompleted = function onCompleted(orderId) {
-          console.log("Payment completed. OrderID:" + orderId);
-          onPaymentSuccess(orderId);
-        };
+      // PayHere payment initiation
+      const paymentDetails = {
+        sandbox: true,
+        merchant_id: '1231228', // Verify this is correct
+        return_url: 'http://localhost:3000/payment-success',
+        cancel_url: 'http://localhost:3000/payment-cancel',
+        notify_url: 'http://localhost:3000/payment-notify',
+        order_id: `ORDER_${Date.now()}`,
+        items: 'Trip Booking Advance Payment',
+        amount: parseFloat(totalAmount).toFixed(2),
+        currency: 'LKR',
+        first_name: customerDetails.firstName,
+        last_name: customerDetails.lastName,
+        email: customerDetails.email,
+        phone: customerDetails.phone,
+        address: customerDetails.address,
+        city: customerDetails.city,
+        country: customerDetails.country,
+      };
 
-        window.payhere.onDismissed = function onDismissed() {
-          console.log("Payment dismissed");
-          setPaymentError("Payment was cancelled");
-          onPaymentError("Payment was cancelled");
-        };
+      console.log('Initiating PayHere payment with details:', paymentDetails);
 
-        window.payhere.onError = function onError(error) {
-          console.log("Error:" + error);
-          setPaymentError("Payment failed: " + error);
-          onPaymentError("Payment failed: " + error);
-        };
-
-        // Start PayHere payment
-        window.payhere.startPayment(payment);
+      // Check if PayHere is loaded
+      if (window.payhere) {
+        window.payhere.startPayment(paymentDetails);
       } else {
-        throw new Error(data.message || 'Failed to initialize payment');
+        console.error('PayHere script not loaded');
+        setPaymentError('Payment system not ready. Please try again.');
+        onPaymentError('Payment system not ready. Please try again.');
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Payment failed. Please try again.';
+      const errorMessage = err.message || 'Payment failed. Please try again.';
       setPaymentError(errorMessage);
       onPaymentError(errorMessage);
     } finally {
