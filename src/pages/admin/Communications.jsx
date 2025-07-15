@@ -648,7 +648,7 @@ const Communications = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sidebar - Chat List */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-[600px] flex flex-col">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-[calc(100vh-12rem)] flex flex-col">
               {/* Sidebar content */}
               {/* Header */}
               <div className="p-6 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-700 flex-shrink-0">
@@ -775,7 +775,7 @@ const Communications = () => {
 
           {/* Main Chat Area */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-[600px] flex flex-col">
+            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-[calc(100vh-12rem)] flex flex-col">
               {currentChat ? (
                 <>
                   {/* Chat Header */}
