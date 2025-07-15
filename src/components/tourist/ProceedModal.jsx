@@ -182,29 +182,13 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedD
                 </>
               )}
             </div>
-            <div className="flex gap-4 justify-end mt-6">
-              <button
-                onClick={onCancel}
-                className="px-6 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold border border-gray-400 transition-colors"
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleProceed}
-                className="px-6 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-semibold border border-blue-200 transition-colors"
-                disabled={submitting || (needDriver && !selectedVehicle)}
-              >
-                {submitting ? 'Processing...' : 'Yes, Proceed'}
-              </button>
-            </div>
           </div>
           {/* Vertical Divider */}
           <div className="w-px bg-gray-300 mx-6" style={{ minHeight: '420px' }}></div>
           {/* Right: Cost Breakdown */}
-          <div className="w-[340px] flex flex-col">
+          <div className="w-[340px] flex flex-col h-full">
             <h4 className="text-lg font-bold mb-4 text-gray-900">Cost Breakdown</h4>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               <div className="flex justify-between border-b border-gray-100 pb-2">
                 <span className="text-gray-600">Driver</span>
                 <span className="font-medium">${needDriver ? '200.00' : '0.00'}</span>
@@ -222,6 +206,23 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedD
                 <span className="font-bold text-primary-600 text-lg">${((needDriver ? 200 : 0) + (needGuide ? 150 : 0)) * 0.5}.00</span>
               </div>
               <div className="text-xs text-gray-500 mt-2">You must pay 50% of the total cost before the start of your trip.</div>
+            </div>
+            {/* Moved button group to bottom */}
+            <div className="flex gap-4 justify-end mt-auto pt-8">
+              <button
+                onClick={onCancel}
+                className="px-6 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold border border-gray-400 transition-colors whitespace-nowrap"
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProceed}
+                className="px-6 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-semibold border border-blue-200 transition-colors whitespace-nowrap"
+                disabled={submitting || (needDriver && !selectedVehicle)}
+              >
+                {submitting ? 'Processing...' : 'Yes, Proceed'}
+              </button>
             </div>
           </div>
         </div>
