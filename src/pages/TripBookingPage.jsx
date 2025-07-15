@@ -53,17 +53,18 @@ const TripBookingPage = () => {
     const script = document.createElement('script');
     script.src = 'https://www.payhere.lk/lib/payhere.js';
     script.async = true;
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
       console.log('PayHere script loaded successfully');
     };
     script.onerror = () => {
       console.error('Failed to load PayHere script');
     };
-    document.body.appendChild(script);
+    document.head.appendChild(script); // Use head instead of body
 
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
       }
     };
   }, []);

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting }) => {
+const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting, tripId }) => {
   const [paymentError, setPaymentError] = useState(null);
+  const [payHereLoaded, setPayHereLoaded] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
     firstName: '',
     lastName: '',
@@ -12,6 +13,20 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
     city: '',
     country: 'Sri Lanka'
   });
+
+  // Check if PayHere is loaded
+  useEffect(() => {
+    const checkPayHere = () => {
+      if (window.payhere) {
+        setPayHereLoaded(true);
+        console.log('PayHere is ready');
+      } else {
+        console.log('PayHere not loaded yet');
+        setTimeout(checkPayHere, 1000);
+      }
+    };
+    checkPayHere();
+  }, []);
 
   const handleCustomerDetailsChange = (e) => {
     const { name, value } = e.target;
@@ -42,69 +57,109 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
       return;
     }
 
+    if (!payHereLoaded || !window.payhere) {
+      setPaymentError('Payment system is not ready. Please refresh the page and try again.');
+      return;
+    }
+
     setSubmitting(true);
     setPaymentError(null);
 
     try {
-      // Setup PayHere event handlers
-      window.payhere.onCompleted = function onCompleted(orderId) {
-        console.log("Payment completed. OrderID:" + orderId);
-        onPaymentSuccess(orderId);
+      // Send payment request to backend
+      const paymentRequest = {
+        amount: totalAmount,
+        currency: "LKR",
+        orderId: `ORDER_${tripId || Date.now()}`,
+        itemName: "Trip Booking",
+        customerDetails: {
+          firstName: customerDetails.firstName,
+          lastName: customerDetails.lastName,
+          email: customerDetails.email,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+          city: customerDetails.city,
+          country: customerDetails.country
+        }
       };
 
-      window.payhere.onDismissed = function onDismissed() {
-        console.log("Payment dismissed");
-        setPaymentError("Payment was cancelled");
-        onPaymentError("Payment was cancelled");
-      };
+      console.log('Sending payment request to backend:', paymentRequest);
 
-      window.payhere.onError = function onError(error) {
-        console.log("Error:" + error);
-        setPaymentError("Payment failed: " + error);
-        onPaymentError("Payment failed: " + error);
-      };
+      // Call your backend API
+      const response = await axios.post('http://localhost:8088/api/v1/payments/create-payhere-payment', paymentRequest);
 
-      // PayHere payment initiation
-      const paymentDetails = {
-        sandbox: true,
-        merchant_id: '1231228', // Verify this is correct
-        return_url: 'http://localhost:3000/payment-success',
-        cancel_url: 'http://localhost:3000/payment-cancel',
-        notify_url: 'http://localhost:3000/payment-notify',
-        order_id: `ORDER_${Date.now()}`,
-        items: 'Trip Booking Advance Payment',
-        amount: parseFloat(totalAmount).toFixed(2),
-        currency: 'LKR',
-        first_name: customerDetails.firstName,
-        last_name: customerDetails.lastName,
-        email: customerDetails.email,
-        phone: customerDetails.phone,
-        address: customerDetails.address,
-        city: customerDetails.city,
-        country: customerDetails.country,
-      };
+      console.log('Backend response:', response.data);
+      
+      // Updated condition to check for the correct response structure
+      if (response.data && response.data.status === 'success') {
+        const paymentData = response.data.payHereData;
 
-      console.log('Initiating PayHere payment with details:', paymentDetails);
+        // Setup PayHere event handlers
+        window.payhere.onCompleted = function onCompleted(orderId) {
+          console.log("Payment completed. OrderID:" + orderId);
+          setSubmitting(false);
+          onPaymentSuccess(orderId);
+        };
 
-      // Check if PayHere is loaded
-      if (window.payhere) {
+        window.payhere.onDismissed = function onDismissed() {
+          console.log("Payment dismissed");
+          setPaymentError("Payment was cancelled");
+          setSubmitting(false);
+          onPaymentError("Payment was cancelled");
+        };
+
+        window.payhere.onError = function onError(error) {
+          console.log("Error:" + error);
+          setPaymentError("Payment failed: " + error);
+          setSubmitting(false);
+          onPaymentError("Payment failed: " + error);
+        };
+
+        // PayHere payment initiation with backend response
+        const paymentDetails = {
+          sandbox: paymentData.sandbox || true,
+          merchant_id: paymentData.merchant_id,
+          return_url: paymentData.return_url,
+          cancel_url: paymentData.cancel_url,
+          notify_url: paymentData.notify_url,
+          order_id: paymentData.order_id,
+          items: paymentData.items,
+          amount: paymentData.amount,
+          currency: paymentData.currency,
+          hash: paymentData.hash, // Important: Hash from backend
+          first_name: paymentData.first_name,
+          last_name: paymentData.last_name,
+          email: paymentData.email,
+          phone: paymentData.phone,
+          address: paymentData.address,
+          city: paymentData.city,
+          country: paymentData.country,
+        };
+
+        console.log('Initiating PayHere payment with details:', paymentDetails);
         window.payhere.startPayment(paymentDetails);
+
       } else {
-        console.error('PayHere script not loaded');
-        setPaymentError('Payment system not ready. Please try again.');
-        onPaymentError('Payment system not ready. Please try again.');
+        throw new Error(response.data.data?.message || 'Failed to create payment');
       }
+
     } catch (err) {
-      const errorMessage = err.message || 'Payment failed. Please try again.';
+      console.error('Payment creation error:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Payment failed. Please try again.';
       setPaymentError(errorMessage);
       onPaymentError(errorMessage);
-    } finally {
       setSubmitting(false);
     }
   };
 
   return (
     <div className="space-y-4">
+      {!payHereLoaded && (
+        <div className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
+          Loading payment system...
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-800 mb-1">First Name *</label>
@@ -207,7 +262,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
 
       <button
         onClick={handlePayment}
-        disabled={submitting}
+        disabled={submitting || !payHereLoaded}
         className="w-full px-6 py-3 rounded-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
       >
         {submitting ? (
@@ -215,6 +270,8 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
             Processing Payment...
           </>
+        ) : !payHereLoaded ? (
+          'Loading Payment System...'
         ) : (
           `Pay LKR ${(totalAmount).toFixed(2)}`
         )}
