@@ -56,6 +56,7 @@ const ProceedModal = ({ open, message, onConfirm, onCancel, needDriver, setNeedD
       setGuide: needGuide ? 1 : 0,
       setDriver: needDriver ? 1 : 0
     };
+    console.log('🚀 Proceed button clicked - JSON payload:', JSON.stringify(payload, null, 2));
     try {
       await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
       if (onConfirm) onConfirm();
