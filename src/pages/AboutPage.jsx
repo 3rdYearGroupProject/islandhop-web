@@ -193,12 +193,7 @@ const AboutPage = () => {
   ];
 
   // Platform Statistics
-  const platformStats = [
-    { label: 'Launching Soon', value: '2025', icon: TruckIcon },
-    { label: 'Ready to Serve', value: 'You', icon: UsersIcon },
-    { label: 'New Platform', value: 'Fresh', icon: HeartIcon },
-    { label: 'Sri Lanka Focus', value: '100%', icon: GlobeAltIcon }
-  ];
+  const platformStats = [];
 
   const renderStars = (rating) => {
     const stars = [];
@@ -271,22 +266,7 @@ const AboutPage = () => {
             </p>
           </div>
 
-          {/* Platform Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-            {platformStats.map((stat, index) => (
-              <Card key={index} className="text-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-primary-200 dark:border-primary-700">
-                <CardBody>
-                  <stat.icon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                  <div className="text-2xl md:text-3xl font-bold text-primary-800 dark:text-primary-200 mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-                    {stat.label}
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
+          {/* Platform Statistics - Removed */}
         </section>
 
         {/* Why Choose IslandHop */}
