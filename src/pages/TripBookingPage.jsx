@@ -31,6 +31,9 @@ const TripBookingPage = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentOrderId, setPaymentOrderId] = useState(null);
+  const [priceData, setPriceData] = useState(null);
+  const [fetchingPrices, setFetchingPrices] = useState(false);
+  const [priceError, setPriceError] = useState(null);
 
   // Map state
   const [places, setPlaces] = useState([]);
@@ -180,6 +183,56 @@ const TripBookingPage = () => {
     }
   }, [needDriver]);
 
+  // Fetch cost breakdown when preferences change
+  useEffect(() => {
+    const fetchCostBreakdown = async () => {
+      if (!needDriver && !needGuide) {
+        setPriceData(null);
+        return;
+      }
+
+      if (needDriver && !selectedVehicle) {
+        setPriceData(null);
+        return;
+      }
+
+      setFetchingPrices(true);
+      setPriceError(null);
+
+      try {
+        let preferredVehicleTypeId = null;
+        if (needDriver && selectedVehicle) {
+          const vehicleObj = vehicles.find((v) => v.typeName === selectedVehicle);
+          preferredVehicleTypeId = vehicleObj ? vehicleObj.id : null;
+        }
+
+        const payload = {
+          userId,
+          tripId,
+          preferredVehicleTypeId,
+          setGuide: needGuide ? 1 : 0,
+          setDriver: needDriver ? 1 : 0,
+        };
+
+        const response = await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
+        console.log('Cost breakdown response:', response.data);
+
+        if (response.data) {
+          setPriceData(response.data);
+        } else {
+          setPriceError('Failed to fetch cost breakdown');
+        }
+      } catch (err) {
+        console.error('Error fetching cost breakdown:', err);
+        setPriceError('Failed to fetch cost breakdown. Please try again.');
+      } finally {
+        setFetchingPrices(false);
+      }
+    };
+
+    fetchCostBreakdown();
+  }, [needDriver, needGuide, selectedVehicle, vehicles, tripId, userId]);
+
   // Map functions
   const mapContainerStyle = {
     width: '100%',
@@ -216,7 +269,8 @@ const TripBookingPage = () => {
 
   // Booking functions
   const calculateTotal = () => {
-    return (needDriver ? 60000 : 0) + (needGuide ? 45000 : 0); // Amounts in LKR
+    if (!priceData) return 0;
+    return (priceData.averageDriverCost || 0) + (priceData.averageGuideCost || 0);
   };
 
   const calculateAdvancePayment = () => {
@@ -424,11 +478,11 @@ const TripBookingPage = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between border-b border-gray-200 pb-2">
                     <span className="text-gray-600">Driver</span>
-                    <span className="font-medium">LKR {needDriver ? '60,000.00' : '0.00'}</span>
+                    <span className="font-medium">LKR {priceData ? priceData.averageDriverCost.toLocaleString() : '0.00'}</span>
                   </div>
                   <div className="flex justify-between border-b border-gray-200 pb-2">
                     <span className="text-gray-600">Guide</span>
-                    <span className="font-medium">LKR {needGuide ? '45,000.00' : '0.00'}</span>
+                    <span className="font-medium">LKR {priceData ? priceData.averageGuideCost.toLocaleString() : '0.00'}</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="text-gray-900 font-bold">Total</span>
