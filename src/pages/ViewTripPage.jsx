@@ -1146,65 +1146,8 @@ const ViewTripPage = () => {
         </div>
         {/* Trip Summary (below itinerary, left column only) */}
         <div className="flex gap-8 w-full">
-          {/* Left: Trip Summary Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
-            <div className="w-full mt-10">
-              <div
-                id="trip-summary-card"
-                className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200"
-                style={{ minHeight: '220px', boxShadow: 'none', border: '1px solid #e5e7eb' }}
-                ref={el => (window.tripSummaryCardRef = el)}
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Trip Cost Breakdown</h3>
-                {/* Driver/Guide Selection */}
-                <div className="flex gap-6 mb-4 items-center">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={needDriver}
-                      onChange={e => setNeedDriver(e.target.checked)}
-                      className={`h-5 w-5 rounded border-2 border-primary-600 focus:ring-2 focus:ring-primary-500 transition-all duration-150 ${needDriver ? 'bg-primary-600' : 'bg-white'}`}
-                      style={{ accentColor: needDriver ? '#2563eb' : undefined, backgroundColor: needDriver ? '#2563eb' : '#fff' }}
-                    />
-                    <span className="text-gray-800 font-medium">I need a driver</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={needGuide}
-                      onChange={e => setNeedGuide(e.target.checked)}
-                      className={`h-5 w-5 rounded border-2 border-primary-600 focus:ring-2 focus:ring-primary-500 transition-all duration-150 ${needGuide ? 'bg-primary-600' : 'bg-white'}`}
-                      style={{ accentColor: needGuide ? '#2563eb' : undefined, backgroundColor: needGuide ? '#2563eb' : '#fff' }}
-                    />
-                    <span className="text-gray-800 font-medium">I need a guide</span>
-                  </label>
-                </div>
-                <div className="space-y-3">
-                  {/* Driver */}
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-600">Driver</span>
-                    <span className="font-medium">${driverCost.toFixed(2)}</span>
-                  </div>
-                  {/* Guide */}
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-600">Guide</span>
-                    <span className="font-medium">${guideCost.toFixed(2)}</span>
-                  </div>
-                  {/* Grand Total */}
-                  <div className="flex justify-between mt-2">
-                    <span className="text-gray-900 font-bold">Total</span>
-                    <span className="font-bold text-primary-700 text-lg">${grandTotal.toFixed(2)}</span>
-                  </div>
-                  {/* Advance Payment */}
-                  <div className="flex justify-between mt-2">
-                    <span className="text-gray-900 font-bold">Advance Payment (50%)</span>
-                    <span className="font-bold text-primary-600 text-lg">${(grandTotal * 0.5).toFixed(2)}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2">You must pay 50% of the total cost before the start of your trip.</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Left: Empty (was Trip Summary Card) */}
+          <div className="w-1/2 min-w-0 flex flex-col"></div>
           {/* Right: Actions Card */}
           <div className="w-1/2 min-w-0 flex flex-col">
             <div className="w-full mt-10">
@@ -1250,6 +1193,9 @@ const ViewTripPage = () => {
             onConfirm={confirmProceed}
             onCancel={cancelProceed}
             needDriver={needDriver}
+            setNeedDriver={setNeedDriver}
+            needGuide={needGuide}
+            setNeedGuide={setNeedGuide}
             numPassengers={numPassengers}
             setNumPassengers={setNumPassengers}
           />
