@@ -648,33 +648,99 @@ const Communications = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sidebar - Chat List */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden h-[calc(100vh-12rem)] flex flex-col">
-              {/* Sidebar content */}
-              {/* Header */}
-              <div className="p-6 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-200 dark:border-primary-700 flex-shrink-0">
-                <div className="flex items-center justify-between mb-4">
+            <div className="bg-primary-50 dark:bg-primary-900/20 rounded-2xl shadow-sm border border-primary-200 dark:border-primary-700 overflow-hidden h-[calc(100vh-12rem)] flex flex-col">
+              {/* Sidebar content - blue background now covers entire card */}
+              <div className="p-6 flex-shrink-0">
+                <div className="flex items-center mb-4">
                   <h2 className="text-xl font-bold text-primary-900 dark:text-primary-100 flex items-center">
                     <ChatBubbleLeftRightIcon className="h-6 w-6 mr-3 text-primary-600 dark:text-primary-400" />
                     Communications
                   </h2>
-                  <button 
-                    onClick={fetchSupportAgents}
-                    disabled={loadingSupportAgents}
-                    className="p-2 rounded-xl text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-white/50 dark:hover:bg-primary-800/30 transition-all duration-200 shadow-sm"
-                  >
-                    <EllipsisVerticalIcon className="h-5 w-5" />
-                  </button>
                 </div>
-                
-                {/* Support Agents Section */}
+
+                {/* Recent Conversations Section - moved to top */}
                 <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Recent Conversations</h3>
+                  <div className="space-y-3">
+                    {chats.filter(chat => chat.type !== 'support').map((chat) => (
+                      <div
+                        key={chat.id}
+                        onClick={() => setSelectedChat(chat.id)}
+                        className={`p-4 cursor-pointer rounded-xl mb-3 transition-all duration-200 transform hover:scale-[1.02] ${
+                          selectedChat === chat.id 
+                            ? 'bg-primary-50 dark:bg-primary-900/30 shadow-md border-2 border-primary-300 dark:border-primary-600' 
+                            : 'hover:bg-gray-50 dark:hover:bg-secondary-700/50 border-2 border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="relative">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                              chat.type === 'group' 
+                                ? 'bg-primary-100 dark:bg-primary-900/30' 
+                                : 'bg-gray-100 dark:bg-secondary-600'
+                            }`}>
+                              {chat.type === 'group' ? (
+                                <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                              ) : (
+                                <UserIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                              )}
+                            </div>
+                            {chat.isOnline && chat.type === 'personal' && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                {chat.name}
+                              </h3>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
+                                {chat.lastTime}
+                              </span>
+                            </div>
+                            
+                            {chat.type === 'personal' && (
+                              <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
+                                {chat.role}
+                              </p>
+                            )}
+                            
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                {chat.lastMessage || 'No messages yet'}
+                              </p>
+                              {chat.unreadCount > 0 && (
+                                <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 ml-2 font-semibold shadow-sm">
+                                  {chat.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Support Agents Section - now stretches to bottom */}
+                <div className="flex flex-col flex-1 min-h-0">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wide">Support Team</h3>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-sm font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wide">Support Team</h3>
+                      <button 
+                        onClick={fetchSupportAgents}
+                        disabled={loadingSupportAgents}
+                        className="p-2 rounded-xl text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-white/50 dark:hover:bg-primary-800/30 transition-all duration-200 shadow-sm"
+                      >
+                        <EllipsisVerticalIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                     {loadingSupportAgents && (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
                     )}
                   </div>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                  <div className="space-y-2 flex-1 overflow-y-auto">
                     {supportAgents.map((agent) => (
                       <button
                         key={agent.email}
@@ -705,70 +771,6 @@ const Communications = () => {
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* Chat List */}
-              <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
-                <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Recent Conversations</h3>
-                </div>
-                {chats.filter(chat => chat.type !== 'support').map((chat) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => setSelectedChat(chat.id)}                        className={`p-4 cursor-pointer rounded-xl mb-3 transition-all duration-200 transform hover:scale-[1.02] ${
-                      selectedChat === chat.id 
-                        ? 'bg-primary-50 dark:bg-primary-900/30 shadow-md border-2 border-primary-300 dark:border-primary-600' 
-                        : 'hover:bg-gray-50 dark:hover:bg-secondary-700/50 border-2 border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="relative">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
-                          chat.type === 'group' 
-                            ? 'bg-primary-100 dark:bg-primary-900/30' 
-                            : 'bg-gray-100 dark:bg-secondary-600'
-                        }`}>
-                          {chat.type === 'group' ? (
-                            <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                          ) : (
-                            <UserIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-                          )}
-                        </div>
-                        {chat.isOnline && chat.type === 'personal' && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                            {chat.name}
-                          </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
-                            {chat.lastTime}
-                          </span>
-                        </div>
-                        
-                        {chat.type === 'personal' && (
-                          <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
-                            {chat.role}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                            {chat.lastMessage || 'No messages yet'}
-                          </p>
-                          {chat.unreadCount > 0 && (
-                            <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 ml-2 font-semibold shadow-sm">
-                              {chat.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
