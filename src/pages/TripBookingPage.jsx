@@ -53,10 +53,18 @@ const TripBookingPage = () => {
     const script = document.createElement('script');
     script.src = 'https://www.payhere.lk/lib/payhere.js';
     script.async = true;
+    script.onload = () => {
+      console.log('PayHere script loaded successfully');
+    };
+    script.onerror = () => {
+      console.error('Failed to load PayHere script');
+    };
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -292,6 +300,52 @@ const TripBookingPage = () => {
   const handleProceed = async () => {
     if (!paymentCompleted && calculateAdvancePayment() > 0) {
       setShowPayment(true);
+
+      // Setup PayHere event handlers
+      window.payhere.onCompleted = function onCompleted(orderId) {
+        console.log("Payment completed. OrderID:" + orderId);
+        handlePaymentSuccess(orderId);
+      };
+
+      window.payhere.onDismissed = function onDismissed() {
+        console.log("Payment dismissed");
+        handlePaymentError("Payment was dismissed");
+      };
+
+      window.payhere.onError = function onError(error) {
+        console.log("Error:" + error);
+        handlePaymentError(error);
+      };
+
+      // PayHere payment initiation
+      const paymentDetails = {
+        sandbox: true,
+        merchant_id: '1231228', // Verify this is correct
+        return_url: 'http://localhost:3000/payment-success',
+        cancel_url: 'http://localhost:3000/payment-cancel',
+        notify_url: 'http://localhost:3000/payment-notify',
+        order_id: `ORDER_${Date.now()}_${tripId}`, // Make it more unique
+        items: 'Trip Booking',
+        amount: parseFloat(calculateAdvancePayment()).toFixed(2),
+        currency: 'LKR',
+        first_name: 'John',
+        last_name: 'Doe',
+        email: userData?.email || 'test@example.com',
+        phone: '0771234567',
+        address: '123 Main Street',
+        city: 'Colombo',
+        country: 'Sri Lanka',
+      };
+
+      console.log('Initiating PayHere payment with details:', paymentDetails);
+
+      // Check if PayHere is loaded
+      if (window.payhere) {
+        window.payhere.startPayment(paymentDetails);
+      } else {
+        console.error('PayHere script not loaded');
+        alert('Payment system not ready. Please try again.');
+      }
       return;
     }
 
@@ -308,7 +362,7 @@ const TripBookingPage = () => {
       preferredVehicleTypeId,
       setGuide: needGuide ? 1 : 0,
       setDriver: needDriver ? 1 : 0,
-      paymentOrderId
+      paymentOrderId,
     };
 
     try {
@@ -509,7 +563,7 @@ const TripBookingPage = () => {
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-bold mb-4">Payment Details</h3>
                   <PaymentForm
-                    totalAmount={calculateAdvancePayment()}
+                    totalAmount={calculateAdvancePayment()} // Dynamically updating the payment amount
                     onPaymentSuccess={handlePaymentSuccess}
                     onPaymentError={handlePaymentError}
                     submitting={submitting}

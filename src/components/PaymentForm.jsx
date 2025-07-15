@@ -200,7 +200,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
       <div className="bg-gray-50 p-4 rounded-lg">
         <div className="flex justify-between items-center">
           <span className="font-medium text-gray-800">Total Amount:</span>
-          <span className="text-xl font-bold text-primary-600">LKR {(totalAmount * 300).toFixed(2)}</span>
+          <span className="text-xl font-bold text-primary-600">LKR {(totalAmount).toFixed(2)}</span>
         </div>
         <p className="text-sm text-gray-500 mt-1">
           Payment will be processed securely through PayHere
@@ -224,7 +224,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
             Processing Payment...
           </>
         ) : (
-          `Pay LKR ${(totalAmount * 300).toFixed(2)}`
+          `Pay LKR ${(totalAmount).toFixed(2)}`
         )}
       </button>
 
