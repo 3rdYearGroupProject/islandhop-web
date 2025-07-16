@@ -470,63 +470,6 @@ const GuideChat = () => {
           )}
         </div>
       </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MessageCircle className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Total Chats</p>
-              <p className="text-xl font-bold text-gray-900">{conversations.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Circle className="h-5 w-5 text-green-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Unread</p>
-              <p className="text-xl font-bold text-gray-900">
-                {conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Clock className="h-5 w-5 text-purple-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Active Tours</p>
-              <p className="text-xl font-bold text-gray-900">
-                {conversations.filter(conv => !conv.tourCompleted).length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Star className="h-5 w-5 text-yellow-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-              <p className="text-xl font-bold text-gray-900">
-                {(conversations.reduce((sum, conv) => sum + conv.tourist.rating, 0) / conversations.length).toFixed(1)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
