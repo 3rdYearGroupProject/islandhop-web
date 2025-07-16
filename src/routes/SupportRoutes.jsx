@@ -15,7 +15,7 @@ import PanicAlerts from "../pages/support/PanicAlerts";
 import SupportReports from "../pages/support/SupportReports";
 import SupportProfile from "../pages/support/SupportProfile";
 import GuideVerification from "../pages/support/GuideVerification";
-import Communications from '../pages/admin/Communications';
+import Communications from "../pages/admin/Communications";
 
 const SupportRoutes = () => {
   return (
