@@ -162,11 +162,6 @@ const GuideSidebar = ({ isOpen, onClose }) => {
           </div>
           </div>
 
-          {/* Guide Status Card - Only on Desktop */}
-          <div className="hidden lg:block px-4 py-4 border-b border-gray-200 dark:border-secondary-700">
-            <GuideStatusCard compact={true} showToggle={false} />
-          </div>
-
           {/* Mobile Quick Actions */}
           <div className="lg:hidden px-4 py-4 border-b border-gray-200 dark:border-secondary-700">
             <div className="grid grid-cols-2 gap-3">
