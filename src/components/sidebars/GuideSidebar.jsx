@@ -59,12 +59,6 @@ const GuideSidebar = ({ isOpen, onClose }) => {
       badge: '1'
     },
     { 
-      name: 'Tour Packages', 
-      path: '/guide/packages', 
-      icon: GlobeAltIcon,
-      description: 'Your Tour Offerings'
-    },
-    { 
       name: 'Reviews', 
       path: '/guide/reviews', 
       icon: StarIcon,
