@@ -4,7 +4,6 @@ export { default as GuideEarnings } from './GuideEarnings';
 export { default as GuideProfile } from './GuideProfile';
 export { default as GuideChat } from './GuideChat';
 export { default as GuideSchedule } from './GuideSchedule';
-export { default as GuidePackages } from './GuidePackages';
 export { default as GuideReviews } from './GuideReviews';
 export { default as GuideHistory } from './GuideHistory';
 export { default as GuideAnalytics } from './GuideAnalytics';
