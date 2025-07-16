@@ -14,11 +14,15 @@ import {
   AlertCircle
 } from 'lucide-react';
 import DriverStatusCard from '../../components/driver/DriverStatusCard';
+import DriverTripModal from '../../components/driver/DriverTripModal';
+import MapPopupModal from '../../components/driver/MapPopupModal';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData } from '../../utils/userStorage';
 import { Link } from 'react-router-dom';
 
 const DriverDashboard = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
   const toast = useToast();
 
   const [driverStats, setDriverStats] = useState({
@@ -165,70 +169,72 @@ const DriverDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Active Trip */}
-        {activeTrip && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Active Trip</h2>
-              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                In Progress
-              </span>
+      {/* Active Trip */}
+      {activeTrip && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Active Trip</h2>
+            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              In Progress
+            </span>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Users className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="font-medium">{activeTrip.passenger}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
+                  <Phone className="h-4 w-4" />
+                </button>
+                <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
+                  <MessageCircle className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 text-gray-400 mr-2" />
-                  <span className="font-medium">{activeTrip.passenger}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                    <Phone className="h-4 w-4" />
-                  </button>
-                  <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                    <MessageCircle className="h-4 w-4" />
-                  </button>
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 text-green-500 mr-2" />
+                <span className="text-sm text-gray-600">From: {activeTrip.pickupLocation}</span>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <MapPin className="h-4 w-4 text-green-500 mr-2" />
-                  <span className="text-sm text-gray-600">From: {activeTrip.pickupLocation}</span>
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="h-4 w-4 text-red-500 mr-2" />
-                  <span className="text-sm text-gray-600">To: {activeTrip.destination}</span>
-                </div>
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 text-red-500 mr-2" />
+                <span className="text-sm text-gray-600">To: {activeTrip.destination}</span>
               </div>
-
-              <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Distance</p>
-                  <p className="font-semibold">{activeTrip.distance}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Time</p>
-                  <p className="font-semibold">{activeTrip.estimatedTime}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Fare</p>
-                  <p className="font-semibold">${activeTrip.fare}</p>
-                </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100">
+              <div className="text-center">
+                <p className="text-sm text-gray-500">Distance</p>
+                <p className="font-semibold">{activeTrip.distance}</p>
               </div>
-
-              <div className="flex space-x-3">
-                <button className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium">
-                  <Navigation className="h-4 w-4 inline mr-2" />
-                  Navigate
-                </button>
-                <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                  Trip Details
-                </button>
+              <div className="text-center">
+                <p className="text-sm text-gray-500">Time</p>
+                <p className="font-semibold">{activeTrip.estimatedTime}</p>
               </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-500">Fare</p>
+                <p className="font-semibold">${activeTrip.fare}</p>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button 
+                className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                onClick={() => setMapModalOpen(true)}
+              >
+                <Navigation className="h-4 w-4 inline mr-2" />
+                Navigate
+              </button>
+              <button 
+                className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                onClick={() => setModalOpen(true)}
+              >
+                Trip Details
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* Pending Trip Requests */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -308,6 +314,15 @@ const DriverDashboard = () => {
 
       {/* Earnings Overview */}
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {/* Trip Details Modal for Active Trip */}
+      <DriverTripModal open={modalOpen} onClose={() => setModalOpen(false)} trip={activeTrip} />
+      {/* Map Popup Modal for Navigate */}
+      <MapPopupModal 
+        open={mapModalOpen} 
+        onClose={() => setMapModalOpen(false)} 
+        pickup={activeTrip?.pickupLocation} 
+        destination={activeTrip?.destination} 
+      />
         <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
