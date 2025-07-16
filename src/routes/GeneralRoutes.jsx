@@ -12,9 +12,11 @@ import TripDurationPage from '../pages/TripDurationPage';
 import TripPreferencesPage from '../pages/TripPreferencesPage';
 import TripItineraryPage from '../pages/TripItineraryPage';
 import ViewTripPage from '../pages/ViewTripPage';
+import TripBookingPage from '../pages/TripBookingPage';
+import PaymentReturnPage from '../pages/PaymentReturnPage';
+import PaymentCancelPage from '../pages/PaymentCancelPage';
 import ViewPoolPage from '../pages/ViewPoolPage';
 import MyTripsPage from '../pages/MyTripsPage';
-import SelectDriverGuidePage from '../pages/SelectDriverGuidePage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
@@ -25,6 +27,7 @@ const ProtectedRouteWrapper = ({ children }) => {
   // ...existing code for auth check...
   return children;
 };
+
 const PublicRoute = ({ children }) => {
   // ...existing code for public route check...
   return children;
@@ -82,14 +85,24 @@ const GeneralRoutes = () => (
         <ViewTripPage />
       </PublicRoute>
     } />
+    <Route path="/trip/:tripId/booking" element={
+      <PublicRoute>
+        <TripBookingPage />
+      </PublicRoute>
+    } />
+    <Route path="/payment/return" element={
+      <PublicRoute>
+        <PaymentReturnPage />
+      </PublicRoute>
+    } />
+    <Route path="/payment/cancel" element={
+      <PublicRoute>
+        <PaymentCancelPage />
+      </PublicRoute>
+    } />
     <Route path="/pool/:poolId" element={
       <PublicRoute>
         <ViewPoolPage />
-      </PublicRoute>
-    } />
-    <Route path="/select-driver-guide" element={
-      <PublicRoute>
-        <SelectDriverGuidePage />
       </PublicRoute>
     } />
     
@@ -116,13 +129,12 @@ const GeneralRoutes = () => (
     } />
     
     {/* Protected Routes */}
-
     <Route path="/signup" element={
       <PublicRoute>
         <SignupPage />
       </PublicRoute>
     } />
-    <Route path="/signup/professional" element={
+    <Route path="/professional-signup" element={
       <PublicRoute>
         <ProfessionalSignupPage />
       </PublicRoute>

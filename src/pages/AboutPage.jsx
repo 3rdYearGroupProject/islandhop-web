@@ -193,12 +193,7 @@ const AboutPage = () => {
   ];
 
   // Platform Statistics
-  const platformStats = [
-    { label: 'Registered Drivers', value: '500+', icon: TruckIcon },
-    { label: 'Certified Guides', value: '250+', icon: UsersIcon },
-    { label: 'Happy Tourists', value: '15,000+', icon: HeartIcon },
-    { label: 'Countries Served', value: '50+', icon: GlobeAltIcon }
-  ];
+  const platformStats = [];
 
   const renderStars = (rating) => {
     const stars = [];
@@ -271,22 +266,7 @@ const AboutPage = () => {
             </p>
           </div>
 
-          {/* Platform Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-            {platformStats.map((stat, index) => (
-              <Card key={index} className="text-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-primary-200 dark:border-primary-700">
-                <CardBody>
-                  <stat.icon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                  <div className="text-2xl md:text-3xl font-bold text-primary-800 dark:text-primary-200 mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-                    {stat.label}
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
+          {/* Platform Statistics - Removed */}
         </section>
 
         {/* Why Choose IslandHop */}
@@ -336,238 +316,67 @@ const AboutPage = () => {
           </div>
         </section>
 
-        {/* Featured Drivers */}
+        {/* About Our Platform */}
         <section className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
-              Meet Our Featured Drivers
+              Building Sri Lanka's Travel Community
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Our verified drivers are experienced professionals who ensure safe, comfortable, and memorable journeys across Sri Lanka.
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
+              IslandHop is a new platform dedicated to connecting travelers with authentic Sri Lankan experiences. 
+              We're building a community of verified local drivers and guides who are passionate about sharing 
+              the beauty and culture of Sri Lanka with visitors from around the world.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredDrivers.map((driver, index) => (
-              <Card key={driver.id} hover className="group">
-                <div className="relative">
-                  <img
-                    src={driver.image}
-                    alt={driver.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  {driver.verified && (
-                    <div className="absolute top-3 right-3 bg-success-600 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                      <CheckCircleIcon className="h-4 w-4" />
-                      Verified
-                    </div>
-                  )}
-                </div>
-                
-                <CardBody>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                        {driver.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex">{renderStars(driver.rating)}</div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {driver.rating} ({driver.reviewCount} reviews)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <MapPinIcon className="h-4 w-4 mr-2" />
-                      {driver.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <ClockIcon className="h-4 w-4 mr-2" />
-                      {driver.experience} experience
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <TruckIcon className="h-4 w-4 mr-2" />
-                      {driver.vehicle}
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Specialties:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {driver.specialties.map((specialty, i) => (
-                        <span key={i} className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 text-xs rounded-full">
-                          {specialty}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Languages:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {driver.languages.map((language, i) => (
-                        <span key={i} className="px-2 py-1 bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300 text-xs rounded-full">
-                          {language}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    <span>Joined: {driver.joinedYear}</span>
-                    <span>{driver.totalTrips} trips completed</span>
-                  </div>
-
-                  <button className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors">
-                    View Profile
-                  </button>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* Featured Guides */}
-        <section className="mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
-              Meet Our Expert Guides
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Our certified guides are passionate storytellers who bring Sri Lanka's rich history and culture to life.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredGuides.map((guide, index) => (
-              <Card key={guide.id} hover className="group">
-                <div className="relative">
-                  <img
-                    src={guide.image}
-                    alt={guide.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  {guide.verified && (
-                    <div className="absolute top-3 right-3 bg-warning-600 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                      <CheckCircleIcon className="h-4 w-4" />
-                      Certified
-                    </div>
-                  )}
-                </div>
-                
-                <CardBody>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                        {guide.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex">{renderStars(guide.rating)}</div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {guide.rating} ({guide.reviewCount} reviews)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <MapPinIcon className="h-4 w-4 mr-2" />
-                      {guide.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <ClockIcon className="h-4 w-4 mr-2" />
-                      {guide.experience} experience
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <ShieldCheckIcon className="h-4 w-4 mr-2" />
-                      {guide.certification}
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Specialties:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {guide.specialties.map((specialty, i) => (
-                        <span key={i} className="px-2 py-1 bg-warning-100 dark:bg-warning-900/30 text-warning-800 dark:text-warning-300 text-xs rounded-full">
-                          {specialty}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="text-sm font-normal text-gray-900 dark:text-white mb-2">Languages:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {guide.languages.map((language, i) => (
-                        <span key={i} className="px-2 py-1 bg-info-100 dark:bg-info-900/30 text-info-800 dark:text-info-300 text-xs rounded-full">
-                          {language}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    <span>Joined: {guide.joinedYear}</span>
-                    <span>{guide.totalTours} tours completed</span>
-                  </div>
-
-                  <button className="w-full bg-warning-600 text-white py-2 rounded-lg font-medium hover:bg-warning-700 transition-colors">
-                    View Profile
-                  </button>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* Tourist Reviews */}
-        <section className="mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white mb-6">
-              What Our Travelers Say
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Real experiences from tourists who have explored Sri Lanka through IslandHop.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {touristReviews.map((review) => (
-              <Card key={review.id} className="h-full">
-                <CardBody>
-                  <div className="flex items-start gap-4 mb-4">
-                    <img
-                      src={review.image}
-                      alt={review.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-gray-900 dark:text-white">{review.name}</h4>
-                        <div className="flex">{renderStars(review.rating)}</div>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{review.country}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">{review.date}</p>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-                    "{review.review}"
-                  </p>
-
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                    <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 px-2 py-1 rounded-full">
-                      {review.tripType}
-                    </span>
-                    <span>{review.duration}</span>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                Our Mission
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                We believe that the best way to experience Sri Lanka is through the eyes of locals who know 
+                and love their homeland. Our platform ensures safe, authentic, and memorable travel experiences 
+                while supporting local communities.
+              </p>
+              <ul className="space-y-3 text-gray-600 dark:text-gray-300">
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-success-600 mr-3 mt-0.5 flex-shrink-0" />
+                  Connecting travelers with verified local professionals
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-success-600 mr-3 mt-0.5 flex-shrink-0" />
+                  Promoting sustainable and responsible tourism
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-success-600 mr-3 mt-0.5 flex-shrink-0" />
+                  Supporting local communities and economies
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-success-600 mr-3 mt-0.5 flex-shrink-0" />
+                  Creating unforgettable travel memories
+                </li>
+              </ul>
+            </div>
+            
+            <div className="space-y-6">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                Join Our Growing Community
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                Whether you're a traveler seeking authentic experiences or a local professional 
+                wanting to share your expertise, IslandHop is the perfect platform to connect 
+                and create meaningful travel experiences together.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button className="bg-primary-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-primary-700 transition">
+                  Start Your Journey
+                </button>
+                <button className="border-2 border-primary-600 text-primary-600 px-6 py-3 rounded-full font-semibold hover:bg-primary-50 transition">
+                  Become a Professional
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 

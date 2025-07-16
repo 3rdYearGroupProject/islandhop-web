@@ -16,6 +16,7 @@ import Hosting from '../pages/admin/Hosting';
 import Accounts from '../pages/admin/Accounts';
 import UpdateUserProfile from '../pages/admin/UpdateUserProfile';
 import Communications from '../pages/admin/Communications';
+import SystemData from '../pages/admin/SystemData';
 
 const AdminRoutes = () => {
   return (
@@ -35,6 +36,7 @@ const AdminRoutes = () => {
         <Route path="history" element={<SystemHistory />} />
         <Route path="apis" element={<APIs />} />
         <Route path="update-user/:userId" element={<UpdateUserProfile />} />
+        <Route path="system-data" element={<SystemData />} />
       </Routes>
     </AdminDashboardLayout>
   );

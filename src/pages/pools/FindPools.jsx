@@ -210,7 +210,8 @@ const FindPools = () => {
     // Navigate to the view pool page with pool data
     navigate(`/pool/${pool.id}`, { 
       state: { 
-        pool: pool
+        pool: pool,
+        sourcePage: 'findPools'
       } 
     });
   };
