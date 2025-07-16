@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DriverTripModal from '../../components/driver/DriverTripModal';
 import { 
   Car, 
   MapPin, 
@@ -18,6 +19,8 @@ import {
 } from 'lucide-react';
 
 const DriverTrips = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, active, completed, cancelled
   const [trips, setTrips] = useState([
     {
@@ -243,7 +246,11 @@ const DriverTrips = () => {
       {/* Trips List */}
       <div className="space-y-4">
         {filteredTrips.map(trip => (
-          <div key={trip.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div 
+            key={trip.id} 
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all duration-200"
+            onClick={() => { setSelectedTrip(trip); setModalOpen(true); }}
+          >
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-4 flex-1">
                 <img
@@ -427,6 +434,7 @@ const DriverTrips = () => {
           </p>
         </div>
       )}
+      <DriverTripModal open={modalOpen} onClose={() => setModalOpen(false)} trip={selectedTrip} />
     </div>
   );
 };
