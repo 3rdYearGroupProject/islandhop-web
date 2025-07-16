@@ -27,135 +27,39 @@ import { useToast } from '../../components/ToastProvider';
 
 const GuideProfile = () => {
   const [activeTab, setActiveTab] = useState('personal'); // personal, certifications, languages, documents, preferences
+  const [isLoading, setIsLoading] = useState(true);
 
   const [guideData, setGuideData] = useState({
     // Personal Information
-    firstName: 'Priya',
-    lastName: 'Perera',
-    email: 'priya.perera@example.com',
-    phoneNumber: '+94 77 456 7890',
-    dateOfBirth: '1990-05-20',
-    address: '456 Temple Road, Kandy',
-    emergencyContactNumber: '+94 77 123 4567',
-    emergencyContactName: 'Sunil Perera',
-    profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=300&h=300&fit=crop&crop=face',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    dateOfBirth: '',
+    address: '',
+    emergencyContactNumber: '',
+    emergencyContactName: '',
+    profilePicture: '',
     
     // Guide Stats
-    rating: 4.9,
-    totalTours: 156,
-    totalReviews: 142,
-    memberSince: '2022-03-20',
-    status: 'active',
-    specializations: ['Cultural Tours', 'Adventure Tours', 'Food Tours'],
+    rating: 0,
+    totalTours: 0,
+    totalReviews: 0,
+    memberSince: '',
+    status: '',
+    specializations: [],
     
     // Certifications
-    certifications: [
-      {
-        id: 1,
-        name: 'Tourism Guide License',
-        issuer: 'Sri Lanka Tourism Development Authority',
-        issueDate: '2022-01-15',
-        expiryDate: '2025-01-15',
-        status: 'active',
-        verificationNumber: 'SLTDA-G-2022-0456',
-        documentUrl: '#'
-      },
-      {
-        id: 2,
-        name: 'First Aid Certification',
-        issuer: 'Sri Lanka Red Cross Society',
-        issueDate: '2023-06-10',
-        expiryDate: '2025-06-10',
-        status: 'active',
-        verificationNumber: 'SLRCS-FA-2023-1234',
-        documentUrl: '#'
-      },
-      {
-        id: 3,
-        name: 'Wilderness Safety Certification',
-        issuer: 'Adventure Tourism Board',
-        issueDate: '2023-08-20',
-        expiryDate: '2026-08-20',
-        status: 'active',
-        verificationNumber: 'ATB-WS-2023-0789',
-        documentUrl: '#'
-      }
-    ],
+    certifications: [],
     
     // Languages & Skills
-    languages: [
-      {
-        id: 1,
-        language: 'Sinhala',
-        proficiency: 'Native',
-        certified: false
-      },
-      {
-        id: 2,
-        language: 'English',
-        proficiency: 'Advanced',
-        certified: true,
-        certification: 'IELTS Band 8.5'
-      },
-      {
-        id: 3,
-        language: 'Tamil',
-        proficiency: 'Intermediate',
-        certified: false
-      },
-      {
-        id: 4,
-        language: 'German',
-        proficiency: 'Basic',
-        certified: true,
-        certification: 'Goethe A2'
-      },
-      {
-        id: 5,
-        language: 'French',
-        proficiency: 'Basic',
-        certified: false
-      }
-    ],
+    languages: [],
     
     // Documents
-    documents: {
-      nationalId: {
-        number: 'NIC-901234567V',
-        expiryDate: '2030-05-20',
-        status: 'verified',
-        uploadedAt: '2024-01-10'
-      },
-      tourismLicense: {
-        number: 'SLTDA-G-2022-0456',
-        expiryDate: '2025-01-15',
-        status: 'verified',
-        uploadedAt: '2024-01-10'
-      },
-      firstAidCert: {
-        number: 'SLRCS-FA-2023-1234',
-        expiryDate: '2025-06-10',
-        status: 'verified',
-        uploadedAt: '2024-01-10'
-      }
-    },
+    documents: {},
     
     // Preferences
-    preferences: {
-      workingHours: {
-        start: '07:00',
-        end: '18:00'
-      },
-      preferredAreas: ['Kandy', 'Ella', 'Nuwara Eliya', 'Sigiriya'],
-      maxGroupSize: 8,
-      tourTypes: ['Cultural', 'Adventure', 'Food & Culinary'],
-      notifications: {
-        tourRequests: true,
-        earnings: true,
-        reviews: true,
-        systemUpdates: true
-      }
-    }
+    preferences: {}
   });
 
   const { success: showSuccessToast, error: showErrorToast } = useToast();
@@ -168,60 +72,67 @@ const GuideProfile = () => {
   // Track uploaded profile picture file
   const [profilePictureFile, setProfilePictureFile] = useState(null);
 
-  // Fetch personal info
+  // Fetch all data on component mount
   useEffect(() => {
-    const fetchPersonal = async () => {
-      try {
-        const res = await userServicesApi.get(`/guide/profile?email=${guideData.email}`);
-        if (res.status === 200 && res.data) {
-          let profilePicture = res.data.profilePicture;
-          if (res.data.profilePictureBase64) {
-            profilePicture = `data:image/jpeg;base64,${res.data.profilePictureBase64}`;
-          }
-          setGuideData(prev => ({ ...prev, ...res.data, profilePicture }));
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    try {
+      // Remove localStorage - let session handle authentication
+      console.log('Fetching profile data...');
+      
+      // Fetch personal info (no email parameter needed - session handles it)
+      const personalRes = await userServicesApi.get(`/guide/profile`);
+      if (personalRes.status === 200 && personalRes.data) {
+        let profilePicture = personalRes.data.profilePicture;
+        if (personalRes.data.profilePictureBase64) {
+          profilePicture = `data:image/jpeg;base64,${personalRes.data.profilePictureBase64}`;
         }
-      } catch (err) {
-        showErrorToast('Failed to fetch personal info');
+        setGuideData(prev => ({ 
+          ...prev, 
+          ...personalRes.data, 
+          profilePicture, 
+          email: personalRes.data.email // Get email from response instead of localStorage
+        }));
       }
-    };
-    fetchPersonal();
-    // eslint-disable-next-line
-  }, []);
 
-  // Fetch certificates
-  useEffect(() => {
-    const fetchCerts = async () => {
-      try {
-        const res = await userServicesApi.get(`/guide/certificates?email=${guideData.email}`);
-        if (res.status === 200 && Array.isArray(res.data)) {
-          setGuideData(prev => ({ ...prev, certifications: res.data }));
+      // Get email from the profile response for other API calls
+      const userEmail = personalRes.data?.email;
+      
+      if (userEmail) {
+        // Fetch certificates
+        const certsRes = await userServicesApi.get(`/guide/certificates?email=${userEmail}`);
+        if (certsRes.status === 200 && Array.isArray(certsRes.data)) {
+          setGuideData(prev => ({ ...prev, certifications: certsRes.data }));
         }
-      } catch (err) {
-        showErrorToast('Failed to fetch certificates');
-      }
-    };
-    fetchCerts();
-    // eslint-disable-next-line
-  }, []);
 
-  // Fetch languages (already present, but now separated)
-  useEffect(() => {
-    const fetchLanguages = async () => {
-      try {
-        const res = await userServicesApi.get(`/guide/languages?email=${guideData.email}`);
-        if (res.status === 200 && Array.isArray(res.data)) {
+        // Fetch languages
+        const langsRes = await userServicesApi.get(`/guide/languages?email=${userEmail}`);
+        if (langsRes.status === 200 && Array.isArray(langsRes.data)) {
           // Map 'level' to 'proficiency' for UI compatibility
-          const mapped = res.data.map(lang => ({ ...lang, proficiency: lang.level }));
+          const mapped = langsRes.data.map(lang => ({ ...lang, proficiency: lang.level }));
           setGuideData(prev => ({ ...prev, languages: mapped }));
         }
-      } catch (err) {
-        showErrorToast('Failed to fetch languages');
       }
-    };
-    fetchLanguages();
-    // eslint-disable-next-line
-  }, []);
 
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      
+      // Handle authentication errors specifically
+      if (err.response?.status === 401) {
+        showErrorToast('Session expired. Please log in again.');
+        // Redirect to login page
+        // window.location.href = '/login'; // or use your router
+      } else {
+        showErrorToast('Failed to load profile data');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchAllData();
+  // eslint-disable-next-line
+}, []);
   // PUT methods for each section
   const handleSavePersonal = async () => {
     try {
@@ -262,29 +173,29 @@ const GuideProfile = () => {
     }
   };
 
-  const handleSaveCertificates = async () => {
-    try {
-      // Only send backend-required fields for each certificate
-      const certificationsToSend = guideData.certifications.map(cert => ({
-        issuer: cert.issuer,
-        issueDate: cert.issueDate,
-        expiryDate: cert.expiryDate,
-        verificationNumber: cert.verificationNumber,
-        status: cert.status,
-        documentUrl: cert.documentUrl
-      }));
-      const res = await userServicesApi.put('/guide/certificates', {
-        email: guideData.email,
-        certifications: certificationsToSend
-      });
-      if (res.status === 200) {
-        showSuccessToast('Certificates updated');
-        setIsEditingCerts(false);
-      }
-    } catch (err) {
-      showErrorToast('Failed to update certificates');
-    }
-  };
+  // const handleSaveCertificates = async () => {
+  //   try {
+  //     // Only send backend-required fields for each certificate
+  //     const certificationsToSend = guideData.certifications.map(cert => ({
+  //       issuer: cert.issuer,
+  //       issueDate: null,
+  //       expiryDate: cert.expiryDate,
+  //       verificationNumber: cert.verificationNumber,
+  //       status: cert.status,
+  //       documentUrl: cert.documentUrl
+  //     }));
+  //     const res = await userServicesApi.put('/guide/certificates', {
+  //       email: guideData.email,
+  //       certifications: certificationsToSend
+  //     });
+  //     if (res.status === 200) {
+  //       showSuccessToast('Certificates updated');
+  //       setIsEditingCerts(false);
+  //     }
+  //   } catch (err) {
+  //     showErrorToast('Failed to update certificates');
+  //   }
+  // };
 
   // handleSaveLanguages already exists, just update to setIsEditingLangs(false) on success
   const handleSaveLanguages = async (languages) => {
@@ -302,6 +213,14 @@ const GuideProfile = () => {
     } catch (err) {
       showErrorToast('Failed to update languages');
     }
+  };
+
+  // Generate unique certificate ID
+  const generateCertificateId = () => {
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 10000);
+    const guideName = `${guideData.firstName}${guideData.lastName}`.toLowerCase().replace(/\s+/g, '');
+    return `CERT-${guideName}-${timestamp}-${randomNum}`;
   };
 
   // Add certificate upload logic
@@ -323,14 +242,18 @@ const GuideProfile = () => {
       }
       // Use '-' for empty/null fields
       const dashIfEmpty = v => (v === undefined || v === null || v === '' ? '-' : v);
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
       const body = {
-        issuer: dashIfEmpty(cert.issuer),
-        issueDate: dashIfEmpty(cert.issueDate),
-        expiryDate: dashIfEmpty(cert.expiryDate),
-        verificationNumber: dashIfEmpty(cert.verificationNumber),
-        status: dashIfEmpty(cert.status),
-        documentBase64
-      };
+   certificateId: cert.id || null,
+    certificateIssuer: cert.issuer || null,
+    issueDate: cert.issueDate || null,        // Send null instead of "-"
+    expiryDate: cert.expiryDate || null,      // Send null instead of "-"
+    verificationNumber: cert.verificationNumber || null,
+    status: cert.status || null,
+    certificatePictureBase64: documentBase64
+};
+      console.log('Uploading certificate:', body);
       const res = await userServicesApi.post('/guide/certificates', body);
       if (res.status === 200 && res.data) {
         setGuideData(prev => {
@@ -382,103 +305,114 @@ const GuideProfile = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Guide Profile</h1>
-            <p className="text-gray-600 mt-1">Manage your professional guide information</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            {activeTab === 'personal' && !isEditingPersonal && (
-              <button
-                onClick={() => setIsEditingPersonal(true)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-              >
-                <Edit3 className="h-4 w-4 mr-2 inline" />Edit Personal Info
-              </button>
-            )}
-            {activeTab === 'certifications' && !isEditingCerts && (
-              <button
-                onClick={() => setIsEditingCerts(true)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-              >
-                <Edit3 className="h-4 w-4 mr-2 inline" />Edit Certificates
-              </button>
-            )}
-            {activeTab === 'languages' && !isEditingLangs && (
-              <button
-                onClick={() => setIsEditingLangs(true)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-              >
-                <Edit3 className="h-4 w-4 mr-2 inline" />Edit Languages
-              </button>
-            )}
+      {/* Loading Screen */}
+      {isLoading ? (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile...</h2>
+            <p className="text-gray-600">Please wait while we fetch your information</p>
           </div>
         </div>
-      </div>
-
-      {/* Profile Summary Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="flex items-center space-x-6">
-          <div className="relative">
-            <img
-              src={guideData.profilePicture}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-            />
-            {isEditingPersonal && (
-              <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
-                <Camera className="h-4 w-4" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      setProfilePictureFile(file);
-                      setGuideData(prev => ({
-                        ...prev,
-                        profilePicture: URL.createObjectURL(file)
-                      }));
-                    }
-                  }}
-                />
-              </label>
-            )}
-          </div>
-          
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {guideData.firstName} {guideData.lastName}
-            </h2>
-            <p className="text-gray-600">{guideData.email}</p>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                <span className="font-medium">{guideData.rating}</span>
-                <span className="text-gray-500 text-sm ml-1">({guideData.totalReviews} reviews)</span>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Guide Profile</h1>
+                <p className="text-gray-600 mt-1">Manage your professional guide information</p>
               </div>
-              <div className="flex items-center text-sm text-gray-500">
-                <MapPin className="h-4 w-4 mr-1" />
-                {guideData.totalTours} tours completed
-              </div>
-              <div className="flex items-center text-sm text-gray-500">
-                <Calendar className="h-4 w-4 mr-1" />
-                Member since {new Date(guideData.memberSince).getFullYear()}
+              <div className="flex items-center space-x-3">
+                {activeTab === 'personal' && !isEditingPersonal && (
+                  <button
+                    onClick={() => setIsEditingPersonal(true)}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2 inline" />Edit Personal Info
+                  </button>
+                )}
+                {activeTab === 'certifications' && !isEditingCerts && (
+                  <button
+                    onClick={() => setIsEditingCerts(true)}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2 inline" />Edit Certificates
+                  </button>
+                )}
+                {activeTab === 'languages' && !isEditingLangs && (
+                  <button
+                    onClick={() => setIsEditingLangs(true)}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2 inline" />Edit Languages
+                  </button>
+                )}
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              guideData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-            }`}>
-              {guideData.status === 'active' ? 'Active Guide' : 'Inactive'}
-            </span>
+
+          {/* Profile Summary Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <img
+                  src={guideData.profilePicture || '/default-avatar.png'}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+                {isEditingPersonal && (
+                  <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
+                    <Camera className="h-4 w-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setProfilePictureFile(file);
+                          setGuideData(prev => ({
+                            ...prev,
+                            profilePicture: URL.createObjectURL(file)
+                          }));
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+              
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {guideData.firstName} {guideData.lastName}
+                </h2>
+                <p className="text-gray-600">{guideData.email}</p>
+                <div className="flex items-center space-x-4 mt-2">
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                    <span className="font-medium">{guideData.rating || 0}</span>
+                    <span className="text-gray-500 text-sm ml-1">({guideData.totalReviews || 0} reviews)</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    {guideData.totalTours || 0} tours completed
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Member since {guideData.memberSince ? new Date(guideData.memberSince).getFullYear() : 'N/A'}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  guideData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {guideData.status === 'active' ? 'Active Guide' : 'Inactive'}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -666,7 +600,7 @@ const GuideProfile = () => {
                       }
                     }
                   }
-                  handleSaveCertificates(); // Always PUT after POSTs
+                  // handleSaveCertificates(); // Always PUT after POSTs
                   setIsEditingCerts(false);
                 }}
               >
@@ -847,6 +781,8 @@ const GuideProfile = () => {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
