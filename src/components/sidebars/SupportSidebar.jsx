@@ -14,13 +14,11 @@ import {
   HeartIcon,
   StarIcon,
   BellIcon,
-
-} from '@heroicons/react/24/outline';
-import { auth } from '../../firebase';
-import { clearUserData } from '../../utils/userStorage';
-import islandHopIcon from '../../assets/islandHopIcon.png';
-import islandHopLogo from '../../assets/IslandHop.png';
-
+} from "@heroicons/react/24/outline";
+import { auth } from "../../firebase";
+import { clearUserData } from "../../utils/userStorage";
+import islandHopIcon from "../../assets/islandHopIcon.png";
+import islandHopLogo from "../../assets/IslandHop.png";
 
 const SupportSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
@@ -61,12 +59,12 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       icon: ChatBubbleLeftRightIcon,
       description: "Live Support",
     },
-    { 
-          name: 'Communications', 
-          path: '/support/communications', 
-          icon: ChatBubbleLeftRightIcon,
-          description: 'Chat with System Admin & Support Agents'
-  },
+    {
+      name: "Communications",
+      path: "/support/communications",
+      icon: ChatBubbleLeftRightIcon,
+      description: "Chat with System Admin & Support Agents",
+    },
     {
       name: "Resolve Complaints",
       path: "/support/resolve-complaint",
@@ -78,12 +76,6 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       path: "/support/escalate-issue",
       icon: ShieldExclamationIcon,
       description: "Priority Escalation",
-    },
-    {
-      name: "Refunds",
-      path: "/support/refund-compensation",
-      icon: CurrencyDollarIcon,
-      description: "Process Refunds",
     },
     {
       name: "Lost Items",
@@ -133,16 +125,16 @@ const SupportSidebar = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-secondary-700 lg:hidden">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-white rounded-lg shadow-sm">
-              <img 
-                src={islandHopIcon} 
-                alt="IslandHop Icon" 
+              <img
+                src={islandHopIcon}
+                alt="IslandHop Icon"
                 className="h-6 w-6 object-contain"
               />
             </div>
             <div>
-              <img 
-                src={islandHopLogo} 
-                alt="IslandHop Logo" 
+              <img
+                src={islandHopLogo}
+                alt="IslandHop Logo"
                 className="h-6 object-contain"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -174,16 +166,16 @@ const SupportSidebar = ({ isOpen, onClose }) => {
         <div className="hidden lg:flex items-center px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-white rounded-lg shadow-lg">
-              <img 
-                src={islandHopIcon} 
-                alt="IslandHop Icon" 
+              <img
+                src={islandHopIcon}
+                alt="IslandHop Icon"
                 className="h-8 w-8 object-contain"
               />
             </div>
             <div>
-              <img 
-                src={islandHopLogo} 
-                alt="IslandHop Logo" 
+              <img
+                src={islandHopLogo}
+                alt="IslandHop Logo"
                 className="h-6 object-contain"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -206,10 +198,8 @@ const SupportSidebar = ({ isOpen, onClose }) => {
                 onClick={onClose}
                 className={`group flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
-
                     ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-800 hover:text-primary-600 dark:hover:text-primary-400 hover:shadow-md"
-
                 }`}
               >
                 <div
