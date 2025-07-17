@@ -491,7 +491,7 @@ const LandingPage = () => {
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 
           muted 
-          loop
+          loop w
           playsInline
           preload="auto"
           onLoadedData={(e) => {
