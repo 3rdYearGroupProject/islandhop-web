@@ -72,12 +72,6 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Handle Complaints",
     },
     {
-      name: "Escalate Issues",
-      path: "/support/escalate-issue",
-      icon: ShieldExclamationIcon,
-      description: "Priority Escalation",
-    },
-    {
       name: "Lost Items",
       path: "/support/lost-item-tracker",
       icon: ArchiveBoxXMarkIcon,

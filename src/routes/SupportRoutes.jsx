@@ -8,7 +8,6 @@ import ViewTickets from "../pages/support/ViewTickets";
 import Reviews from "../pages/support/Reviews";
 import ChatEmailSupport from "../pages/support/ChatEmailSupport";
 import ResolveComplaint from "../pages/support/ResolveComplaint";
-import EscalateIssue from "../pages/support/EscalateIssue";
 import LostItemTracker from "../pages/support/LostItemTracker";
 import PanicAlerts from "../pages/support/PanicAlerts";
 import SupportProfile from "../pages/support/SupportProfile";
@@ -25,7 +24,6 @@ const SupportRoutes = () => {
         <Route path="chat-email" element={<ChatEmailSupport />} />
         <Route path="communications" element={<Communications />} />
         <Route path="resolve-complaint" element={<ResolveComplaint />} />
-        <Route path="escalate-issue" element={<EscalateIssue />} />
         <Route path="lost-item-tracker" element={<LostItemTracker />} />
         <Route path="panic-alerts" element={<PanicAlerts />} />
         <Route path="profile" element={<SupportProfile />} />
