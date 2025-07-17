@@ -199,11 +199,7 @@ const ProfileDetails = () => {
           </div>
         )}
       </div>
-      {/* Firebase Auth Token (Development Only) */}
-      <div className="mt-8 p-4 bg-gray-100 dark:bg-secondary-800 rounded-xl text-xs text-gray-700 dark:text-gray-300 break-all">
-        <span className="font-semibold text-primary-600 dark:text-primary-400">Firebase Auth Token (Dev):</span>
-        <div className="mt-2 select-all">{authToken || 'Loading token...'}</div>
-      </div>
+     
     </div>
   );
 };
