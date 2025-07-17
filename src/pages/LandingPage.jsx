@@ -44,6 +44,12 @@ const iconicPlacesData = [
     reviewCount: 1500, 
     price: '$45', 
     image: sigiriyaImg,
+    additionalImages: [
+      sigiriyaImg,
+      galleFortImg,
+      teaPlantationsImg,
+      wildlifeImg
+    ],
     description: 'Rising dramatically from the central plains, Sigiriya is an ancient rock fortress built by King Kashyapa in the 5th century. This UNESCO World Heritage site features stunning frescoes, mirror walls, and the famous Lion Gate. The climb to the summit rewards visitors with breathtaking panoramic views and the ruins of a royal palace.',
     highlights: ['UNESCO World Heritage Site', 'Ancient frescoes and mirror wall', 'Royal palace ruins', 'Panoramic views', '5th century architecture'],
     duration: '4-5 hours',
@@ -55,6 +61,12 @@ const iconicPlacesData = [
     reviewCount: 1200, 
     price: '$25', 
     image: templesImg,
+    additionalImages: [
+      templesImg,
+      sigiriyaImg,
+      galleFortImg,
+      teaPlantationsImg
+    ],
     description: 'Sri Dalada Maligawa, or the Temple of the Sacred Tooth Relic, is one of the most sacred Buddhist temples in the world. Located in the royal palace complex of Kandy, it houses the tooth relic of Lord Buddha. The temple features intricate architecture, beautiful paintings, and hosts the famous Esala Perahera festival.',
     highlights: ['Sacred tooth relic of Buddha', 'Traditional Kandyan architecture', 'Royal palace complex', 'Esala Perahera festival venue', 'Daily ritual ceremonies'],
     duration: '2-3 hours',
@@ -66,6 +78,12 @@ const iconicPlacesData = [
     reviewCount: 980, 
     price: '$35', 
     image: galleFortImg,
+    additionalImages: [
+      galleFortImg,
+      sigiriyaImg,
+      templesImg,
+      bestBeachesImg
+    ],
     description: 'Built by the Portuguese in 1588 and later fortified by the Dutch, Galle Fort is a stunning example of European colonial architecture in South Asia. This UNESCO World Heritage site features cobblestone streets, colonial buildings, ramparts with ocean views, and a vibrant community of shops, cafes, and galleries.',
     highlights: ['UNESCO World Heritage Site', 'Portuguese and Dutch colonial architecture', 'Ocean-facing ramparts', 'Art galleries and boutique shops', 'Lighthouse and clock tower'],
     duration: '3-4 hours',
@@ -77,6 +95,12 @@ const iconicPlacesData = [
     reviewCount: 750, 
     price: '$20', 
     image: hikingImg,
+    additionalImages: [
+      hikingImg,
+      teaPlantationsImg,
+      templesImg,
+      sigiriyaImg
+    ],
     description: 'The Nine Arches Bridge, also known as the Bridge in the Sky, is an iconic railway bridge built during British colonial era. Surrounded by lush green tea plantations and hills, this architectural marvel offers spectacular photo opportunities, especially when trains cross the bridge.',
     highlights: ['Colonial era railway bridge', 'Surrounded by tea plantations', 'Train crossing photo opportunities', 'Hiking trails nearby', 'Panoramic hill country views'],
     duration: '2-3 hours',
@@ -88,6 +112,12 @@ const iconicPlacesData = [
     reviewCount: 650, 
     price: '$80', 
     image: wildlifeImg,
+    additionalImages: [
+      wildlifeImg,
+      hikingImg,
+      templesImg,
+      galleFortImg
+    ],
     description: 'Sri Lanka\'s most famous national park, Yala is renowned for having one of the highest leopard densities in the world. Spanning diverse ecosystems from scrublands to lagoons, the park is home to elephants, sloth bears, crocodiles, and over 200 bird species.',
     highlights: ['Highest leopard density globally', 'Asian elephants and sloth bears', '200+ bird species', 'Diverse ecosystems', 'Ancient archaeological sites'],
     duration: 'Full day safari',
@@ -99,6 +129,12 @@ const iconicPlacesData = [
     reviewCount: 520, 
     price: '$30', 
     image: templesImg,
+    additionalImages: [
+      templesImg,
+      sigiriyaImg,
+      wildlifeImg,
+      hikingImg
+    ],
     description: 'The Dambulla Cave Temple, also known as the Golden Temple, is the largest and best-preserved cave temple complex in Sri Lanka. Dating back to the 1st century BC, it contains over 150 Buddha statues and intricate murals that cover 2,100 square meters of painted walls and ceilings.',
     highlights: ['Largest cave temple complex', '150+ Buddha statues', '2,100 sq meters of murals', '1st century BC origins', 'UNESCO World Heritage Site'],
     duration: '2-3 hours',
@@ -182,10 +218,33 @@ const PlaceModal = ({ place, isOpen, onClose }) => {
   
   if (!isOpen || !place) return null;
 
+  // Sample reviews for demonstration
+  const sampleReviews = [
+    {
+      name: "Sarah M.",
+      rating: 5,
+      comment: "Absolutely breathtaking! The views were incredible and our guide was very knowledgeable.",
+      date: "2 weeks ago"
+    },
+    {
+      name: "John D.",
+      rating: 5,
+      comment: "A must-visit destination. The history and beauty of this place is unmatched.",
+      date: "1 month ago"
+    },
+    {
+      name: "Maria L.",
+      rating: 4,
+      comment: "Beautiful place with rich culture. Would definitely recommend to anyone visiting Sri Lanka.",
+      date: "3 weeks ago"
+    }
+  ];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[10000]">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[10000]">
         <div className="relative">
+          {/* Main image */}
           <img 
             src={place.image} 
             alt={place.title}
@@ -198,58 +257,94 @@ const PlaceModal = ({ place, isOpen, onClose }) => {
             <X className="h-5 w-5 text-gray-600" />
           </button>
         </div>
-        
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">{place.title}</h2>
-            <div className="text-2xl font-bold text-primary-600">{place.price}</div>
-          </div>
-          
-          <div className="flex items-center mb-4">
-            <div className="flex text-yellow-400 mr-2">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
+
+        {/* Additional images gallery */}
+        {place.additionalImages && place.additionalImages.length > 0 && (
+          <div className="p-4 border-b">
+            <div className="flex gap-2 overflow-x-auto">
+              {place.additionalImages.map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  alt={`${place.title} ${index + 1}`}
+                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                />
               ))}
             </div>
-            <span className="text-gray-600">{place.rating} ({place.reviewCount} reviews)</span>
+          </div>
+        )}
+        
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
+          <div className="mb-4">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{place.title}</h2>
+            <div className="flex items-center">
+              <div className="flex text-yellow-400 mr-2">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className={`w-5 h-5 ${i < Math.floor(place.rating) ? 'fill-current' : 'text-gray-300'}`} viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-lg font-semibold text-gray-700">{place.rating}</span>
+              <span className="text-gray-600 ml-2">({place.reviewCount} reviews)</span>
+            </div>
           </div>
           
-          <p className="text-gray-700 mb-6 leading-relaxed">{place.description}</p>
+          <p className="text-gray-700 mb-6 leading-relaxed text-lg">{place.description}</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Highlights</h3>
-              <ul className="space-y-2">
+              <h3 className="font-semibold text-gray-900 mb-3 text-xl">Highlights</h3>
+              <ul className="space-y-3">
                 {place.highlights.map((highlight, index) => (
                   <li key={index} className="flex items-start">
                     <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                    <span className="text-gray-600 text-sm">{highlight}</span>
+                    <span className="text-gray-600">{highlight}</span>
                   </li>
                 ))}
               </ul>
             </div>
             
             <div>
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-900 mb-1">Duration</h4>
-                <p className="text-gray-600 text-sm">{place.duration}</p>
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900 mb-1">Best Time to Visit</h4>
-                <p className="text-gray-600 text-sm">{place.bestTime}</p>
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2 text-lg">Visit Information</h4>
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium text-gray-700">Duration: </span>
+                    <span className="text-gray-600">{place.duration}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Best Time: </span>
+                    <span className="text-gray-600">{place.bestTime}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="flex gap-4">
-            <button className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors">
-              Book Now
-            </button>
-            <button className="flex-1 border-2 border-primary-600 text-primary-600 py-3 px-6 rounded-lg font-semibold hover:bg-primary-600 hover:text-white transition-colors">
-              Learn More
-            </button>
+
+          {/* Reviews Section */}
+          <div className="border-t pt-6">
+            <h3 className="font-semibold text-gray-900 mb-4 text-xl">Recent Reviews</h3>
+            <div className="space-y-4">
+              {sampleReviews.map((review, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <span className="font-medium text-gray-900">{review.name}</span>
+                      <div className="flex text-yellow-400 ml-2">
+                        {[...Array(review.rating)].map((_, i) => (
+                          <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-500">{review.date}</span>
+                  </div>
+                  <p className="text-gray-700">{review.comment}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
