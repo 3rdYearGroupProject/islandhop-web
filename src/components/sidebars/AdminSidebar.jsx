@@ -63,13 +63,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       name: "System Settings",
       path: "/admin/settings",
       icon: CogIcon,
-      description: "Configuration",
-    },
-    {
-      name: "AI Settings",
-      path: "/admin/ai-settings",
-      icon: WrenchScrewdriverIcon,
-      description: "AI Configuration",
+      description: "Configuration & AI",
     },
     {
       name: "System Data",
@@ -253,8 +247,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-       
-
         {/* System Status */}
         <div className="px-4 py-4 border-t border-gray-200 dark:border-secondary-700">
           <div className="bg-gray-50 dark:bg-secondary-800 rounded-lg p-3">
@@ -336,15 +328,15 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             )}
           </div>
 
-           {/* Quick Actions */}
-        <div className=" py-4 border-t border-gray-200 dark:border-secondary-700">
-          <div className="space-y-2">
-            <button className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-secondary-800 hover:bg-gray-200 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors duration-200">
-              <BellIcon className="h-4 w-4 mr-2" />
-              Notifications
-            </button>
+          {/* Quick Actions */}
+          <div className=" py-4 border-t border-gray-200 dark:border-secondary-700">
+            <div className="space-y-2">
+              <button className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-secondary-800 hover:bg-gray-200 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors duration-200">
+                <BellIcon className="h-4 w-4 mr-2" />
+                Notifications
+              </button>
+            </div>
           </div>
-        </div>
 
           <button
             onClick={handleSignOut}
