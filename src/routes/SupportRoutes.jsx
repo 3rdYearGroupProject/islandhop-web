@@ -14,7 +14,7 @@ import LostItemTracker from "../pages/support/LostItemTracker";
 import PanicAlerts from "../pages/support/PanicAlerts";
 import SupportReports from "../pages/support/SupportReports";
 import SupportProfile from "../pages/support/SupportProfile";
-import GuideVerification from "../pages/support/GuideVerification";
+import Verification from "../pages/support/Verification";
 import Communications from "../pages/admin/Communications";
 
 const SupportRoutes = () => {
@@ -33,7 +33,7 @@ const SupportRoutes = () => {
         <Route path="lost-item-tracker" element={<LostItemTracker />} />
         <Route path="panic-alerts" element={<PanicAlerts />} />
         <Route path="reports" element={<SupportReports />} />
-        <Route path="guide-verification" element={<GuideVerification />} />
+        <Route path="verification" element={<Verification />} />
         <Route path="profile" element={<SupportProfile />} />
       </Routes>
     </SupportDashboardLayout>

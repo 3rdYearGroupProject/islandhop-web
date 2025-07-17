@@ -92,8 +92,8 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Support Analytics",
     },
     {
-      name: "Guide Verification",
-      path: "/support/guide-verification",
+      name: "Verification",
+      path: "/support/verification",
       icon: CheckBadgeIcon,
       description: "Verify Guide Documents",
     },
