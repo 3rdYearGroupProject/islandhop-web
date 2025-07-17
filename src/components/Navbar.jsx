@@ -22,7 +22,7 @@ const Navbar = () => {
   const [userMenuAnimation, setUserMenuAnimation] = useState('');
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  const [currentCurrency, setCurrentCurrency] = useState('USD');
+  const [currentCurrency, setCurrentCurrency] = useState('USD'); // Default currency
   const [currentUnits, setCurrentUnits] = useState('Imperial');
   const translateRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -299,6 +299,27 @@ const Navbar = () => {
     fetchProfile();
   }, [tempUser]);
 
+  // Fetch settings from backend on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const auth = getAuth();
+        const email = auth.currentUser?.email || tempUser?.email || '';
+        if (!email) return;
+
+        const res = await api.get('/tourist/settings', { params: { email } });
+        const settingsData = res.data;
+        if (settingsData) {
+          setCurrentCurrency(settingsData.currency || 'USD'); // Update currency from backend
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings:', err);
+      }
+    };
+
+    fetchSettings();
+  }, [tempUser]);
+
   return (
     <nav className="fixed top-4 left-4 right-4 z-50 bg-white/95 shadow-lg rounded-full h-18 flex items-center px-6 border border-gray-200">
       {/* Blur overlay when profile popup is open */}
@@ -344,6 +365,7 @@ const Navbar = () => {
         
         {/* User/Currency/Language - Right Edge */}
         <div className="flex items-center space-x-4">
+          {/* Display current currency */}
           <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center">
             {currentCurrency}
           </button>
@@ -428,7 +450,7 @@ const Navbar = () => {
         show={showSettingsPopup}
         onClose={() => setShowSettingsPopup(false)}
         currentCurrency={currentCurrency}
-        setCurrentCurrency={setCurrentCurrency}
+        setCurrentCurrency={setCurrentCurrency} // Pass state updater to SettingsModal
         currentUnits={currentUnits}
         setCurrentUnits={setCurrentUnits}
       />
