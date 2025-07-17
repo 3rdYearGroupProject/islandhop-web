@@ -21,6 +21,8 @@ const Verification = () => {
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [showVerificationForm, setShowVerificationForm] = useState(false);
   const [filter, setFilter] = useState("pending"); // pending, verified, rejected
+  const [userType, setUserType] = useState("all"); // New state for user type
+  const [certificateModal, setCertificateModal] = useState({ open: false, image: null, mimeType: null });
 
   // Mock data for demonstration
   const mockGuides = [
@@ -103,6 +105,137 @@ const Verification = () => {
       console.error("Error fetching guides:", err);
       setError("Failed to load guides. Using sample data.");
       setGuides(mockGuides);
+      setLoading(false);
+    }
+  };
+
+  const fetchGuidesByType = async (type) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setUserType(type);
+
+      if (type === "guide") {
+        console.log("Fetching guides from API...");
+        // Map frontend status to backend status
+        let backendStatus = filter.toUpperCase();
+        if (backendStatus === "VERIFIED") backendStatus = "APPROVED";
+        if (backendStatus === "ALL") backendStatus = null;
+
+        const response = await axios.get("http://localhost:8060/guides/certificates", {
+          params: backendStatus ? { status: backendStatus } : {}
+        });
+        console.log("Fetching guides with status:", response.data);
+
+        // Map backend response to frontend format
+        const mappedData = response.data.map(cert => {
+          let certificateUrl = "/documents/placeholder.pdf";
+          let mimeType = "application/pdf";
+          if (cert.certificate_picture) {
+            if (typeof cert.certificate_picture === "string" && cert.certificate_picture.startsWith("\\x")) {
+              // Convert hex string to bytes
+              const hex = cert.certificate_picture.slice(2);
+              const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+              // Detect file type
+              if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+                mimeType = "image/jpeg";
+              } else if (
+                bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+              ) {
+                mimeType = "image/png";
+              } else if (
+                bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46
+              ) {
+                mimeType = "application/pdf";
+              }
+              const blob = new Blob([bytes], { type: mimeType });
+              certificateUrl = URL.createObjectURL(blob);
+            } else if (
+              cert.certificate_picture.data &&
+              typeof cert.certificate_picture.data === "string" &&
+              /^[A-Za-z0-9+/=]+$/.test(cert.certificate_picture.data)
+            ) {
+              // If it's already a base64 string in .data, decode to bytes and create a Blob URL
+              try {
+                const base64 = cert.certificate_picture.data;
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                // Try to detect PDF or image
+                if (byteArray[0] === 0x25 && byteArray[1] === 0x50 && byteArray[2] === 0x44 && byteArray[3] === 0x46) {
+                  mimeType = "application/pdf";
+                } else if (byteArray[0] === 0xff && byteArray[1] === 0xd8 && byteArray[2] === 0xff) {
+                  mimeType = "image/jpeg";
+                } else if (byteArray[0] === 0x89 && byteArray[1] === 0x50 && byteArray[2] === 0x4e && byteArray[3] === 0x47) {
+                  mimeType = "image/png";
+                }
+                const blob = new Blob([byteArray], { type: mimeType });
+                certificateUrl = URL.createObjectURL(blob);
+              } catch (e) {
+                console.error('Invalid base64 certificate_picture.data:', cert.certificate_picture.data, e);
+              }
+            } else if (
+              typeof cert.certificate_picture === "string" &&
+              /^[A-Za-z0-9+/=\r\n]+$/.test(cert.certificate_picture) &&
+              cert.certificate_picture.length > 100
+            ) {
+              // Handle plain base64 string (PDF or image)
+              try {
+                // Remove any whitespace/newlines
+                const base64 = cert.certificate_picture.replace(/\s/g, "");
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                // Try to detect PDF or image
+                if (byteArray[0] === 0x25 && byteArray[1] === 0x50 && byteArray[2] === 0x44 && byteArray[3] === 0x46) {
+                  mimeType = "application/pdf";
+                } else if (byteArray[0] === 0xff && byteArray[1] === 0xd8 && byteArray[2] === 0xff) {
+                  mimeType = "image/jpeg";
+                } else if (byteArray[0] === 0x89 && byteArray[1] === 0x50 && byteArray[2] === 0x4e && byteArray[3] === 0x47) {
+                  mimeType = "image/png";
+                }
+                const blob = new Blob([byteArray], { type: mimeType });
+                certificateUrl = URL.createObjectURL(blob);
+              } catch (e) {
+                console.error('Invalid base64 certificate_picture:', cert.certificate_picture, e);
+              }
+            }
+          }
+          return {
+            id: cert.id,
+            name: cert.email, // Using email as name for now
+            phone: "", // Not available in backend
+            licenseNumber: cert.verification_number,
+            status: cert.status.toLowerCase() === "approved" ? "verified" : cert.status.toLowerCase(),
+            submittedAt: cert.created_at,
+            verifiedAt: cert.updated_at,
+            documents: {
+              certificate: { url: certificateUrl, mimeType }
+            },
+            type: "guide",
+            certificateIssuer: cert.certificate_issuer,
+            issueDate: cert.issue_date,
+            expiryDate: cert.expiry_date
+          };
+        });
+        console.log("Mapped guides:", mappedData);
+        setGuides(mappedData);
+      } else {
+        // Using mock data for drivers for now
+        const filteredGuides = mockGuides.filter((g) => g.type === type);
+        setGuides(filteredGuides);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching guides by type:", err);
+      setError("Failed to load guides. Please try again later.");
       setLoading(false);
     }
   };
@@ -227,16 +360,24 @@ const Verification = () => {
               Review and verify documents
             </p>
           </div>
-          <button
-            onClick={fetchGuides}
-            disabled={loading}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => fetchGuidesByType("guide")}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                userType === "guide" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Guide Requests
+            </button>
+            <button
+              onClick={() => fetchGuidesByType("driver")}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                userType === "driver" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Driver Requests
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -303,7 +444,12 @@ const Verification = () => {
           {["all", "pending", "verified", "rejected"].map((status) => (
             <button
               key={status}
-              onClick={() => setFilter(status)}
+              onClick={() => {
+                setFilter(status);
+                if (userType === "guide") {
+                  fetchGuidesByType("guide");
+                }
+              }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
                 filter === status
                   ? "bg-blue-600 text-white"
@@ -340,7 +486,7 @@ const Verification = () => {
       {!loading && (
         <div className="space-y-4">
           {filteredGuides.map((guide) => (
-            Object.entries(guide.documents).map(([type, url]) => (
+            Object.entries(guide.documents).map(([type, docObj]) => (
               <div
                 key={`${guide.id}-${type}`}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
@@ -379,7 +525,7 @@ const Verification = () => {
                 <div className="mb-4">
                   <h4 className="font-medium text-gray-900 mb-2">Document</h4>
                   <button
-                    onClick={() => window.open(url, "_blank")}
+                    onClick={() => setCertificateModal({ open: true, image: docObj.url, mimeType: docObj.mimeType })}
                     className="flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors duration-200"
                   >
                     <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
@@ -470,6 +616,56 @@ const Verification = () => {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Certificate Modal */}
+      {certificateModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setCertificateModal({ open: false, image: null, mimeType: null })}
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Certificate Preview</h2>
+            {certificateModal.image ? (
+              <img
+                src={certificateModal.image}
+                alt="Certificate"
+                className="w-full h-auto rounded border"
+                onError={e => {
+                  console.log('Certificate image failed to load:', certificateModal.image);
+                  // If image fails to load, try to display as PDF
+                  e.target.style.display = 'none';
+                  const pdfFrame = document.getElementById('pdf-frame');
+                  if (pdfFrame) pdfFrame.style.display = 'block';
+                }}
+                onLoad={() => {
+                  console.log('Certificate image loaded successfully:', certificateModal.image);
+                }}
+              />
+            ) : (
+              <div className="text-gray-500">No certificate available.</div>
+            )}
+            {/* PDF fallback */}
+            {certificateModal.image && (
+              <iframe
+                id="pdf-frame"
+                src={certificateModal.image}
+                title="Certificate PDF"
+                className="w-full h-96 border rounded mt-2"
+                style={{ display: 'none' }}
+                onLoad={() => {
+                  console.log('PDF iframe loaded:', certificateModal.image);
+                }}
+                onError={() => {
+                  console.log('PDF iframe failed to load:', certificateModal.image);
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>
