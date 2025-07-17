@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   HomeIcon,
@@ -23,6 +23,16 @@ import islandHopLogo from '../../assets/IslandHop.png';
 const AdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleViewProfile = () => {
+    setIsDropdownOpen(false);
+    navigate('/admin/profile');
+  };
 
   const adminMenuItems = [
     { 
@@ -251,6 +261,43 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-200 dark:border-secondary-700">
+          {/* Admin Profile Dropdown */}
+          <div className="relative mb-3">
+            <button
+              onClick={toggleDropdown}
+              className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors"
+            >
+              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold">A</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Admin</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">System Administrator</p>
+              </div>
+              <svg 
+                className={`w-4 h-4 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-gray-200 dark:border-secondary-700 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={handleViewProfile}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700"
+                  >
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleSignOut}
             className="w-full flex items-center justify-center px-4 py-2 mb-2 bg-danger-100 dark:bg-danger-900/20 text-danger-700 dark:text-danger-400 rounded-lg font-semibold text-sm hover:bg-danger-200 dark:hover:bg-danger-800 transition-colors duration-200"

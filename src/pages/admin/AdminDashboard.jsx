@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   UsersIcon,
@@ -14,28 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = ({ onPageChange }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
-  const handleViewProfile = () => {
-    setIsDropdownOpen(false);
-    if (onPageChange) {
-      onPageChange('ProfileDetails');
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      // Add sign out logic here
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   // Dashboard stats data
   const dashboardStats = [
@@ -168,50 +147,13 @@ const AdminDashboard = ({ onPageChange }) => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Admin Dashboard
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Welcome back! Here's what's happening with IslandHop today.
-              </p>
-            </div>
-            
-            {/* Admin Profile Dropdown */}
-            <div className="relative">
-              <button
-                onClick={toggleDropdown}
-                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors"
-              >
-                <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold">A</span>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Admin</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">System Administrator</p>
-                </div>
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-md shadow-lg border border-gray-200 dark:border-secondary-700 z-10">
-                  <div className="py-1">
-                    <button
-                      onClick={handleViewProfile}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700"
-                    >
-                      View Profile
-                    </button>
-                    <button
-                      onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-danger-600 hover:bg-gray-100 dark:hover:bg-secondary-700"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Welcome back! Here's what's happening with IslandHop today.
+            </p>
           </div>
         </div>
 
