@@ -1,5 +1,5 @@
-import React from 'react';
-import { Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ExperienceCard from '../components/ExperienceCard';
@@ -36,32 +36,286 @@ import PoolCta from '../components/landing/PoolCta';
 const placeholder = 'https://placehold.co/400x250';
 const avatar = 'https://placehold.co/64x64';
 
+// Detailed data for iconic places with descriptions
+const iconicPlacesData = [
+  { 
+    title: 'Sigiriya Rock Fortress', 
+    rating: 4.9, 
+    reviewCount: 1500, 
+    price: '$45', 
+    image: sigiriyaImg,
+    description: 'Rising dramatically from the central plains, Sigiriya is an ancient rock fortress built by King Kashyapa in the 5th century. This UNESCO World Heritage site features stunning frescoes, mirror walls, and the famous Lion Gate. The climb to the summit rewards visitors with breathtaking panoramic views and the ruins of a royal palace.',
+    highlights: ['UNESCO World Heritage Site', 'Ancient frescoes and mirror wall', 'Royal palace ruins', 'Panoramic views', '5th century architecture'],
+    duration: '4-5 hours',
+    bestTime: 'Early morning or late afternoon'
+  },
+  { 
+    title: 'Temple of the Tooth (Kandy)', 
+    rating: 4.7, 
+    reviewCount: 1200, 
+    price: '$25', 
+    image: templesImg,
+    description: 'Sri Dalada Maligawa, or the Temple of the Sacred Tooth Relic, is one of the most sacred Buddhist temples in the world. Located in the royal palace complex of Kandy, it houses the tooth relic of Lord Buddha. The temple features intricate architecture, beautiful paintings, and hosts the famous Esala Perahera festival.',
+    highlights: ['Sacred tooth relic of Buddha', 'Traditional Kandyan architecture', 'Royal palace complex', 'Esala Perahera festival venue', 'Daily ritual ceremonies'],
+    duration: '2-3 hours',
+    bestTime: 'Morning or evening for ceremonies'
+  },
+  { 
+    title: 'Galle Fort', 
+    rating: 4.8, 
+    reviewCount: 980, 
+    price: '$35', 
+    image: galleFortImg,
+    description: 'Built by the Portuguese in 1588 and later fortified by the Dutch, Galle Fort is a stunning example of European colonial architecture in South Asia. This UNESCO World Heritage site features cobblestone streets, colonial buildings, ramparts with ocean views, and a vibrant community of shops, cafes, and galleries.',
+    highlights: ['UNESCO World Heritage Site', 'Portuguese and Dutch colonial architecture', 'Ocean-facing ramparts', 'Art galleries and boutique shops', 'Lighthouse and clock tower'],
+    duration: '3-4 hours',
+    bestTime: 'Sunset for best rampart views'
+  },
+  { 
+    title: 'Nine Arches Bridge (Ella)', 
+    rating: 4.6, 
+    reviewCount: 750, 
+    price: '$20', 
+    image: hikingImg,
+    description: 'The Nine Arches Bridge, also known as the Bridge in the Sky, is an iconic railway bridge built during British colonial era. Surrounded by lush green tea plantations and hills, this architectural marvel offers spectacular photo opportunities, especially when trains cross the bridge.',
+    highlights: ['Colonial era railway bridge', 'Surrounded by tea plantations', 'Train crossing photo opportunities', 'Hiking trails nearby', 'Panoramic hill country views'],
+    duration: '2-3 hours',
+    bestTime: 'Morning for train schedules'
+  },
+  { 
+    title: 'Yala National Park', 
+    rating: 4.5, 
+    reviewCount: 650, 
+    price: '$80', 
+    image: wildlifeImg,
+    description: 'Sri Lanka\'s most famous national park, Yala is renowned for having one of the highest leopard densities in the world. Spanning diverse ecosystems from scrublands to lagoons, the park is home to elephants, sloth bears, crocodiles, and over 200 bird species.',
+    highlights: ['Highest leopard density globally', 'Asian elephants and sloth bears', '200+ bird species', 'Diverse ecosystems', 'Ancient archaeological sites'],
+    duration: 'Full day safari',
+    bestTime: 'Early morning or late afternoon'
+  },
+  { 
+    title: 'Dambulla Cave Temple', 
+    rating: 4.4, 
+    reviewCount: 520, 
+    price: '$30', 
+    image: templesImg,
+    description: 'The Dambulla Cave Temple, also known as the Golden Temple, is the largest and best-preserved cave temple complex in Sri Lanka. Dating back to the 1st century BC, it contains over 150 Buddha statues and intricate murals that cover 2,100 square meters of painted walls and ceilings.',
+    highlights: ['Largest cave temple complex', '150+ Buddha statues', '2,100 sq meters of murals', '1st century BC origins', 'UNESCO World Heritage Site'],
+    duration: '2-3 hours',
+    bestTime: 'Morning to avoid crowds'
+  }
+];
+
+// Detailed data for popular activities
+const activitiesData = [
+  {
+    title: 'Zip Lining in Flying Ravana',
+    rating: 4.9,
+    reviewCount: 420,
+    price: '$20',
+    image: require('../assets/activities/ziplining.jpg'),
+    description: 'Experience the thrill of soaring through the air on Sri Lanka\'s longest zip line. Flying Ravana offers breathtaking views of Ella\'s lush landscapes, waterfalls, and tea estates as you zip across valleys at exhilarating speeds.',
+    highlights: ['Longest zip line in Sri Lanka', 'Spectacular valley views', 'Professional safety equipment', 'Multiple zip line stages', 'Photography opportunities'],
+    duration: '2-3 hours',
+    bestTime: 'Morning for best visibility'
+  },
+  {
+    title: 'White Water Rafting in Kitulgala',
+    rating: 4.8,
+    reviewCount: 350,
+    price: '$25',
+    image: require('../assets/activities/rafting.jpg'),
+    description: 'Navigate the rapids of the Kelani River in Kitulgala, famous for being a filming location for "Bridge on the River Kwai." This thrilling adventure takes you through grade 2 and 3 rapids surrounded by tropical rainforest.',
+    highlights: ['Kelani River rapids', 'Grade 2-3 difficulty levels', 'Tropical rainforest setting', 'Professional guides included', 'Safety equipment provided'],
+    duration: '3-4 hours',
+    bestTime: 'Year-round, best after rains'
+  },
+  {
+    title: 'Surfing in Arugam Bay',
+    rating: 4.7,
+    reviewCount: 390,
+    price: '$15',
+    image: require('../assets/activities/surfing.jpg'),
+    description: 'Arugam Bay is Sri Lanka\'s premier surfing destination, offering consistent waves and a laid-back beach culture. Perfect for both beginners and experienced surfers, with surf schools and board rentals readily available.',
+    highlights: ['World-class surf breaks', 'Consistent waves year-round', 'Surf schools for beginners', 'Vibrant beach culture', 'Beachfront accommodation'],
+    duration: 'Half or full day',
+    bestTime: 'April to September'
+  },
+  {
+    title: 'Hot Air Ballooning in Dambulla',
+    rating: 4.8,
+    reviewCount: 210,
+    price: '$120',
+    image: require('../assets/activities/balloning.png'),
+    description: 'Soar above the Cultural Triangle in a hot air balloon, offering bird\'s eye views of ancient temples, lush forests, and rural villages. This peaceful journey provides unforgettable sunrise or sunset experiences.',
+    highlights: ['Aerial views of Cultural Triangle', 'Sunrise/sunset flights', 'Ancient temple views from above', 'Professional pilot guidance', 'Champagne celebration'],
+    duration: '3-4 hours total',
+    bestTime: 'Early morning for sunrise'
+  },
+  {
+    title: 'Scuba Diving in Hikkaduwa',
+    rating: 4.6,
+    reviewCount: 180,
+    price: '$40',
+    image: require('../assets/activities/scubadiving.jpg'),
+    description: 'Explore vibrant coral reefs and diverse marine life in Hikkaduwa\'s protected marine sanctuary. Encounter tropical fish, sea turtles, and colorful corals in crystal-clear waters perfect for diving.',
+    highlights: ['Marine sanctuary protection', 'Vibrant coral reefs', 'Sea turtle encounters', 'Tropical fish diversity', 'PADI certified instructors'],
+    duration: 'Half day',
+    bestTime: 'November to April'
+  },
+  {
+    title: 'Safari at Yala National Park',
+    rating: 4.9,
+    reviewCount: 500,
+    price: '$60',
+    image: require('../assets/activities/safari.jpg'),
+    description: 'Embark on an exciting safari adventure in Yala National Park, home to the highest density of leopards in the world. Spot elephants, sloth bears, crocodiles, and numerous bird species in their natural habitat.',
+    highlights: ['Highest leopard density globally', 'Big game viewing', 'Professional safari guides', 'Multiple park zones', 'Bird watching opportunities'],
+    duration: 'Full day',
+    bestTime: 'Early morning or late afternoon'
+  }
+];
+
+// Modal component for displaying detailed information
+const PlaceModal = ({ place, isOpen, onClose }) => {
+  if (!isOpen || !place) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="relative">
+          <img 
+            src={place.image} 
+            alt={place.title}
+            className="w-full h-64 object-cover rounded-t-lg"
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
+        
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">{place.title}</h2>
+            <div className="text-2xl font-bold text-primary-600">{place.price}</div>
+          </div>
+          
+          <div className="flex items-center mb-4">
+            <div className="flex text-yellow-400 mr-2">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-gray-600">{place.rating} ({place.reviewCount} reviews)</span>
+          </div>
+          
+          <p className="text-gray-700 mb-6 leading-relaxed">{place.description}</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Highlights</h3>
+              <ul className="space-y-2">
+                {place.highlights.map((highlight, index) => (
+                  <li key={index} className="flex items-start">
+                    <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span className="text-gray-600 text-sm">{highlight}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-1">Duration</h4>
+                <p className="text-gray-600 text-sm">{place.duration}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 mb-1">Best Time to Visit</h4>
+                <p className="text-gray-600 text-sm">{place.bestTime}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-4">
+            <button className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors">
+              Book Now
+            </button>
+            <button className="flex-1 border-2 border-primary-600 text-primary-600 py-3 px-6 rounded-lg font-semibold hover:bg-primary-600 hover:text-white transition-colors">
+              Learn More
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Inspiration destinations with images and descriptions (using assets/landing)
 const inspirationDestinations = [
   {
     name: 'Best beaches in Sri Lanka',
     image: bestBeachesImg,
-    description: 'Discover pristine coastlines and crystal waters'
+    description: 'Discover pristine coastlines and crystal waters along Sri Lanka\'s magnificent shores. From the golden sands of Bentota to the turquoise waters of Passikudah, experience some of the world\'s most beautiful beaches with perfect waves for surfing and calm bays for relaxation.',
+    highlights: ['Golden sand beaches', 'Crystal clear waters', 'Perfect surfing conditions', 'Calm swimming bays', 'Beachfront resorts'],
+    duration: 'Multiple days recommended',
+    bestTime: 'Year-round, varies by coast',
+    title: 'Best beaches in Sri Lanka',
+    rating: 4.8,
+    reviewCount: 2500,
+    price: 'From $50/day'
   },
   {
     name: 'Ancient temples and culture',
     image: templesImg,
-    description: 'Explore centuries-old Buddhist heritage'
+    description: 'Explore centuries-old Buddhist heritage through magnificent temples and cultural sites. From the sacred Temple of the Tooth in Kandy to the ancient caves of Dambulla, immerse yourself in Sri Lanka\'s rich spiritual and architectural legacy.',
+    highlights: ['Sacred Buddhist temples', 'Ancient cave complexes', 'Traditional architecture', 'Cultural ceremonies', 'Historical significance'],
+    duration: 'Multiple days for full experience',
+    bestTime: 'Year-round, morning visits preferred',
+    title: 'Ancient temples and culture',
+    rating: 4.9,
+    reviewCount: 1800,
+    price: 'From $25/site'
   },
   {
     name: 'Wildlife safari adventures',
     image: wildlifeImg,
-    description: 'Encounter elephants and leopards in nature'
+    description: 'Encounter elephants and leopards in nature through thrilling safari experiences. Sri Lanka boasts incredible biodiversity with national parks offering sightings of majestic elephants, elusive leopards, sloth bears, and hundreds of bird species.',
+    highlights: ['Leopard sightings', 'Elephant herds', 'Diverse bird species', 'Natural habitats', 'Photography opportunities'],
+    duration: 'Full day safaris',
+    bestTime: 'Early morning and late afternoon',
+    title: 'Wildlife safari adventures',
+    rating: 4.7,
+    reviewCount: 1200,
+    price: 'From $60/safari'
   },
   {
     name: 'Mountain hiking trails',
     image: hikingImg,
-    description: 'Trek through misty peaks and tea estates'
+    description: 'Trek through misty peaks and tea estates in Sri Lanka\'s scenic hill country. Experience breathtaking mountain vistas, cool climate, and lush tea plantations while hiking through some of the most beautiful landscapes in South Asia.',
+    highlights: ['Mountain vistas', 'Tea plantation walks', 'Cool climate', 'Scenic trails', 'Hill country culture'],
+    duration: '2-5 hours per hike',
+    bestTime: 'Early morning for clear views',
+    title: 'Mountain hiking trails',
+    rating: 4.6,
+    reviewCount: 950,
+    price: 'From $30/hike'
   },
   {
     name: 'Local food experiences',
     image: foodImg,
-    description: 'Taste authentic Sri Lankan street food'
+    description: 'Taste authentic Sri Lankan street food and traditional cuisine. From spicy curry dishes to sweet treats like kokis and kavum, discover the rich flavors and aromatic spices that make Sri Lankan cuisine unique and unforgettable.',
+    highlights: ['Traditional curry dishes', 'Street food tours', 'Spice experiences', 'Cooking classes', 'Local markets'],
+    duration: '2-4 hours per experience',
+    bestTime: 'Meal times for best variety',
+    title: 'Local food experiences',
+    rating: 4.8,
+    reviewCount: 1400,
+    price: 'From $20/tour'
   }
 ];
 
@@ -115,6 +369,18 @@ const WhyChooseIslandHop = () => (
 );
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openModal = (place) => {
+    setSelectedPlace(place);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedPlace(null);
+    setIsModalOpen(false);
+  };
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar - Floating over all content */}
@@ -262,7 +528,7 @@ const LandingPage = () => {
       <InterestCards />
 
       {/* Main Showcase: Experiences Near Colombo */}
-      <ColomboExperiences />
+      <ColomboExperiences onExperienceClick={openModal} />
 
       {/* AI Trip Creation CTA Section */}
       <div className="mb-12">
@@ -274,14 +540,7 @@ const LandingPage = () => {
         <div className="content-container">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Must-Visit Iconic Places</h2>
           <CardGrid cardType="scroll" maxCards={6}>
-            {[
-              { title: 'Sigiriya Rock Fortress', rating: 4.9, reviewCount: 1500, price: '$45', image: sigiriyaImg },
-              { title: 'Temple of the Tooth (Kandy)', rating: 4.7, reviewCount: 1200, price: '$25', image: templesImg },
-              { title: 'Galle Fort', rating: 4.8, reviewCount: 980, price: '$35', image: galleFortImg },
-              { title: 'Nine Arches Bridge (Ella)', rating: 4.6, reviewCount: 750, price: '$20', image: hikingImg },
-              { title: 'Yala National Park', rating: 4.5, reviewCount: 650, price: '$80', image: wildlifeImg },
-              { title: 'Dambulla Cave Temple', rating: 4.4, reviewCount: 520, price: '$30', image: templesImg }
-            ].map((place, i) => (
+            {iconicPlacesData.map((place, i) => (
               <ExploreCard
                 key={i}
                 image={place.image}
@@ -290,7 +549,7 @@ const LandingPage = () => {
                 reviewCount={place.reviewCount}
                 price={place.price}
                 className="flex-shrink-0"
-                onClick={() => navigate(`/place/${place.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`, { state: place })}
+                onClick={() => openModal(place)}
               />
             ))}
           </CardGrid>
@@ -307,7 +566,7 @@ const LandingPage = () => {
                 <DestinationCard
                   destination={inspiration}
                   imageUrl={inspiration.image}
-                  onClick={(dest) => console.log('Clicked inspiration:', dest.name)}
+                  onClick={() => openModal(inspiration)}
                   className="h-48 md:h-56"
                 />
               </div>
@@ -326,50 +585,7 @@ const LandingPage = () => {
         <div className="content-container">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Popular Activities</h2>
           <CardGrid cardType="scroll" maxCards={6}>
-            {[
-              {
-                title: 'Zip Lining in Flying Ravana',
-                rating: 4.9,
-                reviewCount: 420,
-                price: '$20',
-                image: require('../assets/activities/ziplining.jpg')
-              },
-              {
-                title: 'White Water Rafting in Kitulgala',
-                rating: 4.8,
-                reviewCount: 350,
-                price: '$25',
-                image: require('../assets/activities/rafting.jpg')
-              },
-              {
-                title: 'Surfing in Arugam Bay',
-                rating: 4.7,
-                reviewCount: 390,
-                price: '$15',
-                image: require('../assets/activities/surfing.jpg')
-              },
-              {
-                title: 'Hot Air Ballooning in Dambulla',
-                rating: 4.8,
-                reviewCount: 210,
-                price: '$120',
-                image: require('../assets/activities/balloning.png')
-              },
-              {
-                title: 'Scuba Diving in Hikkaduwa',
-                rating: 4.6,
-                reviewCount: 180,
-                price: '$40',
-                image: require('../assets/activities/scubadiving.jpg')
-              },
-              {
-                title: 'Safari at Yala National Park',
-                rating: 4.9,
-                reviewCount: 500,
-                price: '$60',
-                image: require('../assets/activities/safari.jpg')
-              }
-            ].map((activity, i) => (
+            {activitiesData.map((activity, i) => (
               <ExploreCard
                 key={i}
                 image={activity.image}
@@ -378,7 +594,7 @@ const LandingPage = () => {
                 reviewCount={activity.reviewCount}
                 price={activity.price}
                 className="flex-shrink-0"
-                onClick={() => {}}
+                onClick={() => openModal(activity)}
               />
             ))}
           </CardGrid>
@@ -394,34 +610,69 @@ const LandingPage = () => {
               {
                 name: 'Tea Plantation Tours',
                 image: require('../assets/exp-colombo/tea-plantations.jpg'),
-                description: 'Tour lush tea estates and scenic hills'
+                description: 'Tour lush tea estates and scenic hills in Sri Lanka\'s central highlands. Learn about the tea-making process from leaf to cup, enjoy fresh Ceylon tea tastings, and experience the cool mountain climate of Nuwara Eliya and Ella.',
+                title: 'Tea Plantation Tours',
+                rating: 4.7,
+                reviewCount: 850,
+                price: 'From $45/tour',
+                highlights: ['Tea factory visits', 'Ceylon tea tasting', 'Mountain scenery', 'Cool climate', 'Colonial history'],
+                duration: 'Half to full day',
+                bestTime: 'Morning for best weather'
               },
               {
                 name: 'Ancient Temple Trails',
                 image: require('../assets/landing/temples.jpg'),
-                description: 'Walk through centuries of history'
+                description: 'Walk through centuries of history exploring Sri Lanka\'s most sacred Buddhist temples and archaeological sites. Discover ancient cave paintings, massive Buddha statues, and architectural marvels that showcase the island\'s rich spiritual heritage.',
+                title: 'Ancient Temple Trails',
+                rating: 4.8,
+                reviewCount: 1200,
+                price: 'From $35/trail',
+                highlights: ['Sacred Buddhist sites', 'Ancient cave temples', 'Historical significance', 'Architectural beauty', 'Spiritual experiences'],
+                duration: 'Multiple days recommended',
+                bestTime: 'Early morning visits'
               },
               {
                 name: 'Wildlife Safari Adventures',
                 image: require('../assets/landing/wildlife.webp'),
-                description: 'See elephants, leopards, and more'
+                description: 'See elephants, leopards, and more in Sri Lanka\'s pristine national parks. Experience incredible biodiversity with opportunities to spot the Big Five, hundreds of bird species, and unique endemic wildlife in their natural habitats.',
+                title: 'Wildlife Safari Adventures',
+                rating: 4.9,
+                reviewCount: 950,
+                price: 'From $60/safari',
+                highlights: ['Leopard sightings', 'Elephant encounters', 'Bird watching', 'Natural habitats', 'Photography tours'],
+                duration: 'Full day experiences',
+                bestTime: 'Early morning and evening'
               },
               {
                 name: 'Coastal Beach Escapes',
                 image: require('../assets/landing/best-beaches.jpg'),
-                description: 'Relax on golden sands and blue seas'
+                description: 'Relax on golden sands and blue seas along Sri Lanka\'s stunning coastline. From surfing hotspots to tranquil bays, discover pristine beaches perfect for swimming, snorkeling, and watching magnificent sunsets.',
+                title: 'Coastal Beach Escapes',
+                rating: 4.6,
+                reviewCount: 1800,
+                price: 'From $40/day',
+                highlights: ['Pristine beaches', 'Water sports', 'Sunset views', 'Beach resorts', 'Coral reefs'],
+                duration: 'Multiple days',
+                bestTime: 'Year-round varies by coast'
               },
               {
                 name: 'Hill Country Retreats',
                 image: require('../assets/landing/hiking.jpg'),
-                description: 'Unwind in cool, misty mountains'
+                description: 'Unwind in cool, misty mountains where rolling hills meet cloud forests. Experience a different side of tropical Sri Lanka with cooler temperatures, scenic train rides, and charming colonial-era towns.',
+                title: 'Hill Country Retreats',
+                rating: 4.5,
+                reviewCount: 720,
+                price: 'From $55/retreat',
+                highlights: ['Cool mountain climate', 'Scenic train journeys', 'Colonial architecture', 'Hiking trails', 'Cloud forests'],
+                duration: '2-3 days recommended',
+                bestTime: 'Year-round, especially hot months'
               }
             ].map((collection, i) => (
               <div key={i} className="flex-shrink-0 w-64 md:w-72">
                 <DestinationCard
                   destination={collection}
                   imageUrl={collection.image}
-                  onClick={() => {}}
+                  onClick={() => openModal(collection)}
                   className="h-48 md:h-56"
                 />
               </div>
@@ -479,6 +730,13 @@ const LandingPage = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Place Details Modal */}
+      <PlaceModal 
+        place={selectedPlace} 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+      />
     </div>
   );
 };
