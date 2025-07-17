@@ -6,9 +6,18 @@ const DestinationCard = ({
   className = "",
   imageUrl = "https://placehold.co/400x300?text=Destination"
 }) => {
+  const handleClick = () => {
+    console.log('🖱️ DestinationCard clicked:', destination.name);
+    if (onClick) {
+      onClick(destination);
+    } else {
+      console.warn('⚠️ No onClick handler provided to DestinationCard');
+    }
+  };
+
   return (
     <button
-      onClick={() => onClick && onClick(destination)}
+      onClick={handleClick}
       className={`group relative w-full overflow-hidden rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer ${className}`}
     >
       {/* Background Image */}

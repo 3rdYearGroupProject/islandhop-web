@@ -178,11 +178,13 @@ const activitiesData = [
 
 // Modal component for displaying detailed information
 const PlaceModal = ({ place, isOpen, onClose }) => {
+  console.log('🎭 Modal render - isOpen:', isOpen, 'place:', place?.title || 'none');
+  
   if (!isOpen || !place) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[10000]">
         <div className="relative">
           <img 
             src={place.image} 
@@ -373,11 +375,13 @@ const LandingPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openModal = (place) => {
+    console.log('🔍 Opening modal for:', place);
     setSelectedPlace(place);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
+    console.log('❌ Closing modal');
     setSelectedPlace(null);
     setIsModalOpen(false);
   };
