@@ -18,10 +18,12 @@ import { Sparkles } from 'lucide-react';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import aboutVideo from '../assets/about.mp4';
 import Footer from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
 
 const AboutPage = () => {
   const [activeDriverIndex, setActiveDriverIndex] = useState(0);
   const [activeGuideIndex, setActiveGuideIndex] = useState(0);
+  const navigate = useNavigate();
 
   // Featured Drivers Data
   const featuredDrivers = [
@@ -391,13 +393,12 @@ const AboutPage = () => {
               Share your local expertise and passion for Sri Lanka by joining our platform as a verified driver or guide. Connect with travelers from around the world, offer authentic experiences, and grow your professional journey with IslandHop.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition flex items-center justify-center gap-2">
-                <TruckIcon className="h-6 w-6 mr-2" />
-                Join as a Driver
-              </button>
-              <button className="px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-full hover:bg-primary-600 hover:text-white transition flex items-center justify-center gap-2">
-                <MapPinIcon className="h-6 w-6 mr-1" />
-                Join as a Guide
+              <button 
+                className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition flex items-center justify-center gap-2"
+                onClick={() => navigate('/professional-signup')}
+              >
+                <UserGroupIcon className="h-6 w-6 mr-2" />
+                Join as a Professional
               </button>
             </div>
           </div>
