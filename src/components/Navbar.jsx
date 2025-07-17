@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { clearUserData } from '../utils/userStorage';
-import logo from '../assets/islandHopIcon.png'; // Icon
-import logoText from '../assets/IslandHop.png'; // Full logo text
+import { checkProfileCompletion, clearProfileCompletionStatus } from '../utils/profileStorage';
+import logo from '../assets/islandHopIcon.png';
+import logoText from '../assets/IslandHop.png';
 import ProfileModal from './ProfileModal';
 import SettingsModal from './SettingsModal';
-import './GoogleTranslate.css'; // Import Google Translate styles
-import './Navbar.css'; // Import Navbar styles for dropdown animations
+import './GoogleTranslate.css';
+import './Navbar.css';
 import api from '../api/axios';
 import { getAuth } from 'firebase/auth';
 
@@ -22,12 +23,12 @@ const Navbar = () => {
   const [userMenuAnimation, setUserMenuAnimation] = useState('');
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  const [currentCurrency, setCurrentCurrency] = useState('USD'); // Default currency
+  const [currentCurrency, setCurrentCurrency] = useState('USD');
   const [currentUnits, setCurrentUnits] = useState('Imperial');
   const translateRef = useRef(null);
   const userMenuRef = useRef(null);
 
-  // User profile state, initialized from actual user data if available
+  // User profile state
   const [userProfile, setUserProfile] = useState(() => {
     if (tempUser && tempUser.profile) {
       return {
@@ -40,7 +41,6 @@ const Navbar = () => {
         avatar: tempUser.displayName?.[0]?.toUpperCase() || 'U',
       };
     } else if (tempUser) {
-      // Fallback for users without a profile object
       return {
         firstName: tempUser.displayName?.split(' ')[0] || '',
         lastName: tempUser.displayName?.split(' ')[1] || '',
@@ -63,47 +63,24 @@ const Navbar = () => {
     }
   });
 
-  // Editable state for first and last name and birthday
-  const [editingFirstName, setEditingFirstName] = useState(false);
-  const [editingLastName, setEditingLastName] = useState(false);
-  const [editingDob, setEditingDob] = useState(false);
-  const [firstNameInput, setFirstNameInput] = useState(userProfile.firstName);
-  const [lastNameInput, setLastNameInput] = useState(userProfile.lastName);
-  const [dobInput, setDobInput] = useState(userProfile.dob);
-
-
   // Load Google Translate script and initialize
   useEffect(() => {
     const initializeGoogleTranslate = () => {
-      // Add Google Translate styles to hide the default widget
       if (!document.querySelector('#google-translate-styles')) {
         const style = document.createElement('style');
         style.id = 'google-translate-styles';
         style.textContent = `
-          .goog-te-gadget { 
-            display: none !important; 
-          }
-          .goog-te-banner-frame { 
-            display: none !important; 
-          }
-          .goog-te-menu-value { 
-            color: #374151 !important; 
-          }
-          body { 
-            top: 0 !important; 
-          }
-          .skiptranslate { 
-            display: none !important; 
-          }
-          .goog-te-balloon-frame {
-            display: none !important;
-          }
+          .goog-te-gadget { display: none !important; }
+          .goog-te-banner-frame { display: none !important; }
+          .goog-te-menu-value { color: #374151 !important; }
+          body { top: 0 !important; }
+          .skiptranslate { display: none !important; }
+          .goog-te-balloon-frame { display: none !important; }
         `;
         document.head.appendChild(style);
       }
 
       if (!window.googleTranslateElementInit && !document.querySelector('#google_translate_element_hidden')) {
-        // Create hidden element for Google Translate
         const hiddenDiv = document.createElement('div');
         hiddenDiv.id = 'google_translate_element_hidden';
         hiddenDiv.style.display = 'none';
@@ -113,7 +90,7 @@ const Navbar = () => {
           if (window.google && window.google.translate) {
             new window.google.translate.TranslateElement({
               pageLanguage: 'en',
-              includedLanguages: 'en,si,ta,hi,zh,fr,de,es,ja,ko,ar', // More languages
+              includedLanguages: 'en,si,ta,hi,zh,fr,de,es,ja,ko,ar',
               layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
               autoDisplay: false,
               multilanguagePage: true
@@ -151,34 +128,22 @@ const Navbar = () => {
 
   // Handle language change
   const handleLanguageChange = (langCode, langName) => {
-    console.log('Changing language to:', langCode, langName);
     setCurrentLang(langName);
     setShowLang(false);
     
-    // Wait for Google Translate to be ready and trigger language change
     const attemptTranslation = (attempts = 0) => {
       const translateSelect = document.querySelector('.goog-te-combo');
-      console.log('Found translate select:', !!translateSelect);
       
       if (translateSelect && translateSelect.options.length > 1) {
-        console.log('Available options:', Array.from(translateSelect.options).map(opt => ({ value: opt.value, text: opt.text })));
-        
-        // Find the option with the matching value
         for (let i = 0; i < translateSelect.options.length; i++) {
           if (translateSelect.options[i].value === langCode) {
-            console.log('Setting language to:', langCode);
             translateSelect.selectedIndex = i;
             translateSelect.dispatchEvent(new Event('change', { bubbles: true }));
             return;
           }
         }
-        console.warn('Language code not found in options:', langCode);
       } else if (attempts < 10) {
-        console.log('Retrying... attempt:', attempts + 1);
-        // Retry if Google Translate isn't ready yet
         setTimeout(() => attemptTranslation(attempts + 1), 500);
-      } else {
-        console.warn('Google Translate not ready or language not found:', langCode);
       }
     };
 
@@ -202,23 +167,6 @@ const Navbar = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
-
-  // Check current language from Google Translate
-  useEffect(() => {
-    const checkCurrentLanguage = () => {
-      const translateSelect = document.querySelector('.goog-te-combo');
-      if (translateSelect && translateSelect.value) {
-        const selectedLang = languages.find(lang => lang.code === translateSelect.value);
-        if (selectedLang) {
-          setCurrentLang(selectedLang.name);
-        }
-      }
-    };
-
-    // Check periodically for language changes
-    const interval = setInterval(checkCurrentLanguage, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // Close user menu when clicking outside
@@ -245,7 +193,7 @@ const Navbar = () => {
     }
   }, [showUserMenu]);
 
-  // Prevent background scroll when profile popup is open
+  // Prevent background scroll when popup is open
   useEffect(() => {
     if (showProfilePopup || showSettingsPopup) {
       document.body.style.overflow = 'hidden';
@@ -260,18 +208,21 @@ const Navbar = () => {
   // Logout handler
   const handleLogout = () => {
     clearUserData();
+    clearProfileCompletionStatus(); // Clear profile completion status on logout
     navigate('/');
   };
 
-  // Fetch profile from backend on mount or when user changes
+  // Fetch profile from backend and check completion
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const auth = getAuth();
         const email = auth.currentUser?.email || tempUser?.email || '';
         if (!email) return;
+
         const res = await api.get('/tourist/profile', { params: { email } });
         const profileData = res.data;
+        
         // Convert profilePic byte array to base64
         let profilePicture = '';
         if (profileData.profilePic) {
@@ -282,7 +233,8 @@ const Navbar = () => {
             profilePicture = `data:image/jpeg;base64,${btoa(binaryString)}`;
           }
         }
-        setUserProfile({
+
+        const updatedProfile = {
           firstName: profileData.firstName || '',
           lastName: profileData.lastName || '',
           dob: profileData.dob || '',
@@ -291,15 +243,23 @@ const Navbar = () => {
           languages: profileData.languages || [],
           profilePicture,
           avatar: profileData.firstName?.[0]?.toUpperCase() || 'U',
-        });
+        };
+
+        setUserProfile(updatedProfile);
+        
+        // Check and save profile completion status
+        checkProfileCompletion(updatedProfile);
       } catch (err) {
         console.error('Failed to fetch profile:', err);
       }
     };
-    fetchProfile();
+
+    if (tempUser) {
+      fetchProfile();
+    }
   }, [tempUser]);
 
-  // Fetch settings from backend on mount
+  // Fetch settings from backend
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -310,14 +270,16 @@ const Navbar = () => {
         const res = await api.get('/tourist/settings', { params: { email } });
         const settingsData = res.data;
         if (settingsData) {
-          setCurrentCurrency(settingsData.currency || 'USD'); // Update currency from backend
+          setCurrentCurrency(settingsData.currency || 'USD');
         }
       } catch (err) {
         console.error('Failed to fetch settings:', err);
       }
     };
 
-    fetchSettings();
+    if (tempUser) {
+      fetchSettings();
+    }
   }, [tempUser]);
 
   return (
@@ -335,13 +297,10 @@ const Navbar = () => {
         
         {/* Nav Links - Center */}
         <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-20">
-          {/* Home Button */}
           <Link to="/" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/' ? 'font-bold' : 'font-normal'} relative`}>
             Home
             {location.pathname === '/' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
           </Link>
-          
-          {/* Existing Links */}
           <Link to="/discover" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/discover' ? 'font-bold' : 'font-normal'} relative`}>
             Discover
             {location.pathname === '/discover' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
@@ -369,6 +328,7 @@ const Navbar = () => {
           <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center">
             {currentCurrency}
           </button>
+          
           {/* Language Switcher */}
           <div className="relative" ref={translateRef}>
             <button
@@ -401,6 +361,7 @@ const Navbar = () => {
               </div>
             )}
           </div>
+          
           {user ? (
             <div className="relative flex items-center space-x-2" ref={userMenuRef}>
               <button
@@ -437,7 +398,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Profile Popup Modal - Business Card Style */}
+      {/* Profile Popup Modal */}
       <ProfileModal
         show={showProfilePopup}
         onClose={() => setShowProfilePopup(false)}
@@ -450,7 +411,7 @@ const Navbar = () => {
         show={showSettingsPopup}
         onClose={() => setShowSettingsPopup(false)}
         currentCurrency={currentCurrency}
-        setCurrentCurrency={setCurrentCurrency} // Pass state updater to SettingsModal
+        setCurrentCurrency={setCurrentCurrency}
         currentUnits={currentUnits}
         setCurrentUnits={setCurrentUnits}
       />

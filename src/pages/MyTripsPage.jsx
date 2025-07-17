@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getProfileCompletionStatus } from '../utils/profileStorage';
+import LoginRequiredPopup from '../components/LoginRequiredPopup';
+import CompleteProfilePopup from '../components/CompleteProfilePopup';
 import { 
   Plus, 
   Calendar, 
@@ -28,23 +31,26 @@ import CreateTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
-// import { fetchUserTrips as fetchUserTripsApi } from '../api/tripApi'; // Function moved to TripPreferencesPage
 import { getUserUID } from '../utils/userStorage';
 import Footer from '../components/Footer';
-
 import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
 
-// Always use the placeholder from imageUtils to ensure consistency
 const placeholder = placeholderImage;
 
 const MyTripsPage = () => {
   const [isCreateTripModalOpen, setIsCreateTripModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // all, active, completed, draft
-  const [sortBy, setSortBy] = useState('recent'); // recent, name, date
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('recent');
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingTrips, setIsLoadingTrips] = useState(false);
   const [apiError, setApiError] = useState(null);
+  
+  // Popup states
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [showCompleteProfilePopup, setShowCompleteProfilePopup] = useState(false);
+  const [currentActionName, setCurrentActionName] = useState('');
+  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -66,18 +72,50 @@ const MyTripsPage = () => {
         } catch (error) {
           console.warn('⚠️ Failed to fetch trips from backend, using mock data');
           console.error('Backend fetch error:', error);
-          // Keep the existing mock data as fallback
           setTrips(mockTrips);
         }
       } else {
         setCurrentUser(null);
-        setTrips([]); // Clear trips when user logs out
+        setTrips([]);
       }
     });
 
     return () => unsubscribe();
   }, []);
-  
+
+  // Check authentication and profile completion
+  const checkUserAccessAndProfile = (actionName) => {
+    if (!currentUser) {
+      setCurrentActionName(actionName);
+      setShowLoginRequiredPopup(true);
+      return false;
+    }
+
+    const isProfileCompleted = getProfileCompletionStatus();
+    if (!isProfileCompleted) {
+      setCurrentActionName(actionName);
+      setShowCompleteProfilePopup(true);
+      return false;
+    }
+
+    return true;
+  };
+
+  // Handle Plan New Adventure button click
+  const handlePlanNewAdventure = () => {
+    if (checkUserAccessAndProfile('plan new adventures')) {
+      setIsCreateTripModalOpen(true);
+    }
+  };
+
+  // Handle AI Trip Suggestions button click
+  const handleAITripSuggestions = () => {
+    if (checkUserAccessAndProfile('get AI trip suggestions')) {
+      // Navigate to AI trip suggestions page or show modal
+      navigate('/ai-trip-suggestions');
+    }
+  };
+
   // Mock data as fallback - updated to use getCityImageUrl consistently
   const mockTrips = [
     // Trip History (mostly expired, some completed)
@@ -294,33 +332,6 @@ const MyTripsPage = () => {
     }
   ];
 
-  // Handle new trip data from the complete trip flow
-  useEffect(() => {
-    if (location.state?.newTrip) {
-      const newTrip = location.state.newTrip;
-      const formattedTrip = {
-        id: Date.now(), // Simple ID generation
-        name: newTrip.name,
-        dates: newTrip.dates.length === 2 
-          ? `${newTrip.dates[0].toLocaleDateString()} → ${newTrip.dates[1].toLocaleDateString()}`
-          : newTrip.dates.length === 1 
-          ? newTrip.dates[0].toLocaleDateString()
-          : 'Dates not set',
-        destination: 'Sri Lanka', // Default destination
-        image: placeholder,
-        isCompleted: false,
-        terrains: newTrip.terrains || [],
-        activities: newTrip.activities || [],
-        createdAt: newTrip.createdAt
-      };
-      
-      setTrips(prev => [formattedTrip, ...prev]);
-      
-      // Clear the location state to prevent re-adding on refresh
-      navigate('/trips', { replace: true });
-    }
-  }, [location.state, navigate]);
-
   // API function to fetch user trips
   const fetchUserTrips = async (userId) => {
     console.log('📥 FETCH USER TRIPS START');
@@ -394,106 +405,10 @@ const MyTripsPage = () => {
     }
   };
 
-  // Transform backend trip data to frontend format
-  const transformTripData = (backendTrip) => {
-    console.log('🔄 Transforming trip data:', backendTrip);
-    
-    // Calculate trip status based on dates
-    const calculateTripStatus = (trip) => {
-      if (!trip.startDate || !trip.endDate) return 'draft';
-      
-      const now = new Date();
-      const startDate = new Date(trip.startDate);
-      const endDate = new Date(trip.endDate);
-      
-      if (now < startDate) return 'upcoming';
-      if (now >= startDate && now <= endDate) return 'active';
-      return 'completed';
-    };
-
-    // Calculate days left for upcoming/active trips
-    const calculateDaysLeft = (trip) => {
-      if (!trip.startDate) return null;
-      
-      const now = new Date();
-      const startDate = new Date(trip.startDate);
-      const endDate = new Date(trip.endDate);
-      
-      if (now < startDate) {
-        return Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
-      }
-      if (now >= startDate && now <= endDate) {
-        return Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-      }
-      return 0;
-    };
-
-    // Format dates for display
-    const formatTripDates = (startDate, endDate) => {
-      if (!startDate || !endDate) return 'Dates not set';
-      
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
-    };
-
-    const status = calculateTripStatus(backendTrip);
-    
-    const destination = backendTrip.destination || backendTrip.cities?.[0] || 'Sri Lanka';
-    
-    // Always prioritize local images for reliability
-    const cityImage = getCityImageUrl(destination);
-    
-    // Check if backendTrip.coverImage is a valid image URL
-    // If not, use our local cityImage instead
-    let coverImage = cityImage;
-    if (backendTrip.coverImage) {
-      try {
-        // If it's an object (already imported) or valid URL, use it
-        if (typeof backendTrip.coverImage === 'object') {
-          coverImage = backendTrip.coverImage;
-        } else {
-          // Test if it's a valid URL
-          new URL(backendTrip.coverImage);
-          // For this component, we prefer local images over remote URLs for reliability
-          coverImage = cityImage;
-        }
-      } catch (e) {
-        // If not a valid URL, use the local image
-        coverImage = cityImage;
-      }
-    }
-    
-    return {
-      id: backendTrip.id || backendTrip._id,
-      name: backendTrip.name || backendTrip.tripName || 'Untitled Trip',
-      dates: formatTripDates(backendTrip.startDate, backendTrip.endDate),
-      destination: destination,
-      image: coverImage, // Always use our reliable local image
-      status: status,
-      progress: backendTrip.progress || (status === 'completed' ? 100 : status === 'active' ? 50 : 10),
-      daysLeft: calculateDaysLeft(backendTrip),
-      travelers: backendTrip.travelers || backendTrip.groupSize || 1,
-      rating: backendTrip.rating || null,
-      memories: backendTrip.photos?.length || 0,
-      highlights: backendTrip.highlights || backendTrip.cities || [],
-      budget: backendTrip.budget || 0,
-      spent: backendTrip.spent || 0,
-      createdAt: backendTrip.createdAt,
-      // Keep backend data for future use
-      _originalData: backendTrip
-    };
-  };
-
-  // Transform backend trip summary data to frontend format (for new API)
-  // getCityImageUrl is now imported from utils/imageUtils
-
+  // Transform backend trip summary data to frontend format
   const transformBackendTripSummary = (tripSummary) => {
     console.log('🔄 Transforming trip summary data:', tripSummary);
     
-    // Calculate trip status based on dates
     const calculateTripStatus = (trip) => {
       if (!trip.startDate || !trip.endDate) return 'draft';
       
@@ -506,7 +421,6 @@ const MyTripsPage = () => {
       return 'completed';
     };
 
-    // Calculate days left for upcoming/active trips
     const calculateDaysLeft = (trip) => {
       if (!trip.startDate) return null;
       
@@ -523,7 +437,6 @@ const MyTripsPage = () => {
       return 0;
     };
 
-    // Format dates for display
     const formatTripDates = (startDate, endDate) => {
       if (!startDate || !endDate) return 'Dates not set';
       
@@ -535,10 +448,8 @@ const MyTripsPage = () => {
     };
 
     const status = calculateTripStatus(tripSummary);
-    // Always use local city images for consistency and reliability
     const cityImage = getCityImageUrl(tripSummary.destination || 'Sri Lanka');
     
-    // Extract highlights from the destination or any available data
     let highlights = [];
     if (tripSummary.destination) {
       highlights.push(tripSummary.destination);
@@ -554,7 +465,6 @@ const MyTripsPage = () => {
       highlights = [...highlights, ...activityNames];
     }
     
-    // Remove duplicates from highlights
     highlights = [...new Set(highlights)];
     
     return {
@@ -562,28 +472,52 @@ const MyTripsPage = () => {
       name: tripSummary.tripName || 'Untitled Trip',
       dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
       destination: tripSummary.destination || 'Sri Lanka',
-      image: cityImage, // Use local city image
+      image: cityImage,
       status: status,
       progress: status === 'completed' ? 100 : status === 'active' ? 50 : 10,
       daysLeft: calculateDaysLeft(tripSummary),
-      travelers: tripSummary.groupSize || 1, // Try to use groupSize if available
-      rating: null, // Not provided in summary
-      memories: 0, // Not provided in summary
+      travelers: tripSummary.groupSize || 1,
+      rating: null,
+      memories: 0,
       highlights: highlights,
       budget: tripSummary.budget || 0, 
       spent: tripSummary.spent || 0,
       numberOfDays: tripSummary.numberOfDays,
       message: tripSummary.message,
       createdAt: tripSummary.startDate,
-      // Keep backend data for future use
       _originalData: tripSummary
     };
   };
 
+  // Handle new trip data from the complete trip flow
+  useEffect(() => {
+    if (location.state?.newTrip) {
+      const newTrip = location.state.newTrip;
+      const formattedTrip = {
+        id: Date.now(),
+        name: newTrip.name,
+        dates: newTrip.dates.length === 2 
+          ? `${newTrip.dates[0].toLocaleDateString()} → ${newTrip.dates[1].toLocaleDateString()}`
+          : newTrip.dates.length === 1 
+          ? newTrip.dates[0].toLocaleDateString()
+          : 'Dates not set',
+        destination: 'Sri Lanka',
+        image: placeholder,
+        isCompleted: false,
+        terrains: newTrip.terrains || [],
+        activities: newTrip.activities || [],
+        createdAt: newTrip.createdAt
+      };
+      
+      setTrips(prev => [formattedTrip, ...prev]);
+      navigate('/trips', { replace: true });
+    }
+  }, [location.state, navigate]);
+
   // List all trips for authenticated user
   const getUserTrips = async () => {
     const response = await fetch('/api/trip/my-trips', {
-      credentials: 'include' // Session required
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -605,7 +539,6 @@ const MyTripsPage = () => {
       try {
         const backend = await getUserTrips();
         if (backend && backend.trips) {
-          // Avoid duplicates by id or name
           setTrips(prev => {
             const prevIds = new Set(prev.map(t => t.id));
             const prevNames = new Set(prev.map(t => t.name));
@@ -618,7 +551,6 @@ const MyTripsPage = () => {
                 status: trip.status || 'active',
                 dates: trip.dates || 'Not set',
                 destination: destination,
-                // Add any other mapping as needed
               };
             }).filter(trip => !prevNames.has(trip.name));
             return [...backendFormatted, ...prev];
@@ -648,7 +580,7 @@ const MyTripsPage = () => {
         if (!a.dates || a.dates === 'Not set') return 1;
         if (!b.dates || b.dates === 'Not set') return -1;
         return new Date(a.dates.split(' → ')[0]) - new Date(b.dates.split(' → ')[0]);
-      default: // recent
+      default:
         return b.id - a.id;
     }
   });
@@ -674,7 +606,6 @@ const MyTripsPage = () => {
     console.log('🚀 Creating trip with user UID:', currentUser?.uid);
     console.log('📝 Trip data:', tripData);
     
-    // Navigate to trip duration page with trip name and user UID
     navigate('/trip-duration', { 
       state: { 
         tripName: tripData.name,
@@ -686,7 +617,6 @@ const MyTripsPage = () => {
 
   const handleTripClick = (trip) => {
     console.log('🔍 Viewing trip:', trip.name);
-    // Navigate to the view trip page with trip data
     navigate(`/trip/${trip.id}`, { 
       state: { 
         trip: trip
@@ -696,8 +626,6 @@ const MyTripsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      {/* Removed driver/guide confirmation banner at top */}
-      {/* Navbar */}
       <Navbar />
 
       {/* Enhanced Hero Video Section */}
@@ -713,9 +641,6 @@ const MyTripsPage = () => {
           Your browser does not support the video tag.
         </video>
         
-        {/* Video Overlay Removed */}
-        {/* <div className="absolute inset-0 bg-gradient-to-r from-blue-900/50 via-blue-800/30 to-blue-900/50"></div> */}
-        
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
           <div className="max-w-4xl mx-auto mt-16 md:mt-24">
@@ -727,13 +652,16 @@ const MyTripsPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => setIsCreateTripModalOpen(true)}
+                onClick={handlePlanNewAdventure}
                 className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <Plus className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
                 Plan New Adventure
               </button>
-              <button className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
+              <button 
+                onClick={handleAITripSuggestions}
+                className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+              >
                 <Sparkles className="mr-3 h-6 w-6" />
                 AI Trip Suggestions
               </button>
@@ -741,7 +669,6 @@ const MyTripsPage = () => {
           </div>
         </div>
       </section>
-
 
       {/* Enhanced Main Content */}
       <main className="relative z-10 -mt-10 pb-20">
@@ -802,9 +729,7 @@ const MyTripsPage = () => {
             </div>
           </div>
 
-          {/* Quick Actions Removed */}
-
-          {/* Highlight Ongoing Trip */}
+          {/* Highlight Ongoing Trip and Other Trips */}
           {(() => {
             const ongoingTrip = sortedTrips.find(trip => trip.status === 'active');
             const otherTrips = sortedTrips.filter(trip => trip.status !== 'active');
@@ -926,7 +851,7 @@ const MyTripsPage = () => {
                                 : "Your travel adventure starts with a single step. Create your first trip!"}
                             </p>
                             <button
-                              onClick={() => setIsCreateTripModalOpen(true)}
+                              onClick={handlePlanNewAdventure}
                               className="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full font-semibold text-base hover:bg-blue-700 transition-colors shadow"
                             >
                               <Plus className="mr-2 h-5 w-5" />
@@ -949,6 +874,20 @@ const MyTripsPage = () => {
         isOpen={isCreateTripModalOpen}
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateTrip}
+      />
+
+      {/* Login Required Popup */}
+      <LoginRequiredPopup
+        show={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
+        actionName={currentActionName}
+      />
+
+      {/* Complete Profile Popup */}
+      <CompleteProfilePopup
+        show={showCompleteProfilePopup}
+        onClose={() => setShowCompleteProfilePopup(false)}
+        actionName={currentActionName}
       />
 
       <Footer />
