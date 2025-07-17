@@ -192,11 +192,12 @@ const ProfileModal = ({ show, onClose, userProfile, setUserProfile }) => {
       <div className="mt-12 sm:mt-20 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative animate-navbar-dropdown">
         {/* Close Button */}
         <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl transition-colors z-10" onClick={onClose} aria-label="Close profile">&times;</button>
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-700 dark:to-primary-800 h-24 flex items-center px-8">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="IslandHop Icon" className="h-10 w-10 rounded-full bg-white p-1 shadow" />
-            <img src={logoText} alt="IslandHop" className="h-7" />
+        
+        {/* Header - Logo only without blue banner */}
+        <div className="flex items-center justify-center py-6 px-8 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="IslandHop Icon" className="h-8 w-8" />
+            <img src={logoText} alt="IslandHop" className="h-6" />
           </div>
         </div>
         <div className="p-8 pt-4">

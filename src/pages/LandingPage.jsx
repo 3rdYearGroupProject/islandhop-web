@@ -257,22 +257,6 @@ const PlaceModal = ({ place, isOpen, onClose }) => {
             <X className="h-5 w-5 text-gray-600" />
           </button>
         </div>
-
-        {/* Additional images gallery */}
-        {place.additionalImages && place.additionalImages.length > 0 && (
-          <div className="p-4 border-b">
-            <div className="flex gap-2 overflow-x-auto">
-              {place.additionalImages.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`${place.title} ${index + 1}`}
-                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                />
-              ))}
-            </div>
-          </div>
-        )}
         
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
           <div className="mb-4">
@@ -468,6 +452,22 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Effect to handle body scroll lock when modal is open
+  React.useEffect(() => {
+    if (isModalOpen) {
+      // Disable body scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable body scroll
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to ensure scroll is re-enabled when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalOpen]);
 
   const openModal = (place) => {
     console.log('🔍 Opening modal for:', place);
