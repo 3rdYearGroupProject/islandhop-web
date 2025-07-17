@@ -314,6 +314,13 @@ const Navbar = () => {
         
         {/* Nav Links - Center */}
         <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-20">
+          {/* Home Button */}
+          <Link to="/" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/' ? 'font-bold' : 'font-normal'} relative`}>
+            Home
+            {location.pathname === '/' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+          </Link>
+          
+          {/* Existing Links */}
           <Link to="/discover" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/discover' ? 'font-bold' : 'font-normal'} relative`}>
             Discover
             {location.pathname === '/discover' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
