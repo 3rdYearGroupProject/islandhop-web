@@ -469,6 +469,22 @@ const LandingPage = () => {
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Effect to handle body scroll lock when modal is open
+  React.useEffect(() => {
+    if (isModalOpen) {
+      // Disable body scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable body scroll
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to ensure scroll is re-enabled when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalOpen]);
+
   const openModal = (place) => {
     console.log('🔍 Opening modal for:', place);
     setSelectedPlace(place);
