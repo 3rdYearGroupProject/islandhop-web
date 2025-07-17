@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import DriverStatusCard from '../../components/driver/DriverStatusCard';
+import ReportIssueModal from '../../components/driver/ReportIssueModal';
 import DriverTripModal from '../../components/driver/DriverTripModal';
 import MapPopupModal from '../../components/driver/MapPopupModal';
 import TripDetailsModal from '../../components/TripDetailsModal';
@@ -23,6 +24,7 @@ import { Link } from 'react-router-dom';
 
 const DriverDashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
@@ -123,8 +125,10 @@ const DriverDashboard = () => {
 
       {/* Driver Status Card */}
       <div className="mb-8">
-        <DriverStatusCard showToggle={true} />
+        <DriverStatusCard showToggle={true} onReportIssue={() => setReportModalOpen(true)} />
       </div>
+      {/* Report Issue Modal */}
+      <ReportIssueModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
