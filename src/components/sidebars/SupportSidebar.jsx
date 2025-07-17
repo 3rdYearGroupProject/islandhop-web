@@ -90,12 +90,6 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Emergency Response",
     },
     {
-      name: "Reports",
-      path: "/support/reports",
-      icon: ChartBarIcon,
-      description: "Support Analytics",
-    },
-    {
       name: "Profile",
       path: "/support/profile",
       icon: UserIcon,

@@ -11,9 +11,8 @@ import ResolveComplaint from "../pages/support/ResolveComplaint";
 import EscalateIssue from "../pages/support/EscalateIssue";
 import LostItemTracker from "../pages/support/LostItemTracker";
 import PanicAlerts from "../pages/support/PanicAlerts";
-import SupportReports from "../pages/support/SupportReports";
 import SupportProfile from "../pages/support/SupportProfile";
-import Communications from '../pages/admin/Communications';
+import Communications from "../pages/admin/Communications";
 
 const SupportRoutes = () => {
   return (
@@ -29,7 +28,6 @@ const SupportRoutes = () => {
         <Route path="escalate-issue" element={<EscalateIssue />} />
         <Route path="lost-item-tracker" element={<LostItemTracker />} />
         <Route path="panic-alerts" element={<PanicAlerts />} />
-        <Route path="reports" element={<SupportReports />} />
         <Route path="profile" element={<SupportProfile />} />
       </Routes>
     </SupportDashboardLayout>

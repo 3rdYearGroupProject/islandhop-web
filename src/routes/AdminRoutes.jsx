@@ -16,6 +16,7 @@ import Accounts from "../pages/admin/Accounts";
 import UpdateUserProfile from "../pages/admin/UpdateUserProfile";
 import Communications from "../pages/admin/Communications";
 import SystemData from "../pages/admin/SystemData";
+import SupportReports from "../pages/admin/SupportReports";
 
 const AdminRoutes = () => {
   return (
@@ -26,6 +27,7 @@ const AdminRoutes = () => {
         <Route path="accounts" element={<Accounts />} />
         <Route path="communications" element={<Communications />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="support-reports" element={<SupportReports />} />
         <Route path="settings" element={<SystemSettings />} />
         <Route path="hosting" element={<Hosting />} />
         <Route path="reviews" element={<Reviews />} />

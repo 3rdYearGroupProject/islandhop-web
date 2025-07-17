@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   UserCircleIcon,
   PencilIcon,
@@ -9,45 +9,49 @@ import {
   MapPinIcon,
   CalendarIcon,
   ClockIcon,
-  CameraIcon
-} from '@heroicons/react/24/outline';
-import { auth } from '../../firebase';
-import { sendPasswordResetEmail, onAuthStateChanged, updateProfile } from 'firebase/auth';
-import api from '../../api/axios';
-import islandHopIcon from '../../assets/islandHopIcon.png';
+  CameraIcon,
+} from "@heroicons/react/24/outline";
+import { auth } from "../../firebase";
+import {
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  updateProfile,
+} from "firebase/auth";
+import api from "../../api/axios";
+import islandHopIcon from "../../assets/islandHopIcon.png";
 
 const SupportProfile = () => {
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState("personal");
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [user, setUser] = useState({
-    firstName: 'Alex',
-    lastName: 'Support',
-    email: 'alex.support@islandhop.com',
-    phoneNumber: '+94 77 234 5678',
-    address: 'Kandy, Sri Lanka',
-    role: 'Support Agent',
+    firstName: "Alex",
+    lastName: "Support",
+    email: "alex.support@islandhop.com",
+    phoneNumber: "+94 77 234 5678",
+    address: "Kandy, Sri Lanka",
+    role: "Support Agent",
     profilePicture: islandHopIcon,
-    joinedDate: 'Loading...',
-    lastActive: 'Loading...',
+    joinedDate: "Loading...",
+    lastActive: "Loading...",
     // Support-specific stats
     ticketsResolved: 0,
-    avgResponseTime: '5 min',
+    avgResponseTime: "5 min",
     satisfactionRating: 4.8,
-    status: 'Available'
+    status: "Available",
   });
-  
+
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [editedUser, setEditedUser] = useState(user);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
 
   // Function to format the last active time
   const formatLastActive = (timestamp) => {
-    if (!timestamp) return 'Never';
+    if (!timestamp) return "Never";
     const now = new Date();
     const lastActive = new Date(timestamp);
     const diff = now - lastActive;
@@ -55,20 +59,20 @@ const SupportProfile = () => {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
   };
 
   // Function to format the joined date
   const formatJoinedDate = (timestamp) => {
-    if (!timestamp) return 'Unknown';
+    if (!timestamp) return "Unknown";
     const joinedDate = new Date(timestamp);
-    return joinedDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return joinedDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -82,16 +86,18 @@ const SupportProfile = () => {
           const creationTime = currentUser.metadata.creationTime;
           const formattedLastActive = formatLastActive(lastSignInTime);
           const formattedJoinedDate = formatJoinedDate(creationTime);
-          
+
           try {
-            const response = await api.get(`/support/profile?email=${currentUser.email}`);
+            const response = await api.get(
+              `/support/profile?email=${currentUser.email}`
+            );
             if (response.status === 200 && response.data) {
               const profileData = response.data;
-              const profilePicture = profileData.profilePictureBase64 
+              const profilePicture = profileData.profilePictureBase64
                 ? `data:image/jpeg;base64,${profileData.profilePictureBase64}`
                 : profileData.profilePicture || islandHopIcon;
-              
-              setUser(prevUser => ({
+
+              setUser((prevUser) => ({
                 ...prevUser,
                 firstName: profileData.firstName || prevUser.firstName,
                 lastName: profileData.lastName || prevUser.lastName,
@@ -101,31 +107,31 @@ const SupportProfile = () => {
                 role: profileData.role || prevUser.role,
                 profilePicture: profilePicture,
                 joinedDate: formattedJoinedDate,
-                lastActive: formattedLastActive
+                lastActive: formattedLastActive,
               }));
-              
-              setEditedUser(prevUser => ({
+
+              setEditedUser((prevUser) => ({
                 ...prevUser,
                 firstName: profileData.firstName || prevUser.firstName,
                 lastName: profileData.lastName || prevUser.lastName,
                 phoneNumber: profileData.contactNo || prevUser.phoneNumber,
-                address: profileData.address || prevUser.address
+                address: profileData.address || prevUser.address,
               }));
             } else {
-              setUser(prevUser => ({
+              setUser((prevUser) => ({
                 ...prevUser,
                 email: currentUser.email,
                 joinedDate: formattedJoinedDate,
-                lastActive: formattedLastActive
+                lastActive: formattedLastActive,
               }));
             }
           } catch (error) {
-            console.warn('Failed to fetch profile from backend:', error);
-            setUser(prevUser => ({
+            console.warn("Failed to fetch profile from backend:", error);
+            setUser((prevUser) => ({
               ...prevUser,
               email: currentUser.email,
               joinedDate: formattedJoinedDate,
-              lastActive: formattedLastActive
+              lastActive: formattedLastActive,
             }));
           }
         }
@@ -138,7 +144,7 @@ const SupportProfile = () => {
     fetchProfileData();
   }, []);
 
-  const notify = (msg, type = 'success') => {
+  const notify = (msg, type = "success") => {
     setToastMessage(msg);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
@@ -153,19 +159,19 @@ const SupportProfile = () => {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('email', user.email);
-      formData.append('firstName', editedUser.firstName);
-      formData.append('lastName', editedUser.lastName);
-      formData.append('contactNo', editedUser.phoneNumber);
-      formData.append('address', editedUser.address);
+      formData.append("email", user.email);
+      formData.append("firstName", editedUser.firstName);
+      formData.append("lastName", editedUser.lastName);
+      formData.append("contactNo", editedUser.phoneNumber);
+      formData.append("address", editedUser.address);
 
       if (profilePictureFile) {
-        formData.append('profilePicture', profilePictureFile);
+        formData.append("profilePicture", profilePictureFile);
       }
 
-      const response = await api.put('/support/profile', formData, {
+      const response = await api.put("/support/profile", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -173,34 +179,36 @@ const SupportProfile = () => {
       if (auth.currentUser) {
         const newDisplayName = `${editedUser.firstName} ${editedUser.lastName}`;
         if (auth.currentUser.displayName !== newDisplayName) {
-          await updateProfile(auth.currentUser, { displayName: newDisplayName });
+          await updateProfile(auth.currentUser, {
+            displayName: newDisplayName,
+          });
         }
       }
 
       if (response.status === 200) {
         const updatedProfile = response.data;
-        const profilePicture = updatedProfile.profilePictureBase64 
+        const profilePicture = updatedProfile.profilePictureBase64
           ? `data:image/jpeg;base64,${updatedProfile.profilePictureBase64}`
           : updatedProfile.profilePicture || user.profilePicture;
 
-        setUser(prev => ({
+        setUser((prev) => ({
           ...prev,
           firstName: editedUser.firstName,
           lastName: editedUser.lastName,
           phoneNumber: editedUser.phoneNumber,
           address: editedUser.address,
-          profilePicture: profilePicture
+          profilePicture: profilePicture,
         }));
 
         setIsEditingPersonal(false);
         setProfilePictureFile(null);
-        notify('Profile updated successfully!');
+        notify("Profile updated successfully!");
       } else {
-        notify('Failed to update profile. Please try again.', 'error');
+        notify("Failed to update profile. Please try again.", "error");
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      notify('Failed to update profile. Please try again.', 'error');
+      console.error("Error updating profile:", error);
+      notify("Failed to update profile. Please try again.", "error");
     }
     setLoading(false);
   };
@@ -212,9 +220,9 @@ const SupportProfile = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setEditedUser(prev => ({
+    setEditedUser((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -222,9 +230,9 @@ const SupportProfile = () => {
     const file = e.target.files[0];
     if (file) {
       setProfilePictureFile(file);
-      setUser(prev => ({
+      setUser((prev) => ({
         ...prev,
-        profilePicture: URL.createObjectURL(file)
+        profilePicture: URL.createObjectURL(file),
       }));
     }
   };
@@ -234,15 +242,15 @@ const SupportProfile = () => {
     try {
       await sendPasswordResetEmail(auth, user.email);
       setShowPasswordReset(false);
-      notify('Password reset email sent successfully!');
+      notify("Password reset email sent successfully!");
     } catch (error) {
-      notify('Failed to send password reset email', 'error');
+      notify("Failed to send password reset email", "error");
     }
     setLoading(false);
   };
 
   const tabs = [
-    { key: 'personal', label: 'Personal Info', icon: UserCircleIcon }
+    { key: "personal", label: "Personal Info", icon: UserCircleIcon },
   ];
 
   return (
@@ -252,8 +260,12 @@ const SupportProfile = () => {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Loading Profile...</h2>
-            <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch your information</p>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Loading Profile...
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Please wait while we fetch your information
+            </p>
           </div>
         </div>
       ) : (
@@ -262,8 +274,12 @@ const SupportProfile = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support Profile</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your support agent information</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Support Profile
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Manage your support agent information
+                </p>
               </div>
               <div className="flex items-center space-x-3">
                 {!isEditingPersonal && (
@@ -294,14 +310,14 @@ const SupportProfile = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      style={{ display: 'none' }}
+                      style={{ display: "none" }}
                       onChange={handleProfilePictureChange}
                       disabled={loading}
                     />
                   </label>
                 )}
               </div>
-              
+
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {user.firstName} {user.lastName}
@@ -310,7 +326,9 @@ const SupportProfile = () => {
                 <div className="flex items-center space-x-4 mt-2">
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-success-500 rounded-full mr-2"></div>
-                    <span className="text-sm font-medium text-success-600 dark:text-success-400">{user.status}</span>
+                    <span className="text-sm font-medium text-success-600 dark:text-success-400">
+                      {user.status}
+                    </span>
                   </div>
                   <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                     <ClockIcon className="h-4 w-4 mr-1" />
@@ -319,16 +337,28 @@ const SupportProfile = () => {
                 </div>
                 <div className="flex items-center space-x-6 mt-3">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900 dark:text-white">{user.ticketsResolved}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Tickets Resolved</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      {user.ticketsResolved}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Tickets Resolved
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900 dark:text-white">{user.avgResponseTime}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Avg Response Time</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      {user.avgResponseTime}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Avg Response Time
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900 dark:text-white">{user.satisfactionRating}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Satisfaction Rating</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      {user.satisfactionRating}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Satisfaction Rating
+                    </div>
                   </div>
                 </div>
               </div>
@@ -338,7 +368,9 @@ const SupportProfile = () => {
           {/* Personal Information Card */}
           <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Personal Information
+              </h3>
               {isEditingPersonal && (
                 <div className="flex space-x-3">
                   <button
@@ -347,7 +379,7 @@ const SupportProfile = () => {
                     className="flex items-center space-x-2 px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 disabled:opacity-50 transition-colors"
                   >
                     <CheckIcon className="h-4 w-4" />
-                    <span>{loading ? 'Saving...' : 'Save'}</span>
+                    <span>{loading ? "Saving..." : "Save"}</span>
                   </button>
                   <button
                     onClick={handleCancelEdit}
@@ -370,12 +402,16 @@ const SupportProfile = () => {
                   <input
                     type="text"
                     value={editedUser.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("firstName", e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
                     disabled={loading}
                   />
                 ) : (
-                  <p className="text-gray-900 dark:text-white">{user.firstName}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {user.firstName}
+                  </p>
                 )}
               </div>
 
@@ -387,12 +423,16 @@ const SupportProfile = () => {
                   <input
                     type="text"
                     value={editedUser.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("lastName", e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
                     disabled={loading}
                   />
                 ) : (
-                  <p className="text-gray-900 dark:text-white">{user.lastName}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {user.lastName}
+                  </p>
                 )}
               </div>
 
@@ -413,12 +453,16 @@ const SupportProfile = () => {
                   <input
                     type="tel"
                     value={editedUser.phoneNumber}
-                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("phoneNumber", e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
                     disabled={loading}
                   />
                 ) : (
-                  <p className="text-gray-900 dark:text-white">{user.phoneNumber}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {user.phoneNumber}
+                  </p>
                 )}
               </div>
 
@@ -431,12 +475,16 @@ const SupportProfile = () => {
                   <input
                     type="text"
                     value={editedUser.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("address", e.target.value)
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
                     disabled={loading}
                   />
                 ) : (
-                  <p className="text-gray-900 dark:text-white">{user.address}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {user.address}
+                  </p>
                 )}
               </div>
 
@@ -445,7 +493,9 @@ const SupportProfile = () => {
                   <CalendarIcon className="h-4 w-4 inline mr-1" />
                   Joined Date
                 </label>
-                <p className="text-gray-900 dark:text-white">{user.joinedDate}</p>
+                <p className="text-gray-900 dark:text-white">
+                  {user.joinedDate}
+                </p>
               </div>
 
               <div>
@@ -459,7 +509,9 @@ const SupportProfile = () => {
             {/* Security Actions */}
             {!isEditingPersonal && (
               <div className="mt-8 pt-6 border-t border-gray-200 dark:border-secondary-700">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Security Actions</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  Security Actions
+                </h4>
                 <button
                   onClick={() => setShowPasswordReset(true)}
                   className="px-4 py-2 bg-warning-600 text-white rounded-lg hover:bg-warning-700 transition-colors"
@@ -474,9 +526,13 @@ const SupportProfile = () => {
           {showPasswordReset && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reset Password</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Reset Password
+                </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  A password reset email will be sent to <strong>{user.email}</strong>. Follow the instructions in the email to reset your password.
+                  A password reset email will be sent to{" "}
+                  <strong>{user.email}</strong>. Follow the instructions in the
+                  email to reset your password.
                 </p>
                 <div className="flex justify-end space-x-3">
                   <button
@@ -490,7 +546,7 @@ const SupportProfile = () => {
                     disabled={loading}
                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
                   >
-                    {loading ? 'Sending...' : 'Send Reset Email'}
+                    {loading ? "Sending..." : "Send Reset Email"}
                   </button>
                 </div>
               </div>

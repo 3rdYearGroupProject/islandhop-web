@@ -253,7 +253,7 @@ const SupportDashboard = ({ onPageChange }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Quick Actions */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-6">
           <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Quick Actions
@@ -284,67 +284,9 @@ const SupportDashboard = ({ onPageChange }) => {
             </div>
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Recent Activity
-            </h2>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors duration-200">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.type === 'ticket' ? 'bg-primary-500' :
-                    activity.type === 'resolved' ? 'bg-success-500' :
-                    activity.type === 'escalated' ? 'bg-danger-500' :
-                    activity.type === 'refund' ? 'bg-info-500' :
-                    'bg-warning-500'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 dark:text-white">
-                      {activity.action}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {activity.user} • {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-secondary-700">
-              <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-                View all activity →
-              </button>
-            </div>
-          </div>
-        </div>
+      
       </div>
 
-      {/* Performance Metrics */}
-      <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Today's Performance
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Tickets Resolved</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">12m</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Avg Response Time</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">95%</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Customer Satisfaction</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">23</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Chat Sessions</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

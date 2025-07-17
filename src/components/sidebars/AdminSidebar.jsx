@@ -60,6 +60,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       description: "Data & Reports",
     },
     {
+      name: "Support Reports",
+      path: "/admin/support-reports",
+      icon: ChartBarIcon,
+      description: "Support Analytics",
+    },
+    {
       name: "System Settings",
       path: "/admin/settings",
       icon: CogIcon,
