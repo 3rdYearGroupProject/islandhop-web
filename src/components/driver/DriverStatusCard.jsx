@@ -72,13 +72,9 @@ const DriverStatusCard = ({ compact = false, showToggle = true, className = '' }
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="text-center p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{driverStatus.activeTrips}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">Active Trips</div>
-        </div>
-        <div className="text-center p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900 dark:text-green-400">${driverStatus.todayEarnings}</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">${driverStatus.todayEarnings}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Today's Earnings</div>
         </div>
         <div className="text-center p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
