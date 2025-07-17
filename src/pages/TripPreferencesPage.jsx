@@ -17,8 +17,9 @@ const TripPreferencesPage = () => {
   const [selectedTerrainPreferences, setSelectedTerrainPreferences] = useState([]);
   const [selectedActivityPreferences, setSelectedActivityPreferences] = useState([]);
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
-
-  const terrainPreferences = [
+  const [customTerrain, setCustomTerrain] = useState('');
+  const [customActivity, setCustomActivity] = useState('');
+  const [terrainPreferences, setTerrainPreferences] = useState([
     { id: 'beaches', name: 'Beach', icon: Waves, color: '#007bff' },
     { id: 'mountains', name: 'Mountain', icon: Mountain, color: '#28a745' },
     { id: 'forests', name: 'Forest', icon: Trees, color: '#20c997' },
@@ -28,9 +29,9 @@ const TripPreferencesPage = () => {
     { id: 'islands', name: 'Island', icon: Waves, color: '#0dcaf0' },
     { id: 'wetland', name: 'Wetland', icon: CameraIcon, color: '#6c757d' },
     { id: 'countryside', name: 'Countryside', icon: MapPin, color: '#ffc107' }
-  ];
-  
-  const activityPreferences = [
+  ]);
+
+  const [activityPreferences, setActivityPreferences] = useState([
     { id: 'surfing', name: 'Surfing', icon: Waves, color: '#007bff' },
     { id: 'hiking', name: 'Hiking', icon: Mountain, color: '#28a745' },
     { id: 'photography', name: 'Photography', icon: Camera, color: '#6f42c1' },
@@ -43,7 +44,7 @@ const TripPreferencesPage = () => {
     { id: 'wildlife', name: 'Wildlife Safari', icon: Camera, color: '#198754' },
     { id: 'wellness', name: 'Spa & Wellness', icon: Mountain, color: '#20c997' },
     { id: 'shopping', name: 'Shopping', icon: Building, color: '#ffc107' }
-  ];
+  ]);
 
   const handleTerrainToggle = (preferenceId) => {
     setSelectedTerrainPreferences(prev => 
@@ -278,7 +279,7 @@ const TripPreferencesPage = () => {
                   </p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                  {terrainPreferences.map(preference => {
+                  {terrainPreferences.filter(pref => ['beaches', 'mountains', 'forests', 'historical', 'city', 'parks', 'islands', 'wetland', 'countryside'].includes(pref.id)).map(preference => {
                     const IconComponent = preference.icon;
                     const isSelected = selectedTerrainPreferences.includes(preference.id);
                     return (
@@ -291,18 +292,20 @@ const TripPreferencesPage = () => {
                             : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-md'
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-24 h-24 rounded-full mx-auto mb-4 transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-white bg-opacity-20' 
-                            : 'bg-gray-100 group-hover:bg-primary-50'
-                        }`}>
-                          <IconComponent 
-                            size={48} 
-                            className={`transition-colors duration-200 ${
-                              isSelected ? 'text-white' : 'text-primary-600'
-                            }`}
-                          />
-                        </div>
+                        {IconComponent && (
+                          <div className={`flex items-center justify-center w-24 h-24 rounded-full mx-auto mb-4 transition-all duration-200 ${
+                            isSelected 
+                              ? 'bg-white bg-opacity-20' 
+                              : 'bg-gray-100 group-hover:bg-primary-50'
+                          }`}>
+                            <IconComponent 
+                              size={48} 
+                              className={`transition-colors duration-200 ${
+                                isSelected ? 'text-white' : 'text-primary-600'
+                              }`}
+                            />
+                          </div>
+                        )}
                         <span className={`font-semibold text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
                           {preference.name}
                         </span>
@@ -319,6 +322,54 @@ const TripPreferencesPage = () => {
                     );
                   })}
                 </div>
+                {/* Custom terrain preferences below the cards */}
+                <div className="mt-6">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {terrainPreferences.filter(pref => !['beaches', 'mountains', 'forests', 'historical', 'city', 'parks', 'islands', 'wetland', 'countryside'].includes(pref.id)).map(pref => (
+                      <div
+                        key={pref.id}
+                        className="flex items-center bg-primary-600 text-white px-3 py-1 rounded-full border border-primary-600"
+                      >
+                        <span className="mr-2 text-sm font-medium">{pref.name}</span>
+                        <button
+                          onClick={() => {
+                            setTerrainPreferences(prev => prev.filter(p => p.id !== pref.id));
+                            setSelectedTerrainPreferences(prev => prev.filter(id => id !== pref.id));
+                          }}
+                          className="text-white hover:text-gray-200 focus:outline-none text-sm"
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-4">
+                    <input
+                      type="text"
+                      placeholder="Add your own terrain preference"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                      value={customTerrain}
+                      onChange={(e) => setCustomTerrain(e.target.value)}
+                    />
+                    <button
+                      onClick={() => {
+                        if (customTerrain.trim()) {
+                          const newPreference = {
+                            id: customTerrain.trim().toLowerCase().replace(/\s+/g, '-'),
+                            name: customTerrain.trim(),
+                            color: '#6c757d' // Default color
+                          };
+                          setSelectedTerrainPreferences(prev => [...prev, newPreference.id]);
+                          setTerrainPreferences(prev => [...prev, newPreference]);
+                          setCustomTerrain('');
+                        }
+                      }}
+                      className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
               </>
             )}
             {currentStep === 2 && (
@@ -331,8 +382,10 @@ const TripPreferencesPage = () => {
                     Select the activities you'd like to enjoy during your trip
                   </p>
                 </div>
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
-                  {activityPreferences.map(activity => {
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-6 mt-6">
+                  {activityPreferences.filter(activity => [
+                    'surfing', 'hiking', 'photography', 'sightseeing', 'dining', 'nightlife', 'snorkeling', 'adventure', 'culture', 'wildlife', 'wellness', 'shopping'
+                  ].includes(activity.id)).map(activity => {
                     const IconComponent = activity.icon;
                     const isSelected = selectedActivityPreferences.includes(activity.id);
                     return (
@@ -372,6 +425,56 @@ const TripPreferencesPage = () => {
                       </button>
                     );
                   })}
+                </div>
+                {/* Custom activity preferences and input below the cards */}
+                <div className="mt-6">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {activityPreferences.filter(pref => ![
+                      'surfing', 'hiking', 'photography', 'sightseeing', 'dining', 'nightlife', 'snorkeling', 'adventure', 'culture', 'wildlife', 'wellness', 'shopping'
+                    ].includes(pref.id)).map(pref => (
+                      <div
+                        key={pref.id}
+                        className="flex items-center bg-primary-600 text-white px-3 py-1 rounded-full border border-primary-600"
+                      >
+                        <span className="mr-2 text-sm font-medium">{pref.name}</span>
+                        <button
+                          onClick={() => {
+                            setActivityPreferences(prev => prev.filter(p => p.id !== pref.id));
+                            setSelectedActivityPreferences(prev => prev.filter(id => id !== pref.id));
+                          }}
+                          className="text-white hover:text-gray-200 focus:outline-none text-sm"
+                        >
+                          x
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-4">
+                    <input
+                      type="text"
+                      placeholder="Add your own activity preference"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                      value={customActivity}
+                      onChange={(e) => setCustomActivity(e.target.value)}
+                    />
+                    <button
+                      onClick={() => {
+                        if (customActivity && customActivity.trim()) {
+                          const newPreference = {
+                            id: customActivity.trim().toLowerCase().replace(/\s+/g, '-'),
+                            name: customActivity.trim(),
+                            color: '#6c757d'
+                          };
+                          setSelectedActivityPreferences(prev => [...prev, newPreference.id]);
+                          setActivityPreferences(prev => [...prev, newPreference]);
+                          setCustomActivity('');
+                        }
+                      }}
+                      className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-200"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
               </>
             )}
