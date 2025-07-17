@@ -21,12 +21,17 @@ import ProtectedRoute from './routes/ProtectedRoute';
 
 
 import './App.css'
+import QuickActionsButton from './components/QuickActionsButton';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
+  const { isAuthenticated } = useAuth();
   return (
     <ErrorBoundary>
       <ToastProvider>
         <DevTools />
+        {/* Quick Actions Button always visible for logged in users */}
+        <QuickActionsButton isLoggedIn={isAuthenticated} />
         <Routes>
           {/* General/Public and Tourist Routes */}
           <Route path="/*" element={<GeneralRoutes />} />
