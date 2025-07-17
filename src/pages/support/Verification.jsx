@@ -15,7 +15,9 @@ import { RefreshCw, AlertCircle } from "lucide-react";
 import GuideVerificationForm from "../../components/GuideVerificationForm";
 
 const Verification = () => {
-  const [guides, setGuides] = useState([]);
+  const [guides, setGuides] = useState([]); // Filtered guides for display
+  const [searchEmail, setSearchEmail] = useState("");
+  const [allGuides, setAllGuides] = useState([]); // All fetched guides for current userType
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedGuide, setSelectedGuide] = useState(null);
@@ -116,27 +118,15 @@ const Verification = () => {
       setUserType(type);
 
       if (type === "guide") {
-        console.log("Fetching guides from API...");
-        // Map frontend status to backend status
-        let backendStatus = filter.toUpperCase();
-        if (backendStatus === "VERIFIED") backendStatus = "APPROVED";
-        if (backendStatus === "ALL") backendStatus = null;
-
-        const response = await axios.get("http://localhost:8060/guides/certificates", {
-          params: backendStatus ? { status: backendStatus } : {}
-        });
-        console.log("Fetching guides with status:", response.data);
-
-        // Map backend response to frontend format
+        // Always fetch all guides for this type, regardless of filter
+        const response = await axios.get("http://localhost:8060/guides/certificates");
         const mappedData = response.data.map(cert => {
           let certificateUrl = "/documents/placeholder.pdf";
           let mimeType = "application/pdf";
           if (cert.certificate_picture) {
             if (typeof cert.certificate_picture === "string" && cert.certificate_picture.startsWith("\\x")) {
-              // Convert hex string to bytes
               const hex = cert.certificate_picture.slice(2);
               const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-              // Detect file type
               if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
                 mimeType = "image/jpeg";
               } else if (
@@ -155,7 +145,6 @@ const Verification = () => {
               typeof cert.certificate_picture.data === "string" &&
               /^[A-Za-z0-9+/=]+$/.test(cert.certificate_picture.data)
             ) {
-              // If it's already a base64 string in .data, decode to bytes and create a Blob URL
               try {
                 const base64 = cert.certificate_picture.data;
                 const byteCharacters = atob(base64);
@@ -164,7 +153,6 @@ const Verification = () => {
                   byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
                 const byteArray = new Uint8Array(byteNumbers);
-                // Try to detect PDF or image
                 if (byteArray[0] === 0x25 && byteArray[1] === 0x50 && byteArray[2] === 0x44 && byteArray[3] === 0x46) {
                   mimeType = "application/pdf";
                 } else if (byteArray[0] === 0xff && byteArray[1] === 0xd8 && byteArray[2] === 0xff) {
@@ -182,9 +170,7 @@ const Verification = () => {
               /^[A-Za-z0-9+/=\r\n]+$/.test(cert.certificate_picture) &&
               cert.certificate_picture.length > 100
             ) {
-              // Handle plain base64 string (PDF or image)
               try {
-                // Remove any whitespace/newlines
                 const base64 = cert.certificate_picture.replace(/\s/g, "");
                 const byteCharacters = atob(base64);
                 const byteNumbers = new Array(byteCharacters.length);
@@ -192,7 +178,6 @@ const Verification = () => {
                   byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
                 const byteArray = new Uint8Array(byteNumbers);
-                // Try to detect PDF or image
                 if (byteArray[0] === 0x25 && byteArray[1] === 0x50 && byteArray[2] === 0x44 && byteArray[3] === 0x46) {
                   mimeType = "application/pdf";
                 } else if (byteArray[0] === 0xff && byteArray[1] === 0xd8 && byteArray[2] === 0xff) {
@@ -224,14 +209,19 @@ const Verification = () => {
             expiryDate: cert.expiry_date
           };
         });
-        console.log("Mapped guides:", mappedData);
-        setGuides(mappedData);
+        setAllGuides(mappedData);
+        // Set filtered guides based on current filter
+        setGuides(
+          mappedData.filter(g => filter === "all" ? true : g.status === filter)
+        );
       } else {
         // Using mock data for drivers for now
         const filteredGuides = mockGuides.filter((g) => g.type === type);
-        setGuides(filteredGuides);
+        setAllGuides(filteredGuides);
+        setGuides(
+          filteredGuides.filter(g => filter === "all" ? true : g.status === filter)
+        );
       }
-
       setLoading(false);
     } catch (err) {
       console.error("Error fetching guides by type:", err);
@@ -248,55 +238,117 @@ const Verification = () => {
     alert(`Downloading ${docType} document for ${guideName}`);
   };
 
-  const handleVerifyCertificate = (certificateData) => {
-    // TODO: Implement API call to verify certificate
-    console.log("Verifying certificate:", certificateData);
-
-    // Update local state
-    setGuides(
-      guides.map((guide) =>
-        guide.id === certificateData.guideId
-          ? {
-              ...guide,
-              status: "verified",
-              verifiedAt: new Date().toISOString(),
-              verification: {
+  const handleVerifyCertificate = async (certificateData) => {
+    // Call backend to update status to APPROVED and update issuer/date fields
+    try {
+      const res = await axios.put(`http://localhost:8060/guides/certificates/${certificateData.guideId}`, {
+        status: "APPROVED",
+        certificate_issuer: certificateData.certificateIssuer,
+        issue_date: certificateData.issueDate,
+        expiry_date: certificateData.expiryDate
+      });
+      // Update local state with new status
+      setGuides(
+        guides.map((guide) =>
+          guide.id === certificateData.guideId
+            ? {
+                ...guide,
+                status: "verified",
+                verifiedAt: new Date().toISOString(),
                 certificateIssuer: certificateData.certificateIssuer,
                 issueDate: certificateData.issueDate,
                 expiryDate: certificateData.expiryDate,
-              },
-            }
-          : guide
-      )
-    );
-
+                verification: {
+                  certificateIssuer: certificateData.certificateIssuer,
+                  issueDate: certificateData.issueDate,
+                  expiryDate: certificateData.expiryDate,
+                },
+              }
+            : guide
+        )
+      );
+      setAllGuides(
+        allGuides.map((guide) =>
+          guide.id === certificateData.guideId
+            ? {
+                ...guide,
+                status: "verified",
+                verifiedAt: new Date().toISOString(),
+                certificateIssuer: certificateData.certificateIssuer,
+                issueDate: certificateData.issueDate,
+                expiryDate: certificateData.expiryDate,
+                verification: {
+                  certificateIssuer: certificateData.certificateIssuer,
+                  issueDate: certificateData.issueDate,
+                  expiryDate: certificateData.expiryDate,
+                },
+              }
+            : guide
+        )
+      );
+    } catch (err) {
+      console.error("Failed to verify certificate:", err);
+      alert("Failed to verify certificate. Please try again.");
+    }
     setShowVerificationForm(false);
     setSelectedGuide(null);
   };
 
-  const handleRejectGuide = (guideId, reason) => {
-    // TODO: Implement API call to reject guide
-    console.log("Rejecting guide:", guideId, reason);
-
-    // Update local state
-    setGuides(
-      guides.map((guide) =>
-        guide.id === guideId
-          ? {
-              ...guide,
-              status: "rejected",
-              rejectedAt: new Date().toISOString(),
-              rejectionReason: reason,
-            }
-          : guide
-      )
-    );
+  const handleRejectGuide = async (guideId, reason) => {
+    // Call backend to update status to REJECTED and set issuer/date fields to null
+    try {
+      const res = await axios.put(`http://localhost:8060/guides/certificates/${guideId}`, {
+        status: "REJECTED",
+        certificate_issuer: null,
+        issue_date: null,
+        expiry_date: null
+      });
+      setGuides(
+        guides.map((guide) =>
+          guide.id === guideId
+            ? {
+                ...guide,
+                status: "rejected",
+                rejectedAt: new Date().toISOString(),
+                rejectionReason: reason,
+                certificateIssuer: null,
+                issueDate: null,
+                expiryDate: null,
+              }
+            : guide
+        )
+      );
+      setAllGuides(
+        allGuides.map((guide) =>
+          guide.id === guideId
+            ? {
+                ...guide,
+                status: "rejected",
+                rejectedAt: new Date().toISOString(),
+                rejectionReason: reason,
+                certificateIssuer: null,
+                issueDate: null,
+                expiryDate: null,
+              }
+            : guide
+        )
+      );
+    } catch (err) {
+      console.error("Failed to reject guide:", err);
+      alert("Failed to reject guide. Please try again.");
+    }
   };
 
-  const filteredGuides = guides.filter((guide) => {
-    if (filter === "all") return true;
-    return guide.status === filter;
-  });
+  // When filter or search changes, update guides from allGuides
+  useEffect(() => {
+    setGuides(
+      allGuides.filter(g => {
+        const matchesStatus = filter === "all" ? true : g.status === filter;
+        const matchesEmail = searchEmail.trim() === "" ? true : (g.name && g.name.toLowerCase().includes(searchEmail.trim().toLowerCase()));
+        return matchesStatus && matchesEmail;
+      })
+    );
+  }, [filter, allGuides, searchEmail]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -439,27 +491,35 @@ const Verification = () => {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {["all", "pending", "verified", "rejected"].map((status) => (
-            <button
-              key={status}
-              onClick={() => {
-                setFilter(status);
-                if (userType === "guide") {
-                  fetchGuidesByType("guide");
-                }
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                filter === status
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
-        </div>
+      {/* Search and Filters */}
+      <div className="flex flex-wrap gap-2 mb-6 items-center">
+        <input
+          type="text"
+          placeholder="Search by email..."
+          value={searchEmail}
+          onChange={e => setSearchEmail(e.target.value)}
+          className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mr-4"
+          style={{ minWidth: 220 }}
+        />
+        {["all", "pending", "verified", "rejected"].map((status) => (
+          <button
+            key={status}
+            onClick={() => {
+              setFilter(status);
+              if (userType === "guide") {
+                fetchGuidesByType("guide");
+              }
+            }}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+              filter === status
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
       </div>
 
       {/* Loading State */}
@@ -485,7 +545,7 @@ const Verification = () => {
       {/* Requests List */}
       {!loading && (
         <div className="space-y-4">
-          {filteredGuides.map((guide) => (
+          {guides.map((guide) => (
             Object.entries(guide.documents).map(([type, docObj]) => (
               <div
                 key={`${guide.id}-${type}`}
@@ -531,6 +591,8 @@ const Verification = () => {
                     <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
                     View {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
+                  {/* Certificate Details */}
+
                 </div>
 
                 {/* Verification Form */}
@@ -557,6 +619,7 @@ const Verification = () => {
                         name="issuer"
                         required
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        defaultValue={guide.certificateIssuer || ""}
                       />
                     </div>
                     <div className="mb-4">
@@ -568,6 +631,7 @@ const Verification = () => {
                         name="issueDate"
                         required
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        defaultValue={guide.issueDate ? new Date(guide.issueDate).toISOString().split('T')[0] : ""}
                       />
                     </div>
                     <div className="mb-4">
@@ -579,6 +643,7 @@ const Verification = () => {
                         name="expiryDate"
                         required
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        defaultValue={guide.expiryDate ? new Date(guide.expiryDate).toISOString().split('T')[0] : ""}
                       />
                     </div>
                     <div className="flex items-center justify-end space-x-3">
@@ -586,12 +651,16 @@ const Verification = () => {
                         type="button"
                         onClick={() => handleRejectGuide(guide.id, "Rejected by admin")}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                        disabled={guide.status === "rejected"}
+                        style={guide.status === "rejected" ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                       >
                         Reject
                       </button>
                       <button
                         type="submit"
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                        disabled={guide.status === "verified"}
+                        style={guide.status === "verified" ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                       >
                         Accept
                       </button>
@@ -603,7 +672,7 @@ const Verification = () => {
           ))}
 
           {/* Empty State */}
-          {filteredGuides.length === 0 && !loading && (
+          {guides.length === 0 && !loading && (
             <div className="text-center py-12">
               <CheckBadgeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
