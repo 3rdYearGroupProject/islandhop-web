@@ -737,7 +737,7 @@ const MyTripsPage = () => {
               <>
                 {ongoingTrip && (
                   <div className="flex justify-center mb-16">
-                    <div className="relative bg-blue-50 rounded-3xl shadow-2xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-4xl overflow-hidden">
+                    <div className="relative bg-blue-50 rounded-3xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-4xl overflow-hidden">
                       {/* Image */}
                       <div className="md:w-2/5 w-full min-h-[260px] relative">
                         <img

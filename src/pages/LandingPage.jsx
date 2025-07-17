@@ -179,6 +179,7 @@ const LandingPage = () => {
             <button
               className="relative inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white rounded-full font-bold text-lg transition-all duration-300 justify-center overflow-hidden bg-white hover:bg-gray-200 group"
               style={{}}
+              onClick={() => navigate('/trips')}
             >
               {/* The text and icon as a cutout */}
               <span
@@ -199,7 +200,10 @@ const LandingPage = () => {
               {/* Fallback text for accessibility, visually hidden */}
               <span className="opacity-0">Start Your Journey</span>
             </button>
-            <button className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center">
+            <button
+              className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center"
+              onClick={() => navigate('/pools')}
+            >
               <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1a3 3 0 000-6h-1m5 6h1a3 3 0 000-6h-1m-7 6h7m-7 0v8a2 2 0 002 2h10a2 2 0 002-2v-8m-9 0V9a2 2 0 012-2h5a2 2 0 012 2v3.028M12 17.5V21" />
               </svg>
@@ -245,10 +249,16 @@ const LandingPage = () => {
             and like-minded travelers to create unforgettable experiences across Sri Lanka.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition">
+            <button
+              className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition"
+              onClick={() => navigate('/trips')}
+            >
               Start Your Journey
             </button>
-            <button className="px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-full hover:bg-primary-600 hover:text-white transition">
+            <button
+              className="px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-full hover:bg-primary-600 hover:text-white transition"
+              onClick={() => navigate('/discover')}
+            >
               Learn More
             </button>
           </div>
@@ -302,16 +312,25 @@ const LandingPage = () => {
         <div className="content-container">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Discover Sri Lanka's Best</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {inspirationDestinations.map((inspiration, i) => (
-              <div key={i} className="flex-shrink-0 w-64 md:w-72">
-                <DestinationCard
-                  destination={inspiration}
-                  imageUrl={inspiration.image}
-                  onClick={(dest) => console.log('Clicked inspiration:', dest.name)}
-                  className="h-48 md:h-56"
-                />
-              </div>
-            ))}
+            {inspirationDestinations.map((inspiration, i) => {
+              // Map inspiration name to filter value
+              let filter = '';
+              if (inspiration.name.toLowerCase().includes('beach')) filter = 'beaches';
+              else if (inspiration.name.toLowerCase().includes('temple')) filter = 'temples';
+              else if (inspiration.name.toLowerCase().includes('wildlife')) filter = 'wildlife';
+              else if (inspiration.name.toLowerCase().includes('hiking') || inspiration.name.toLowerCase().includes('mountain')) filter = 'hiking';
+              else if (inspiration.name.toLowerCase().includes('food')) filter = 'food';
+              return (
+                <div key={i} className="flex-shrink-0 w-64 md:w-72">
+                  <DestinationCard
+                    destination={inspiration}
+                    imageUrl={inspiration.image}
+                    onClick={() => navigate('/discover', { state: { filter } })}
+                    className="h-48 md:h-56"
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -450,30 +469,7 @@ const LandingPage = () => {
               <div className="text-gray-600">Average Rating</div>
             </div>
           </div>
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg p-8 shadow-sm">
-              <div className="flex items-center justify-center mb-4">
-                <div className="flex text-yellow-400">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-              </div>
-              <p className="text-lg text-gray-600 mb-4">
-                "IslandHop made our Sri Lankan adventure absolutely incredible. The local guide was knowledgeable, 
-                friendly, and showed us places we never would have discovered on our own."
-              </p>
-              <div className="flex items-center justify-center gap-3">
-                <img src={avatar} alt="Customer" className="w-12 h-12 rounded-full" />
-                <div>
-                  <div className="font-semibold text-gray-900">Sarah Johnson</div>
-                  <div className="text-sm text-gray-600">Traveled to Kandy & Ella</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Removed testimonial/review content as requested */}
         </div>
       </section>
 
