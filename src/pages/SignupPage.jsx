@@ -402,7 +402,7 @@ const SignupPage = () => {
             <div className="text-gray-600">
               Looking to earn with IslandHop?{' '}
               <Link
-                to="/signup/professional"
+                to="/professional-signup"
                 className="font-medium text-black hover:text-gray-700"
               >
                 Join as a Professional
