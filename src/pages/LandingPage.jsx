@@ -575,7 +575,6 @@ const LandingPage = () => {
         <div className="content-container">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Discover Sri Lanka's Best</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-<<<<<<< HEAD
             {inspirationDestinations.map((inspiration, i) => (
               <div key={i} className="flex-shrink-0 w-64 md:w-72">
                 <DestinationCard
@@ -586,27 +585,6 @@ const LandingPage = () => {
                 />
               </div>
             ))}
-=======
-            {inspirationDestinations.map((inspiration, i) => {
-              // Map inspiration name to filter value
-              let filter = '';
-              if (inspiration.name.toLowerCase().includes('beach')) filter = 'beaches';
-              else if (inspiration.name.toLowerCase().includes('temple')) filter = 'temples';
-              else if (inspiration.name.toLowerCase().includes('wildlife')) filter = 'wildlife';
-              else if (inspiration.name.toLowerCase().includes('hiking') || inspiration.name.toLowerCase().includes('mountain')) filter = 'hiking';
-              else if (inspiration.name.toLowerCase().includes('food')) filter = 'food';
-              return (
-                <div key={i} className="flex-shrink-0 w-64 md:w-72">
-                  <DestinationCard
-                    destination={inspiration}
-                    imageUrl={inspiration.image}
-                    onClick={() => navigate('/discover', { state: { filter } })}
-                    className="h-48 md:h-56"
-                  />
-                </div>
-              );
-            })}
->>>>>>> 5d7dfa80be551c5cc9b4746e360dbe954b40cde2
           </div>
         </div>
       </section>
