@@ -140,7 +140,7 @@ const mockItinerary = {
 };
 
 const tripProgress = {
-  currentDay: 1,
+  currentDay: 1, // 1-based index for user display, 0-based for code
   totalDays: 2,
 };
 const mockPlaces = [
@@ -452,6 +452,10 @@ const OngoingTripPage = () => {
                         default: return 'bg-gray-50 border-gray-200';
                       }
                     };
+                    // Highlight logic: highlight middle item of current day
+                    const dayNum = parseInt(dayIndex, 10) + 1;
+                    const isCurrentDay = dayNum === tripProgress.currentDay;
+                    const isUpcomingDay = dayNum > tripProgress.currentDay;
                     return (
                       <div key={dayIndex} className="border-l-2 border-gray-200 relative">
                         {/* Day Header */}
@@ -475,59 +479,83 @@ const OngoingTripPage = () => {
                           <div className="ml-6 pb-8">
                             {hasItems ? (
                               <div className="space-y-4">
-                                {allItems.map((item, itemIndex) => (
-                                  <div key={`${item.category}-${itemIndex}`} className={`p-4 rounded-lg border ${getCategoryColor(item.category)}`}>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-start space-x-3 flex-1">
-                                        {getCategoryIcon(item.category)}
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center justify-between">
-                                            <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
-                                            {item.time && (
-                                              <span className="text-sm text-gray-500 ml-2">{item.time}</span>
+                                {allItems.map((item, itemIndex) => {
+                                  // Middle index for current day
+                                  let middleIndex = Math.floor((allItems.length - 1) / 2);
+                                  const isCurrentItem = isCurrentDay && itemIndex === middleIndex;
+                                  const isCompleted = isCurrentDay && itemIndex < middleIndex;
+                                  // Mark as completed for all items after the current one in current and upcoming days
+                                  const isMarkable = (isCurrentDay && itemIndex > middleIndex) || isUpcomingDay;
+                                  return (
+                                    <div
+                                      key={`${item.category}-${itemIndex}`}
+                                      className={`px-4 py-3 rounded-lg border max-w-[520px] relative ${getCategoryColor(item.category)} ${isCurrentItem ? 'ring-2 ring-primary-500 bg-primary-50/80 relative' : ''}`}
+                                      style={{ marginLeft: 0 }}
+                                    >
+                                      {/* Time at true bottom right of card */}
+                                      {item.time && (
+                                        <span className="absolute bottom-2 right-4 text-sm text-gray-500">{item.time}</span>
+                                      )}
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex items-start space-x-3 flex-1">
+                                          {getCategoryIcon(item.category)}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between">
+                                              <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
+                                            </div>
+                                            {item.location && (
+                                              <div className="flex items-center text-sm text-gray-600 mt-1">
+                                                <MapPin className="w-3 h-3 mr-1" />
+                                                {item.location}
+                                              </div>
                                             )}
-                                          </div>
-                                          {item.location && (
-                                            <div className="flex items-center text-sm text-gray-600 mt-1">
-                                              <MapPin className="w-3 h-3 mr-1" />
-                                              {item.location}
-                                            </div>
-                                          )}
-                                          {item.description && (
-                                            <p className="text-sm text-gray-600 mt-2">{item.description}</p>
-                                          )}
-                                          <div className="flex items-center justify-between mt-3">
-                                            <div className="flex items-center space-x-4 text-sm">
-                                              {item.duration && (
-                                                <span className="flex items-center text-gray-500">
-                                                  <Clock className="w-3 h-3 mr-1" />
-                                                  {item.duration}
-                                                </span>
-                                              )}
-                                              {item.rating && (
-                                                <span className="flex items-center text-yellow-500">
-                                                  <Star className="w-4 h-4 mr-1 fill-yellow-400" />
-                                                  {item.rating}
-                                                </span>
-                                              )}
-                                              {item.reviews && (
-                                                <span className="text-gray-500">({item.reviews} reviews)</span>
-                                              )}
-                                            </div>
-                                            <div className="text-right">
-                                              {item.price && (
-                                                <span className="font-semibold text-gray-900">{item.price}</span>
-                                              )}
-                                              {item.priceRange && (
-                                                <span className="font-semibold text-gray-900">{item.priceRange}</span>
-                                              )}
+                                            {item.description && (
+                                              <p className="text-sm text-gray-600 mt-2">{item.description}</p>
+                                            )}
+                                            <div className="flex items-center justify-between mt-3">
+                                              <div className="flex items-center space-x-4 text-sm">
+                                                {item.duration && (
+                                                  <span className="flex items-center text-gray-500">
+                                                    <Clock className="w-3 h-3 mr-1" />
+                                                    {item.duration}
+                                                  </span>
+                                                )}
+                                                {item.rating && (
+                                                  <span className="flex items-center text-yellow-500">
+                                                    <Star className="w-4 h-4 mr-1 fill-yellow-400" />
+                                                    {item.rating}
+                                                  </span>
+                                                )}
+                                                {item.reviews && (
+                                                  <span className="text-gray-500">({item.reviews} reviews)</span>
+                                                )}
+                                              </div>
+                                              {/* No time here, handled by absolute at card bottom right */}
+                                              <div className="text-right"></div>
                                             </div>
                                           </div>
                                         </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                          {isCompleted && (
+                                            <span className="mb-1 px-2 py-1 bg-green-500 text-white text-xs rounded font-semibold shadow">Completed</span>
+                                          )}
+                                          {isCurrentItem && (
+                                            <span className="ml-4 px-2 py-1 bg-primary-500 text-white text-xs rounded font-semibold shadow">Current</span>
+                                          )}
+                                          {isMarkable && (
+                                            <button
+                                              className="ml-4 px-2 py-1 bg-gray-300 hover:bg-green-500 text-gray-700 hover:text-white text-xs rounded font-semibold shadow transition-colors"
+                                              style={{ minWidth: '110px' }}
+                                              onClick={() => { /* Implement mark as completed logic here */ }}
+                                            >
+                                              Mark as Completed
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             ) : (
                               <div className="text-center py-8 text-gray-500">
