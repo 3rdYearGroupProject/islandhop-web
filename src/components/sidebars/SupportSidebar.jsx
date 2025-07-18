@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
@@ -13,7 +13,7 @@ import {
   UserIcon,
   HeartIcon,
   StarIcon,
-  CheckBadgeIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { auth } from "../../firebase";
 import { clearUserData } from "../../utils/userStorage";
@@ -23,6 +23,16 @@ import islandHopLogo from "../../assets/IslandHop.png";
 const SupportSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleViewProfile = () => {
+    setIsDropdownOpen(false);
+    navigate("/support/profile");
+  };
 
   const supportMenuItems = [
     {
@@ -62,18 +72,6 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Handle Complaints",
     },
     {
-      name: "Escalate Issues",
-      path: "/support/escalate-issue",
-      icon: ShieldExclamationIcon,
-      description: "Priority Escalation",
-    },
-    {
-      name: "Refunds",
-      path: "/support/refund-compensation",
-      icon: CurrencyDollarIcon,
-      description: "Process Refunds",
-    },
-    {
       name: "Lost Items",
       path: "/support/lost-item-tracker",
       icon: ArchiveBoxXMarkIcon,
@@ -84,18 +82,6 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       path: "/support/panic-alerts",
       icon: ShieldExclamationIcon,
       description: "Emergency Response",
-    },
-    {
-      name: "Reports",
-      path: "/support/reports",
-      icon: ChartBarIcon,
-      description: "Support Analytics",
-    },
-    {
-      name: "Verification",
-      path: "/support/verification",
-      icon: CheckBadgeIcon,
-      description: "Verify Guide Documents",
     },
     {
       name: "Profile",
@@ -276,6 +262,64 @@ const SupportSidebar = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-200 dark:border-secondary-700">
+          {/* Support Agent Profile Dropdown */}
+          <div className="relative mb-3">
+            <button
+              onClick={toggleDropdown}
+              className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors"
+            >
+              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold">S</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  Support Agent
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Customer Support
+                </p>
+              </div>
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${
+                  isDropdownOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-gray-200 dark:border-secondary-700 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={handleViewProfile}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700"
+                  >
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="py-4 border-t border-gray-200 dark:border-secondary-700">
+            <div className="space-y-2">
+              <button className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-secondary-800 hover:bg-gray-200 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors duration-200">
+                <BellIcon className="h-4 w-4 mr-2" />
+                Notifications
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={handleSignOut}
             className="w-full flex items-center justify-center px-4 py-2 mb-2 bg-danger-100 dark:bg-danger-900/20 text-danger-700 dark:text-danger-400 rounded-lg font-semibold text-sm hover:bg-danger-200 dark:hover:bg-danger-800 transition-colors duration-200"

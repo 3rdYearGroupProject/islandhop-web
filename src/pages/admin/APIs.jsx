@@ -362,15 +362,6 @@ const APIs = () => {
                   </div>
                 </div>
 
-                {/* API Actions */}
-                <div className="flex space-x-3">
-                  <button className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium">
-                    View Dashboard
-                  </button>
-                  <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors text-sm font-medium">
-                    Settings
-                  </button>
-                </div>
               </div>
             );
           })}
