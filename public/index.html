@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="IslandHop - Your gateway to exploring Sri Lanka. Connect with local drivers, guides, and discover the beauty of Sri Lanka.">
+  <meta name="keywords" content="Sri Lanka, travel, tourism, drivers, guides, trip planning">
+  <meta name="author" content="IslandHop">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://islandhop.lk/">
+  <meta property="og:title" content="IslandHop - Explore Sri Lanka">
+  <meta property="og:description" content="Your gateway to exploring Sri Lanka. Connect with local drivers, guides, and discover the beauty of Sri Lanka.">
+  <meta property="og:image" content="/logo192.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://islandhop.lk/">
+  <meta property="twitter:title" content="IslandHop - Explore Sri Lanka">
+  <meta property="twitter:description" content="Your gateway to exploring Sri Lanka. Connect with local drivers, guides, and discover the beauty of Sri Lanka.">
+  <meta property="twitter:image" content="/logo192.png">
+
+  <title>IslandHop - Explore Sri Lanka</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Google Places API -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=%REACT_APP_GOOGLE_PLACES_API_KEY%&libraries=places"></script>
+  
+  <link rel="apple-touch-icon" href="/logo192.png" />
+  <link rel="manifest" href="/manifest.json" />
+  
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+  
+  <!-- PayHere Script -->
+  <script src="https://www.payhere.lk/lib/payhere.js" async></script>
+  
+  <style>
+    /* Loading screen styles */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+
+  
+  <div id="root"></div>
+  
+  <script>
+    // Hide loading screen once React app loads
+    window.addEventListener('load', () => {
+      const loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        setTimeout(() => {
+          loadingScreen.style.opacity = '0';
+          loadingScreen.style.transition = 'opacity 0.5s ease-out';
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+          }, 500);
+        }, 1000);
+      }
+    });
+  </script>
+</body>
+</html>

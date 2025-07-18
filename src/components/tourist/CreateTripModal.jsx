@@ -1,0 +1,145 @@
+import React, { useState } from 'react';
+import Modal from '../Modal';
+import Button from '../Button';
+import Input from '../Input';
+
+const CreateTripModal = ({ isOpen, onClose, onCreateTrip }) => {
+  const [formData, setFormData] = useState({
+    name: ''
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Trip name is required';
+    } else if (formData.name.length > 80) {
+      newErrors.name = 'Trip name must be 80 characters or less';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      onCreateTrip(formData);
+      // Reset form
+      setFormData({ name: '' });
+      setErrors({});
+      onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset form and close
+    setFormData({ name: '' });
+    setErrors({});
+    onClose();
+  };
+
+  const remainingChars = 80 - formData.name.length;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleCancel}
+      title="Create Your Trip"
+      size="md"
+      showCloseButton={true}
+    >
+      <div className="space-y-6">
+        <form onSubmit={handleSubmit}>
+          {/* Trip Name */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
+              What should we call your trip?
+            </label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="e.g., Summer Adventure in Sri Lanka"
+              value={formData.name}
+              onChange={handleInputChange}
+              error={errors.name}
+              className="w-full text-lg"
+            />
+            <div className="flex justify-between items-center mt-1">
+              {errors.name && (
+                <span className="text-sm text-red-600">{errors.name}</span>
+              )}
+              <span className={`text-sm ml-auto ${remainingChars < 10 ? 'text-red-600' : 'text-gray-500'}`}>
+                {remainingChars}/80 characters
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-8">
+            <Button
+              type="button"
+              onClick={handleCancel}
+              variant="ghost"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </Button>
+            
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!formData.name.trim()}
+              className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+                !formData.name.trim()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              Create Trip
+            </Button>
+          </div>
+        {/* Pool Option Section */}
+        <div className="mt-10 pt-6 border-t border-gray-200">
+          <div className="flex flex-col items-center text-center">
+            <span className="text-lg font-medium text-gray-900 mb-2">Would you like to make this a pool trip?</span>
+            <span className="text-gray-600 mb-4 text-sm">Pool trips allow you to share your adventure with others and split costs.</span>
+            <Button
+              type="button"
+              variant="primary"
+              className="px-6 py-2 rounded-full font-semibold bg-blue-600 text-white hover:bg-blue-700"
+              onClick={() => {
+                // Redirect to pool creation flow, matching PoolPage's Create New Pool button
+                window.location.href = '/pool-duration';
+              }}
+            >
+              Yes, Make this a Pool
+            </Button>
+          </div>
+        </div>
+        </form>
+      </div>
+    </Modal>
+  );
+};
+
+export default CreateTripModal;
