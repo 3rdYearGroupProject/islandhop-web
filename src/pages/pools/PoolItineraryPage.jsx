@@ -544,7 +544,7 @@ const PoolItineraryPage = () => {
       const apiType = typeMapping[type] || type;
       
       // Use trip planning service for suggestions (same for both public and private)
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084'}/api/v1/itinerary/${tripId}/day/${dayNumber + 1}/suggestions/${apiType}?userId=${userId}`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary/${tripId}/day/${dayNumber + 1}/suggestions/${apiType}?userId=${userId}`;
       
       console.log('📡 Making GET request to:', apiUrl);
       

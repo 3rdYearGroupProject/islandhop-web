@@ -93,7 +93,7 @@ const PoolPreferencesPage = () => {
       console.log('📦 Pre-check API Request data:', requestData);
       
       // Make API call to pre-check compatible groups
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083'}/api/v1/public-pooling/pre-check`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/public-pooling/pre-check`;
       
       console.log('📡 Making POST request to:', apiUrl);
       
@@ -202,7 +202,7 @@ const PoolPreferencesPage = () => {
       console.log('📦 Join API Request data:', requestData);
       
       // Make API call to request to join group
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083'}/api/v1/groups/${groupId}/join`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/groups/${groupId}/join`;
       
       console.log('📡 Making POST request to:', apiUrl);
       
@@ -350,7 +350,7 @@ const PoolPreferencesPage = () => {
       console.log('📦 API Request data:', requestData);
       
       // Make API call to create group with trip
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083'}/groups/with-trip`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/groups/with-trip`;
       
       console.log('📡 Making POST request to:', apiUrl);
       
