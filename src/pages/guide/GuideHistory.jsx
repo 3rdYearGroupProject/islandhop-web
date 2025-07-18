@@ -226,7 +226,7 @@ const GuideHistory = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">${stats.totalEarnings}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">LKR{stats.totalEarnings}</p>
             </div>
           </div>
         </div>
@@ -383,7 +383,7 @@ const GuideHistory = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${tour.earnings.toFixed(2)}
+                      LKR{tour.earnings.toFixed(2)}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {tour.paymentMethod}

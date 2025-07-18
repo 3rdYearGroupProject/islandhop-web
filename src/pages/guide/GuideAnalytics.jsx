@@ -180,7 +180,7 @@ const GuideAnalytics = () => {
           value={currentData.totalEarnings.toLocaleString()}
           change={currentData.earningsChange}
           icon={CurrencyDollarIcon}
-          prefix="$"
+          prefix="LKR"
           trend={timeRange}
         />
         <StatCard
@@ -260,7 +260,7 @@ const GuideAnalytics = () => {
           </div>
           <div className="text-center">
             <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              ${(currentData.totalEarnings / currentData.totalTours).toFixed(0)}
+              LKR{(currentData.totalEarnings / currentData.totalTours).toFixed(0)}
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Average earnings per tour</p>
             <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -299,7 +299,7 @@ const GuideAnalytics = () => {
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white w-16 text-right">
-                  ${day.earnings}
+                  LKR{day.earnings}
                 </span>
               </div>
             ))}

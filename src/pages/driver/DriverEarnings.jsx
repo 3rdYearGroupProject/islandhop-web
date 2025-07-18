@@ -52,6 +52,7 @@ const DriverEarnings = () => {
   const recentTransactions = [
     {
       id: 'TR001',
+      tripName: 'Airport Express',
       passenger: 'Sarah Johnson',
       route: 'Colombo → Galle',
       amount: 89.50,
@@ -62,6 +63,7 @@ const DriverEarnings = () => {
     },
     {
       id: 'TR002',
+      tripName: 'Hill Country Tour',
       passenger: 'Michael Chen',
       route: 'Kandy → Nuwara Eliya',
       amount: 95.00,
@@ -72,6 +74,7 @@ const DriverEarnings = () => {
     },
     {
       id: 'TR003',
+      tripName: 'City Return',
       passenger: 'Emma Wilson',
       route: 'Ella → Colombo',
       amount: 180.00,
@@ -82,6 +85,7 @@ const DriverEarnings = () => {
     },
     {
       id: 'TR004',
+      tripName: 'Heritage Sites',
       passenger: 'David Kumar',
       route: 'Sigiriya → Dambulla',
       amount: 35.00,
@@ -297,7 +301,12 @@ const DriverEarnings = () => {
                     <Car className="h-5 w-5 text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900">{transaction.passenger}</h3>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="font-medium text-gray-900">{transaction.passenger}</h3>
+                      <span className="text-xs text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+                        {transaction.tripName}
+                      </span>
+                    </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <MapPin className="h-3 w-3 mr-1" />
                       {transaction.route}
@@ -332,85 +341,79 @@ const DriverEarnings = () => {
         </div>
       </div>
 
-      {/* Payment Methods & Payouts */}
+      {/* Banking Details & Payouts */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Payment Methods</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Banking Details</h2>
           
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Bank Account</h3>
-                  <p className="text-sm text-gray-500">****1234 • Primary</p>
-                </div>
-              </div>
-              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                Edit
-              </button>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg border-dashed">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Wallet className="h-5 w-5 text-gray-400" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Add Payment Method</h3>
-                  <p className="text-sm text-gray-500">Bank account or mobile wallet</p>
-                </div>
-              </div>
-              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Payout Settings</h2>
-          
-          <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Automatic Payout
+                Account Holder Name
               </label>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">
-                  Automatically transfer earnings to your bank account
-                </span>
-                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-600 transition-colors">
-                  <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6 transition-transform" />
-                </button>
-              </div>
+              <input 
+                type="text" 
+                placeholder="John Doe"
+                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payout Frequency
+                Bank Name
               </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg text-sm">
-                <option>Daily</option>
-                <option>Weekly</option>
-                <option>Monthly</option>
+              <select className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                <option value="">Select Bank</option>
+                <option value="BOC">Bank of Ceylon</option>
+                <option value="PB">People's Bank</option>
+                <option value="COM">Commercial Bank</option>
+                <option value="HNB">Hatton National Bank</option>
+                <option value="SDB">Sanasa Development Bank</option>
+                <option value="NSB">National Savings Bank</option>
+                <option value="DFCC">DFCC Bank</option>
+                <option value="NDB">National Development Bank</option>
+                <option value="UBL">Union Bank</option>
+                <option value="SLB">Seylan Bank</option>
               </select>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum Balance
+                Account Number
               </label>
               <input 
-                type="number" 
-                placeholder="50.00"
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                type="text" 
+                placeholder="1234567890"
+                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Minimum balance before automatic payout
-              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Branch Code
+              </label>
+              <input 
+                type="text" 
+                placeholder="123"
+                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Branch Name
+              </label>
+              <input 
+                type="text" 
+                placeholder="Colombo Main Branch"
+                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            
+            <div className="pt-4">
+              <button className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                Save Banking Details
+              </button>
             </div>
           </div>
         </div>
