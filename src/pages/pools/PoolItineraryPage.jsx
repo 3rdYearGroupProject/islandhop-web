@@ -356,7 +356,7 @@ const PoolItineraryPage = () => {
   // Get the appropriate base URL based on pool privacy
   const getApiBaseUrl = () => {
     // Both private and public pools use group endpoints since all members can update
-    return process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083';
+    return process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
   };
 
   // Add place to group trip (for both public and private pools)
