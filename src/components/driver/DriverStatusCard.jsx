@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TruckIcon, StarIcon } from '@heroicons/react/24/outline';
 
-const DriverStatusCard = ({ compact = false, showToggle = true, className = '' }) => {
+const DriverStatusCard = ({ compact = false, showToggle = true, className = '', onReportIssue = () => {} }) => {
   const [driverStatus, setDriverStatus] = useState({
     online: true,
     activeTrips: 1,
@@ -58,27 +58,17 @@ const DriverStatusCard = ({ compact = false, showToggle = true, className = '' }
           </div>
         </div>
         
-        {showToggle && (
-          <button
-            onClick={toggleOnlineStatus}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-              driverStatus.online
-                ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
-                : 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400'
-            }`}
-          >
-            {driverStatus.online ? 'Go Offline' : 'Go Online'}
-          </button>
-        )}
+        <button
+          onClick={onReportIssue}
+          className="px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400"
+        >
+          Report Issues
+        </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="text-center p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{driverStatus.activeTrips}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">Active Trips</div>
-        </div>
-        <div className="text-center p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900 dark:text-green-400">${driverStatus.todayEarnings}</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">${driverStatus.todayEarnings}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Today's Earnings</div>
         </div>
         <div className="text-center p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">

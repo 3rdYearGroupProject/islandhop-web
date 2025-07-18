@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Card, { CardBody, CardHeader } from '../components/Card';
 import DestinationCard from '../components/DestinationCard';
@@ -37,6 +38,7 @@ import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
 
 const Discover = () => {
+  const location = useLocation();
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +48,26 @@ const Discover = () => {
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [placeDetails, setPlaceDetails] = useState(null);
   const mapRef = useRef(null);
+  // Map filter string to category id
+  const filterToCategoryId = (filter) => {
+    if (!filter) return 'tourist_attraction';
+    const map = {
+      beaches: 'beach',
+      temples: 'temple',
+      wildlife: 'park',
+      hiking: 'park',
+      food: 'restaurant',
+    };
+    return map[filter] || 'tourist_attraction';
+  };
+
+  // On mount, set selectedCategory from navigation state if present
+  useEffect(() => {
+    if (location.state && location.state.filter) {
+      setSelectedCategory(filterToCategoryId(location.state.filter));
+    }
+    // eslint-disable-next-line
+  }, [location.state]);
 
   // Categories for filtering
   const categories = [
