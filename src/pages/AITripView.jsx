@@ -6,6 +6,7 @@ import AddThingsToDoModal from '../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../components/AddTransportationModal';
+import axios from 'axios';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -869,6 +870,32 @@ const TripItineraryPage = () => {
     });
     
     setIsSavingTrip(false);
+  };
+
+  // Fetch trip data from backend
+  useEffect(() => {
+    const fetchTrip = async () => {
+      try {
+        const response = await axios.get('/api/ai-trip'); // Replace with actual endpoint
+        setItinerary(response.data.itinerary || {});
+      } catch (error) {
+        console.error('Error fetching trip:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrip();
+  }, []);
+
+  const handleRemoveItem = (dayIndex, category, itemId) => {
+    setItinerary((prev) => {
+      const updatedDay = {
+        ...prev[dayIndex],
+        [category]: prev[dayIndex][category].filter((item) => item.id !== itemId),
+      };
+      return { ...prev, [dayIndex]: updatedDay };
+    });
   };
 
   if (!tripName || !selectedDates) {
