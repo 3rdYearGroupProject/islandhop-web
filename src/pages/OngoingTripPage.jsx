@@ -43,6 +43,16 @@ const mockItinerary = {
         description: 'Visit the famous Kandy Temple',
         price: '$10',
         time: '14:00'
+      },
+      {
+        id: 10,
+        name: 'Evening Walk by Lake',
+        location: 'Kandy Lake',
+        duration: '1 hour',
+        rating: 4.2,
+        description: 'Relaxing walk around the lake',
+        price: '$0',
+        time: '17:00'
       }
     ],
     places: [
@@ -69,6 +79,17 @@ const mockItinerary = {
         description: 'Authentic local food',
         priceRange: '$10-20',
         time: '19:00'
+      },
+      {
+        id: 11,
+        name: 'Royal Bar & Hotel',
+        location: 'Kandy',
+        cuisine: 'Bar',
+        rating: 4.1,
+        reviews: 90,
+        description: 'Historic bar for drinks',
+        priceRange: '$15-30',
+        time: '21:00'
       }
     ],
     transportation: [
@@ -96,6 +117,16 @@ const mockItinerary = {
         description: 'Explore tea plantations',
         price: '$20',
         time: '10:00'
+      },
+      {
+        id: 12,
+        name: 'Gregory Lake Boating',
+        location: 'Gregory Lake',
+        duration: '2 hours',
+        rating: 4.6,
+        description: 'Boat ride and lakeside picnic',
+        price: '$15',
+        time: '15:00'
       }
     ],
     places: [
@@ -122,6 +153,17 @@ const mockItinerary = {
         description: 'Tea and snacks',
         priceRange: '$5-15',
         time: '13:00'
+      },
+      {
+        id: 13,
+        name: 'Salmiya Italian Restaurant',
+        location: 'Nuwara Eliya',
+        cuisine: 'Italian',
+        rating: 4.4,
+        reviews: 60,
+        description: 'Popular for pizza and pasta',
+        priceRange: '$10-25',
+        time: '19:00'
       }
     ],
     transportation: [
@@ -134,6 +176,122 @@ const mockItinerary = {
         description: 'Scenic train ride',
         time: '08:00',
         duration: '3 hours'
+      }
+    ]
+  },
+  2: {
+    date: new Date('2025-08-17'),
+    activities: [
+      {
+        id: 4,
+        name: 'Horton Plains Hike',
+        location: 'Horton Plains',
+        duration: '6 hours',
+        rating: 4.9,
+        description: 'Hike to World’s End and Baker’s Falls',
+        price: '$30',
+        time: '06:00'
+      },
+      {
+        id: 5,
+        name: 'Visit Strawberry Farm',
+        location: 'Nuwara Eliya',
+        duration: '1 hour',
+        rating: 4.3,
+        description: 'Pick and taste fresh strawberries',
+        price: '$8',
+        time: '15:00'
+      }
+    ],
+    places: [
+      {
+        id: 3,
+        name: 'Jetwing St. Andrew’s',
+        location: 'Nuwara Eliya',
+        price: '$120/night',
+        rating: 4.5,
+        reviews: 180,
+        description: 'Colonial-style hotel',
+        checkIn: '14:00',
+        checkOut: '12:00'
+      }
+    ],
+    food: [
+      {
+        id: 3,
+        name: 'Grand Indian',
+        location: 'Nuwara Eliya',
+        cuisine: 'Indian',
+        rating: 4.5,
+        reviews: 150,
+        description: 'Famous for curries',
+        priceRange: '$10-20',
+        time: '18:00'
+      }
+    ],
+    transportation: [
+      {
+        id: 3,
+        name: 'Private Van',
+        type: 'Van',
+        price: '$40',
+        rating: 4.7,
+        description: 'Transport for the day',
+        time: '05:30',
+        duration: '12 hours'
+      }
+    ]
+  },
+  3: {
+    date: new Date('2025-08-18'),
+    activities: [
+      {
+        id: 6,
+        name: 'Tea Factory Tour',
+        location: 'Pedro Tea Estate',
+        duration: '2 hours',
+        rating: 4.6,
+        description: 'Learn about tea production',
+        price: '$12',
+        time: '09:00'
+      }
+    ],
+    places: [
+      {
+        id: 4,
+        name: 'Araliya Green Hills',
+        location: 'Nuwara Eliya',
+        price: '$110/night',
+        rating: 4.4,
+        reviews: 140,
+        description: 'Modern hotel with mountain views',
+        checkIn: '14:00',
+        checkOut: '12:00'
+      }
+    ],
+    food: [
+      {
+        id: 4,
+        name: 'The Pub',
+        location: 'Nuwara Eliya',
+        cuisine: 'Pub',
+        rating: 4.0,
+        reviews: 70,
+        description: 'Casual pub for dinner',
+        priceRange: '$8-18',
+        time: '20:00'
+      }
+    ],
+    transportation: [
+      {
+        id: 4,
+        name: 'Tuk Tuk',
+        type: 'Tuk Tuk',
+        price: '$5',
+        rating: 4.2,
+        description: 'Short rides in town',
+        time: '08:30',
+        duration: '1 hour'
       }
     ]
   }
@@ -221,8 +379,12 @@ const OngoingTripBanner = ({ trip }) => (
 const days = Object.values(mockItinerary).map(day => day.date);
 
 const OngoingTripPage = () => {
-
-  const [expandedDays, setExpandedDays] = useState({ 0: true });
+  // Expand all days by default
+  const [expandedDays, setExpandedDays] = useState(() => {
+    const expanded = {};
+    Object.keys(mockItinerary).forEach((k) => { expanded[k] = true; });
+    return expanded;
+  });
   const [itineraryCollapsed, setItineraryCollapsed] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [mapCenter, setMapCenter] = useState(mockPlaces[0]?.location || { lat: 7.8731, lng: 80.7718 });
@@ -251,18 +413,15 @@ const OngoingTripPage = () => {
     if (itineraryCollapsed) {
       // Animate to collapsed height
       setItineraryMaxHeight('140px');
+      const timeout = setTimeout(() => {
+        setIsAnimating(false);
+      }, 500);
+      return () => clearTimeout(timeout);
     } else {
-      // Animate to expanded height
-      setItineraryMaxHeight(itineraryRef.current.scrollHeight + 'px');
-    }
-    // After animation, remove maxHeight restriction if expanded
-    const timeout = setTimeout(() => {
-      if (!itineraryCollapsed) {
-        setItineraryMaxHeight('none');
-      }
+      // Remove maxHeight restriction so it takes required height
+      setItineraryMaxHeight('none');
       setIsAnimating(false);
-    }, 500);
-    return () => clearTimeout(timeout);
+    }
   }, [itineraryCollapsed]);
 
   const getMarkerIcon = (placeType) => {
@@ -313,6 +472,80 @@ const OngoingTripPage = () => {
         <div className="flex flex-col md:flex-row gap-8 w-full">
           {/* Left: Itinerary, vertical timeline style, collapsible */}
           <div className="w-full md:w-1/2 min-w-0 flex flex-col">
+            {/* Trip Progress Card */}
+            <div className="mb-4">
+              <div className="bg-white border border-primary-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="w-full">
+                  <h3 className="text-lg font-semibold text-primary-700 mb-1">Trip Progress</h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
+                    <span className="font-medium">{ongoingTrip.name}</span>
+                    <span className="text-gray-400">|</span>
+                    <span>Day <span className="font-bold">{tripProgress.currentDay}</span> of <span className="font-bold">{tripProgress.totalDays}</span></span>
+                    <span className="text-gray-400">|</span>
+                    <span>{ongoingTrip.daysLeft} days left</span>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
+                    <div
+                      className="h-full bg-primary-500 transition-all"
+                      style={{ width: `${Math.round((tripProgress.currentDay-1) / tripProgress.totalDays * 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Start</span>
+                    <span>End</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-semibold">Ongoing</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Today's Details Card */}
+            {(() => {
+              const todayIdx = tripProgress.currentDay - 1;
+              const today = mockItinerary[todayIdx];
+              if (!today) return null;
+              // Gather all stops in order: transportation, activities, food, places
+              const stops = [
+                ...(today.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
+                ...(today.activities?.map(a => ({ ...a, category: 'activities' })) || []),
+                ...(today.food?.map(a => ({ ...a, category: 'food' })) || []),
+                ...(today.places?.map(a => ({ ...a, category: 'places' })) || []),
+              ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+              return (
+                <div className="mb-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg shadow-sm p-4">
+                    <h3 className="text-base font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-500" />
+                      Today's Plan: {today.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                    </h3>
+                    <ol className="space-y-2 list-decimal list-inside">
+                      {stops.length === 0 && (
+                        <li className="text-gray-500">No destinations or stops planned for today.</li>
+                      )}
+                      {stops.map((stop, idx) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="mt-0.5">
+                            {stop.category === 'transportation' && <Car className="w-4 h-4 text-blue-600" />}
+                            {stop.category === 'activities' && <Camera className="w-4 h-4 text-primary-600" />}
+                            {stop.category === 'food' && <Utensils className="w-4 h-4 text-orange-600" />}
+                            {stop.category === 'places' && <Bed className="w-4 h-4 text-green-600" />}
+                          </span>
+                          <div className="flex-1">
+                            <span className="font-medium text-gray-900">{stop.name}</span>
+                            {stop.location && <span className="ml-2 text-gray-600">({stop.location})</span>}
+                            {stop.time && <span className="ml-2 text-xs text-gray-500">at {stop.time}</span>}
+                            {stop.duration && <span className="ml-2 text-xs text-gray-400">[{stop.duration}]</span>}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
               <button
@@ -570,6 +803,41 @@ const OngoingTripPage = () => {
                   })}
                 </div>
               )}
+            </div>
+
+            {/* Chat Interface Card below the whole itinerary */}
+            <div className="mt-8">
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <h3 className="text-lg font-semibold text-primary-700 mb-2">Chat with Driver &amp; Guide</h3>
+                <div className="h-56 overflow-y-auto bg-gray-50 rounded p-3 mb-3 flex flex-col gap-2" style={{ minHeight: '180px' }}>
+                  {/* Example chat bubbles, replace with real chat logic */}
+                  <div className="self-end max-w-[70%]">
+                    <div className="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1 text-sm">Hi, when will we reach the next stop?</div>
+                    <div className="text-xs text-gray-400 text-right mr-1">You (Tourist)</div>
+                  </div>
+                  <div className="self-start max-w-[70%]">
+                    <div className="bg-green-100 text-green-900 px-3 py-2 rounded-lg mb-1 text-sm">We will reach in about 30 minutes.</div>
+                    <div className="text-xs text-gray-400 ml-1">Driver</div>
+                  </div>
+                  <div className="self-start max-w-[70%]">
+                    <div className="bg-yellow-100 text-yellow-900 px-3 py-2 rounded-lg mb-1 text-sm">Let me know if you want to stop for food!</div>
+                    <div className="text-xs text-gray-400 ml-1">Guide</div>
+                  </div>
+                </div>
+                <form className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    placeholder="Type your message..."
+                  />
+                  <button
+                    type="submit"
+                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
+                  >
+                    Send
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
           {/* Right: Map */}
