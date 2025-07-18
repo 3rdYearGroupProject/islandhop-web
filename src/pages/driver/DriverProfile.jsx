@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Settings
 } from 'lucide-react';
+import { useToast } from '../../components/ToastProvider';
 
 const DriverProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -107,6 +108,8 @@ const DriverProfile = () => {
 
   const [profilePictureFile, setProfilePictureFile] = useState(null);
 
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
+
   useEffect(() => {
     let unsubscribe;
     setLoadingProfile(true);
@@ -117,10 +120,13 @@ const DriverProfile = () => {
           memberSince: user.metadata.creationTime
         });
         try {
+          console.log('Fetching driver profile data for:', user.email);
           const res = await api.get('/driver/profile?email=' + user.email);
+          console.log('Driver profile data response:', res);
+          console.log('Driver profile data:', res.data);
           if (res.status === 200 && res.data) {
-            setDriverData({
-              ...driverData,
+            setDriverData(prevData => ({
+              ...prevData,
               firstName: res.data.firstName || '',
               lastName: res.data.lastName || '',
               phone: res.data.phoneNumber || '',
@@ -128,7 +134,7 @@ const DriverProfile = () => {
               address: res.data.address || '',
               emergencyContact: res.data.emergencyContactNumber || '',
               emergencyContactName: res.data.emergencyContactName || '',
-              profilePicture: res.data.profilePicture || driverData.profilePicture,
+              profilePicture: res.data.profilePicture || prevData.profilePicture,
               documents: {
                 drivingLicense: {
                   image: res.data.drivingLicenseImage || '',
@@ -150,7 +156,7 @@ const DriverProfile = () => {
                 autoAcceptTrips: res.data.autoAcceptTrips === 1,
                 maxDistance: res.data.maxDistance || 0
               }
-            });
+            }));
           }
         } catch (err) {
           // handle error
@@ -209,23 +215,131 @@ const DriverProfile = () => {
     setLoading(false);
   };
 
-  const handleLicenseImageUpload = (docType, file) => {
-    // Only allow image update for licenses
-    // Simulate upload and update state
+ const handleDrivingLicenseUpload = async (file) => {
+  // Update state to show upload in progress
+  setDriverData(prev => ({
+    ...prev,
+    documents: {
+      ...prev.documents,
+      drivingLicense: {
+        ...prev.documents.drivingLicense,
+        image: URL.createObjectURL(file),
+        uploadedAt: new Date().toISOString().slice(0, 10),
+        status: 'uploading',
+      }
+    }
+  }));
+
+  try {
+    const formData = new FormData();
+    formData.append('drivingLicense', file);
+    
+    console.log('Uploading driving license document');
+    
+    const response = await api.post('/driver/uploadDrivingLicense', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    
+    console.log('Upload response:', response.data);
+    
+    if (response.status === 200) {
+      console.log('Driving license uploaded successfully');
+      setDriverData(prev => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          drivingLicense: {
+            ...prev.documents.drivingLicense,
+            status: 'pending',
+          }
+        }
+      }));
+      showSuccessToast('Successfully uploaded Driving License document.');
+    }
+  } catch (error) {
+    console.error('Error uploading driving license:', error);
+    console.error('Error details:', error.response?.data);
+    
+    // Reset status on error
     setDriverData(prev => ({
       ...prev,
       documents: {
         ...prev.documents,
-        [docType]: {
-          ...prev.documents[docType],
-          image: URL.createObjectURL(file),
-          uploadedAt: new Date().toISOString().slice(0, 10),
-          status: 'pending',
+        drivingLicense: {
+          ...prev.documents.drivingLicense,
+          status: 'error',
         }
       }
     }));
-  };
+    
+    showErrorToast('Failed to upload Driving License document. Please try again.');
+  }
+};
 
+const handleSltdaLicenseUpload = async (file) => {
+  // Update state to show upload in progress
+  setDriverData(prev => ({
+    ...prev,
+    documents: {
+      ...prev.documents,
+      sltdaLicense: {
+        ...prev.documents.sltdaLicense,
+        image: URL.createObjectURL(file),
+        uploadedAt: new Date().toISOString().slice(0, 10),
+        status: 'uploading',
+      }
+    }
+  }));
+
+  try {
+    const formData = new FormData();
+    formData.append('sltdaLicense', file);
+    
+    console.log('Uploading SLTDA license document');
+    
+    const response = await api.post('/driver/uploadSltdaLicense', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    
+    console.log('Upload response:', response.data);
+    
+    if (response.status === 200) {
+      console.log('SLTDA license uploaded successfully');
+      setDriverData(prev => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          sltdaLicense: {
+            ...prev.documents.sltdaLicense,
+            status: 'pending',
+          }
+        }
+      }));
+      showSuccessToast('Successfully uploaded SLTDA License document.');
+    }
+  } catch (error) {
+    console.error('Error uploading SLTDA license:', error);
+    console.error('Error details:', error.response?.data);
+    
+    // Reset status on error
+    setDriverData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        sltdaLicense: {
+          ...prev.documents.sltdaLicense,
+          status: 'error',
+        }
+      }
+    }));
+    
+    showErrorToast('Failed to upload SLTDA License document. Please try again.');
+  }
+};
   const getStatusColor = (status) => {
     switch (status) {
       case 'verified':
@@ -512,7 +626,16 @@ const DriverProfile = () => {
                             type="file"
                             accept="application/pdf,image/*"
                             style={{ display: 'none' }}
-                            onChange={e => handleLicenseImageUpload(docType, e.target.files[0])}
+                            onChange={e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                if (docType === 'drivingLicense') {
+                                  handleDrivingLicenseUpload(file);
+                                } else if (docType === 'sltdaLicense') {
+                                  handleSltdaLicenseUpload(file);
+                                }
+                              }
+                            }}
                           />
                         </label>
                       )}

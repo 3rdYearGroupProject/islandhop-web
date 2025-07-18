@@ -64,6 +64,19 @@ const MyTripsPage = () => {
         console.log('🔐 Current user UID:', user.uid);
         setCurrentUser(user);
         
+        // Check if we should use mock data (for development without backend)
+        const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true' ||
+                           (process.env.NODE_ENV === 'development' && 
+                            (!process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 
+                             process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING.includes('localhost')));
+        
+        if (useMockData) {
+          console.log('🔧 Using mock data - backend disabled or unavailable');
+          setTrips(mockTrips);
+          setApiError(null);
+          return;
+        }
+        
         // Fetch user trips from backend
         try {
           const userTrips = await fetchUserTrips(user.uid);
@@ -72,7 +85,12 @@ const MyTripsPage = () => {
         } catch (error) {
           console.warn('⚠️ Failed to fetch trips from backend, using mock data');
           console.error('Backend fetch error:', error);
+          
+          // Use mock data instead of showing error to user
           setTrips(mockTrips);
+          
+          // Clear any API error state to prevent error displays
+          setApiError(null);
         }
       } else {
         setCurrentUser(null);
@@ -390,13 +408,31 @@ const MyTripsPage = () => {
       console.error('❌ Fetch trips error:', error);
       console.error('❌ Fetch trips error message:', error.message);
       
-      setApiError(error.message || 'Failed to fetch trips');
+      // Handle different types of errors
+      let userFriendlyMessage = 'Failed to fetch trips';
+      
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        userFriendlyMessage = 'Unable to connect to server. Please check if the backend is running or your internet connection.';
+        console.warn('⚠️ Network error detected - backend may not be running');
+      } else if (error.message.includes('Invalid userId')) {
+        userFriendlyMessage = 'Authentication issue. Please try logging in again.';
+      } else if (error.message.includes('Server error')) {
+        userFriendlyMessage = 'Server error occurred. Please try again later.';
+      } else if (error.message.includes('No trips found')) {
+        userFriendlyMessage = 'No trips found. Start planning your first adventure!';
+      }
+      
+      setApiError(userFriendlyMessage);
       
       // Don't show alert for network errors to avoid double alerts
       if (!error.message.includes('Invalid userId') && 
           !error.message.includes('Server error') && 
           !error.message.includes('No trips found')) {
-        alert(`Failed to fetch trips: ${error.message}`);
+        console.log('🔔 Showing user alert for error:', userFriendlyMessage);
+        // Only show alert for non-network errors to reduce noise
+        if (error.message !== 'Failed to fetch' && error.name !== 'TypeError') {
+          alert(`Failed to fetch trips: ${error.message}`);
+        }
       }
       
       throw error;
@@ -729,6 +765,45 @@ const MyTripsPage = () => {
             </div>
           </div>
 
+          {/* Error Display */}
+          {apiError && (
+            <div className="flex justify-center mb-8">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-2xl w-full">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-sm font-bold">!</span>
+                    </div>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-medium text-red-800 mb-1">
+                      Connection Issue
+                    </h3>
+                    <p className="text-sm text-red-700 mb-3">
+                      {apiError}
+                    </p>
+                    {apiError.includes('backend') && (
+                      <div className="text-xs text-red-600 bg-red-100 p-2 rounded">
+                        <strong>For developers:</strong> Make sure your backend servers are running on:
+                        <br />• Trip Planning: {process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}
+                        <br />• User Services: {process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1'}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        setApiError(null);
+                        window.location.reload();
+                      }}
+                      className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Highlight Ongoing Trip and Other Trips */}
           {(() => {
             const ongoingTrip = sortedTrips.find(trip => trip.status === 'active');
@@ -737,7 +812,7 @@ const MyTripsPage = () => {
               <>
                 {ongoingTrip && (
                   <div className="flex justify-center mb-16">
-                    <div className="relative bg-blue-50 rounded-3xl shadow-2xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-4xl overflow-hidden">
+                    <div className="relative bg-blue-50 rounded-3xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-4xl overflow-hidden">
                       {/* Image */}
                       <div className="md:w-2/5 w-full min-h-[260px] relative">
                         <img

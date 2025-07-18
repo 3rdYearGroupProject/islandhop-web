@@ -1,8 +1,20 @@
 import React from 'react';
 
-const ExploreCard = ({ image, title, rating, reviewCount, price, className = "" }) => {
+const ExploreCard = ({ image, title, rating, reviewCount, price, className = "", onClick }) => {
+  const handleClick = () => {
+    console.log('🖱️ ExploreCard clicked:', title);
+    if (onClick) {
+      onClick();
+    } else {
+      console.warn('⚠️ No onClick handler provided to ExploreCard');
+    }
+  };
+
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-64 ${className}`}>
+    <div 
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-64 ${className}`}
+      onClick={handleClick}
+    >
       <div className="h-48 overflow-hidden">
         <img 
           src={image} 

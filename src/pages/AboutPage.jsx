@@ -12,17 +12,18 @@ import {
   TruckIcon,
   CameraIcon,
   HeartIcon,
-  CheckCircleIcon,
-  UsersIcon,
-  GlobeAltIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { Sparkles } from 'lucide-react';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import aboutVideo from '../assets/about.mp4';
 import Footer from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
 
 const AboutPage = () => {
   const [activeDriverIndex, setActiveDriverIndex] = useState(0);
   const [activeGuideIndex, setActiveGuideIndex] = useState(0);
+  const navigate = useNavigate();
 
   // Featured Drivers Data
   const featuredDrivers = [
@@ -364,37 +365,42 @@ const AboutPage = () => {
                 Join Our Growing Community
               </h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                Whether you're a traveler seeking authentic experiences or a local professional 
-                wanting to share your expertise, IslandHop is the perfect platform to connect 
-                and create meaningful travel experiences together.
+                IslandHop makes it easy to plan your own trips or join travel pools with others. 
+                Create a custom adventure, invite friends and family, or connect with like-minded travelers in a pool to share costs and experiences. 
+                Whether you want a private getaway or a group journey, our platform helps you discover, organize, and enjoy Sri Lanka your way.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-primary-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-primary-700 transition">
+                <button className="bg-primary-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-primary-700 transition flex items-center justify-center gap-2">
+                  <Sparkles className="h-5 w-5 mr-2" />
                   Start Your Journey
                 </button>
-                <button className="border-2 border-primary-600 text-primary-600 px-6 py-3 rounded-full font-semibold hover:bg-primary-50 transition">
-                  Become a Professional
+                <button className="border-2 border-primary-600 text-primary-600 px-6 py-3 rounded-full font-semibold hover:bg-primary-50 transition flex items-center justify-center gap-2">
+                  <UserGroupIcon className="h-5 w-5 mr-1" />
+                  Join a Pool
                 </button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Call to Action */}
-        <section className="text-center bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl text-white p-12">
-          <h2 className="text-3xl md:text-4xl font-semibold mb-6">
-            Ready to Start Your Sri Lankan Adventure?
-          </h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Join thousands of satisfied travelers who have discovered the beauty of Sri Lanka with IslandHop.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-primary-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition">
-              Find Your Adventure
-            </button>
-            <button className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-primary-600 transition">
-              Join as Professional
-            </button>
+        {/* Call to Action - Landing Page Style */}
+        <section className="w-full py-16 bg-gray-50">
+          <div className="content-container text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              Become a Driver or Guide with IslandHop
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+              Share your local expertise and passion for Sri Lanka by joining our platform as a verified driver or guide. Connect with travelers from around the world, offer authentic experiences, and grow your professional journey with IslandHop.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button 
+                className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition flex items-center justify-center gap-2"
+                onClick={() => navigate('/professional-signup')}
+              >
+                <UserGroupIcon className="h-6 w-6 mr-2" />
+                Join as a Professional
+              </button>
+            </div>
           </div>
         </section>
       </div>

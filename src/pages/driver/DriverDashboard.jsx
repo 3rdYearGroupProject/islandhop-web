@@ -14,15 +14,20 @@ import {
   AlertCircle
 } from 'lucide-react';
 import DriverStatusCard from '../../components/driver/DriverStatusCard';
+import ReportIssueModal from '../../components/driver/ReportIssueModal';
 import DriverTripModal from '../../components/driver/DriverTripModal';
 import MapPopupModal from '../../components/driver/MapPopupModal';
+import TripDetailsModal from '../../components/TripDetailsModal';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData } from '../../utils/userStorage';
 import { Link } from 'react-router-dom';
 
 const DriverDashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const toast = useToast();
 
   const [driverStats, setDriverStats] = useState({
@@ -91,8 +96,15 @@ const DriverDashboard = () => {
 
   const handleTripAction = (tripId, action) => {
     if (action === 'accept') {
-      // Handle trip acceptance
-      console.log(`Accepting trip ${tripId}`);
+      const mockTripDetails = {
+        passenger: 'John Doe',
+        pickup: '123 Main St',
+        destination: '456 Elm St',
+        estimatedFare: '25.00',
+        distance: '10 miles',
+      };
+      setSelectedTrip(mockTripDetails);
+      setIsModalOpen(true);
     } else if (action === 'decline') {
       // Handle trip decline
       setPendingRequests(prev => prev.filter(req => req.id !== tripId));
@@ -113,19 +125,21 @@ const DriverDashboard = () => {
 
       {/* Driver Status Card */}
       <div className="mb-8">
-        <DriverStatusCard showToggle={true} />
+        <DriverStatusCard showToggle={true} onReportIssue={() => setReportModalOpen(true)} />
       </div>
+      {/* Report Issue Modal */}
+      <ReportIssueModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <DollarSign className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Today's Earnings</p>
-              <p className="text-2xl font-bold text-gray-900">${driverStats.todayEarnings}</p>
+              <p className="text-sm font-medium text-gray-600">This Month's Earnings</p>
+              <p className="text-2xl font-bold text-gray-900">${driverStats.monthlyEarnings}</p>
             </div>
           </div>
         </div>
@@ -151,18 +165,6 @@ const DriverDashboard = () => {
               <p className="text-sm font-medium text-gray-600">Rating</p>
               <p className="text-2xl font-bold text-gray-900">{driverStats.rating}/5</p>
               <p className="text-xs text-gray-500">({driverStats.totalReviews} reviews)</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Clock className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Trips</p>
-              <p className="text-2xl font-bold text-gray-900">{driverStats.activeTrips}</p>
             </div>
           </div>
         </div>
@@ -322,6 +324,12 @@ const DriverDashboard = () => {
         onClose={() => setMapModalOpen(false)} 
         pickup={activeTrip?.pickupLocation} 
         destination={activeTrip?.destination} 
+      />
+      {/* Trip Details Modal for Pending Requests */}
+      <TripDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        tripDetails={selectedTrip}
       />
         <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

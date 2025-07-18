@@ -503,12 +503,19 @@ const ViewTripPage = () => {
         } else {
           // If no tripId or userId, fall back to local data
           fallbackToLocalData();
-        }
-      } catch (error) {
-        console.error('❌ Error fetching trip details:', error);
-        setApiError(`Failed to load trip: ${error.message}`);
-        fallbackToLocalData();
-      } finally {
+        }        } catch (error) {
+          console.error('❌ Error fetching trip details:', error);
+          
+          // In development mode with mock data enabled, don't set API error - just fallback
+          if (process.env.REACT_APP_ENVIRONMENT === 'development' && 
+              process.env.REACT_APP_USE_MOCK_DATA === 'true') {
+            console.log('🔄 Development mode: Falling back to mock data due to API error');
+          } else {
+            setApiError(`Failed to load trip: ${error.message}`);
+          }
+          
+          fallbackToLocalData();
+        } finally {
         setLoading(false);
       }
     };
@@ -792,7 +799,11 @@ const ViewTripPage = () => {
     );
   }
 
-  if (apiError) {
+  // Only show error in production or when not using mock data
+  const shouldShowError = process.env.REACT_APP_ENVIRONMENT !== 'development' && 
+                          process.env.REACT_APP_USE_MOCK_DATA !== 'true';
+  
+  if (apiError && shouldShowError) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">

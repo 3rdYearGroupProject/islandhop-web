@@ -3,9 +3,10 @@ import PanicAlertModal from './PanicAlertModal';
 import ComplainModal from './ComplainModal';
 import ReportLostItemModal from './ReportLostItemModal';
 
-// Usage: <QuickActionsButton isLoggedIn={true} />
 
-const QuickActionsButton = ({ isLoggedIn }) => {
+// Usage: <QuickActionsButton isLoggedIn={true} userRole="tourist" />
+
+const QuickActionsButton = ({ isLoggedIn, userRole }) => {
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // 'panic' | 'complain' | 'lost' | null
   const menuRef = useRef(null);
@@ -24,7 +25,7 @@ const QuickActionsButton = ({ isLoggedIn }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  if (!isLoggedIn) return null;
+  if (!isLoggedIn || userRole !== 'tourist') return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50" ref={menuRef}>
