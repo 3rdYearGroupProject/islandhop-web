@@ -370,22 +370,40 @@ const TripBookingPage = () => {
         <Navbar />
       </div>
 
-      {/* Trip Header */}
+      {/* Trip Header - blue background behind navbar, pulled up to be visible behind floating navbar */}
       <div className="relative">
-        <div className="absolute inset-0 w-full h-[200px] bg-gradient-to-r from-primary-600 to-primary-700 pointer-events-none"></div>
-        <div className="relative max-w-7xl mx-auto px-4 pt-32 pb-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">Book Your Trip</h1>
-            <p className="text-white/90 text-lg">{trip.name}</p>
+        <div className="absolute inset-0 w-full h-[300px] bg-gradient-to-r from-primary-600 to-primary-700 pointer-events-none" style={{ zIndex: 0 }}></div>
+        <div className="relative max-w-7xl mx-auto px-4 pt-40 pb-12" style={{ zIndex: 1 }}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Booking
+                </span>
+                <span className="text-white/80 text-sm">
+                  {trip.totalDays ? `${trip.totalDays} days` : ''}
+                  {Array.isArray(trip.destinations) && trip.destinations.length > 0 ? ` • ${trip.destinations.join(', ')}` : ''}
+                </span>
+              </div>
+              <h1 className="text-4xl font-bold mb-2 text-white drop-shadow">{trip.name || 'Book Your Trip'}</h1>
+              {trip.dates && trip.dates.length === 2 && (
+                <p className="text-white/90 text-lg">
+                  {new Date(trip.dates[0]).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  {' - '}
+                  {new Date(trip.dates[1]).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </p>
+              )}
+            </div>
+            {/* No edit/share/like buttons for booking page */}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8 h-[calc(100vh-300px)]">
+      <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-8 w-full">
           {/* Left Side - Booking Content */}
-          <div className="w-1/2 bg-white rounded-xl shadow-lg border border-gray-200 p-8 overflow-y-auto">
+          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl border border-gray-200 p-8 overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Trip Preferences</h2>
             
             <div className="space-y-6">
@@ -429,20 +447,28 @@ const TripBookingPage = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">Number of Passengers</label>
-                    <select
-                      value={numPassengers}
-                      onChange={e => {
-                        setNumPassengers(Number(e.target.value));
-                        setSelectedVehicle('');
-                      }}
-                      className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {[...Array(15)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          {i + 1} Passenger{i === 0 ? '' : 's'}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={numPassengers}
+                        onChange={e => {
+                          setNumPassengers(Number(e.target.value));
+                          setSelectedVehicle('');
+                        }}
+                        className="w-full appearance-none bg-white border-2 border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-50 rounded-lg px-4 py-3 pr-10 text-base font-semibold text-gray-800 shadow-sm transition-all duration-150 cursor-pointer hover:border-primary-50"
+                        style={{ minHeight: '48px' }}
+                      >
+                        {[...Array(15)].map((_, i) => (
+                          <option key={i + 1} value={i + 1} className="text-base text-gray-800">
+                            {i + 1} Passenger{i === 0 ? '' : 's'}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -563,7 +589,7 @@ const TripBookingPage = () => {
           </div>
 
           {/* Right Side - Map */}
-          <div className="w-1/2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-160px)]">
             {isLoaded ? (
               <div className="h-full flex flex-col">
                 <div className="p-4 border-b border-gray-100">
