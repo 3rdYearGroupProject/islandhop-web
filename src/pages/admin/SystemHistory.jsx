@@ -265,7 +265,7 @@ const SystemHistory = () => {
                 System History
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                View system activity logs, audit trails, and change history
+                View system activity logs
               </p>
             </div>
             <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
@@ -337,9 +337,6 @@ const SystemHistory = () => {
           <nav className="flex space-x-8">
             {[
               { id: 'activity', label: 'Activity Logs', icon: UserIcon },
-              { id: 'audit', label: 'Audit Trails', icon: DocumentTextIcon },
-              { id: 'changes', label: 'Change History', icon: ArrowPathIcon },
-              { id: 'events', label: 'System Events', icon: ExclamationTriangleIcon }
             ].map((tab) => {
               const IconComponent = tab.icon;
               return (
