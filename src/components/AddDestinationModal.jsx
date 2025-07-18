@@ -2,8 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
 import { tripPlanningApi } from '../api/axios';
 
-const HARDCODED_CITIES = [
-  {
+const HARDCODED_CITIES = [  {
     id: 1,
     name: 'Colombo',
     region: 'Western Province',
@@ -29,14 +28,6 @@ const HARDCODED_CITIES = [
   },
   {
     id: 4,
-    name: 'Sigiriya',
-    region: 'Central Province',
-    description: 'Home to the ancient rock fortress and UNESCO World Heritage Site, Sigiriya.',
-    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
-    highlights: ['Sigiriya Rock', 'Pidurangala Rock', 'Frescoes']
-  },
-  {
-    id: 5,
     name: 'Nuwara Eliya',
     region: 'Central Province',
     description: 'A cool-climate city in the heart of Sri Lanka’s tea country, known as Little England.',
@@ -44,14 +35,293 @@ const HARDCODED_CITIES = [
     highlights: ['Tea Plantations', 'Gregory Lake', 'Horton Plains']
   },
   {
+    id: 5,
+    name: 'Anuradhapura',
+    region: 'North Central Province',
+    description: 'An ancient city and UNESCO World Heritage Site, known for its well-preserved ruins and sacred sites.',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    highlights: ['Sri Maha Bodhi', 'Ruwanwelisaya', 'Jetavanaramaya']
+  },
+  {
     id: 6,
+    name: 'Sigiriya',
+    region: 'Central Province',
+    description: 'Home to the ancient rock fortress and UNESCO World Heritage Site, Sigiriya.',
+    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
+    highlights: ['Sigiriya Rock', 'Pidurangala Rock', 'Frescoes']
+  },
+  {
+    id: 7,
+    name: 'Ella',
+    region: 'Uva Province',
+    description: 'A small town with stunning views, popular for hiking and its relaxed atmosphere.',
+    image: 'https://images.unsplash.com/photo-1517816428104-380fd9864b1b?w=400&h=300&fit=crop',
+    highlights: ['Ella Rock', 'Nine Arch Bridge', 'Little Adam’s Peak']
+  },
+  {
+    id: 8,
+    name: 'Mirissa',
+    region: 'Southern Province',
+    description: 'A beautiful beach destination known for whale watching and vibrant nightlife.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Mirissa Beach', 'Whale Watching', 'Coconut Tree Hill']
+  },
+  {
+    id: 9,
     name: 'Jaffna',
     region: 'Northern Province',
     description: 'A culturally rich city in the north, famous for its unique cuisine and historic sites.',
     image: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=400&h=300&fit=crop',
     highlights: ['Jaffna Fort', 'Nallur Kandaswamy Temple', 'Casuarina Beach']
   },
-  // Add more cities as needed
+  {
+    id: 10,
+    name: 'Negombo',
+    region: 'Western Province',
+    description: 'A coastal city known for its fishing industry and vibrant lagoon.',
+    image: 'https://images.unsplash.com/photo-1508921912187-0e8a8e7c67f2?w=400&h=300&fit=crop',
+    highlights: ['Negombo Lagoon', 'Fish Market', 'Dutch Fort']
+  },
+  {
+    id: 11,
+    name: 'Trincomalee',
+    region: 'Eastern Province',
+    description: 'A port city with beautiful beaches and historic temples on the east coast.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Nilaveli Beach', 'Koneswaram Temple', 'Fort Frederick']
+  },
+  {
+    id: 12,
+    name: 'Batticaloa',
+    region: 'Eastern Province',
+    description: 'Known for its singing fish and scenic lagoons, a hidden gem in the east.',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    highlights: ['Batticaloa Lagoon', 'Kallady Bridge', 'Fort Batticaloa']
+  },
+  {
+    id: 13,
+    name: 'Ratnapura',
+    region: 'Sabaragamuwa Province',
+    description: 'The city of gems, famous for its gem mining and lush rainforests.',
+    image: 'https://images.unsplash.com/photo-1469474968028-5663c0c8e537?w=400&h=300&fit=crop',
+    highlights: ['Gem Museum', 'Maha Saman Devalaya', 'Sinharaja Forest']
+  },
+  {
+    id: 14,
+    name: 'Matara',
+    region: 'Southern Province',
+    description: 'A coastal city with historic charm and beautiful beaches.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Polhena Beach', 'Matara Fort', 'Weherahena Temple']
+  },
+  {
+    id: 15,
+    name: 'Badulla',
+    region: 'Uva Province',
+    description: 'A gateway to the hill country, known for its waterfalls and tea estates.',
+    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=400&h=300&fit=crop',
+    highlights: ['Dunhinda Falls', 'Muthiyangana Temple', 'Bogoda Bridge']
+  },
+  {
+    id: 16,
+    name: 'Polonnaruwa',
+    region: 'North Central Province',
+    description: 'An ancient city with well-preserved ruins, a UNESCO World Heritage Site.',
+    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
+    highlights: ['Gal Vihara', 'Parakrama Samudra', 'Royal Palace']
+  },
+  {
+    id: 17,
+    name: 'Kurunegala',
+    region: 'North Western Province',
+    description: 'A historic city surrounded by rock formations and ancient temples.',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    highlights: ['Athugala Rock', 'Ridi Viharaya', 'Yapahuwa Rock Fortress']
+  },
+  {
+    id: 18,
+    name: 'Kalutara',
+    region: 'Western Province',
+    description: 'A coastal city with a prominent Buddhist temple and serene beaches.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Kalutara Bodhiya', 'Richmond Castle', 'Kalutara Beach']
+  },
+  {
+    id: 19,
+    name: 'Hambantota',
+    region: 'Southern Province',
+    description: 'A developing city with wildlife attractions and beautiful beaches.',
+    image: 'https://images.unsplash.com/photo-1517816428104-380fd9864b1b?w=400&h=300&fit=crop',
+    highlights: ['Yala National Park', 'Bundala National Park', 'Hambantota Beach']
+  },
+  {
+    id: 20,
+    name: 'Dambulla',
+    region: 'Central Province',
+    description: 'Known for its ancient cave temples and vibrant wholesale markets.',
+    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
+    highlights: ['Dambulla Cave Temple', 'Golden Temple', 'Minneriya National Park']
+  },
+  {
+    id: 21,
+    name: 'Matale',
+    region: 'Central Province',
+    description: 'A city known for its spice gardens and historical temples.',
+    image: 'https://images.unsplash.com/photo-1469474968028-5663c0c8e537?w=400&h=300&fit=crop',
+    highlights: ['Aluvihara Rock Temple', 'Spice Gardens', 'Sembuwatta Lake']
+  },
+  {
+    id: 22,
+    name: 'Ampara',
+    region: 'Eastern Province',
+    description: 'A coastal district with serene beaches and wildlife reserves.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Arugam Bay', 'Lahugala Kitulana National Park', 'Kumana National Park']
+  },
+  {
+    id: 23,
+    name: 'Mannar',
+    region: 'Northern Province',
+    description: 'An island city with historical significance and unique ecosystems.',
+    image: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=400&h=300&fit=crop',
+    highlights: ['Mannar Fort', 'Adam’s Bridge', 'Baobab Tree']
+  },
+  {
+    id: 24,
+    name: 'Vavuniya',
+    region: 'Northern Province',
+    description: 'A northern city known for its cultural heritage and agricultural significance.',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    highlights: ['Madukanda Vihara', 'Vavuniya Tank', 'Archaeological Museum']
+  },
+  {
+    id: 25,
+    name: 'Puttalam',
+    region: 'North Western Province',
+    description: 'A coastal town known for its salt production and lagoons.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Puttalam Lagoon', 'Wilpattu National Park', 'St. Anne’s Church']
+  },
+  {
+    id: 26,
+    name: 'Beruwala',
+    region: 'Western Province',
+    description: 'A coastal town with beautiful beaches and historic mosques.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Beruwala Beach', 'Kechimalai Mosque', 'Bentota River']
+  },
+  {
+    id: 27,
+    name: 'Chilaw',
+    region: 'North Western Province',
+    description: 'A coastal town known for its fishing industry and Munneswaram temple.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Munneswaram Temple', 'Chilaw Lagoon', 'Anawilundawa Wetland']
+  },
+  {
+    id: 28,
+    name: 'Gampaha',
+    region: 'Western Province',
+    description: 'A city with lush greenery and historical Buddhist sites.',
+    image: 'https://images.unsplash.com/photo-1469474968028-5663c0c8e537?w=400&h=300&fit=crop',
+    highlights: ['Henarathgoda Botanical Garden', 'Maligatenna Raja Maha Vihara', 'Pansalwatta Temple']
+  },
+  {
+    id: 29,
+    name: 'Kegalle',
+    region: 'Sabaragamuwa Province',
+    description: 'A town surrounded by scenic hills and known for its spice plantations.',
+    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=400&h=300&fit=crop',
+    highlights: ['Pinnawala Elephant Orphanage', 'Bopath Ella', 'Alagalla Mountain']
+  },
+  {
+    id: 30,
+    name: 'Point Pedro',
+    region: 'Northern Province',
+    description: 'The northernmost point of Sri Lanka with scenic beaches and lighthouses.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Point Pedro Lighthouse', 'Vallipuram Temple', 'Manalkadu Beach']
+  },
+  {
+    id: 31,
+    name: 'Tangalle',
+    region: 'Southern Province',
+    description: 'A tranquil coastal town with pristine beaches and turtle nesting sites.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Tangalle Beach', 'Mulkirigala Rock Temple', 'Goyambokka Beach']
+  },
+  {
+    id: 32,
+    name: 'Monaragala',
+    region: 'Uva Province',
+    description: 'A gateway to wildlife reserves and ancient Buddhist sites.',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    highlights: ['Gal Oya National Park', 'Maligawila Buddha Statue', 'Yudaganawa Temple']
+  },
+  {
+    id: 33,
+    name: 'Balangoda',
+    region: 'Sabaragamuwa Province',
+    description: 'A town with archaeological significance and lush landscapes.',
+    image: 'https://images.unsplash.com/photo-1469474968028-5663c0c8e537?w=400&h=300&fit=crop',
+    highlights: ['Balangoda Caves', 'Samanalawewa Dam', 'Walawe River']
+  },
+  {
+    id: 34,
+    name: 'Hatton',
+    region: 'Central Province',
+    description: 'A town in the tea country known for its cool climate and scenic beauty.',
+    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=400&h=300&fit=crop',
+    highlights: ['Adam’s Peak', 'Castlereagh Reservoir', 'Tea Estates']
+  },
+  {
+    id: 35,
+    name: 'Weligama',
+    region: 'Southern Province',
+    description: 'A surfing hotspot with a laid-back vibe and beautiful beaches.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Weligama Beach', 'Taprobane Island', 'Snake Farm']
+  },
+  {
+    id: 36,
+    name: 'Arugam Bay',
+    region: 'Eastern Province',
+    description: 'A world-famous surfing destination with a bohemian vibe.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Arugam Bay Beach', 'Muhudu Maha Viharaya', 'Pottuvil Lagoon']
+  },
+  {
+    id: 37,
+    name: 'Tissamaharama',
+    region: 'Southern Province',
+    description: 'A historic town near Yala National Park, known for its ancient stupas.',
+    image: 'https://images.unsplash.com/photo-1517816428104-380fd9864b1b?w=400&h=300&fit=crop',
+    highlights: ['Tissa Wewa', 'Yala National Park', 'Tissamaharama Raja Maha Vihara']
+  },
+  {
+    id: 38,
+    name: 'Bentota',
+    region: 'Southern Province',
+    description: 'A coastal resort town known for water sports and luxury hotels.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Bentota Beach', 'Kosgoda Turtle Hatchery', 'Brief Garden']
+  },
+  {
+    id: 39,
+    name: 'Kitulgala',
+    region: 'Sabaragamuwa Province',
+    description: 'An adventure hub known for white-water rafting and rainforest treks.',
+    image: 'https://images.unsplash.com/photo-1469474968028-5663c0c8e537?w=400&h=300&fit=crop',
+    highlights: ['Kelani River Rafting', 'Makandawa Rainforest', 'Bridge on the River Kwai']
+  },
+  {
+    id: 40,
+    name: 'Hikkaduwa',
+    region: 'Southern Province',
+    description: 'A vibrant beach town known for coral reefs and surfing.',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    highlights: ['Hikkaduwa Coral Reef', 'Hikkaduwa Beach', 'Turtle Hatchery']
+  }
 ];
 
 const AddDestinationModal = ({
