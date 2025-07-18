@@ -6,6 +6,7 @@ import AddThingsToDoModal from '../../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../../components/AddTransportationModal';
+import { tripPlanningApi } from '../../api/axios';
 
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -685,28 +686,16 @@ const PoolItineraryPage = () => {
         params.append('activities', normalizedActivities.join(','));
       }
       
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary/${tripId}/day/${dayNumber}/suggestions/${apiType}?${params.toString()}`;
-      
-      console.log('📡 API URL with preferences:', apiUrl);
+      console.log('📡 API params with preferences:', params.toString());
 
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
+      const response = await tripPlanningApi.get(`/itinerary/${tripId}/day/${dayNumber}/suggestions/${apiType}`, {
+        params: Object.fromEntries(params)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ Modal suggestions received:', data.length, 'items for', category);
+      console.log('✅ Modal suggestions received:', response.data.length, 'items for', category);
       
       // Transform API response to match expected format
-      return data.map(item => ({
+      return response.data.map(item => ({
         id: item.id,
         name: item.name,
         location: item.address,
@@ -791,10 +780,7 @@ const PoolItineraryPage = () => {
     try {
       console.log('🔄 Adding place to backend itinerary - category:', category, 'type:', apiType, 'day:', dayNumber);
       
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary/${tripId}/day/${dayNumber}/${apiType}?userId=${userUid}`;
-      
-      console.log('📡 API URL:', apiUrl);
-      console.log('📦 Place data:', place);
+      console.log(' Place data:', place);
 
       // Prepare place data in the expected format
       const placeData = {
@@ -817,29 +803,18 @@ const PoolItineraryPage = () => {
         isRecommended: place.isRecommended || false
       };
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(placeData)
+      const response = await tripPlanningApi.post(`/itinerary/${tripId}/day/${dayNumber}/${apiType}`, placeData, {
+        params: { userId: userUid }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Place added to backend successfully:', result);
+      console.log('✅ Place added to backend successfully:', response.data);
       
-      alert(result.message || 'Place added to itinerary successfully!');
+      alert(response.data.message || 'Place added to itinerary successfully!');
       return true;
     } catch (error) {
       console.error('❌ Error adding place to backend:', error);
-      alert(`Error adding place: ${error.message}`);
+      const errorMessage = error.response?.data?.message || error.message;
+      alert(`Error adding place: ${errorMessage}`);
       return false;
     }
   };
