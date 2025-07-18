@@ -29,6 +29,7 @@ const TripBookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showNonRefundModal, setShowNonRefundModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentOrderId, setPaymentOrderId] = useState(null);
   const [priceData, setPriceData] = useState(null);
@@ -298,9 +299,13 @@ const TripBookingPage = () => {
     setShowPayment(false);
   };
 
-  const handleProceed = async () => {
+  const handleProceed = () => {
+    setShowNonRefundModal(true);
+  };
+
+  const handleNonRefundConfirm = async () => {
+    setShowNonRefundModal(false);
     if (!paymentCompleted && calculateAdvancePayment() > 0) {
-      // Simply show the payment form
       setShowPayment(true);
       return;
     }
@@ -331,6 +336,10 @@ const TripBookingPage = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleNonRefundCancel = () => {
+    setShowNonRefundModal(false);
   };
 
   const handleCancel = () => {
@@ -559,7 +568,7 @@ const TripBookingPage = () => {
               <div className="flex gap-4 pt-6">
                 <button
                   onClick={handleCancel}
-                  className="flex-1 px-6 py-3 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors"
+                  className="flex-1 px-6 py-3 rounded-full border border-gray-300 bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
                   disabled={submitting}
                 >
                   Cancel
@@ -584,6 +593,31 @@ const TripBookingPage = () => {
                     }
                   </button>
                 )}
+      {/* Non-Refundable Advance Payment Modal */}
+      {showNonRefundModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 relative">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Non-Refundable Advance Payment</h2>
+            <p className="text-gray-700 mb-6">
+              Please note: <span className="font-semibold">The 50% advance payment will <span className="text-red-600">not be refunded</span> after the trip is confirmed under any circumstances.</span>
+            </p>
+            <div className="flex gap-4 justify-end">
+              <button
+                onClick={handleNonRefundCancel}
+                className="px-5 py-2 rounded-full border border-gray-300 bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleNonRefundConfirm}
+                className="px-5 py-2 rounded-full bg-primary-600 text-white font-semibold hover:bg-primary-700 transition"
+              >
+                I Understand, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
               </div>
             </div>
           </div>
