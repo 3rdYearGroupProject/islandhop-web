@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, RefreshCw } from 'lucide-react';
 import AddDestinationModal from '../components/AddDestinationModal';
 import AddThingsToDoModal from '../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
@@ -11,6 +11,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
+import { tripPlanningApi } from '../api/axios';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
 
 // Google Places API integration
@@ -176,6 +177,7 @@ const TripItineraryPage = () => {
   const [availableCities, setAvailableCities] = useState([]);
   const [isSearchingCities, setIsSearchingCities] = useState(false);
   const [isSavingTrip, setIsSavingTrip] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   
   // Mock data for trip planning
   const mockSuggestions = {
@@ -799,6 +801,43 @@ const TripItineraryPage = () => {
     });
   };
 
+  const handleSuggestDifferent = async () => {
+    setIsGeneratingAI(true);
+    
+    try {
+      const tripData = {
+        tripName,
+        selectedDates,
+        userUid,
+        isAI: true,
+        terrainPreferences: selectedTerrains,
+        activityPreferences: selectedActivities,
+        regenerate: true // Flag to indicate we want a different suggestion
+      };
+
+      console.log('🔄 Requesting AI suggestions for existing trip:', tripData);
+      
+      const response = await tripPlanningApi.post('/ai-trip-suggestions', tripData);
+      const aiSuggestions = response.data;
+      
+      console.log('✨ Received AI suggestions:', aiSuggestions);
+      
+      // Update the itinerary with AI suggestions
+      if (aiSuggestions.itinerary) {
+        setItinerary(aiSuggestions.itinerary);
+      }
+      
+      // Show success message
+      alert('New AI suggestions have been generated for your trip!');
+      
+    } catch (error) {
+      console.error('❌ Failed to generate AI suggestions:', error);
+      alert('Failed to generate AI suggestions. Please try again.');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   const handleSaveTrip = async () => {
     console.log('💾 Starting comprehensive trip creation process...');
     
@@ -1098,6 +1137,27 @@ const TripItineraryPage = () => {
               className="bg-white border border-primary-600 text-primary-600 px-6 py-2 rounded-full shadow hover:bg-primary-50 font-medium transition-colors"
             >
               Back
+            </button>
+            <button
+              onClick={handleSuggestDifferent}
+              disabled={isGeneratingAI}
+              className={`flex items-center px-6 py-2 rounded-full shadow font-medium transition-colors ${
+                isGeneratingAI
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+              }`}
+            >
+              {isGeneratingAI ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  AI Generating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Suggest Different
+                </>
+              )}
             </button>
             <button
               onClick={handleSaveTrip}

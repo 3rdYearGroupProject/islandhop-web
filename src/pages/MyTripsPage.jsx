@@ -129,8 +129,7 @@ const MyTripsPage = () => {
   // Handle AI Trip Suggestions button click
   const handleAITripSuggestions = () => {
     if (checkUserAccessAndProfile('get AI trip suggestions')) {
-      // Navigate to AI trip suggestions page or show modal
-      navigate('/ai-trip-suggestions');
+      setIsCreateTripModalOpen(true);
     }
   };
 
@@ -651,6 +650,19 @@ const MyTripsPage = () => {
     setIsCreateTripModalOpen(false);
   };
 
+  const handleCreateAITrip = (tripData) => {
+    console.log('🚀 Creating trip with user UID:', currentUser?.uid);
+    console.log('📝 Trip data:', tripData);
+    
+    navigate('/ai-trip-duration', { 
+      state: { 
+        tripName: tripData.name,
+        userUid: currentUser?.uid
+      } 
+    });
+    setIsCreateTripModalOpen(false);
+  };
+
   const handleTripClick = (trip) => {
     console.log('🔍 Viewing trip:', trip.name);
     navigate(`/trip/${trip.id}`, { 
@@ -955,6 +967,12 @@ const MyTripsPage = () => {
         isOpen={isCreateTripModalOpen}
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateTrip}
+      />
+      {/* Enhanced Create Trip Modal */}
+      <CreateTripModal
+        isOpen={isCreateTripModalOpen}
+        onClose={() => setIsCreateTripModalOpen(false)}
+        onCreateTrip={handleCreateAITrip}
       />
 
       {/* Login Required Popup */}
