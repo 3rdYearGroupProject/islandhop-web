@@ -308,9 +308,9 @@ const GuideChat = () => {
                       alt={conversation.tourist.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />
-                    <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                    {/* <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
                       conversation.tourist.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                    }`}></div>
+                    }`}></div> */}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -328,10 +328,10 @@ const GuideChat = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center mt-1">
+                    {/* <div className="flex items-center mt-1">
                       <Star className="h-3 w-3 text-yellow-500 mr-1" />
                       <span className="text-xs text-gray-600">{conversation.tourist.rating}</span>
-                    </div>
+                    </div> */}
 
                     <p className="text-sm text-gray-600 truncate mt-1">
                       {conversation.lastMessage}
@@ -382,17 +382,7 @@ const GuideChat = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
-                      <Phone className="h-5 w-5" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
-                      <Video className="h-5 w-5" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
-                      <MoreVertical className="h-5 w-5" />
-                    </button>
-                  </div>
+               
                 </div>
               </div>
 

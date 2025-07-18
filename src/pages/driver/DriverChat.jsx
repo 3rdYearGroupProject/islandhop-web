@@ -25,7 +25,7 @@ const DriverChat = () => {
       id: 1,
       passenger: {
         name: 'Sarah Johnson',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+        avatar: 'https://images.unsplash.com/photo-1589302701986-b539f78cae26?q=80&w=1070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
         rating: 4.9
       },
       trip: {
@@ -120,7 +120,7 @@ const DriverChat = () => {
         id: 'TR003',
         from: 'Ella Station',
         to: 'Colombo',
-        status: 'completed',
+        status: 'pending',
         completedTime: '1:00 PM'
       },
       lastMessage: {
@@ -246,12 +246,14 @@ const DriverChat = () => {
                       alt={chat.passenger.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />
-                    {chat.trip.status === 'active' && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
+                    {/* Trip Name */}
+                    <div className="text-xs font-medium text-primary-600 mb-1">
+                      Trip #{chat.trip.id} - {chat.trip.from} → {chat.trip.to}
+                    </div>
+                    
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-gray-900 truncate">
                         {chat.passenger.name}
@@ -267,17 +269,12 @@ const DriverChat = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2 mb-2">
-                      <Star className="h-3 w-3 text-yellow-400" />
+                      {/* <Star className="h-3 w-3 text-yellow-400" />
                       <span className="text-xs text-gray-500">{chat.passenger.rating}</span>
-                      <span className="text-xs text-gray-400">•</span>
+                      <span className="text-xs text-gray-400">•</span> */}
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(chat.trip.status)}`}>
                         {chat.trip.status}
                       </span>
-                    </div>
-                    
-                    <div className="flex items-center text-xs text-gray-500 mb-2">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      <span className="truncate">{chat.trip.from} → {chat.trip.to}</span>
                     </div>
                     
                     <p className="text-sm text-gray-600 truncate">
@@ -297,7 +294,7 @@ const DriverChat = () => {
             <>
               {/* Chat Header */}
               <div className="bg-white border-b border-gray-200 p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center space-x-3">
                     <img
                       src={selectedChat.passenger.avatar}
@@ -317,36 +314,21 @@ const DriverChat = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Phone className="h-5 w-5" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Video className="h-5 w-5" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <MoreVertical className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Trip Info */}
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 text-green-500 mr-1" />
-                        <span className="text-gray-600">From: {selectedChat.trip.from}</span>
+                        <span className="text-sm text-gray-600">From: {selectedChat.trip.from}</span>
                       </div>
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 text-red-500 mr-1" />
-                        <span className="text-gray-600">To: {selectedChat.trip.to}</span>
+                        <span className="text-sm text-gray-600">To: {selectedChat.trip.to}</span>
                       </div>
                     </div>
                     {selectedChat.trip.status === 'active' && (
                       <div className="flex items-center text-green-600">
                         <Clock className="h-4 w-4 mr-1" />
-                        <span>Started at {selectedChat.trip.startTime}</span>
+                        <span className="text-sm">Started at {selectedChat.trip.startTime}</span>
                       </div>
                     )}
                   </div>
@@ -404,27 +386,7 @@ const DriverChat = () => {
                   </button>
                 </div>
                 
-                {/* Quick Actions */}
-                <div className="mt-3 flex space-x-2">
-                  <button
-                    onClick={() => setMessage("I'm on my way! ETA 5 minutes.")}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-                  >
-                    On my way
-                  </button>
-                  <button
-                    onClick={() => setMessage("I've arrived at the pickup location.")}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-                  >
-                    I've arrived
-                  </button>
-                  <button
-                    onClick={() => setMessage("Thank you for choosing IslandHop!")}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-                  >
-                    Thank you
-                  </button>
-                </div>
+              
               </div>
             </>
           ) : (
