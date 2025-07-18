@@ -9,11 +9,36 @@ import AddTransportationModal from '../../components/AddTransportationModal';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
+import { getUserUID } from '../../utils/userStorage';
 
 const PoolItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
-  const { poolName, selectedDates, selectedTerrains, selectedActivities } = location.state || {};
+  const { 
+    poolName, 
+    selectedDates, 
+    selectedTerrains, 
+    selectedActivities, 
+    poolSize, 
+    poolPrivacy, 
+    poolId, 
+    pool, 
+    userUid,
+    // Group trip data from API response
+    tripId,
+    groupId,
+    isDraft
+  } = location.state || {};
+  
+  console.log('📍 PoolItineraryPage received:', { 
+    poolName, 
+    selectedDates, 
+    poolPrivacy, 
+    tripId, 
+    groupId, 
+    isDraft, 
+    userUid 
+  });
   
   const [currentDay, setCurrentDay] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -23,6 +48,14 @@ const PoolItineraryPage = () => {
   const [expandedDays, setExpandedDays] = useState({});
   const [selectedStayDates, setSelectedStayDates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Destination management states
+  const [destinations, setDestinations] = useState({}); // dayIndex -> destination
+  const [availableCities, setAvailableCities] = useState([]);
+  const [isSearchingCities, setIsSearchingCities] = useState(false);
+  
+  // Group collaboration states
+  const [isUpdatingTrip, setIsUpdatingTrip] = useState(false);
 
   // Generate days array from selected dates
   const generateDays = () => {
@@ -316,6 +349,232 @@ const PoolItineraryPage = () => {
     ]
   };
 
+  // ====================================
+  // GROUP TRIP COLLABORATION FUNCTIONS
+  // ====================================
+
+  // Get the appropriate base URL based on pool privacy
+  const getApiBaseUrl = () => {
+    // Both private and public pools use group endpoints since all members can update
+    return process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083';
+  };
+
+  // Add place to group trip (for both public and private pools)
+  const addPlaceToTrip = async (day, type, place) => {
+    console.log('🌟 ADD PLACE TO TRIP START');
+    console.log('📦 Add place request:', { day, type, place, poolPrivacy, groupId, tripId });
+    
+    try {
+      setIsUpdatingTrip(true);
+      
+      // Get user ID from session
+      const userId = getUserUID();
+      if (!userId) {
+        alert('Please log in to update the trip');
+        return false;
+      }
+      
+      if (!groupId) {
+        console.warn('⚠️ No groupId available for API call');
+        alert('Unable to update trip - missing group information');
+        return false;
+      }
+      
+      // Both private and public pools use group endpoints
+      const apiUrl = `${getApiBaseUrl()}/api/v1/groups/${groupId}/itinerary/day/${day + 1}/${type}?userId=${userId}`;
+      
+      console.log('📡 Making POST request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(place)
+      });
+      
+      console.log('📨 API Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ API Error response:', errorData);
+        
+        if (response.status === 403) {
+          alert('You do not have permission to update this trip');
+        } else if (response.status === 404) {
+          alert('Trip not found. It may have been deleted.');
+        } else {
+          alert(`Failed to add place: ${errorData.message || 'Unknown error'}`);
+        }
+        return false;
+      }
+      
+      const result = await response.json();
+      console.log('✅ Place added successfully:', result);
+      
+      // Show success notification
+      alert(`${place.name} added successfully to day ${day + 1}!`);
+      
+      return true;
+      
+    } catch (error) {
+      console.error('❌ ADD PLACE TO TRIP FAILED');
+      console.error('❌ Error:', error);
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('Network error: Please check your internet connection and try again');
+      } else {
+        alert(`Failed to add place: ${error.message || 'Unknown error occurred'}`);
+      }
+      return false;
+    } finally {
+      setIsUpdatingTrip(false);
+    }
+  };
+
+  // Update city for a day in group trip
+  const updateCityForDay = async (day, city) => {
+    console.log('🌟 UPDATE CITY FOR DAY START');
+    console.log('📦 Update city request:', { day, city, poolPrivacy, groupId, tripId });
+    
+    try {
+      setIsUpdatingTrip(true);
+      
+      // Get user ID from session
+      const userId = getUserUID();
+      if (!userId) {
+        alert('Please log in to update the trip');
+        return false;
+      }
+      
+      if (!groupId) {
+        console.warn('⚠️ No groupId available for API call');
+        alert('Unable to update trip - missing group information');
+        return false;
+      }
+      
+      // Both private and public pools use group endpoints
+      const apiUrl = `${getApiBaseUrl()}/api/v1/groups/${groupId}/itinerary/day/${day + 1}/city?userId=${userId}`;
+      
+      console.log('📡 Making PATCH request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'PATCH',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ city })
+      });
+      
+      console.log('📨 API Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ API Error response:', errorData);
+        
+        if (response.status === 403) {
+          alert('You do not have permission to update this trip');
+        } else if (response.status === 404) {
+          alert('Trip not found. It may have been deleted.');
+        } else {
+          alert(`Failed to update city: ${errorData.message || 'Unknown error'}`);
+        }
+        return false;
+      }
+      
+      const result = await response.json();
+      console.log('✅ City updated successfully:', result);
+      
+      // Update local state
+      setDestinations(prev => ({
+        ...prev,
+        [day]: city
+      }));
+      
+      // Show success notification
+      alert(`Day ${day + 1} destination updated to ${city}!`);
+      
+      return true;
+      
+    } catch (error) {
+      console.error('❌ UPDATE CITY FOR DAY FAILED');
+      console.error('❌ Error:', error);
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('Network error: Please check your internet connection and try again');
+      } else {
+        alert(`Failed to update city: ${error.message || 'Unknown error occurred'}`);
+      }
+      return false;
+    } finally {
+      setIsUpdatingTrip(false);
+    }
+  };
+
+  // Fetch suggestions for a specific day and type (similar to TripItineraryPage)
+  const fetchSuggestionsForModal = async (type, dayNumber) => {
+    console.log('🔍 FETCH SUGGESTIONS FOR MODAL START');
+    console.log('📦 Fetch suggestions request:', { dayNumber, type, poolPrivacy, groupId, tripId });
+    
+    try {
+      // Get user ID from session
+      const userId = getUserUID();
+      if (!userId) {
+        console.warn('⚠️ No userId available for suggestions');
+        return [];
+      }
+      
+      if (!tripId) {
+        console.warn('⚠️ No tripId available for suggestions');
+        return [];
+      }
+      
+      // Map frontend types to API types
+      const typeMapping = {
+        'activities': 'attractions',
+        'places': 'hotels', 
+        'food': 'restaurants',
+        'transportation': 'transportation'
+      };
+      
+      const apiType = typeMapping[type] || type;
+      
+      // Use trip planning service for suggestions (same for both public and private)
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084'}/api/v1/itinerary/${tripId}/day/${dayNumber + 1}/suggestions/${apiType}?userId=${userId}`;
+      
+      console.log('📡 Making GET request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      console.log('📨 API Response status:', response.status);
+      
+      if (!response.ok) {
+        console.warn(`⚠️ Failed to fetch suggestions: ${response.status}`);
+        return [];
+      }
+      
+      const data = await response.json();
+      console.log('✅ Suggestions fetched successfully:', data.length, 'items');
+      
+      return data || [];
+      
+    } catch (error) {
+      console.error('❌ FETCH SUGGESTIONS FAILED:', error);
+      return [];
+    }
+  };
+
   const handleAddItem = (category, dayIndex) => {
     setSelectedCategory(category);
     setCurrentDay(dayIndex);
@@ -326,7 +585,7 @@ const PoolItineraryPage = () => {
     }
   };
 
-  const addItemToItinerary = (item, selectedDates = null) => {
+  const addItemToItinerary = async (item, selectedDates = null) => {
     // Helper function to get category key
     const getCategoryKey = (category) => {
       switch(category) {
@@ -339,13 +598,71 @@ const PoolItineraryPage = () => {
       }
     };
 
-    if (selectedDates && selectedDates.length > 0) {
-      // Add item to multiple selected days
-      selectedDates.forEach(dateIndex => {
+    // Helper function to get API type for backend
+    const getApiType = (category) => {
+      switch(category) {
+        case 'activities': return 'attractions';
+        case 'places': return 'hotels';
+        case 'food': return 'restaurants';
+        case 'transportation': return 'transportation';
+        case 'Destinations': return 'destinations';
+        default: return 'attractions';
+      }
+    };
+
+    const categoryKey = getCategoryKey(selectedCategory);
+    const apiType = getApiType(selectedCategory);
+
+    // Determine which days to add to
+    const daysToAddTo = selectedDates && selectedDates.length > 0 ? selectedDates : [currentDay];
+
+    try {
+      // Add to backend for each selected day (if not just destinations)
+      if (selectedCategory !== 'Destinations' && (groupId || tripId)) {
+        console.log(`🔄 Adding ${apiType} to backend for days:`, daysToAddTo);
+        for (const dayIndex of daysToAddTo) {
+          const success = await addPlaceToTrip(dayIndex, apiType, item);
+          if (!success) {
+            console.error(`❌ Failed to add ${apiType} to day ${dayIndex} on backend`);
+            // If backend fails, don't add to local state
+            return;
+          } else {
+            console.log(`✅ Successfully added ${apiType} to day ${dayIndex} on backend`);
+          }
+        }
+      }
+
+      // Add to local state only after backend success
+      console.log(`📝 Adding item to local state for days:`, daysToAddTo);
+      if (selectedDates && selectedDates.length > 0) {
+        // Add item to multiple selected days
+        selectedDates.forEach(dateIndex => {
+          setItinerary(prev => {
+            const dayData = prev[dateIndex] || {
+              date: days[dateIndex],
+              activities: [],
+              places: [],
+              food: [],
+              transportation: []
+            };
+            
+            return {
+              ...prev,
+              [dateIndex]: {
+                ...dayData,
+                [categoryKey]: [
+                  ...(dayData[categoryKey] || []), 
+                  { ...item, selectedDates: selectedDates, isMultiDay: true }
+                ]
+              }
+            };
+          });
+        });
+      } else {
+        // Add to single day (fallback for old logic)
         setItinerary(prev => {
-          const categoryKey = getCategoryKey(selectedCategory);
-          const dayData = prev[dateIndex] || {
-            date: days[dateIndex],
+          const dayData = prev[currentDay] || {
+            date: days[currentDay],
             activities: [],
             places: [],
             food: [],
@@ -354,43 +671,26 @@ const PoolItineraryPage = () => {
           
           return {
             ...prev,
-            [dateIndex]: {
+            [currentDay]: {
               ...dayData,
               [categoryKey]: [
                 ...(dayData[categoryKey] || []), 
-                { ...item, selectedDates: selectedDates, isMultiDay: true }
+                item
               ]
             }
           };
         });
-      });
-    } else {
-      // Add to single day (fallback for old logic)
-      setItinerary(prev => {
-        const categoryKey = getCategoryKey(selectedCategory);
-        const dayData = prev[currentDay] || {
-          date: days[currentDay],
-          activities: [],
-          places: [],
-          food: [],
-          transportation: []
-        };
-        
-        return {
-          ...prev,
-          [currentDay]: {
-            ...dayData,
-            [categoryKey]: [
-              ...(dayData[categoryKey] || []), 
-              item
-            ]
-          }
-        };
-      });
+      }
+
+      // Close modals
+      setShowAddModal(false);
+      setShowDestinationModal(false);
+      setSelectedStayDates([]);
+
+    } catch (error) {
+      console.error('❌ Error adding item to itinerary:', error);
+      alert('Failed to add item to trip. Please try again.');
     }
-    setShowAddModal(false);
-    setShowDestinationModal(false);
-    setSelectedStayDates([]);
   };
 
   const handleStayDateSelect = (dayIndex) => {
@@ -482,6 +782,30 @@ const PoolItineraryPage = () => {
       </div>
       
       {/* Pool Header removed as per request */}
+
+      {/* Pool Collaboration Status */}
+      {(groupId || tripId) && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-700 text-sm font-medium">
+                🤝 Group Collaboration Active
+              </span>
+              <span className="text-blue-600 text-sm">
+                {poolData?.visibility === 'private' ? 'Private Pool' : 'Public Pool'}
+              </span>
+              {groupId && (
+                <span className="text-blue-500 text-xs bg-blue-100 px-2 py-1 rounded">
+                  Group: {groupId}
+                </span>
+              )}
+            </div>
+            <p className="text-blue-600 text-xs mt-1">
+              All pool members can collaboratively edit this itinerary in real-time
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -712,6 +1036,9 @@ const PoolItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        fetchSuggestionsForModal={fetchSuggestionsForModal}
+        currentDay={currentDay}
+        destination={destinationCoordinates}
       />
       <AddPlacesToStayModal
         show={showAddModal && selectedCategory === 'places'}
@@ -728,6 +1055,9 @@ const PoolItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        fetchSuggestionsForModal={fetchSuggestionsForModal}
+        currentDay={currentDay}
+        destination={destinationCoordinates}
       />
       <AddFoodAndDrinkModal
         show={showAddModal && selectedCategory === 'food'}
@@ -744,6 +1074,9 @@ const PoolItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        fetchSuggestionsForModal={fetchSuggestionsForModal}
+        currentDay={currentDay}
+        destination={destinationCoordinates}
       />
       <AddTransportationModal
         show={showAddModal && selectedCategory === 'transportation'}
@@ -760,6 +1093,9 @@ const PoolItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        fetchSuggestionsForModal={fetchSuggestionsForModal}
+        currentDay={currentDay}
+        destination={destinationCoordinates}
       />
 
       <AddDestinationModal
@@ -777,6 +1113,8 @@ const PoolItineraryPage = () => {
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
+        updateCityForDay={updateCityForDay}
+        currentDay={currentDay}
       />
       <Footer />
     </div>

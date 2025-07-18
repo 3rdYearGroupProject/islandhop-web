@@ -8,9 +8,9 @@ import PoolProgressBar from '../../components/PoolProgressBar';
 const PoolDurationPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { poolName, poolDescription, userUid } = location.state || {};
+  const { poolName, poolDescription, poolPrivacy, userUid } = location.state || {};
   
-  console.log('📍 PoolDurationPage received:', { poolName, poolDescription, userUid });
+  console.log('📍 PoolDurationPage received:', { poolName, poolDescription, poolPrivacy, userUid });
   
   const [selectedDates, setSelectedDates] = useState([]);
   const [poolSize, setPoolSize] = useState(4);
@@ -49,6 +49,7 @@ const PoolDurationPage = () => {
           state: { 
             poolName,
             poolDescription,
+            poolPrivacy, // Pass privacy setting
             selectedDates,
             poolSize,
             startDate,
@@ -62,6 +63,7 @@ const PoolDurationPage = () => {
           state: { 
             poolName,
             poolDescription,
+            poolPrivacy, // Pass privacy setting
             selectedDates,
             poolSize,
             userUid
@@ -78,6 +80,7 @@ const PoolDurationPage = () => {
       state: { 
         poolName,
         poolDescription,
+        poolPrivacy, // Pass privacy setting
         userUid
       } 
     });
