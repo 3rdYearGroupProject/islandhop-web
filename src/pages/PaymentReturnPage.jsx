@@ -18,7 +18,7 @@ const PaymentReturnPage = () => {
     // Verify payment status with backend
     const verifyPayment = async () => {
       try {
-        const response = await fetch(`http://localhost:8095/api/v1/payments/verify-payment`, {
+        const response = await fetch(`${process.env.REACT_APP_PAYMENT_API_URL}/api/v1/payments/verify-payment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
