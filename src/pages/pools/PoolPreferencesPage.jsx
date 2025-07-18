@@ -4,7 +4,7 @@ import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2,
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
-import { getUserUID } from '../../utils/userStorage';
+import { getUserUID, getUserData } from '../../utils/userStorage';
 
 const PoolPreferencesPage = () => {
   const location = useLocation();
@@ -65,6 +65,12 @@ const PoolPreferencesPage = () => {
         navigate('/login');
         return;
       }
+
+      const currentUser = getUserData();
+      if (!currentUser || !currentUser.email) {
+        alert('User data not found. Please log in again.');
+        return;
+      }
       
       // Prepare dates in YYYY-MM-DD format
       const startDate = selectedDates && selectedDates[0] ? 
@@ -80,6 +86,7 @@ const PoolPreferencesPage = () => {
       // Prepare request data according to the API schema
       const requestData = {
         userId: userId,
+        userEmail: currentUser.email, // From Firebase user data
         baseCity: "Colombo", // Always hardcoded as requested
         startDate: startDate,
         endDate: endDate,
@@ -87,6 +94,7 @@ const PoolPreferencesPage = () => {
         preferredActivities: selectedActivityPreferences,
         preferredTerrains: selectedTerrainPreferences,
         activityPacing: "Normal", // Default value
+        visibility: poolPrivacy, // Use privacy setting from modal
         multiCityAllowed: true // Default value
       };
       
