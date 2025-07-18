@@ -15,7 +15,6 @@ import {
   Globe,
   Languages
 } from 'lucide-react';
-import GuideStatusCard from '../../components/guide/GuideStatusCard';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData } from '../../utils/userStorage';
 import { Link } from 'react-router-dom';
@@ -24,7 +23,7 @@ const GuideDashboard = () => {
   const toast = useToast();
 
   const [guideStats, setGuideStats] = useState({
-    todayEarnings: 320.75,
+    todayEarnings: 3200.75,
     weeklyEarnings: 1890.50,
     monthlyEarnings: 7240.25,
     completedTours: 89,
@@ -56,7 +55,7 @@ const GuideDashboard = () => {
       tourType: 'Adventure Tour',
       location: 'Ella Rock',
       duration: '8 hours',
-      estimatedFee: 180.00,
+      estimatedFee: 1800.00,
       requestTime: '3 mins ago',
       touristRating: 4.7,
       specialRequests: 'Photography focused'
@@ -67,7 +66,7 @@ const GuideDashboard = () => {
       tourType: 'Food & Culture',
       location: 'Colombo Food Trail',
       duration: '4 hours',
-      estimatedFee: 95.00,
+      estimatedFee: 950.00,
       requestTime: '7 mins ago',
       touristRating: 4.9,
       specialRequests: 'Vegetarian preferences'
@@ -107,10 +106,7 @@ const GuideDashboard = () => {
         </div>
       </div>
 
-      {/* Guide Status Card */}
-      <div className="mb-8">
-        <GuideStatusCard showToggle={true} />
-      </div>
+     
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -121,7 +117,7 @@ const GuideDashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Today's Earnings</p>
-              <p className="text-2xl font-bold text-gray-900">${guideStats.todayEarnings}</p>
+              <p className="text-2xl font-bold text-gray-900">LKR{guideStats.todayEarnings}</p>
             </div>
           </div>
         </div>
@@ -247,7 +243,7 @@ const GuideDashboard = () => {
                       <p className="text-gray-600 text-sm">{request.tourType}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">${request.estimatedFee}</p>
+                      <p className="font-semibold text-gray-900">LKR{request.estimatedFee}</p>
                       <p className="text-gray-600 text-xs">{request.duration}</p>
                     </div>
                   </div>

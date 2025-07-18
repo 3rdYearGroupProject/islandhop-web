@@ -25,7 +25,7 @@ const GuideEarnings = () => {
 
   const earningsData = {
     week: {
-      total: 1875.50,
+      total: 18750.50,
       tours: 12,
       change: 15.8,
       daily: [
@@ -39,12 +39,12 @@ const GuideEarnings = () => {
       ]
     },
     month: {
-      total: 7420.75,
+      total: 74200.75,
       tours: 58,
       change: 12.7,
       weekly: [
-        { week: 'Week 1', earnings: 1875.50, tours: 12 },
-        { week: 'Week 2', earnings: 2120.25, tours: 16 },
+        { week: 'Week 1', earnings: 18750.50, tours: 12 },
+        { week: 'Week 2', earnings: 21200.25, tours: 16 },
         { week: 'Week 3', earnings: 1680.75, tours: 14 },
         { week: 'Week 4', earnings: 1744.25, tours: 16 }
       ]
@@ -56,7 +56,7 @@ const GuideEarnings = () => {
       id: 'TR001',
       tourist: 'Emily Johnson',
       route: 'Kandy Cultural Heritage Tour',
-      amount: 150.00,
+      amount: 1500.00,
       tip: 15.00,
       date: new Date(Date.now() - 2 * 60 * 60 * 1000),
       status: 'completed',
@@ -66,7 +66,7 @@ const GuideEarnings = () => {
       id: 'TR002',
       tourist: 'Marco Rodriguez',
       route: 'Ella Adventure Trek',
-      amount: 180.00,
+      amount: 1800.00,
       tip: 0,
       date: new Date(Date.now() - 5 * 60 * 60 * 1000),
       status: 'completed',
@@ -76,8 +76,8 @@ const GuideEarnings = () => {
       id: 'TR003',
       tourist: 'Sarah Chen',
       route: 'Colombo Food Discovery',
-      amount: 95.00,
-      tip: 10.00,
+      amount: 9500.00,
+      tip: 100.00,
       date: new Date(Date.now() - 8 * 60 * 60 * 1000),
       status: 'completed',
       paymentMethod: 'card'
@@ -86,8 +86,8 @@ const GuideEarnings = () => {
       id: 'TR004',
       tourist: 'James Wilson',
       route: 'Sigiriya Historical Tour',
-      amount: 200.00,
-      tip: 25.00,
+      amount: 2000.00,
+      tip: 250.00,
       date: new Date(Date.now() - 24 * 60 * 60 * 1000),
       status: 'completed',
       paymentMethod: 'cash'
@@ -98,9 +98,9 @@ const GuideEarnings = () => {
   const averagePerTour = currentData.total / currentData.tours;
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-LK', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'LKR'
     }).format(amount);
   };
 

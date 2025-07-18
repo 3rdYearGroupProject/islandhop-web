@@ -360,7 +360,14 @@ const handleSltdaLicenseUpload = async (file) => {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
+      {/* Loading Screen */}
+      {(loading || loadingProfile) && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
