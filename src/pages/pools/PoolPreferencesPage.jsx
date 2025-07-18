@@ -263,12 +263,14 @@ const PoolPreferencesPage = () => {
         
         // Navigate to the group's trip planning page
         if (result.tripId) {
-          navigate(`/trip-planning/${result.tripId}?groupId=${groupId}`, {
+          navigate(`/pool-itinerary`, {
             state: {
               tripId: result.tripId,
               groupId: groupId,
               tripName: groupName,
-              joinedGroup: true,
+              poolName: groupName,
+              selectedDates: selectedDates,
+              userUid: userUid,
               selectedTerrains: selectedTerrainPreferences,
               selectedActivities: selectedActivityPreferences
             }
