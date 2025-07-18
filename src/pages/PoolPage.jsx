@@ -7,6 +7,7 @@ import FindPools from './pools/FindPools';
 import MyPools from './pools/MyPools';
 import ConfirmedPools from './pools/ConfirmedPools';
 import OngoingPools from './pools/OngoingPools';
+import InvitationsAndRequests from './pools/InvitationsAndRequests';
 import CreatePoolModal from '../components/pools/CreatePoolModal';
 import pool4kVideo from '../assets/pool4k.mp4';
 import Footer from '../components/Footer';
@@ -16,6 +17,7 @@ const tabList = [
   { label: 'My Pools', key: 'my' },
   { label: 'Confirmed', key: 'confirmed' },
   { label: 'Ongoing', key: 'ongoing' },
+  { label: 'Invitations & Requests', key: 'invitations' },
 ];
 
 const PoolPage = () => {
@@ -48,6 +50,7 @@ const PoolPage = () => {
       state: { 
         poolName: poolData.name,
         poolDescription: poolData.description,
+        poolPrivacy: poolData.privacy, // Pass privacy setting
         userUid: currentUser?.uid
       } 
     });
@@ -64,6 +67,8 @@ const PoolPage = () => {
         return <ConfirmedPools />;
       case 'ongoing':
         return <OngoingPools />;
+      case 'invitations':
+        return <InvitationsAndRequests />;
       default:
         return <FindPools />;
     }
