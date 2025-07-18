@@ -14,22 +14,21 @@ import { getUserUID } from '../../utils/userStorage';
 const PoolItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
-  const { 
-    poolName, 
-    selectedDates, 
-    selectedTerrains, 
-    selectedActivities, 
-    poolSize, 
-    poolPrivacy, 
-    poolId, 
-    pool, 
+  const {
+    poolName,
+    selectedDates,
+    selectedTerrains,
+    selectedActivities,
+    poolSize,
+    poolPrivacy,
+    poolId,
+    pool,
     userUid,
-    // Group trip data from API response
     tripId,
     groupId,
     isDraft
   } = location.state || {};
-  
+
   console.log('📍 PoolItineraryPage received:', { 
     poolName, 
     selectedDates, 
@@ -56,6 +55,7 @@ const PoolItineraryPage = () => {
   
   // Group collaboration states
   const [isUpdatingTrip, setIsUpdatingTrip] = useState(false);
+  const [destinationCoordinates, setDestinationCoordinates] = useState(null);
 
   // Generate days array from selected dates
   const generateDays = () => {

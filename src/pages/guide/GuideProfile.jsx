@@ -710,18 +710,35 @@ const GuideProfile = () => {
                       <div key={lang.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-2">
                         {isEditingLangs ? (
                           <>
-                            <input
-                              type="text"
-                              placeholder="Language"
-                              value={lang.language}
+                            <select
                               className="w-full p-2 border border-gray-300 rounded-lg"
+                              value={lang.language}
                               onChange={e => {
                                 const newLangs = [...guideData.languages];
                                 newLangs[idx].language = e.target.value;
                                 setGuideData(prev => ({ ...prev, languages: newLangs }));
                               }}
                               required
-                            />
+                            >
+                              <option value="">Select Language</option>
+                              <option value="English">English</option>
+                              <option value="Sinhala">Sinhala</option>
+                              <option value="Tamil">Tamil</option>
+                              <option value="French">French</option>
+                              <option value="German">German</option>
+                              <option value="Spanish">Spanish</option>
+                              <option value="Italian">Italian</option>
+                              <option value="Japanese">Japanese</option>
+                              <option value="Chinese">Chinese</option>
+                              <option value="Korean">Korean</option>
+                              <option value="Russian">Russian</option>
+                              <option value="Arabic">Arabic</option>
+                              <option value="Hindi">Hindi</option>
+                              <option value="Dutch">Dutch</option>
+                              <option value="Portuguese">Portuguese</option>
+                              <option value="Thai">Thai</option>
+                              <option value="Other">Other</option>
+                            </select>
                             <select
                               className="w-full p-2 border border-gray-300 rounded-lg"
                               value={lang.proficiency}

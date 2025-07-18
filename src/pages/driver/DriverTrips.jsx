@@ -22,6 +22,7 @@ const DriverTrips = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, active, completed, cancelled
+  const [loading, setLoading] = useState(false);
   const [trips, setTrips] = useState([
     {
       id: 'TR001',
@@ -156,7 +157,14 @@ const DriverTrips = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Trips</h1>
