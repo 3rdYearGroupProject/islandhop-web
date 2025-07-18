@@ -334,6 +334,8 @@ const PoolPreferencesPage = () => {
         startDate: startDate,
         endDate: endDate,
         baseCity: "Colombo", // Always hardcoded as requested
+        groupName: poolName || 'My Pool', // Use pool name from state or default
+
         
         // Optional fields with defaults
         multiCityAllowed: true,
@@ -341,7 +343,7 @@ const PoolPreferencesPage = () => {
         budgetLevel: "Medium",
         preferredTerrains: selectedTerrainPreferences,
         preferredActivities: selectedActivityPreferences,
-        visibility: poolPrivacy || "public", // Use privacy setting from modal
+        visibility: poolPrivacy, // Use privacy setting from modal
         maxMembers: poolSize || 6,
         requiresApproval: false,
         additionalPreferences: {}
@@ -394,14 +396,15 @@ const PoolPreferencesPage = () => {
         // Show success notification
         alert(`Group created successfully! You can now plan your trip.`);
         
-        // Redirect to trip planning interface
-        navigate(`/trip-planning/${result.tripId}?groupId=${result.groupId}`, {
+        // Redirect to pool itinerary page
+        navigate('/pool-itinerary', {
           state: {
             tripId: result.tripId,
             groupId: result.groupId,
             tripName: poolName,
-            startDate: startDate,
-            endDate: endDate,
+            poolName: poolName,
+            startDate,
+            endDate,
             selectedTerrains: selectedTerrainPreferences,
             selectedActivities: selectedActivityPreferences,
             userUid: userId,
