@@ -200,7 +200,7 @@ const TripPreferencesPage = () => {
             console.log('🎉 Trip created successfully:', tripResponse);
             
             // Navigate to itinerary planning with the created trip data
-            navigate('/trip-itinerary', { 
+            navigate('/ai-trip-view', { 
               state: { 
                 tripName, 
                 selectedDates, 
@@ -215,7 +215,7 @@ const TripPreferencesPage = () => {
             console.error('Failed to create trip:', error);
             // Show error to user but allow navigation to continue with local state
             alert(`Failed to create trip: ${error.message}. You can continue planning locally.`);
-            navigate('/trip-itinerary', { 
+            navigate('/ai-trip-view', { 
               state: { 
                 tripName, 
                 selectedDates, 
@@ -230,7 +230,7 @@ const TripPreferencesPage = () => {
         } else {
           // Missing required data, navigate anyway with warning
           console.warn('Missing required data for trip creation:', { userUid, tripName, selectedDates });
-          navigate('/ai-trip-itinerary', { 
+          navigate('/ai-trip-view', { 
             state: { 
               tripName, 
               selectedDates, 
