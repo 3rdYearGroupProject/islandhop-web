@@ -7,7 +7,7 @@ export class PoolsApi {
   /**
    * Fetch enhanced public pools with filtering capabilities
    * @param {Object} params - Filter parameters
-   * @param {string} params.userId - Current user ID (required)
+   * @param {string} [params.userId] - Current user ID (optional)
    * @param {string} [params.baseCity] - Filter by base city
    * @param {string} [params.startDate] - Filter by start date
    * @param {string} [params.endDate] - Filter by end date
@@ -15,21 +15,24 @@ export class PoolsApi {
    * @param {string[]} [params.preferredActivities] - Filter by preferred activities
    * @returns {Promise<Array>} Array of enhanced pool data
    */
-  static async getEnhancedPools(params) {
+  static async getEnhancedPools(params = {}) {
     try {
       console.log('🏊‍♂️ Fetching enhanced pools with params:', params);
       
+      // Only include parameters that have values
+      const requestParams = {};
+      
+      if (params.userId) requestParams.userId = params.userId;
+      if (params.baseCity) requestParams.baseCity = params.baseCity;
+      if (params.startDate) requestParams.startDate = params.startDate;
+      if (params.endDate) requestParams.endDate = params.endDate;
+      if (params.budgetLevel) requestParams.budgetLevel = params.budgetLevel;
+      if (params.preferredActivities && params.preferredActivities.length > 0) {
+        requestParams.preferredActivities = params.preferredActivities;
+      }
+      
       const response = await poolingServicesApi.get('/api/v1/groups/public/enhanced', {
-        params: {
-          userId: params.userId,
-          ...(params.baseCity && { baseCity: params.baseCity }),
-          ...(params.startDate && { startDate: params.startDate }),
-          ...(params.endDate && { endDate: params.endDate }),
-          ...(params.budgetLevel && { budgetLevel: params.budgetLevel }),
-          ...(params.preferredActivities && params.preferredActivities.length > 0 && { 
-            preferredActivities: params.preferredActivities 
-          })
-        }
+        params: requestParams
       });
 
       console.log('🏊‍♂️ Enhanced pools fetched successfully:', response.data);
@@ -208,23 +211,39 @@ export class PoolsApi {
   /**
    * Get user's pools (groups they are part of)
    * @param {string} userId - User ID
+   * @param {Array} [allPools] - Optional pre-fetched pools data to filter from
    * @returns {Promise<Object>} Object containing ongoing, upcoming, and past pools
    */
-  static async getUserPools(userId) {
+  static async getUserPools(userId, allPools = null) {
     try {
       console.log('🏊‍♂️ Fetching user pools for:', userId);
       
-      const response = await poolingServicesApi.get(`/groups/user/${userId}`);
+      let pools = allPools;
       
-      console.log('🏊‍♂️ User pools fetched successfully:', response.data);
+      // If no pre-fetched data, fetch all pools
+      if (!pools) {
+        const response = await this.getEnhancedPools();
+        pools = response.map(group => this.convertToPoolFormat(group));
+      } else {
+        // Convert if needed
+        pools = pools.map(group => 
+          group.id ? group : this.convertToPoolFormat(group)
+        );
+      }
+      
+      // Filter pools where the user is the creator or member
+      const userPools = pools.filter(pool => 
+        pool.creatorUserId === userId
+        // TODO: Add member check when we have member data
+      );
+      
+      console.log('🏊‍♂️ User pools filtered successfully:', userPools.length);
       
       // Organize pools by status
-      const pools = response.data.map(group => this.convertToPoolFormat(group));
-      
       const result = {
-        ongoing: pools.filter(pool => pool.status === 'ongoing' || pool.status === 'active'),
-        upcoming: pools.filter(pool => pool.status === 'open' || pool.status === 'pending'),
-        past: pools.filter(pool => pool.status === 'closed' || pool.status === 'completed')
+        ongoing: userPools.filter(pool => pool.status === 'active'),
+        upcoming: userPools.filter(pool => pool.status === 'draft' || pool.status === 'open'),
+        past: userPools.filter(pool => pool.status === 'closed' || pool.status === 'completed')
       };
       
       return result;
@@ -235,24 +254,149 @@ export class PoolsApi {
   }
 
   /**
-   * Get pools created by the user
-   * @param {string} userId - User ID
-   * @returns {Promise<Array>} Array of pools created by the user
+   * Get all public pools for browsing (Find Pools page)
+   * @param {Object} filters - Optional filters to apply on frontend
+   * @param {Array} [allPools] - Optional pre-fetched pools data to filter from
+   * @returns {Promise<Array>} Array of pools available for joining
    */
-  static async getCreatedPools(userId) {
+  static async getPublicPools(filters = {}, allPools = null) {
     try {
-      console.log('🏊‍♂️ Fetching created pools for:', userId);
+      console.log('🏊‍♂️ Getting public pools with filters:', filters);
       
-      const response = await poolingServicesApi.get(`/groups/created/${userId}`);
+      let pools = allPools;
       
-      console.log('🏊‍♂️ Created pools fetched successfully:', response.data);
+      // If no pre-fetched data, fetch all pools
+      if (!pools) {
+        const response = await this.getEnhancedPools();
+        pools = response.map(group => this.convertToPoolFormat(group));
+      } else {
+        // Convert if needed
+        pools = pools.map(group => 
+          group.id ? group : this.convertToPoolFormat(group)
+        );
+      }
       
-      const pools = response.data.map(group => this.convertToPoolFormat(group));
-      return pools;
+      // Apply frontend filters
+      let filteredPools = pools;
+      
+      // Filter by search query (name, destinations, activities)
+      if (filters.searchQuery) {
+        const query = filters.searchQuery.toLowerCase();
+        filteredPools = filteredPools.filter(pool =>
+          pool.name.toLowerCase().includes(query) ||
+          pool.destinations.toLowerCase().includes(query) ||
+          pool.preferredActivities.some(activity => 
+            activity.toLowerCase().includes(query)
+          )
+        );
+      }
+      
+      // Filter by base city
+      if (filters.baseCity) {
+        filteredPools = filteredPools.filter(pool =>
+          pool.baseCity === filters.baseCity
+        );
+      }
+      
+      // Filter by budget level
+      if (filters.budgetLevel) {
+        filteredPools = filteredPools.filter(pool =>
+          pool.budgetLevel === filters.budgetLevel
+        );
+      }
+      
+      // Filter by preferred activities
+      if (filters.preferredActivities && filters.preferredActivities.length > 0) {
+        filteredPools = filteredPools.filter(pool =>
+          filters.preferredActivities.some(activity =>
+            pool.preferredActivities.includes(activity)
+          )
+        );
+      }
+      
+      // Filter by date range
+      if (filters.startDate || filters.endDate) {
+        filteredPools = filteredPools.filter(pool => {
+          const poolStart = new Date(pool.startDate);
+          const poolEnd = new Date(pool.endDate);
+          
+          if (filters.startDate) {
+            const filterStart = new Date(filters.startDate);
+            if (poolStart < filterStart) return false;
+          }
+          
+          if (filters.endDate) {
+            const filterEnd = new Date(filters.endDate);
+            if (poolEnd > filterEnd) return false;
+          }
+          
+          return true;
+        });
+      }
+      
+      // Only show active and open pools in public view
+      filteredPools = filteredPools.filter(pool =>
+        pool.status === 'active' || pool.status === 'open'
+      );
+      
+      console.log('🏊‍♂️ Public pools filtered successfully:', filteredPools.length);
+      return filteredPools;
     } catch (error) {
-      console.error('🏊‍♂️❌ Error fetching created pools:', error);
-      throw new Error(`Failed to fetch created pools: ${error.response?.data?.message || error.message}`);
+      console.error('🏊‍♂️❌ Error getting public pools:', error);
+      throw new Error(`Failed to get public pools: ${error.message}`);
     }
+  }
+
+  /**
+   * Cache for pools data to avoid multiple API calls
+   */
+  static _poolsCache = null;
+  static _cacheTimestamp = null;
+  static _cacheExpiry = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Get cached pools or fetch fresh data
+   * @param {boolean} forceRefresh - Force refresh the cache
+   * @returns {Promise<Array>} Array of raw pool data
+   */
+  static async getCachedPools(forceRefresh = false) {
+    const now = Date.now();
+    
+    // Check if cache is valid and not expired
+    if (!forceRefresh && 
+        this._poolsCache && 
+        this._cacheTimestamp && 
+        (now - this._cacheTimestamp) < this._cacheExpiry) {
+      console.log('🏊‍♂️ Using cached pools data');
+      return this._poolsCache;
+    }
+    
+    try {
+      console.log('🏊‍♂️ Fetching fresh pools data');
+      const freshData = await this.getEnhancedPools();
+      
+      // Update cache
+      this._poolsCache = freshData;
+      this._cacheTimestamp = now;
+      
+      return freshData;
+    } catch (error) {
+      // If API fails, return cached data if available
+      if (this._poolsCache) {
+        console.warn('🏊‍♂️ API failed, using stale cached data');
+        return this._poolsCache;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Clear the pools cache
+   */
+  static clearCache() {
+    this._poolsCache = null;
+    this._cacheTimestamp = null;
+    console.log('🏊‍♂️ Pools cache cleared');
   }
 }
 

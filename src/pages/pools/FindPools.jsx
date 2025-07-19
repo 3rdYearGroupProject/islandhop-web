@@ -60,18 +60,12 @@ const FindPools = () => {
   useEffect(() => {
     const initializeComponent = async () => {
       try {
-        // Get current user
+        // Get current user (optional for public pools)
         const userId = getUserUID();
-        if (!userId) {
-          setError('Please log in to view pools');
-          setLoading(false);
-          return;
-        }
-        
         setCurrentUser(userId);
-        console.log('🏊‍♂️ Current user:', userId);
+        console.log('🏊‍♂️ Current user:', userId || 'Guest user');
         
-        // Fetch pools
+        // Fetch pools (works with or without user)
         await fetchPools(userId);
       } catch (error) {
         console.error('🏊‍♂️❌ Error initializing component:', error);
@@ -85,24 +79,20 @@ const FindPools = () => {
 
   // Fetch pools with current filters
   useEffect(() => {
-    if (currentUser) {
-      const timeoutId = setTimeout(() => {
-        fetchPools(currentUser);
-      }, 500); // Debounce API calls
+    const timeoutId = setTimeout(() => {
+      fetchPools(currentUser);
+    }, 500); // Debounce API calls
 
-      return () => clearTimeout(timeoutId);
-    }
+    return () => clearTimeout(timeoutId);
   }, [selectedDestination, selectedSeats, startDate, endDate, selectedTerrains, selectedActivities, budgetLevel, currentUser]);
 
   // Debounced search query effect
   useEffect(() => {
-    if (currentUser) {
-      const timeoutId = setTimeout(() => {
-        fetchPools(currentUser);
-      }, 300); // Shorter debounce for search
+    const timeoutId = setTimeout(() => {
+      fetchPools(currentUser);
+    }, 300); // Shorter debounce for search
 
-      return () => clearTimeout(timeoutId);
-    }
+    return () => clearTimeout(timeoutId);
   }, [searchQuery, currentUser]);
 
   /**
@@ -113,42 +103,20 @@ const FindPools = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🏊‍♂️ Fetching pools with filters:', {
-        userId,
+      console.log('🏊‍♂️ Fetching pools with filters applied on frontend');
+      
+      const filters = {
+        searchQuery,
         baseCity: selectedDestination,
         startDate,
         endDate,
         budgetLevel,
         preferredActivities: selectedActivities
-      });
-
-      const apiParams = {
-        userId,
-        ...(selectedDestination && { baseCity: selectedDestination }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        ...(budgetLevel && { budgetLevel }),
-        ...(selectedActivities.length > 0 && { preferredActivities: selectedActivities })
       };
 
-      const enhancedGroups = await PoolsApi.getEnhancedPools(apiParams);
-      
-      // Convert backend response to frontend format
-      const formattedPools = enhancedGroups.map(group => PoolsApi.convertToPoolFormat(group));
-      
-      // Apply frontend-only filters
-      let filteredPools = formattedPools;
-      
-      // Apply search query filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        filteredPools = filteredPools.filter(pool => 
-          pool.name.toLowerCase().includes(query) ||
-          pool.owner.toLowerCase().includes(query) ||
-          pool.destinations.toLowerCase().includes(query) ||
-          (pool.cities && pool.cities.some(city => city.toLowerCase().includes(query)))
-        );
-      }
+      // Use cached data to avoid multiple API calls
+      const cachedPools = await PoolsApi.getCachedPools();
+      let filteredPools = await PoolsApi.getPublicPools(filters, cachedPools);
 
       // Apply seats filter
       if (selectedSeats) {
@@ -523,7 +491,7 @@ const FindPools = () => {
           <div className="text-red-800 font-medium mb-2">Failed to load pools</div>
           <div className="text-red-600 text-sm mb-4">{error}</div>
           <button 
-            onClick={() => currentUser && fetchPools(currentUser)}
+            onClick={() => fetchPools(currentUser)}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             Try Again
