@@ -922,7 +922,7 @@ const PoolItineraryPage = () => {
       console.log('� Saving trip and getting suggestions...', { groupId, tripData });
 
       // Call the backend API to save trip and get similar trip suggestions
-      const response = await PoolsApi.saveTripAndGetSuggestions(groupId, tripData);
+      const response = await PoolsApi.saveTripAndGetSuggestions(groupId, requestData);
       
       if (response.success && response.data.similarTrips && response.data.similarTrips.length > 0) {
         console.log('✅ Found similar trips:', response.data.similarTrips);
