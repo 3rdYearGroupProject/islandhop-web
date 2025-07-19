@@ -734,7 +734,12 @@ export class PoolsApi {
 
       const result = await response.json();
       console.log('💾 Trip saved and suggestions received:', result);
-      return result;
+      
+      // Return the result with proper structure expected by frontend
+      return {
+        success: true,
+        ...result
+      };
     } catch (error) {
       console.error('💾❌ Error saving trip and getting suggestions:', error);
       throw new Error(`Failed to save trip and get suggestions: ${error.message}`);
@@ -774,7 +779,12 @@ export class PoolsApi {
 
       const result = await response.json();
       console.log('🏁 Group finalized successfully:', result);
-      return result;
+      
+      // Return the result with proper structure expected by frontend
+      return {
+        success: true,
+        ...result
+      };
     } catch (error) {
       console.error('🏁❌ Error finalizing group:', error);
       throw new Error(`Failed to finalize group: ${error.message}`);

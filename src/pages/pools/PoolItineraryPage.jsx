@@ -902,8 +902,9 @@ const PoolItineraryPage = () => {
 
     try {
       // Prepare trip data for backend in the correct nested structure
-      const tripDetails = {
-        tripName: normalizedTripName,
+      // Backend expects "tripData" not "tripDetails"
+      const tripData = {
+        name: normalizedTripName, // Backend expects "name" not "tripName"
         startDate: normalizedDates[0],
         endDate: normalizedDates[normalizedDates.length - 1],
         destinations: Object.values(destinations),
@@ -915,18 +916,19 @@ const PoolItineraryPage = () => {
 
       const requestData = {
         userId: user?.uid || userUid,
-        tripDetails: tripDetails,
+        tripData: tripData, // Changed from tripDetails to tripData to match backend
         optionalField: 'save_and_suggest'
       };
 
-      console.log('� Saving trip and getting suggestions...', { groupId, tripData });
+      console.log('� Saving trip and getting suggestions...', { groupId, requestData });
 
       // Call the backend API to save trip and get similar trip suggestions
       const response = await PoolsApi.saveTripAndGetSuggestions(groupId, requestData);
       
-      if (response.success && response.data.similarTrips && response.data.similarTrips.length > 0) {
-        console.log('✅ Found similar trips:', response.data.similarTrips);
-        setSimilarTrips(response.data.similarTrips);
+      // Backend response structure: { tripId, groupId, similarTrips, totalSuggestions, message, hasSimilarTrips }
+      if (response && response.similarTrips && response.similarTrips.length > 0) {
+        console.log('✅ Found similar trips:', response.similarTrips);
+        setSimilarTrips(response.similarTrips);
         setShowSimilarTrips(true);
       } else {
         console.log('ℹ️ No similar trips found, proceeding with trip finalization');
