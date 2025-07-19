@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { MapPin, Clock, Users, Star, Camera, Utensils, Bed, Car, Navigation, ChevronDown } from 'lucide-react';
 
-const DriverTripModal = ({ open, onClose, trip }) => {
+const GuideTourModal = ({ open, onClose, tour }) => {
   const [expandedDays, setExpandedDays] = useState({});
   
-  if (!open || !trip) return null;
+  if (!open || !tour) return null;
 
-  // Mock itinerary data for the trip
+  // Mock itinerary data for the tour
   const mockItinerary = {
     0: {
       date: new Date(),
       activities: [
         {
           id: 1,
-          name: 'Visit Kandy Temple',
-          location: 'Temple of the Tooth',
+          name: 'Visit Temple of the Tooth',
+          location: 'Kandy',
           duration: '2 hours',
-          rating: 4.7,
-          description: 'Explore the sacred Buddhist temple',
+          rating: 4.8,
+          description: 'Explore the most sacred Buddhist temple in Sri Lanka',
           price: 'LKR 500',
           time: '09:00'
         },
@@ -26,8 +26,8 @@ const DriverTripModal = ({ open, onClose, trip }) => {
           name: 'Royal Botanical Gardens',
           location: 'Peradeniya',
           duration: '3 hours',
-          rating: 4.5,
-          description: 'Walk through beautiful botanical gardens',
+          rating: 4.6,
+          description: 'Walk through beautiful tropical botanical gardens',
           price: 'LKR 300',
           time: '14:00'
         }
@@ -37,10 +37,10 @@ const DriverTripModal = ({ open, onClose, trip }) => {
           id: 1,
           name: 'Hotel Suisse',
           location: 'Kandy',
-          price: 'LKR 12,000/night',
-          rating: 4.3,
-          reviews: 120,
-          description: 'Luxury hotel in the heart of Kandy',
+          price: 'LKR 15,000/night',
+          rating: 4.4,
+          reviews: 150,
+          description: 'Historic luxury hotel in Kandy city center',
           checkIn: '15:00',
           checkOut: '11:00'
         }
@@ -51,23 +51,23 @@ const DriverTripModal = ({ open, onClose, trip }) => {
           name: 'White House Restaurant',
           location: 'Kandy',
           cuisine: 'Sri Lankan',
-          rating: 4.6,
-          reviews: 200,
-          description: 'Authentic local cuisine',
-          priceRange: 'LKR 800-1500',
+          rating: 4.7,
+          reviews: 280,
+          description: 'Authentic Sri Lankan cuisine with cultural show',
+          priceRange: 'LKR 1200-2500',
           time: '19:00'
         }
       ],
       transportation: [
         {
           id: 1,
-          name: 'Airport Transfer',
-          type: 'Private Car',
-          price: 'LKR 3500',
+          name: 'Hotel Pickup',
+          type: 'Private Vehicle',
+          price: 'LKR 2500',
           rating: 4.5,
-          description: 'Pickup from Colombo Airport',
-          time: '08:00',
-          duration: '2.5 hours'
+          description: 'Comfortable air-conditioned vehicle',
+          time: '08:30',
+          duration: '8 hours'
         }
       ]
     }
@@ -113,24 +113,24 @@ const DriverTripModal = ({ open, onClose, trip }) => {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Active Trip</span>
-                <span className="text-white/80 text-sm">#{trip.id}</span>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Active Tour</span>
+                <span className="text-white/80 text-sm">#{tour.id}</span>
               </div>
-              <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">Trip to {trip.destination}</h1>
+              <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">{tour.tourType}</h1>
               <div className="flex items-center text-white/90 mb-2">
                 <MapPin className="h-5 w-5 mr-2 text-blue-200" />
-                <span className="text-lg font-medium">{trip.pickupLocation} → {trip.destination}</span>
+                <span className="text-lg font-medium">{tour.location} → {tour.destination}</span>
               </div>
               <div className="flex items-center gap-4 mb-2">
                 <div className="flex items-center text-blue-100">
                   <Users className="h-4 w-4 mr-1" />
-                  <span className="text-sm">{trip.passenger}</span>
+                  <span className="text-sm">{tour.tourist}</span>
                 </div>
                 <div className="flex items-center text-blue-100">
                   <Clock className="h-4 w-4 mr-1" />
-                  <span className="text-sm">{trip.estimatedTime}</span>
+                  <span className="text-sm">{tour.duration}</span>
                 </div>
-                <span className="px-3 py-1 bg-green-100/80 text-green-900 text-xs rounded-full font-semibold">LKR {trip.fare}</span>
+                <span className="px-3 py-1 bg-green-100/80 text-green-900 text-xs rounded-full font-semibold">LKR {tour.fee}</span>
               </div>
             </div>
           </div>
@@ -139,43 +139,43 @@ const DriverTripModal = ({ open, onClose, trip }) => {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
-            {/* Trip Overview */}
+            {/* Tour Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Passenger Info */}
+              {/* Tourist Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-800 mb-3">Passenger Information</h3>
+                <h3 className="text-lg font-semibold text-blue-800 mb-3">Tourist Information</h3>
                 <div className="flex items-center mb-3">
                   <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center mr-3">
                     <Users className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{trip.passenger}</p>
-                    <p className="text-sm text-gray-600">{trip.passengerPhone || '+94 77 000 0000'}</p>
-                    
+                    <p className="font-medium text-gray-900">{tour.tourist}</p>
+                    <p className="text-sm text-gray-600">{tour.touristPhone || '+1 555 000 0000'}</p>
+                   
                   </div>
                 </div>
               </div>
 
-              {/* Trip Details */}
+              {/* Tour Details */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-green-800 mb-3">Trip Details</h3>
+                <h3 className="text-lg font-semibold text-green-800 mb-3">Tour Details</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Distance:</span>
-                    <span className="font-medium">{trip.distance}</span>
+                    <span className="text-sm text-gray-600">Duration:</span>
+                    <span className="font-medium">{tour.duration}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Duration:</span>
-                    <span className="font-medium">{trip.estimatedTime}</span>
+                    <span className="text-sm text-gray-600">Progress:</span>
+                    <span className="font-medium">{tour.progress}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Start Time:</span>
-                    <span className="font-medium">{trip.startTime}</span>
+                    <span className="font-medium">{tour.startTime}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Status:</span>
                     <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm font-medium">
-                      {trip.status === 'in_progress' ? 'In Progress' : trip.status}
+                      {tour.status === 'in_progress' ? 'In Progress' : tour.status}
                     </span>
                   </div>
                 </div>
@@ -184,7 +184,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
 
             {/* Tourist's Planned Activities */}
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Tourist's Planned Activities</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Tour Itinerary</h2>
               
               <div className="space-y-4">
                 {Object.entries(mockItinerary).map(([dayIndex, dayData]) => (
@@ -314,7 +314,6 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                       <span>🚗 {transport.type}</span>
                                       <span>⏱️ {transport.duration}</span>
                                       <span>🕐 {transport.time}</span>
-                                      <span>⭐ {transport.rating}/5</span>
                                     </div>
                                   </div>
                                 ))}
@@ -337,11 +336,9 @@ const DriverTripModal = ({ open, onClose, trip }) => {
             <div className="flex items-center space-x-4">
               <button className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">
                 <Navigation className="w-4 h-4 mr-2" />
-                Navigate to Pickup
+                Navigate to Location
               </button>
-              {/* <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                Call Passenger
-              </button> */}
+              
             </div>
             <button
               onClick={onClose}
@@ -356,4 +353,4 @@ const DriverTripModal = ({ open, onClose, trip }) => {
   );
 };
 
-export default DriverTripModal;
+export default GuideTourModal;
