@@ -385,7 +385,7 @@ const OngoingTripPage = () => {
     Object.keys(mockItinerary).forEach((k) => { expanded[k] = true; });
     return expanded;
   });
-  const [itineraryCollapsed, setItineraryCollapsed] = useState(false);
+  const [itineraryCollapsed, setItineraryCollapsed] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [mapCenter, setMapCenter] = useState(mockPlaces[0]?.location || { lat: 7.8731, lng: 80.7718 });
   const { isLoaded } = useJsApiLoader({
@@ -868,7 +868,7 @@ const OngoingTripPage = () => {
             </div>
           </div>
           {/* Right: Map */}
-          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-20">
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
             <div className="bg-white rounded-xl w-full h-full shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               {isLoaded ? (
                 <div className="flex-1 flex flex-col">
