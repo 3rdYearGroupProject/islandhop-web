@@ -903,6 +903,7 @@ const PoolItineraryPage = () => {
     try {
       // Prepare trip data for backend
       const tripData = {
+        userId: user?.uid || userUid, // Include user ID
         name: normalizedTripName,
         startDate: normalizedDates[0],
         endDate: normalizedDates[normalizedDates.length - 1],
@@ -954,7 +955,10 @@ const PoolItineraryPage = () => {
     
     try {
       // Call the finalize group API
-      const response = await PoolsApi.finalizeGroup(groupId);
+      const response = await PoolsApi.finalizeGroup(groupId, {
+        userId: user?.uid || userUid,
+        action: 'finalize'
+      });
       
       if (response.success) {
         console.log('✅ Trip finalized successfully');
