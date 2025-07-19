@@ -901,16 +901,22 @@ const PoolItineraryPage = () => {
     }
 
     try {
-      // Prepare trip data for backend
-      const tripData = {
-        userId: user?.uid || userUid, // Include user ID
-        name: normalizedTripName,
+      // Prepare trip data for backend in the correct nested structure
+      const tripDetails = {
+        tripName: normalizedTripName,
         startDate: normalizedDates[0],
         endDate: normalizedDates[normalizedDates.length - 1],
         destinations: Object.values(destinations),
         terrains: normalizedTerrains || [],
         activities: normalizedActivities || [],
-        itinerary: itinerary
+        itinerary: itinerary,
+        places: Object.values(destinations).map(dest => dest.name || dest).filter(Boolean)
+      };
+
+      const requestData = {
+        userId: user?.uid || userUid,
+        tripDetails: tripDetails,
+        optionalField: 'save_and_suggest'
       };
 
       console.log('� Saving trip and getting suggestions...', { groupId, tripData });
