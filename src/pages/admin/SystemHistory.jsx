@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   ClockIcon,
   UserIcon,
@@ -6,13 +6,15 @@ import {
   ExclamationTriangleIcon,
   DocumentTextIcon,
   ArrowPathIcon,
-  MagnifyingGlassIcon
-} from '@heroicons/react/24/outline';
+  MagnifyingGlassIcon,
+  CreditCardIcon,
+} from "@heroicons/react/24/outline";
 
 const SystemHistory = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("activity");
   const [activityLogs, setActivityLogs] = useState([]);
+  const [paymentLogs, setPaymentLogs] = useState([]);
   const [auditTrails, setAuditTrails] = useState([]);
   const [changeHistory, setChangeHistory] = useState([]);
   const [systemEvents, setSystemEvents] = useState([]);
@@ -78,6 +80,85 @@ const SystemHistory = () => {
     },
   ];
 
+  // Mock data for payment logs
+  const mockPaymentLogs = [
+    {
+      id: 1,
+      timestamp: "2024-06-25T16:45:00Z",
+      transactionId: "TXN_2024062516450001",
+      user: "john.doe@islandhop.com",
+      amount: 299.99,
+      currency: "USD",
+      paymentMethod: "Credit Card",
+      cardLast4: "4532",
+      status: "completed",
+      type: "Trip Booking",
+      tripId: "TRIP_123456",
+      gatewayResponse: "APPROVED",
+      processingFee: 8.99,
+    },
+    {
+      id: 2,
+      timestamp: "2024-06-25T16:30:00Z",
+      transactionId: "TXN_2024062516300002",
+      user: "sarah.wilson@islandhop.com",
+      amount: 150.0,
+      currency: "USD",
+      paymentMethod: "PayPal",
+      cardLast4: null,
+      status: "completed",
+      type: "Pool Contribution",
+      tripId: "POOL_789012",
+      gatewayResponse: "SUCCESS",
+      processingFee: 4.5,
+    },
+    {
+      id: 3,
+      timestamp: "2024-06-25T16:15:00Z",
+      transactionId: "TXN_2024062516150003",
+      user: "mike.johnson@islandhop.com",
+      amount: 450.0,
+      currency: "USD",
+      paymentMethod: "Credit Card",
+      cardLast4: "8765",
+      status: "failed",
+      type: "Trip Booking",
+      tripId: "TRIP_654321",
+      gatewayResponse: "DECLINED - Insufficient Funds",
+      processingFee: 0.0,
+    },
+    {
+      id: 4,
+      timestamp: "2024-06-25T15:45:00Z",
+      transactionId: "TXN_2024062515450004",
+      user: "emma.davis@islandhop.com",
+      amount: 75.0,
+      currency: "USD",
+      paymentMethod: "Credit Card",
+      cardLast4: "9876",
+      status: "refunded",
+      type: "Cancellation Refund",
+      tripId: "TRIP_112233",
+      gatewayResponse: "REFUND PROCESSED",
+      processingFee: -2.25,
+    },
+    {
+      id: 5,
+      timestamp: "2024-06-25T15:20:00Z",
+      transactionId: "TXN_2024062515200005",
+      user: "alex.brown@islandhop.com",
+      amount: 199.99,
+      currency: "USD",
+      paymentMethod: "Debit Card",
+      cardLast4: "1234",
+      status: "pending",
+      type: "Trip Booking",
+      tripId: "TRIP_445566",
+      gatewayResponse: "PENDING VERIFICATION",
+      processingFee: 5.99,
+    },
+  ];
+
   // Mock data for audit trails
   const mockAuditTrails = [
     {
@@ -89,7 +170,7 @@ const SystemHistory = () => {
       resourceId: "user_123",
       changes: [
         { field: "status", oldValue: "inactive", newValue: "active" },
-        { field: "role", oldValue: "user", newValue: "guide" }
+        { field: "role", oldValue: "user", newValue: "guide" },
       ],
     },
     {
@@ -101,7 +182,7 @@ const SystemHistory = () => {
       resourceId: "settings_general",
       changes: [
         { field: "maxUsers", oldValue: "500", newValue: "1000" },
-        { field: "sessionTimeout", oldValue: "60", newValue: "120" }
+        { field: "sessionTimeout", oldValue: "60", newValue: "120" },
       ],
     },
     {
@@ -111,9 +192,7 @@ const SystemHistory = () => {
       resource: "Review",
       action: "Deleted",
       resourceId: "review_456",
-      changes: [
-        { field: "status", oldValue: "reported", newValue: "deleted" }
-      ],
+      changes: [{ field: "status", oldValue: "reported", newValue: "deleted" }],
     },
   ];
 
@@ -127,7 +206,7 @@ const SystemHistory = () => {
       changes: "Bug fixes and performance improvements",
       rollbackAvailable: true,
       deploymentTime: "5 minutes",
-      status: "completed"
+      status: "completed",
     },
     {
       id: 2,
@@ -137,7 +216,7 @@ const SystemHistory = () => {
       changes: "New user authentication features",
       rollbackAvailable: true,
       deploymentTime: "12 minutes",
-      status: "completed"
+      status: "completed",
     },
     {
       id: 3,
@@ -147,7 +226,7 @@ const SystemHistory = () => {
       changes: "Security patches and UI updates",
       rollbackAvailable: false,
       deploymentTime: "8 minutes",
-      status: "completed"
+      status: "completed",
     },
   ];
 
@@ -161,7 +240,7 @@ const SystemHistory = () => {
       module: "Authentication Service",
       message: "Database connection timeout",
       details: "Connection to primary database timed out after 30 seconds",
-      status: "resolved"
+      status: "resolved",
     },
     {
       id: 2,
@@ -171,7 +250,7 @@ const SystemHistory = () => {
       module: "Payment Gateway",
       message: "High transaction volume detected",
       details: "Transaction volume exceeded 150% of normal levels",
-      status: "info"
+      status: "info",
     },
     {
       id: 3,
@@ -181,7 +260,7 @@ const SystemHistory = () => {
       module: "Backup Service",
       message: "Scheduled backup completed",
       details: "Daily backup completed successfully in 45 minutes",
-      status: "completed"
+      status: "completed",
     },
   ];
 
@@ -189,6 +268,7 @@ const SystemHistory = () => {
     // Simulate API calls
     setTimeout(() => {
       setActivityLogs(mockActivityLogs);
+      setPaymentLogs(mockPaymentLogs);
       setAuditTrails(mockAuditTrails);
       setChangeHistory(mockChangeHistory);
       setSystemEvents(mockSystemEvents);
@@ -204,36 +284,43 @@ const SystemHistory = () => {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
   };
 
   const getStatusBadge = (status) => {
     const badges = {
-      'success': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'failed': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'warning': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'info': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300',
-      'resolved': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'completed': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300'
+      success:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
+      failed:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      warning:
+        "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      info: "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300",
+      resolved:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
+      completed:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
     };
     return badges[status] || badges.info;
   };
 
   const getSeverityBadge = (severity) => {
     const badges = {
-      'critical': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'high': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'medium': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300',
-      'low': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300'
+      critical:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      high: "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      medium:
+        "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300",
+      low: "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
     };
     return badges[severity] || badges.low;
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   if (loading) {
@@ -245,7 +332,10 @@ const SystemHistory = () => {
             <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-8"></div>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-20 bg-gray-200 dark:bg-secondary-700 rounded"></div>
+                <div
+                  key={i}
+                  className="h-20 bg-gray-200 dark:bg-secondary-700 rounded"
+                ></div>
               ))}
             </div>
           </div>
@@ -290,7 +380,7 @@ const SystemHistory = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.dateRange}
-              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+              onChange={(e) => handleFilterChange("dateRange", e.target.value)}
             >
               <option value="1day">Last 24 hours</option>
               <option value="7days">Last 7 days</option>
@@ -300,7 +390,7 @@ const SystemHistory = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.severity}
-              onChange={(e) => handleFilterChange('severity', e.target.value)}
+              onChange={(e) => handleFilterChange("severity", e.target.value)}
             >
               <option value="all">All Severities</option>
               <option value="critical">Critical</option>
@@ -311,7 +401,7 @@ const SystemHistory = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
+              onChange={(e) => handleFilterChange("category", e.target.value)}
             >
               <option value="all">All Categories</option>
               <option value="authentication">Authentication</option>
@@ -322,7 +412,7 @@ const SystemHistory = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.user}
-              onChange={(e) => handleFilterChange('user', e.target.value)}
+              onChange={(e) => handleFilterChange("user", e.target.value)}
             >
               <option value="all">All Users</option>
               <option value="admin">Admin</option>
@@ -336,7 +426,8 @@ const SystemHistory = () => {
         <div className="mb-6">
           <nav className="flex space-x-8">
             {[
-              { id: 'activity', label: 'Activity Logs', icon: UserIcon },
+              { id: "activity", label: "Activity Logs", icon: UserIcon },
+              { id: "payments", label: "Payment Logs", icon: CreditCardIcon },
             ].map((tab) => {
               const IconComponent = tab.icon;
               return (
@@ -345,8 +436,8 @@ const SystemHistory = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
                 >
                   <IconComponent className="h-5 w-5" />
@@ -359,10 +450,13 @@ const SystemHistory = () => {
 
         {/* Tab Content */}
         <div className="space-y-4">
-          {activeTab === 'activity' && (
+          {activeTab === "activity" && (
             <div className="space-y-4">
               {activityLogs.map((log) => (
-                <div key={log.id} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6">
+                <div
+                  key={log.id}
+                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
@@ -370,16 +464,30 @@ const SystemHistory = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{log.action}</h3>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(log.status)}`}>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {log.action}
+                          </h3>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              log.status
+                            )}`}
+                          >
                             {log.status}
                           </span>
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">{log.details}</p>
+                        <p className="text-gray-600 dark:text-gray-400 mb-2">
+                          {log.details}
+                        </p>
                         <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                          <div><strong>User:</strong> {log.user}</div>
-                          <div><strong>IP:</strong> {log.ip}</div>
-                          <div><strong>User Agent:</strong> {log.userAgent}</div>
+                          <div>
+                            <strong>User:</strong> {log.user}
+                          </div>
+                          <div>
+                            <strong>IP:</strong> {log.ip}
+                          </div>
+                          <div>
+                            <strong>User Agent:</strong> {log.userAgent}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -392,10 +500,82 @@ const SystemHistory = () => {
             </div>
           )}
 
-          {activeTab === 'audit' && (
+          {activeTab === "payments" && (
+            <div className="space-y-4">
+              {paymentLogs.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4">
+                      <div className="p-2 bg-info-100 dark:bg-info-900/20 rounded-lg">
+                        <CreditCardIcon className="h-5 w-5 text-info-600 dark:text-info-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {payment.type}
+                          </h3>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              payment.status
+                            )}`}
+                          >
+                            {payment.status}
+                          </span>
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">
+                            ${payment.amount.toFixed(2)} {payment.currency}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 mb-2">
+                          Transaction ID: {payment.transactionId}
+                        </p>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <strong>User:</strong> {payment.user}
+                            </div>
+                            <div>
+                              <strong>Payment Method:</strong>{" "}
+                              {payment.paymentMethod}
+                            </div>
+                            {payment.cardLast4 && (
+                              <div>
+                                <strong>Card:</strong> •••• {payment.cardLast4}
+                              </div>
+                            )}
+                            <div>
+                              <strong>Processing Fee:</strong> $
+                              {Math.abs(payment.processingFee).toFixed(2)}
+                            </div>
+                            <div>
+                              <strong>Trip/Pool ID:</strong> {payment.tripId}
+                            </div>
+                            <div>
+                              <strong>Gateway Response:</strong>{" "}
+                              {payment.gatewayResponse}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatTimeAgo(payment.timestamp)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "audit" && (
             <div className="space-y-4">
               {auditTrails.map((audit) => (
-                <div key={audit.id} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6">
+                <div
+                  key={audit.id}
+                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start space-x-4">
                       <div className="p-2 bg-warning-100 dark:bg-warning-900/20 rounded-lg">
@@ -406,19 +586,34 @@ const SystemHistory = () => {
                           {audit.action} {audit.resource}
                         </h3>
                         <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                          <span><strong>User:</strong> {audit.user}</span>
+                          <span>
+                            <strong>User:</strong> {audit.user}
+                          </span>
                           <span className="mx-2">•</span>
-                          <span><strong>Resource ID:</strong> {audit.resourceId}</span>
+                          <span>
+                            <strong>Resource ID:</strong> {audit.resourceId}
+                          </span>
                         </div>
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Changes:</h4>
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Changes:
+                          </h4>
                           {audit.changes.map((change, index) => (
-                            <div key={index} className="pl-4 border-l-2 border-gray-200 dark:border-secondary-600">
+                            <div
+                              key={index}
+                              className="pl-4 border-l-2 border-gray-200 dark:border-secondary-600"
+                            >
                               <div className="text-sm">
-                                <span className="font-medium text-gray-900 dark:text-white">{change.field}:</span>
-                                <span className="text-danger-600 dark:text-danger-400 mx-1">"{change.oldValue}"</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  {change.field}:
+                                </span>
+                                <span className="text-danger-600 dark:text-danger-400 mx-1">
+                                  "{change.oldValue}"
+                                </span>
                                 →
-                                <span className="text-success-600 dark:text-success-400 mx-1">"{change.newValue}"</span>
+                                <span className="text-success-600 dark:text-success-400 mx-1">
+                                  "{change.newValue}"
+                                </span>
                               </div>
                             </div>
                           ))}
@@ -434,10 +629,13 @@ const SystemHistory = () => {
             </div>
           )}
 
-          {activeTab === 'changes' && (
+          {activeTab === "changes" && (
             <div className="space-y-4">
               {changeHistory.map((change) => (
-                <div key={change.id} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6">
+                <div
+                  key={change.id}
+                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       <div className="p-2 bg-success-100 dark:bg-success-900/20 rounded-lg">
@@ -445,22 +643,38 @@ const SystemHistory = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{change.version}</h3>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(change.status)}`}>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {change.version}
+                          </h3>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              change.status
+                            )}`}
+                          >
                             {change.status}
                           </span>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            change.rollbackAvailable 
-                              ? 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300'
-                              : 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300'
-                          }`}>
-                            {change.rollbackAvailable ? 'Rollback Available' : 'No Rollback'}
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              change.rollbackAvailable
+                                ? "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300"
+                                : "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300"
+                            }`}
+                          >
+                            {change.rollbackAvailable
+                              ? "Rollback Available"
+                              : "No Rollback"}
                           </span>
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">{change.changes}</p>
+                        <p className="text-gray-600 dark:text-gray-400 mb-2">
+                          {change.changes}
+                        </p>
                         <div className="text-sm text-gray-500 dark:text-gray-400 space-x-4">
-                          <span><strong>Deployed by:</strong> {change.deployedBy}</span>
-                          <span><strong>Duration:</strong> {change.deploymentTime}</span>
+                          <span>
+                            <strong>Deployed by:</strong> {change.deployedBy}
+                          </span>
+                          <span>
+                            <strong>Duration:</strong> {change.deploymentTime}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -480,10 +694,13 @@ const SystemHistory = () => {
             </div>
           )}
 
-          {activeTab === 'events' && (
+          {activeTab === "events" && (
             <div className="space-y-4">
               {systemEvents.map((event) => (
-                <div key={event.id} className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6">
+                <div
+                  key={event.id}
+                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       <div className="p-2 bg-danger-100 dark:bg-danger-900/20 rounded-lg">
@@ -491,19 +708,35 @@ const SystemHistory = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{event.message}</h3>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityBadge(event.severity)}`}>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {event.message}
+                          </h3>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityBadge(
+                              event.severity
+                            )}`}
+                          >
                             {event.severity}
                           </span>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(event.status)}`}>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              event.status
+                            )}`}
+                          >
                             {event.status}
                           </span>
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">{event.details}</p>
+                        <p className="text-gray-600 dark:text-gray-400 mb-2">
+                          {event.details}
+                        </p>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          <span><strong>Module:</strong> {event.module}</span>
+                          <span>
+                            <strong>Module:</strong> {event.module}
+                          </span>
                           <span className="mx-2">•</span>
-                          <span><strong>Type:</strong> {event.type}</span>
+                          <span>
+                            <strong>Type:</strong> {event.type}
+                          </span>
                         </div>
                       </div>
                     </div>

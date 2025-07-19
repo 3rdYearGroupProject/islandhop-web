@@ -6,12 +6,10 @@ import AdminDashboardLayout from "../components/AdminDashboardLayout";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import Analytics from "../pages/admin/Analytics";
 import SystemSettings from "../pages/admin/SystemSettings";
-import Reviews from "../pages/admin/Reviews";
 import Notifications from "../pages/admin/Notifications";
 import ProfileDetails from "../pages/admin/ProfileDetails";
 import SystemHistory from "../pages/admin/SystemHistory";
 import APIs from "../pages/admin/APIs";
-import Hosting from "../pages/admin/Hosting";
 import Accounts from "../pages/admin/Accounts";
 import UpdateUserProfile from "../pages/admin/UpdateUserProfile";
 import Communications from "../pages/admin/Communications";
@@ -29,8 +27,6 @@ const AdminRoutes = () => {
         <Route path="analytics" element={<Analytics />} />
         <Route path="support-reports" element={<SupportReports />} />
         <Route path="settings" element={<SystemSettings />} />
-        <Route path="hosting" element={<Hosting />} />
-        <Route path="reviews" element={<Reviews />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<ProfileDetails />} />
         <Route path="history" element={<SystemHistory />} />
