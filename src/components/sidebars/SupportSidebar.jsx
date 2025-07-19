@@ -72,6 +72,12 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Handle Complaints",
     },
     {
+      name: "Verifications",
+      path: "/support/verifications",
+      icon: DocumentTextIcon,
+      description: "Manage Verifications",
+    },
+    {
       name: "Lost Items",
       path: "/support/lost-item-tracker",
       icon: ArchiveBoxXMarkIcon,
