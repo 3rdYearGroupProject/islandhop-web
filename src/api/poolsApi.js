@@ -270,24 +270,242 @@ export class PoolsApi {
   }
 
   /**
-   * Join a pool/group
+   * Join a pool/group (Updated to use new API)
    * @param {string} groupId - Group ID to join
-   * @param {string} userId - User ID joining the group
+   * @param {Object} joinData - Join request data
+   * @param {string} joinData.userId - User ID joining the group
+   * @param {string} joinData.userEmail - User email
+   * @param {string} joinData.userName - User name
+   * @param {string} joinData.message - Personal message for join request
+   * @param {Object} joinData.userProfile - User profile information
    * @returns {Promise<Object>} Join result
    */
-  static async joinPool(groupId, userId) {
+  static async joinPool(groupId, joinData) {
     try {
-      console.log('🏊‍♂️ Joining pool:', { groupId, userId });
+      console.log('🏊‍♂️ Requesting to join pool:', { groupId, joinData });
       
-      const response = await poolingServicesApi.post(`/groups/${groupId}/join`, {
-        userId
+      // Use the new API endpoint for joining groups
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/join`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(joinData)
       });
 
-      console.log('🏊‍♂️ Successfully joined pool:', response.data);
-      return response.data;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🏊‍♂️ Successfully submitted join request:', result);
+      return result;
     } catch (error) {
       console.error('🏊‍♂️❌ Error joining pool:', error);
-      throw new Error(`Failed to join pool: ${error.response?.data?.message || error.message}`);
+      throw new Error(`Failed to join pool: ${error.message}`);
+    }
+  }
+
+  /**
+   * Vote on a join request
+   * @param {string} groupId - Group ID
+   * @param {Object} voteData - Vote data
+   * @param {string} voteData.userId - Current user ID (voting)
+   * @param {string} voteData.joinRequestId - Join request ID
+   * @param {string} voteData.action - 'approve' or 'reject'
+   * @param {string} [voteData.reason] - Reason for rejection (optional)
+   * @returns {Promise<Object>} Vote result
+   */
+  static async voteOnJoinRequest(groupId, voteData) {
+    try {
+      console.log('🗳️ Voting on join request:', { groupId, voteData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/join-requests/vote`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(voteData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🗳️ Vote submitted successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('🗳️❌ Error voting on join request:', error);
+      throw new Error(`Failed to vote on join request: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get pending join requests for a group
+   * @param {string} groupId - Group ID
+   * @param {string} userId - Current user ID
+   * @returns {Promise<Object>} Pending join requests
+   */
+  static async getPendingJoinRequests(groupId, userId) {
+    try {
+      console.log('📋 Getting pending join requests for group:', groupId);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/join-requests/pending?userId=${userId}`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📋 Pending join requests fetched successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('📋❌ Error fetching pending join requests:', error);
+      throw new Error(`Failed to fetch pending join requests: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user invitations
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} User invitations
+   */
+  static async getUserInvitations(userId) {
+    try {
+      console.log('📨 Getting invitations for user:', userId);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/groups/invitations/${userId}`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📨 User invitations fetched successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('📨❌ Error fetching user invitations:', error);
+      throw new Error(`Failed to fetch user invitations: ${error.message}`);
+    }
+  }
+
+  /**
+   * Respond to an invitation
+   * @param {Object} responseData - Response data
+   * @param {string} responseData.userId - Current user ID
+   * @param {string} responseData.invitationId - Invitation ID
+   * @param {string} responseData.action - 'accept' or 'reject'
+   * @param {string} [responseData.message] - Optional message for rejection
+   * @returns {Promise<Object>} Response result
+   */
+  static async respondToInvitation(responseData) {
+    try {
+      console.log('📮 Responding to invitation:', responseData);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/groups/invitations/respond`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(responseData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📮 Invitation response sent successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('📮❌ Error responding to invitation:', error);
+      throw new Error(`Failed to respond to invitation: ${error.message}`);
+    }
+  }
+
+  /**
+   * Invite a user to a group
+   * @param {string} groupId - Group ID
+   * @param {Object} inviteData - Invitation data
+   * @param {string} inviteData.userId - Current user ID (inviting)
+   * @param {string} [inviteData.invitedUserId] - Invited user ID (optional)
+   * @param {string} [inviteData.invitedEmail] - Invited user email (optional)
+   * @param {string} inviteData.message - Invitation message
+   * @param {number} [inviteData.expirationDays] - Expiration days (default 7)
+   * @returns {Promise<Object>} Invitation result
+   */
+  static async inviteUserToGroup(groupId, inviteData) {
+    try {
+      console.log('📤 Inviting user to group:', { groupId, inviteData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/invite`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...inviteData,
+          expirationDays: inviteData.expirationDays || 7
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📤 User invited successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('📤❌ Error inviting user to group:', error);
+      throw new Error(`Failed to invite user to group: ${error.message}`);
     }
   }
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PoolCard from '../../components/PoolCard';
+import JoinPoolModal from '../../components/JoinPoolModal';
 import PoolsApi from '../../api/poolsApi';
 import { getUserUID } from '../../utils/userStorage';
+import { useAuth } from '../../hooks/useAuth';
 import { 
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -32,7 +34,12 @@ const FindPools = () => {
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   
+  // Join modal state
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [selectedPoolForJoin, setSelectedPoolForJoin] = useState(null);
+  
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Terrain options (matching PoolPreferencesPage)
   const terrainOptions = [
@@ -195,24 +202,37 @@ const FindPools = () => {
 
   const handleJoinPool = async (pool) => {
     try {
-      console.log('🏊‍♂️ Joining pool:', pool.name);
+      console.log('🏊‍♂️ Opening join modal for pool:', pool.name);
       
-      if (!currentUser) {
+      if (!user) {
         alert('Please log in to join a pool');
+        navigate('/login');
         return;
       }
 
-      const result = await PoolsApi.joinPool(pool.groupId, currentUser);
-      console.log('🏊‍♂️ Successfully joined pool:', result);
+      // Open the join modal instead of directly joining
+      setSelectedPoolForJoin(pool);
+      setJoinModalOpen(true);
       
-      // Refresh pools to show updated participant count
-      await fetchPools(currentUser);
-      
-      alert(`Successfully joined ${pool.name}!`);
     } catch (error) {
-      console.error('🏊‍♂️❌ Error joining pool:', error);
-      alert(`Failed to join pool: ${error.message}`);
+      console.error('🏊‍♂️❌ Error opening join modal:', error);
+      alert(`Failed to open join request: ${error.message}`);
     }
+  };
+
+  const handleJoinSuccess = async (result) => {
+    console.log('🏊‍♂️✅ Join request sent successfully:', result);
+    
+    // Refresh pools to show updated state
+    await fetchPools(currentUser);
+    
+    // Show success message
+    alert(`Join request sent successfully! All group members must approve before you can join.`);
+  };
+
+  const handleCloseJoinModal = () => {
+    setJoinModalOpen(false);
+    setSelectedPoolForJoin(null);
   };
 
   const handlePoolClick = (pool) => {
@@ -549,6 +569,14 @@ const FindPools = () => {
           </div>
         </div>
       )}
+
+      {/* Join Pool Modal */}
+      <JoinPoolModal
+        open={joinModalOpen}
+        onClose={handleCloseJoinModal}
+        poolData={selectedPoolForJoin}
+        onSuccess={handleJoinSuccess}
+      />
     </div>
   );
 };
