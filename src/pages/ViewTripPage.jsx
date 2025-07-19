@@ -1028,8 +1028,8 @@ const ViewTripPage = () => {
           {/* Trip Summary moved below both columns */}
         </div>
           {/* Right: Interactive Map showing all places from the itinerary */}
-          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)]">
-            <div className="bg-white rounded-xl w-full h-full md:sticky top-20 shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
+            <div className="bg-white rounded-xl w-full h-full shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               {isLoaded ? (
                 <div className="flex-1 flex flex-col">
                   <div className="p-4 border-b border-gray-100 shrink-0">
