@@ -888,12 +888,6 @@ const Communications = () => {
                   {/* Message Input */}
                   <div className="p-6 bg-white dark:bg-secondary-800 border-t border-gray-200 dark:border-secondary-600">
                     <form onSubmit={handleSendMessage} className="flex items-center space-x-4">
-                      <button
-                        type="button"
-                        className="p-3 rounded-xl text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200 shadow-sm border border-gray-200 dark:border-secondary-600"
-                      >
-                        <PaperClipIcon className="h-5 w-5" />
-                      </button>
                       <div className="flex-1 relative">
                         <input
                           type="text"
