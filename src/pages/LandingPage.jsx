@@ -659,16 +659,38 @@ const LandingPage = () => {
         <div className="content-container">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Discover Sri Lanka's Best</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {inspirationDestinations.map((inspiration, i) => (
-              <div key={i} className="flex-shrink-0 w-64 md:w-72">
-                <DestinationCard
-                  destination={inspiration}
-                  imageUrl={inspiration.image}
-                  onClick={() => openModal(inspiration)}
-                  className="h-48 md:h-56"
-                />
-              </div>
-            ))}
+            {inspirationDestinations.map((inspiration, i) => {
+              // Map card name to filter value
+              const nameToFilter = {
+                'Best beaches in Sri Lanka': 'beaches',
+                'Ancient temples and culture': 'temples',
+                'Wildlife safari adventures': 'wildlife',
+                'Mountain hiking trails': 'hiking',
+                'Local food experiences': 'food',
+              };
+              const filter = nameToFilter[inspiration.name];
+              return (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-64 md:w-72 cursor-pointer"
+                  onClick={filter ? () => navigate(`/discover?filter=${filter}`) : undefined}
+                  tabIndex={filter ? 0 : undefined}
+                  role={filter ? 'button' : undefined}
+                  onKeyDown={filter ? (e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/discover?filter=${filter}`);
+                    }
+                  }) : undefined}
+                >
+                  <DestinationCard
+                    destination={inspiration}
+                    imageUrl={inspiration.image}
+                    className="h-48 md:h-56"
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

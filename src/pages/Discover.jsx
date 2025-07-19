@@ -61,13 +61,24 @@ const Discover = () => {
     return map[filter] || 'tourist_attraction';
   };
 
-  // On mount, set selectedCategory from navigation state if present
+  // On mount, set selectedCategory from navigation state or query string if present
   useEffect(() => {
+    let filter = null;
+    // Check navigation state first
     if (location.state && location.state.filter) {
-      setSelectedCategory(filterToCategoryId(location.state.filter));
+      filter = location.state.filter;
+    } else {
+      // Parse query string for ?filter=...
+      const params = new URLSearchParams(location.search);
+      if (params.has('filter')) {
+        filter = params.get('filter');
+      }
+    }
+    if (filter) {
+      setSelectedCategory(filterToCategoryId(filter));
     }
     // eslint-disable-next-line
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   // Categories for filtering
   const categories = [

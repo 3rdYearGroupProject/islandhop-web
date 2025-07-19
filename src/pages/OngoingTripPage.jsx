@@ -516,31 +516,58 @@ const OngoingTripPage = () => {
               ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
               return (
                 <div className="mb-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg shadow-sm p-4">
-                    <h3 className="text-base font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <div className="bg-white border border-blue-200 rounded-lg shadow p-4">
+                    <h3 className="text-base font-bold text-blue-800 mb-3 flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-blue-500" />
-                      Today's Plan: {today.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                      Today's Plan: <span className="font-medium text-blue-700 ml-1">{today.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                     </h3>
-                    <ol className="space-y-2 list-decimal list-inside">
+                    <ol className="space-y-2">
                       {stops.length === 0 && (
-                        <li className="text-gray-500">No destinations or stops planned for today.</li>
+                        <li className="text-gray-400 italic">No destinations or stops planned for today.</li>
                       )}
-                      {stops.map((stop, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="mt-0.5">
-                            {stop.category === 'transportation' && <Car className="w-4 h-4 text-blue-600" />}
-                            {stop.category === 'activities' && <Camera className="w-4 h-4 text-primary-600" />}
-                            {stop.category === 'food' && <Utensils className="w-4 h-4 text-orange-600" />}
-                            {stop.category === 'places' && <Bed className="w-4 h-4 text-green-600" />}
-                          </span>
-                          <div className="flex-1">
-                            <span className="font-medium text-gray-900">{stop.name}</span>
-                            {stop.location && <span className="ml-2 text-gray-600">({stop.location})</span>}
-                            {stop.time && <span className="ml-2 text-xs text-gray-500">at {stop.time}</span>}
-                            {stop.duration && <span className="ml-2 text-xs text-gray-400">[{stop.duration}]</span>}
-                          </div>
-                        </li>
-                      ))}
+                      {(() => {
+                        // Highlight previous, current, and next stops
+                        const currentIdx = 1; // For demo, highlight the second stop as current
+                        return stops.map((stop, idx) => {
+                          let highlight = '';
+                          if (idx === currentIdx - 1) highlight = 'before';
+                          else if (idx === currentIdx) highlight = 'current';
+                          else if (idx === currentIdx + 1) highlight = 'next';
+                          return (
+                            <li
+                              key={idx}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all border border-transparent ${
+                                highlight === 'current' ? 'bg-blue-100 border-blue-400 shadow font-bold text-blue-900' :
+                                highlight === 'before' ? 'bg-gray-50 text-gray-500' :
+                                highlight === 'next' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+                                'hover:bg-blue-50 text-gray-800'
+                              }`}
+                            >
+                              <span className="flex-shrink-0">
+                                {stop.category === 'transportation' && <Car className="w-4 h-4 text-blue-600" />}
+                                {stop.category === 'activities' && <Camera className="w-4 h-4 text-primary-600" />}
+                                {stop.category === 'food' && <Utensils className="w-4 h-4 text-orange-600" />}
+                                {stop.category === 'places' && <Bed className="w-4 h-4 text-green-600" />}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="truncate text-base">{stop.name}</span>
+                                  {stop.location && <span className="text-gray-500 text-xs">({stop.location})</span>}
+                                </div>
+                                <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 flex-wrap">
+                                  {stop.time && <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{stop.time}</span>}
+                                  {stop.duration && <span className="flex items-center"><span className="ml-1">[{stop.duration}]</span></span>}
+                                </div>
+                              </div>
+                              {stop.rating && (
+                                <span className="flex items-center text-yellow-500 text-xs font-medium ml-2"><Star className="w-4 h-4 mr-1 fill-yellow-400" />{stop.rating}</span>
+                              )}
+                              {highlight === 'current' && <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">Current</span>}
+                              {highlight === 'next' && <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-white text-xs rounded-full">Next</span>}
+                            </li>
+                          );
+                        });
+                      })()}
                     </ol>
                   </div>
                 </div>
