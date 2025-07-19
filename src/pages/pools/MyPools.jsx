@@ -66,7 +66,9 @@ const MyPools = () => {
       
       console.log('🏊‍♂️ Fetching user pools...');
 
-      const userPools = await PoolsApi.getUserPools(userId);
+      // Use cached data for efficiency
+      const cachedPools = await PoolsApi.getCachedPools();
+      const userPools = await PoolsApi.getUserPools(userId, cachedPools);
       
       setOngoingPools(userPools.ongoing || []);
       setUpcomingPools(userPools.upcoming || []);

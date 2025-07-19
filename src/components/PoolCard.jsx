@@ -4,14 +4,39 @@ import { Heart, MoreHorizontal, MapPin, Calendar, Users, Star, Share2, UserPlus,
 const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonIcon = UserPlus }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'open':
+      case 'active':
         return 'bg-green-100 text-green-800 border-green-400';
+      case 'open':
+        return 'bg-blue-100 text-blue-800 border-blue-400';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-400';
       case 'full':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'closed':
         return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       default:
         return 'bg-blue-100 text-blue-800 border-blue-200';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'open':
+        return 'Open';
+      case 'draft':
+        return 'Draft';
+      case 'full':
+        return 'Full';
+      case 'closed':
+        return 'Closed';
+      case 'completed':
+        return 'Completed';
+      default:
+        return 'Available';
     }
   };
 
@@ -42,7 +67,7 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
         />
         <div className="absolute top-4 left-4">
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(pool.status || 'open')}`}>
-            {(pool.status || 'open').charAt(0).toUpperCase() + (pool.status || 'open').slice(1)}
+            {getStatusText(pool.status || 'open')}
           </span>
         </div>
         <div className="absolute top-4 right-4">
