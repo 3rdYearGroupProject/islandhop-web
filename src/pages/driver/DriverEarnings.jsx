@@ -102,7 +102,7 @@ const DriverEarnings = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'LKR'
     }).format(amount);
   };
 
@@ -130,7 +130,6 @@ const DriverEarnings = () => {
               {[
                 { key: 'week', label: 'Week' },
                 { key: 'month', label: 'Month' },
-                { key: 'year', label: 'Year' }
               ].map(option => (
                 <button
                   key={option.key}
@@ -284,65 +283,7 @@ const DriverEarnings = () => {
           </div>
         </div>
 
-        {/* Recent Transactions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Recent Transactions</h2>
-            <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-              View all →
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            {recentTransactions.map(transaction => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Car className="h-5 w-5 text-primary-600" />
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="font-medium text-gray-900">{transaction.passenger}</h3>
-                      <span className="text-xs text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-                        {transaction.tripName}
-                      </span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {transaction.route}
-                    </div>
-                    <p className="text-xs text-gray-400">{formatDate(transaction.date)}</p>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="flex items-center">
-                    <span className="font-semibold text-gray-900">
-                      {formatCurrency(transaction.amount)}
-                    </span>
-                    {transaction.tip > 0 && (
-                      <span className="ml-1 text-sm text-green-600">
-                        +{formatCurrency(transaction.tip)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    {transaction.paymentMethod === 'card' ? (
-                      <CreditCard className="h-3 w-3 mr-1" />
-                    ) : (
-                      <DollarSign className="h-3 w-3 mr-1" />
-                    )}
-                    {transaction.paymentMethod}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Banking Details & Payouts */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Banking Details & Payouts */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Banking Details</h2>
           

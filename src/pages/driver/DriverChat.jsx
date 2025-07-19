@@ -32,7 +32,6 @@ const DriverChat = () => {
         id: 'TR001',
         from: 'Colombo Airport',
         to: 'Galle Fort',
-        status: 'active',
         startTime: '2:30 PM'
       },
       lastMessage: {
@@ -269,12 +268,7 @@ const DriverChat = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2 mb-2">
-                      {/* <Star className="h-3 w-3 text-yellow-400" />
-                      <span className="text-xs text-gray-500">{chat.passenger.rating}</span>
-                      <span className="text-xs text-gray-400">•</span> */}
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(chat.trip.status)}`}>
-                        {chat.trip.status}
-                      </span>
+                    
                     </div>
                     
                     <p className="text-sm text-gray-600 truncate">

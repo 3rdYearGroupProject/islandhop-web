@@ -161,127 +161,157 @@ const GuideDashboard = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Active Tour */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Active Tour</h2>
-              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                In Progress
-              </span>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Active Tour</h2>
+            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              In Progress
+            </span>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Users className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="font-medium">{activeTour.tourist}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
+                  <MessageCircle className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {activeTour.tourist.split(' ').map(n => n[0]).join('')}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{activeTour.tourist}</h3>
-                  <p className="text-gray-600 text-sm">{activeTour.tourType}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">${activeTour.fee}</p>
-                  <p className="text-gray-600 text-sm">{activeTour.duration}</p>
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 text-green-500 mr-2" />
+                <span className="text-sm text-gray-600">From: {activeTour.location}</span>
               </div>
-
-              <div className="bg-gray-50 rounded-lg p-4">                  <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <MapPin className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-900">Route</span>
-                  </div>
-                  <span className="text-sm text-gray-600">{activeTour.progress}% Complete</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                  <div 
-                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${activeTour.progress}%` }}
-                  ></div>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">{activeTour.location}</span> → <span className="font-medium">{activeTour.destination}</span>
-                </div>
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 text-red-500 mr-2" />
+                <span className="text-sm text-gray-600">To: {activeTour.destination}</span>
               </div>
-
-              <div className="flex space-x-3">
-                <button className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Call Tourist
-                </button>
-                <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Message
-                </button>
-                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  <Navigation className="h-4 w-4" />
-                </button>
+            </div>
+            <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100">
+              <div className="text-center">
+                <p className="text-sm text-gray-500">Duration</p>
+                <p className="font-semibold">{activeTour.duration}</p>
               </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-500">Progress</p>
+                <p className="font-semibold">{activeTour.progress}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-500">Fee</p>
+                <p className="font-semibold">LKR{activeTour.fee}</p>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium">
+                <Navigation className="h-4 w-4 inline mr-2" />
+                Navigate
+              </button>
+              <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                Tour Details
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Pending Requests */}
-        <div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Pending Requests</h2>
-              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                {pendingRequests.length}
-              </span>
-            </div>
+        {/* Pending Tour Requests */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Tour Requests</h2>
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+              {pendingRequests.length} Pending
+            </span>
+          </div>
 
-            <div className="space-y-4">
-              {pendingRequests.map((request) => (
-                <div key={request.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{request.tourist}</h3>
-                      <p className="text-gray-600 text-sm">{request.tourType}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">LKR{request.estimatedFee}</p>
-                      <p className="text-gray-600 text-xs">{request.duration}</p>
+          <div className="space-y-4">
+            {pendingRequests.map((request) => (
+              <div key={request.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{request.tourist}</h3>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span>{request.requestTime}</span>
                     </div>
                   </div>
+                </div>
 
-                  <div className="mb-3">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <MapPin className="h-3 w-3 text-gray-500" />
-                      <span className="text-sm text-gray-600">{request.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Star className="h-3 w-3 text-yellow-500" />
-                      <span className="text-xs text-gray-600">{request.touristRating} rating</span>
-                      <span className="text-xs text-gray-500">• {request.requestTime}</span>
+                <div className="space-y-1 mb-3">
+                  <div className="flex items-center text-sm">
+                    <MapPin className="h-3 w-3 text-blue-500 mr-2" />
+                    <span>{request.tourType}</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <MapPin className="h-3 w-3 text-green-500 mr-2" />
+                    <span>Location: {request.location}</span>
+                  </div>
+                </div>
+
+                {/* {request.specialRequests && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 mb-3">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-4 w-4 text-orange-500 mr-2" />
+                      <span className="text-sm text-orange-700">{request.specialRequests}</span>
                     </div>
                   </div>
+                )} */}
 
-                  {request.specialRequests && (
-                    <div className="mb-3 p-2 bg-blue-50 rounded text-xs text-blue-800">
-                      <strong>Special:</strong> {request.specialRequests}
-                    </div>
-                  )}
-
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    <span>{request.duration}</span>
+                    <span className="mx-2">•</span>
+                    <span className="font-semibold text-gray-900">LKR{request.estimatedFee}</span>
+                  </div>
                   <div className="flex space-x-2">
-                    <button 
-                      onClick={() => handleTourAction(request.id, 'accept')}
-                      className="flex-1 px-3 py-2 bg-primary-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Accept
-                    </button>
-                    <button 
+                    <button
                       onClick={() => handleTourAction(request.id, 'decline')}
-                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm font-medium hover:bg-gray-200 transition-colors"
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                     >
                       Decline
                     </button>
+                    <button
+                      onClick={() => handleTourAction(request.id, 'accept')}
+                      className="px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                    >
+                      Accept
+                    </button>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Earnings Overview */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-1">This Week</p>
+            <p className="text-2xl font-bold text-gray-900">LKR{guideStats.weeklyEarnings}</p>
+            <div className="flex items-center justify-center mt-2">
+              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+              <span className="text-sm text-green-600">+15.2%</span>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-1">This Month</p>
+            <p className="text-2xl font-bold text-gray-900">LKR{guideStats.monthlyEarnings}</p>
+            <div className="flex items-center justify-center mt-2">
+              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+              <span className="text-sm text-green-600">+12.8%</span>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-1">Average per Tour</p>
+            <p className="text-2xl font-bold text-gray-900">LKR{(guideStats.monthlyEarnings / guideStats.completedTours).toFixed(2)}</p>
+            <div className="flex items-center justify-center mt-2">
+              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+              <span className="text-sm text-green-600">+8.4%</span>
             </div>
           </div>
         </div>
