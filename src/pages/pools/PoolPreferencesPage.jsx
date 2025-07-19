@@ -83,10 +83,9 @@ const PoolPreferencesPage = () => {
         return;
       }
       
-      // Prepare request data according to the API schema
-      const requestData = {
+      // Prepare preferences data for the new API
+      const preferences = {
         userId: userId,
-        userEmail: currentUser.email, // From Firebase user data
         baseCity: "Colombo", // Always hardcoded as requested
         startDate: startDate,
         endDate: endDate,
@@ -94,72 +93,26 @@ const PoolPreferencesPage = () => {
         preferredActivities: selectedActivityPreferences,
         preferredTerrains: selectedTerrainPreferences,
         activityPacing: "Normal", // Default value
-        visibility: poolPrivacy, // Use privacy setting from modal
         multiCityAllowed: true // Default value
       };
       
-      console.log('📦 Pre-check API Request data:', requestData);
+      console.log('📦 Navigating to compatible groups page with preferences:', preferences);
       
-      // Make API call to pre-check compatible groups
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/public-pooling/pre-check`;
-      
-      console.log('📡 Making POST request to:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestData)
+      // Navigate to the new CompatibleGroupsPage with preferences
+      navigate('/compatible-groups', {
+        state: {
+          preferences,
+          poolName,
+          selectedDates,
+          poolSize,
+          poolPrivacy
+        }
       });
-      
-      console.log('📨 Pre-check API Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ Pre-check API Error response:', errorData);
-        
-        if (response.status === 400) {
-          alert(`Invalid request: ${errorData.message || 'Please check your preferences'}`);
-        } else if (response.status === 500) {
-          alert(`Server error: ${errorData.message || 'Please try again later'}`);
-        } else {
-          alert(`Failed to check groups: ${errorData.message || 'Unknown error'}`);
-        }
-        return;
-      }
-      
-      const result = await response.json();
-      console.log('✅ Pre-check API Success response:', result);
-      
-      // Handle successful response
-      if (result.status === 'success') {
-        const groups = result.compatibleGroups || [];
-        setCompatibleGroups(groups);
-        setShowCompatibleGroups(true);
-        
-        if (groups.length === 0) {
-          console.log('🔍 No compatible groups found - showing create group option');
-        } else {
-          console.log(`🎉 Found ${groups.length} compatible groups`);
-        }
-      } else {
-        console.error('❌ Unexpected pre-check response format:', result);
-        alert(`Failed to check groups: ${result.message || 'Unexpected response format'}`);
-      }
       
     } catch (error) {
       console.error('❌ PRE-CHECK COMPATIBLE GROUPS FAILED');
       console.error('❌ Error:', error);
-      
-      // Network or other errors
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        alert('Network error: Please check your internet connection and try again');
-      } else {
-        alert(`Failed to check groups: ${error.message || 'Unknown error occurred'}`);
-      }
+      alert(`Failed to check groups: ${error.message || 'Unknown error occurred'}`);
     } finally {
       setIsCheckingGroups(false);
     }

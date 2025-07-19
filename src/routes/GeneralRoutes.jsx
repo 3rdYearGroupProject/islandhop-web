@@ -21,6 +21,7 @@ import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
 import PoolDetailsPage from '../pages/pools/PoolDetailsPage';
+import CompatibleGroupsPage from '../pages/pools/CompatibleGroupsPage';
 import AITripDurationPage from '../pages/AITripDurationPage';
 import AITripPreferencesPage from '../pages/AITripPreferencesPage';
 import AITripView from '../pages/AITripView';
@@ -118,6 +119,11 @@ const GeneralRoutes = () => (
     <Route path="/pool-preferences" element={
       <PublicRoute>
         <PoolPreferencesPage />
+      </PublicRoute>
+    } />
+    <Route path="/compatible-groups" element={
+      <PublicRoute>
+        <CompatibleGroupsPage />
       </PublicRoute>
     } />
     <Route path="/pool-itinerary" element={

@@ -44,6 +44,89 @@ export class PoolsApi {
   }
 
   /**
+   * Pre-check for compatible public groups before creating a new one
+   * @param {Object} preferences - User preferences for trip matching
+   * @param {string} preferences.userId - Current user ID
+   * @param {string} preferences.baseCity - Starting city
+   * @param {string} preferences.startDate - Trip start date (YYYY-MM-DD)
+   * @param {string} preferences.endDate - Trip end date (YYYY-MM-DD)
+   * @param {string} preferences.budgetLevel - Budget level (Low/Medium/High)
+   * @param {string[]} preferences.preferredActivities - Array of preferred activities
+   * @param {string[]} preferences.preferredTerrains - Array of preferred terrains
+   * @param {string} preferences.activityPacing - Activity pacing (Relaxed/Normal/Intense)
+   * @param {boolean} preferences.multiCityAllowed - Whether multi-city trips are allowed
+   * @returns {Promise<Object>} Compatible groups response
+   */
+  static async preCheckCompatibleGroups(preferences) {
+    try {
+      console.log('🏊‍♂️ Pre-checking compatible groups with preferences:', preferences);
+      
+      // Use the exact path from your API specification: /v1/public-pooling/pre-check
+      // Since base URL is http://localhost:8086/api/v1, we need to construct the full URL manually
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/public-pooling/pre-check`;
+      
+      console.log('🌐 Making request to:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(preferences)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🏊‍♂️ Compatible groups found:', result);
+      return result;
+    } catch (error) {
+      console.error('🏊‍♂️❌ Error pre-checking compatible groups:', error);
+      throw new Error(`Failed to find compatible groups: ${error.message}`);
+    }
+  }
+
+  /**
+   * Create a new group with trip planning
+   * @param {Object} groupData - Group creation data
+   * @param {string} groupData.userId - Current user ID
+   * @param {string} groupData.tripName - Name of the trip
+   * @param {string} groupData.startDate - Trip start date (YYYY-MM-DD)
+   * @param {string} groupData.endDate - Trip end date (YYYY-MM-DD)
+   * @param {string} groupData.baseCity - Starting city
+   * @param {string} groupData.groupName - Name of the group
+   * @param {boolean} [groupData.multiCityAllowed] - Whether multi-city trips are allowed
+   * @param {string} [groupData.activityPacing] - Activity pacing (Relaxed/Normal/Intense)
+   * @param {string} [groupData.budgetLevel] - Budget level (Low/Medium/High)
+   * @param {string[]} [groupData.preferredTerrains] - Array of preferred terrains
+   * @param {string[]} [groupData.preferredActivities] - Array of preferred activities
+   * @param {string} [groupData.visibility] - Group visibility (public/private)
+   * @param {number} [groupData.maxMembers] - Maximum number of members
+   * @param {boolean} [groupData.requiresApproval] - Whether group requires approval to join
+   * @param {Object} [groupData.additionalPreferences] - Additional preferences
+   * @returns {Promise<Object>} Group creation response
+   */
+  static async createGroupWithTrip(groupData) {
+    try {
+      console.log('🏊‍♂️ Creating group with trip:', groupData);
+      
+      const response = await poolingServicesApi.post('/api/v1/groups/with-trip', groupData);
+
+      console.log('🏊‍♂️ Group created successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('🏊‍♂️❌ Error creating group with trip:', error);
+      throw new Error(`Failed to create group: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
    * Convert enhanced group response to frontend pool format
    * @param {Object} group - Enhanced group response from backend
    * @returns {Object} Pool object in frontend format
