@@ -43,14 +43,15 @@ const DriverDashboard = () => {
     id: 'TR001',
     passenger: 'Sarah Johnson',
     pickupLocation: 'Colombo Airport',
-    destination: 'Galle Fort',
+    destination: 'Kandy City',
     distance: '120 km',
     estimatedTime: '2h 30m',
-    fare: 89.50,
+    fare: 8900.50,
     status: 'in_progress',
     startTime: '2:30 PM',
     passengerRating: 4.9,
-    passengerPhone: '+94 77 123 4567'
+    passengerPhone: '+94 77 123 4567',
+    passengerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
   });
 
   const [pendingRequests, setPendingRequests] = useState([

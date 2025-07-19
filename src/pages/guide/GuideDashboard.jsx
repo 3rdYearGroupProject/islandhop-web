@@ -15,12 +15,14 @@ import {
   Globe,
   Languages
 } from 'lucide-react';
+import GuideTourModal from '../../components/guide/GuideTourModal';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData } from '../../utils/userStorage';
 import { Link } from 'react-router-dom';
 
 const GuideDashboard = () => {
   const toast = useToast();
+  const [tourModalOpen, setTourModalOpen] = useState(false);
 
   const [guideStats, setGuideStats] = useState({
     todayEarnings: 3200.75,
@@ -211,7 +213,10 @@ const GuideDashboard = () => {
                 <Navigation className="h-4 w-4 inline mr-2" />
                 Navigate
               </button>
-              <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+              <button 
+                className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                onClick={() => setTourModalOpen(true)}
+              >
                 Tour Details
               </button>
             </div>
@@ -316,6 +321,13 @@ const GuideDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Tour Details Modal */}
+      <GuideTourModal 
+        open={tourModalOpen} 
+        onClose={() => setTourModalOpen(false)} 
+        tour={activeTour} 
+      />
     </div>
   );
 };
