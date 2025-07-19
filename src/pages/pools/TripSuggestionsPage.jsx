@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiMapPin, FiUsers, FiCalendar, FiDollarSign, FiStar, FiArrowRight, FiCheck, FiX } from 'react-icons/fi';
-import { PoolsApi } from '../api/poolsApi';
-import { useAuth } from '../hooks/useAuth';
-import JoinPoolModal from '../components/JoinPoolModal';
+import { PoolsApi } from '../../api/poolsApi';
+import { useAuth } from '../../hooks/useAuth';
+import JoinPoolModal from '../../components/JoinPoolModal';
 
 const TripSuggestionsPage = () => {
   const navigate = useNavigate();

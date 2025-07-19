@@ -7,7 +7,7 @@ import AddPlacesToStayModal from '../../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../../components/AddTransportationModal';
 import { tripPlanningApi } from '../../api/axios';
-import { saveTripAndGetSuggestions, finalizeGroup, requestJoinGroup } from '../../api/poolsApi';
+import { PoolsApi } from '../../api/poolsApi';
 import { useAuth } from '../../hooks/useAuth';
 import JoinPoolModal from '../../components/JoinPoolModal';
 
@@ -915,7 +915,7 @@ const PoolItineraryPage = () => {
       console.log('� Saving trip and getting suggestions...', { groupId, tripData });
 
       // Call the backend API to save trip and get similar trip suggestions
-      const response = await saveTripAndGetSuggestions(groupId, tripData);
+      const response = await PoolsApi.saveTripAndGetSuggestions(groupId, tripData);
       
       if (response.success && response.data.similarTrips && response.data.similarTrips.length > 0) {
         console.log('✅ Found similar trips:', response.data.similarTrips);
@@ -954,7 +954,7 @@ const PoolItineraryPage = () => {
     
     try {
       // Call the finalize group API
-      const response = await finalizeGroup(groupId);
+      const response = await PoolsApi.finalizeGroup(groupId);
       
       if (response.success) {
         console.log('✅ Trip finalized successfully');
