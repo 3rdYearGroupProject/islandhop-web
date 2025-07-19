@@ -208,7 +208,7 @@ const GuideAnalytics = () => {
       </div>
 
       {/* Additional Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
         <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Average Rating</h3>
@@ -236,25 +236,6 @@ const GuideAnalytics = () => {
 
         <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Completion Rate</h3>
-            <ChartBarIcon className="h-6 w-6 text-blue-500" />
-          </div>
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              {currentData.completionRate}%
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2 mb-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${currentData.completionRate}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Tour completion rate</p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Avg per Tour</h3>
             <CurrencyDollarIcon className="h-6 w-6 text-blue-500" />
           </div>
@@ -270,74 +251,41 @@ const GuideAnalytics = () => {
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
-        {/* Weekly Earnings Chart */}
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Daily Earnings (This Week)
-            </h3>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Total: ${weeklyEarnings.reduce((sum, day) => sum + day.earnings, 0).toFixed(2)}
-            </div>
-          </div>
-          <div className="space-y-4">
-            {weeklyEarnings.map((day, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-12">
-                  {day.day}
-                </span>
-                <div className="flex-1 mx-4">
-                  <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
-                      style={{ width: `${(day.earnings / maxEarnings) * 100}%` }}
-                    >
-                      <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                    </div>
-                  </div>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white w-16 text-right">
-                  LKR{day.earnings}
-                </span>
-              </div>
-            ))}
+      {/* Daily Earnings Chart - Full Width */}
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Daily Earnings (This Week)
+          </h3>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Total: ${weeklyEarnings.reduce((sum, day) => sum + day.earnings, 0).toFixed(2)}
           </div>
         </div>
-
-        {/* Peak Hours */}
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Peak Hours Analysis
-            </h3>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Best: {busyHours.reduce((max, hour) => hour.tours > max.tours ? hour : max).hour}
-            </div>
-          </div>
-          <div className="space-y-4">
-            {busyHours.map((hour, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-20">
-                  {hour.hour}
-                </span>
-                <div className="flex-1 mx-4">
-                  <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${hour.percentage}%` }}
-                    ></div>
+        <div className="space-y-4">
+          {weeklyEarnings.map((day, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-12">
+                {day.day}
+              </span>
+              <div className="flex-1 mx-4">
+                <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
+                    style={{ width: `${(day.earnings / maxEarnings) * 100}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                   </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white w-12 text-right">
-                  {hour.tours}
-                </span>
               </div>
-            ))}
-          </div>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white w-16 text-right">
+                LKR{day.earnings}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
+
+    
 
       {/* Top Tours */}
       <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 mb-8">

@@ -126,7 +126,7 @@ const DriverSchedule = () => {
         from: 'Colombo Airport',
         to: 'Galle Fort',
         distance: '120 km',
-        fare: 89.50,
+        fare: 3500.00,
         status: 'confirmed',
         passengerRating: 4.9
       },
@@ -139,7 +139,7 @@ const DriverSchedule = () => {
         from: 'Kandy Central',
         to: 'Nuwara Eliya',
         distance: '75 km',
-        fare: 95.00,
+        fare: 2800.00,
         status: 'pending',
         passengerRating: 4.7
       },
@@ -152,10 +152,9 @@ const DriverSchedule = () => {
         from: 'Ella Station',
         to: 'Kandy',
         distance: '85 km',
-        fare: 78.00,
+        fare: 3200.00,
         status: 'confirmed',
         passengerRating: 4.9,
-        isPartialTrip: true
       },
       {
         id: 'TR004',
@@ -166,7 +165,7 @@ const DriverSchedule = () => {
         from: 'Galle Fort',
         to: 'Unawatuna',
         distance: '8 km',
-        fare: 25.00,
+        fare: 800.00,
         status: 'confirmed',
         passengerRating: 4.8
       },
@@ -179,7 +178,7 @@ const DriverSchedule = () => {
         from: 'Kandy',
         to: 'Sigiriya',
         distance: '95 km',
-        fare: 125.00,
+        fare: 4200.00,
         status: 'confirmed',
         passengerRating: 4.6
       },
@@ -192,10 +191,9 @@ const DriverSchedule = () => {
         from: 'Sigiriya',
         to: 'Dambulla',
         distance: '20 km',
-        fare: 35.00,
+        fare: 1200.00,
         status: 'pending',
         passengerRating: 4.7,
-        isPartialTrip: true
       },
       {
         id: 'TR007',
@@ -206,7 +204,7 @@ const DriverSchedule = () => {
         from: 'Negombo',
         to: 'Colombo Airport',
         distance: '15 km',
-        fare: 45.00,
+        fare: 1500.00,
         status: 'confirmed',
         passengerRating: 4.9
       },
@@ -219,7 +217,7 @@ const DriverSchedule = () => {
         from: 'Colombo',
         to: 'Bentota',
         distance: '65 km',
-        fare: 85.00,
+        fare: 2500.00,
         status: 'confirmed',
         passengerRating: 4.8
       },
@@ -232,7 +230,7 @@ const DriverSchedule = () => {
         from: 'Ella',
         to: 'Badulla',
         distance: '45 km',
-        fare: 55.00,
+        fare: 1800.00,
         status: 'pending',
         passengerRating: 4.5
       },
@@ -245,7 +243,7 @@ const DriverSchedule = () => {
         from: 'Kandy',
         to: 'Peradeniya',
         distance: '12 km',
-        fare: 30.00,
+        fare: 900.00,
         status: 'confirmed',
         passengerRating: 4.7
       },
@@ -258,10 +256,9 @@ const DriverSchedule = () => {
         from: 'Galle',
         to: 'Mirissa',
         distance: '25 km',
-        fare: 40.00,
+        fare: 1400.00,
         status: 'confirmed',
         passengerRating: 4.9,
-        isPartialTrip: true
       },
       {
         id: 'TR012',
@@ -272,7 +269,7 @@ const DriverSchedule = () => {
         from: 'Colombo',
         to: 'Anuradhapura',
         distance: '205 km',
-        fare: 150.00,
+        fare: 6500.00,
         status: 'confirmed',
         passengerRating: 4.8
       },
@@ -285,7 +282,7 @@ const DriverSchedule = () => {
         from: 'Anuradhapura',
         to: 'Polonnaruwa',
         distance: '104 km',
-        fare: 75.00,
+        fare: 3800.00,
         status: 'pending',
         passengerRating: 4.6
       },
@@ -298,7 +295,7 @@ const DriverSchedule = () => {
         from: 'Dambulla',
         to: 'Sigiriya',
         distance: '20 km',
-        fare: 35.00,
+        fare: 1200.00,
         status: 'confirmed',
         passengerRating: 4.9
       },
@@ -311,7 +308,7 @@ const DriverSchedule = () => {
         from: 'Sigiriya',
         to: 'Kandy',
         distance: '95 km',
-        fare: 80.00,
+        fare: 3500.00,
         status: 'confirmed',
         passengerRating: 4.7
       },
@@ -324,7 +321,7 @@ const DriverSchedule = () => {
         from: 'Colombo',
         to: 'Bentota',
         distance: '65 km',
-        fare: 70.00,
+        fare: 2400.00,
         status: 'pending',
         passengerRating: 4.5
       },
@@ -337,7 +334,7 @@ const DriverSchedule = () => {
         from: 'Bentota',
         to: 'Hikkaduwa',
         distance: '28 km',
-        fare: 45.00,
+        fare: 1300.00,
         status: 'confirmed',
         passengerRating: 4.8
       },
@@ -350,7 +347,7 @@ const DriverSchedule = () => {
         from: 'Hikkaduwa',
         to: 'Galle',
         distance: '20 km',
-        fare: 35.00,
+        fare: 1100.00,
         status: 'confirmed',
         passengerRating: 4.9
       },
@@ -363,7 +360,7 @@ const DriverSchedule = () => {
         from: 'Galle',
         to: 'Colombo',
         distance: '116 km',
-        fare: 95.00,
+        fare: 3600.00,
         status: 'pending',
         passengerRating: 4.6
       },
@@ -376,7 +373,7 @@ const DriverSchedule = () => {
         from: 'Colombo',
         to: 'Kandy',
         distance: '115 km',
-        fare: 85.00,
+        fare: 4000.00,
         status: 'confirmed',
         passengerRating: 4.8
       },
@@ -389,10 +386,9 @@ const DriverSchedule = () => {
         from: 'Kandy',
         to: 'Nuwara Eliya',
         distance: '75 km',
-        fare: 90.00,
+        fare: 2900.00,
         status: 'confirmed',
         passengerRating: 4.7,
-        isPartialTrip: true
       },
       {
         id: 'TR022',
@@ -403,7 +399,7 @@ const DriverSchedule = () => {
         from: 'Nuwara Eliya',
         to: 'Ella',
         distance: '45 km',
-        fare: 60.00,
+        fare: 2200.00,
         status: 'pending',
         passengerRating: 4.9
       },
@@ -416,7 +412,7 @@ const DriverSchedule = () => {
         from: 'Ella',
         to: 'Yala',
         distance: '65 km',
-        fare: 75.00,
+        fare: 2700.00,
         status: 'confirmed',
         passengerRating: 4.6
       }
@@ -602,7 +598,7 @@ const DriverSchedule = () => {
                         {trips.filter(trip => trip.status === 'confirmed').length} trip{trips.filter(trip => trip.status === 'confirmed').length > 1 ? 's' : ''}
                       </span>
                       <span className="text-xs text-gray-500">
-                        ${trips.filter(trip => trip.status === 'confirmed').reduce((sum, trip) => sum + trip.fare, 0).toFixed(2)}
+                        LKR{trips.filter(trip => trip.status === 'confirmed').reduce((sum, trip) => sum + trip.fare, 0).toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -626,15 +622,8 @@ const DriverSchedule = () => {
                         {trip.from} → {trip.to}
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-green-600">${trip.fare}</span>
-                        <div className="flex items-center space-x-1">
-                          {trip.isPartialTrip && (
-                            <span className="text-xs bg-orange-200 text-orange-800 px-1 rounded">
-                              Partial
-                            </span>
-                          )}
-                          
-                        </div>
+                        <span className="font-medium text-green-600">LKR{trip.fare}</span>
+                        
                       </div>
                     </div>
                   ))}
@@ -653,51 +642,29 @@ const DriverSchedule = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Calendar className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Available Days</p>
-              <p className="text-2xl font-bold text-gray-900">9</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Car className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Scheduled Trips</p>
-              <p className="text-2xl font-bold text-gray-900">{scheduleData.scheduledTrips.filter(trip => trip.status === 'confirmed').length}</p>
+      <div className="flex justify-center mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Available Days</p>
+                <p className="text-2xl font-bold text-gray-900">9</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Working Hours</p>
-              <p className="text-2xl font-bold text-gray-900">85h</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <DollarSign className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Expected Earnings</p>
-              <p className="text-2xl font-bold text-gray-900">${scheduleData.scheduledTrips.filter(trip => trip.status === 'confirmed').reduce((sum, trip) => sum + trip.fare, 0).toFixed(0)}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Car className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Scheduled Trips</p>
+                <p className="text-2xl font-bold text-gray-900">{scheduleData.scheduledTrips.filter(trip => trip.status === 'confirmed').length}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -748,7 +715,7 @@ const DriverSchedule = () => {
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Fare</p>
-                            <p className="font-semibold text-sm">${trip.fare}</p>
+                            <p className="font-semibold text-sm">LKR{trip.fare}</p>
                           </div>
                         </div>
                       </div>
@@ -764,14 +731,7 @@ const DriverSchedule = () => {
                           )}
                         </div>
                         
-                        <div className="flex space-x-2">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                       
                       </div>
                     </div>
                   </div>
@@ -844,7 +804,7 @@ const DriverSchedule = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-700">Trip Details</p>
                   <p className="text-sm text-gray-600">{selectedSchedule.distance}</p>
-                  <p className="text-sm font-semibold text-green-600">${selectedSchedule.fare}</p>
+                  <p className="text-sm font-semibold text-green-600">LKR{selectedSchedule.fare}</p>
                 </div>
               </div>
               

@@ -314,6 +314,11 @@ const GuideChat = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
+                    {/* Tour Name at the top */}
+                    <div className="text-xs font-medium text-blue-600 mb-1">
+                      Tour - {conversation.tour}
+                    </div>
+                    
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-gray-900 truncate">
                         {conversation.tourist.name}
@@ -336,16 +341,6 @@ const GuideChat = () => {
                     <p className="text-sm text-gray-600 truncate mt-1">
                       {conversation.lastMessage}
                     </p>
-
-                    <div className="flex items-center mt-2 text-xs text-gray-500">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      <span className="truncate">{conversation.tour}</span>
-                      {conversation.tourCompleted && (
-                        <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
-                          Completed
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -358,31 +353,47 @@ const GuideChat = () => {
           {selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
+              <div className="bg-white border-b border-gray-200 p-4">
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <img
-                        src={selectedChat.tourist.avatar}
-                        alt={selectedChat.tourist.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                        selectedChat.tourist.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                      }`}></div>
-                    </div>
+                    <img
+                      src={selectedChat.tourist.avatar}
+                      alt={selectedChat.tourist.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
                     <div>
                       <h2 className="font-semibold text-gray-900">{selectedChat.tourist.name}</h2>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <span>{selectedChat.tour}</span>
-                        <span className="mx-2">•</span>
-                        <Clock className="h-3 w-3 mr-1" />
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <span>Tour - {selectedChat.tour}</span>
+                        <span>•</span>
                         <span>{selectedChat.tourDate}</span>
                       </div>
                     </div>
                   </div>
-
-               
+                  
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 text-blue-500 mr-1" />
+                        <span className="text-sm text-gray-600">Tour: {selectedChat.tour}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-sm text-gray-600">Date: {selectedChat.tourDate}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                        <Phone className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                        <Video className="h-4 w-4" />
+                      </button>
+                      <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
