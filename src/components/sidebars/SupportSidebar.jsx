@@ -23,16 +23,6 @@ import islandHopLogo from "../../assets/IslandHop.png";
 const SupportSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
-  const handleViewProfile = () => {
-    setIsDropdownOpen(false);
-    navigate("/support/profile");
-  };
 
   const supportMenuItems = [
     {
@@ -231,86 +221,26 @@ const SupportSidebar = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* Support Status */}
-        <div className="px-4 py-4 border-t border-gray-200 dark:border-secondary-700">
-          <div className="bg-gray-50 dark:bg-secondary-800 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                Support Status
-              </span>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-success-600 dark:text-success-400 font-medium">
-                  Available
-                </span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="text-gray-600 dark:text-gray-400">
-                <span className="block font-medium">Active Tickets</span>
-                <span className="text-warning-600 dark:text-warning-400">
-                  24
-                </span>
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                <span className="block font-medium">Response Time</span>
-                <span className="text-success-600 dark:text-success-400">
-                  &lt; 5min
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-200 dark:border-secondary-700">
-          {/* Support Agent Profile Dropdown */}
-          <div className="relative mb-3">
-            <button
-              onClick={toggleDropdown}
-              className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors"
-            >
-              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold">S</span>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  Support Agent
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Customer Support
-                </p>
-              </div>
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            {isDropdownOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-gray-200 dark:border-secondary-700 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={handleViewProfile}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700"
-                  >
-                    View Profile
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Support Agent Profile */}
+          <Link
+            to="/support/profile"
+            onClick={onClose}
+            className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors mb-3"
+          >
+            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold">S</span>
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                Support Agent
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Customer Support
+              </p>
+            </div>
+          </Link>
 
           {/* Quick Actions */}
           <div className="py-4 border-t border-gray-200 dark:border-secondary-700">
