@@ -134,26 +134,22 @@ const DriverSidebar = ({ isOpen, onClose }) => {
           </div>
 
           {/* Driver Portal Header - Desktop */}
-          <div className="hidden lg:flex items-center px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
-            <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white rounded-lg shadow-lg">
+          <div className="hidden lg:flex flex-col items-start px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
+            <div className="flex items-center mb-1 ml-3">
               <img 
                 src={islandHopIcon} 
                 alt="IslandHop Icon" 
-                className="h-8 w-8 object-contain"
+                className="h-8 w-8 mr-2"
               />
-            </div>
-            <div>
               <img 
                 src={islandHopLogo} 
                 alt="IslandHop Logo" 
-                className="h-6 object-contain"
+                className="h-6"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Driver Dashboard
-              </p>
             </div>
-          </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt- ml-[51px]">
+              Driver Dashboard
+            </p>
           </div>
 
           {/* Mobile Quick Actions */}
