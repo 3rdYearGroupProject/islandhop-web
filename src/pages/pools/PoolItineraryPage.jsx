@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Users, Star } from 'lucide-react';
 import AddDestinationModal from '../../components/AddDestinationModal';
 import AddThingsToDoModal from '../../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../../components/AddTransportationModal';
 import { tripPlanningApi } from '../../api/axios';
+import { saveTripAndGetSuggestions, finalizeGroup, requestJoinGroup } from '../../api/poolsApi';
+import { useAuth } from '../../hooks/useAuth';
+import JoinPoolModal from '../../components/JoinPoolModal';
 
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -159,6 +162,7 @@ const getPhotoUrl = (photo, maxWidth = 400) => {
 const PoolItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Extract and normalize all navigation state data from PoolPreferencesPage
   const {
@@ -223,6 +227,14 @@ const PoolItineraryPage = () => {
   const [availableCities, setAvailableCities] = useState([]);
   const [isSearchingCities, setIsSearchingCities] = useState(false);
   const [isSavingTrip, setIsSavingTrip] = useState(false);
+  
+  // Trip suggestions states
+  const [showSimilarTrips, setShowSimilarTrips] = useState(false);
+  const [similarTrips, setSimilarTrips] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [selectedTripToJoin, setSelectedTripToJoin] = useState(null);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [isFinalizingTrip, setIsFinalizingTrip] = useState(false);
   
   // Mock data for trip planning
   const mockSuggestions = {
@@ -873,6 +885,8 @@ const PoolItineraryPage = () => {
     console.log('💾 Starting comprehensive trip creation process...');
     
     setIsSavingTrip(true);
+    setIsLoadingSuggestions(true);
+    
     // Validate required data using normalized values
     if (!normalizedTripName || !normalizedDates || normalizedDates.length < 2 || !userUid) {
       console.warn('⚠️ Missing required trip data:', { 
@@ -882,31 +896,118 @@ const PoolItineraryPage = () => {
       });
       alert('Missing required trip information. Please go back and complete all steps.');
       setIsSavingTrip(false);
+      setIsLoadingSuggestions(false);
       return;
     }
 
-    console.log('🚀 Pool already created in preferences, saving itinerary locally...');
+    try {
+      // Prepare trip data for backend
+      const tripData = {
+        name: normalizedTripName,
+        startDate: normalizedDates[0],
+        endDate: normalizedDates[normalizedDates.length - 1],
+        destinations: Object.values(destinations),
+        terrains: normalizedTerrains || [],
+        activities: normalizedActivities || [],
+        itinerary: itinerary
+      };
 
-    // Trip was already created in PoolPreferencesPage, navigate to pools page
+      console.log('� Saving trip and getting suggestions...', { groupId, tripData });
+
+      // Call the backend API to save trip and get similar trip suggestions
+      const response = await saveTripAndGetSuggestions(groupId, tripData);
+      
+      if (response.success && response.data.similarTrips && response.data.similarTrips.length > 0) {
+        console.log('✅ Found similar trips:', response.data.similarTrips);
+        setSimilarTrips(response.data.similarTrips);
+        setShowSimilarTrips(true);
+      } else {
+        console.log('ℹ️ No similar trips found, proceeding with trip finalization');
+        // No similar trips found, directly finalize the trip
+        handleFinalizeTrip();
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Error saving trip and getting suggestions:', error);
+      alert('Error getting trip suggestions. Would you like to proceed with creating your trip?');
+      // On error, offer to proceed with trip finalization
+      handleFinalizeTrip();
+      return;
+    }
+
+    setIsSavingTrip(false);
+    setIsLoadingSuggestions(false);
+  };
+
+  // Handle joining an existing similar trip
+  const handleJoinSimilarTrip = (trip) => {
+    console.log('🤝 Attempting to join similar trip:', trip);
+    setSelectedTripToJoin(trip);
+    setShowJoinModal(true);
+  };
+
+  // Handle finalizing the user's own trip
+  const handleFinalizeTrip = async () => {
+    console.log('🎯 Finalizing user\'s own trip...');
+    
+    setIsFinalizingTrip(true);
+    
+    try {
+      // Call the finalize group API
+      const response = await finalizeGroup(groupId);
+      
+      if (response.success) {
+        console.log('✅ Trip finalized successfully');
+        
+        // Navigate to pools page with success message
+        navigate('/pools', {
+          state: {
+            newPool: {
+              id: groupId || tripId || Date.now(),
+              tripId: tripId,
+              groupId: groupId,
+              name: normalizedTripName,
+              dates: normalizedDates,
+              terrains: normalizedTerrains,
+              activities: normalizedActivities,
+              itinerary: itinerary,
+              joinedGroup: joinedGroup,
+              createdAt: new Date(),
+              status: 'finalized'
+            },
+            message: 'Trip created and finalized successfully!'
+          }
+        });
+      } else {
+        throw new Error(response.error || 'Failed to finalize trip');
+      }
+    } catch (error) {
+      console.error('❌ Error finalizing trip:', error);
+      alert('Error finalizing trip. Please try again.');
+    }
+    
+    setIsFinalizingTrip(false);
+    setShowSimilarTrips(false);
+  };
+
+  // Handle successful join to similar trip
+  const handleJoinSuccess = () => {
+    console.log('✅ Successfully joined similar trip');
+    setShowJoinModal(false);
+    setShowSimilarTrips(false);
+    
+    // Navigate to pools page
     navigate('/pools', {
       state: {
-        newPool: {
-          id: groupId || tripId || Date.now(), // Use groupId or tripId from backend
-          tripId: tripId,
-          groupId: groupId,
-          name: normalizedTripName,
-          dates: normalizedDates,
-          terrains: normalizedTerrains,
-          activities: normalizedActivities,
-          itinerary: itinerary,
-          joinedGroup: joinedGroup,
-          createdAt: new Date()
-        },
-        message: 'Pool itinerary saved successfully!'
+        message: 'Successfully joined similar trip!'
       }
     });
-    
-    setIsSavingTrip(false);
+  };
+
+  // Handle closing similar trips modal
+  const handleCloseSimilarTrips = () => {
+    setShowSimilarTrips(false);
+    setSimilarTrips([]);
   };
 
   if (!normalizedTripName || !normalizedDates || normalizedDates.length === 0) {
@@ -1190,13 +1291,166 @@ const PoolItineraryPage = () => {
             </button>
             <button
               onClick={handleSaveTrip}
-              className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors"
+              disabled={isSavingTrip || isLoadingSuggestions}
+              className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save Trip
+              {isLoadingSuggestions ? 'Finding Similar Trips...' : isSavingTrip ? 'Saving...' : 'Save Trip'}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Similar Trips Modal */}
+      {showSimilarTrips && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Similar Trips Available</h2>
+                  <p className="text-gray-600 mt-1">Join an existing group or continue with your trip</p>
+                </div>
+                <button
+                  onClick={handleCloseSimilarTrips}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Similar Trips Grid */}
+              {similarTrips.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {similarTrips.map((trip) => (
+                    <div
+                      key={trip.groupId}
+                      className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      {/* Trip Image */}
+                      <div className="h-48 bg-gradient-to-br from-blue-500 to-teal-500 relative">
+                        {trip.image ? (
+                          <img
+                            src={trip.image}
+                            alt={trip.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white">
+                            <Camera className="w-12 h-12" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 right-3 bg-white bg-opacity-90 rounded-full px-2 py-1 text-xs font-medium">
+                          {trip.currentMembers || 0}/{trip.maxMembers || 8} members
+                        </div>
+                      </div>
+
+                      {/* Trip Details */}
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
+                          {trip.name}
+                        </h3>
+                        
+                        {/* Trip Info */}
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                          </div>
+                          
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Users className="w-4 h-4 mr-2" />
+                            {trip.currentMembers || 0} travelers
+                          </div>
+
+                          {trip.matchPercentage && (
+                            <div className="flex items-center text-sm text-green-600">
+                              <Star className="w-4 h-4 mr-2 fill-current" />
+                              {trip.matchPercentage}% match
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Destinations */}
+                        {trip.destinations && trip.destinations.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-sm text-gray-500 mb-1">Destinations:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {trip.destinations.slice(0, 3).map((dest, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
+                                >
+                                  {dest}
+                                </span>
+                              ))}
+                              {trip.destinations.length > 3 && (
+                                <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                                  +{trip.destinations.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Join Button */}
+                        <button
+                          onClick={() => handleJoinSimilarTrip(trip)}
+                          className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                        >
+                          Request to Join
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Similar Trips Found</h3>
+                  <p className="text-gray-600">No matching trips available right now.</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button
+                    onClick={handleFinalizeTrip}
+                    disabled={isFinalizingTrip}
+                    className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isFinalizingTrip ? 'Creating Trip...' : 'Create My Trip Instead'}
+                  </button>
+                  <button
+                    onClick={handleCloseSimilarTrips}
+                    className="bg-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-400 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <p className="text-center text-sm text-gray-500 mt-3">
+                  You can create your own trip or join one of the similar trips above
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join Pool Modal */}
+      <JoinPoolModal
+        show={showJoinModal}
+        onClose={() => {
+          setShowJoinModal(false);
+          setSelectedTripToJoin(null);
+        }}
+        pool={selectedTripToJoin}
+        onJoinSuccess={handleJoinSuccess}
+      />
 
       {/* Modularized Add Item Modals */}
       <AddThingsToDoModal

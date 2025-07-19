@@ -699,6 +699,87 @@ export class PoolsApi {
     this._cacheTimestamp = null;
     console.log('🏊‍♂️ Pools cache cleared');
   }
+
+  /**
+   * Save trip and get similar group suggestions
+   * @param {string} groupId - Group ID
+   * @param {Object} tripData - Trip data to save
+   * @param {string} tripData.userId - User ID
+   * @param {Object} tripData.tripDetails - Trip details
+   * @param {string} tripData.tripDetails.tripName - Trip name
+   * @param {Array<string>} tripData.tripDetails.places - Places to visit
+   * @returns {Promise<Object>} Suggestions result
+   */
+  static async saveTripAndGetSuggestions(groupId, tripData) {
+    try {
+      console.log('💾 Saving trip and getting suggestions:', { groupId, tripData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/public-pooling/groups/${groupId}/save-trip`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(tripData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('💾 Trip saved and suggestions received:', result);
+      return result;
+    } catch (error) {
+      console.error('💾❌ Error saving trip and getting suggestions:', error);
+      throw new Error(`Failed to save trip and get suggestions: ${error.message}`);
+    }
+  }
+
+  /**
+   * Finalize a public pooling group
+   * @param {string} groupId - Group ID
+   * @param {Object} finalizeData - Finalization data
+   * @param {string} finalizeData.userId - User ID
+   * @param {string} finalizeData.action - 'finalize' or 'cancel'
+   * @param {string} [finalizeData.reason] - Reason for cancellation (optional)
+   * @returns {Promise<Object>} Finalization result
+   */
+  static async finalizeGroup(groupId, finalizeData) {
+    try {
+      console.log('🏁 Finalizing group:', { groupId, finalizeData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
+      const fullUrl = `${baseUrl}/api/v1/public-pooling/groups/${groupId}/finalize`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(finalizeData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🏁 Group finalized successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('🏁❌ Error finalizing group:', error);
+      throw new Error(`Failed to finalize group: ${error.message}`);
+    }
+  }
 }
 
 export default PoolsApi;
