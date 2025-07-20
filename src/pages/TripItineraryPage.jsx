@@ -168,7 +168,6 @@ const TripItineraryPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [itinerary, setItinerary] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
-  const [selectedStayDates, setSelectedStayDates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Destination management states
@@ -533,27 +532,18 @@ const TripItineraryPage = () => {
 
     console.log('📂 Category key:', getCategoryKey(selectedCategory));
 
-    // Determine which days to add to
-    let daysToAdd = [];
+    // Use selectedDates (array of day indices) directly
+    let dayIndices = [];
     if (selectedDates && selectedDates.length > 0) {
-      daysToAdd = selectedDates;
-    } else if (currentDay !== undefined && days && days[currentDay]) {
-      daysToAdd = [days[currentDay]];
+      dayIndices = selectedDates;
+    } else {
+      dayIndices = [currentDay];
     }
 
-    console.log('📅 Days to add to:', daysToAdd);
+    console.log('� Day indices to add to:', dayIndices);
 
-    // Map days to day indices
-    const dayIndices = daysToAdd.map(date => {
-      if (date instanceof Date) {
-        return days.findIndex(d => d.toDateString() === date.toDateString());
-      } else {
-        // If date is already an index
-        return typeof date === 'number' ? date : days.findIndex(d => d.toDateString() === new Date(date).toDateString());
-      }
-    }).filter(idx => idx !== -1);
 
-    console.log('📊 Day indices to add to:', dayIndices);
+
 
     // Add to backend for each day (one place per day as per requirement)
     if (['activities', 'places', 'food'].includes(selectedCategory)) {
@@ -586,17 +576,6 @@ const TripItineraryPage = () => {
     });
     setShowAddModal(false);
     setShowDestinationModal(false);
-    setSelectedStayDates([]);
-  };
-
-  const handleStayDateSelect = (dayIndex) => {
-    setSelectedStayDates(prev => {
-      if (prev.includes(dayIndex)) {
-        return prev.filter(d => d !== dayIndex);
-      } else {
-        return [...prev, dayIndex].sort((a, b) => a - b);
-      }
-    });
   };
 
   // API call function for modals to use directly
@@ -1115,14 +1094,11 @@ const TripItineraryPage = () => {
         onClose={() => {
           console.log('🚪 Closing Things to Do modal');
           setShowAddModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         fetchSuggestionsForModal={fetchSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1135,14 +1111,11 @@ const TripItineraryPage = () => {
         onClose={() => {
           console.log('🚪 Closing Places to Stay modal');
           setShowAddModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         fetchSuggestionsForModal={fetchSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1160,8 +1133,6 @@ const TripItineraryPage = () => {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         fetchSuggestionsForModal={fetchSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1173,14 +1144,11 @@ const TripItineraryPage = () => {
         show={showAddModal && selectedCategory === 'transportation'}
         onClose={() => {
           setShowAddModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         getFilteredSuggestions={getFilteredSuggestions}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
