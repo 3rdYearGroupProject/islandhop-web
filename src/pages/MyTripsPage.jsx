@@ -66,14 +66,11 @@ const MyTripsPage = () => {
         console.log('🔐 Current user UID:', user.uid);
         setCurrentUser(user);
         
-        // Check if we should use mock data (for development without backend)
-        const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true' ||
-                           (process.env.NODE_ENV === 'development' && 
-                            (!process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 
-                             process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING.includes('localhost')));
+        // Check if we should use mock data (only when explicitly set)
+        const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
         
         if (useMockData) {
-          console.log('🔧 Using mock data - backend disabled or unavailable');
+          console.log('🔧 Using mock data - REACT_APP_USE_MOCK_DATA is set to true');
           setTrips(mockTrips);
           setApiError(null);
           return;
