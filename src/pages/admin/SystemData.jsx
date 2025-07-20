@@ -134,11 +134,9 @@ const SystemData = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-secondary-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
         </div>
       </div>
     );

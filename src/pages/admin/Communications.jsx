@@ -26,6 +26,7 @@ const Communications = () => {
   const [sending, setSending] = useState(false);
   const [supportAgents, setSupportAgents] = useState([]);
   const [loadingSupportAgents, setLoadingSupportAgents] = useState(false);
+  const [loadingChats, setLoadingChats] = useState(true); // New state for loading chats
   const messagesEndRef = useRef(null);
 
   // Chats state: system group and personal conversations from backend
@@ -53,66 +54,11 @@ const Communications = () => {
   const fetchSupportAgents = async () => {
     setLoadingSupportAgents(true);
     try {
-      // TEMPORARILY DISABLED - Mock data instead of API call
-      console.log("Using mock support agents data");
-
-      // Mock support agents data
-      const mockSupportUsers = [
-        {
-          email: "sarah.johnson@islandhop.com",
-          firstName: "Sarah",
-          lastName: "Johnson",
-          accountType: "support",
-          status: "ACTIVE",
-          profilePicUrl: null,
-        },
-        {
-          email: "mike.wilson@islandhop.com",
-          firstName: "Mike",
-          lastName: "Wilson",
-          accountType: "support",
-          status: "ACTIVE",
-          profilePicUrl: null,
-        },
-        {
-          email: "emma.davis@islandhop.com",
-          firstName: "Emma",
-          lastName: "Davis",
-          accountType: "support",
-          status: "INACTIVE",
-          profilePicUrl: null,
-        },
-      ];
-
-      console.log("Support agents found:", mockSupportUsers);
-      setSupportAgents(mockSupportUsers);
-
-      // Add support agents to chats
-      const supportChats = mockSupportUsers.map((agent) => ({
-        id: `support_${agent.email}`, // Use email as unique identifier
-        name: `${agent.firstName} ${agent.lastName}`,
-        email: agent.email,
-        type: "support",
-        avatar: agent.profilePicUrl || null,
-        lastMessage: "",
-        lastTime: "",
-        unreadCount: 0,
-        isOnline: agent.status === "ACTIVE",
-        role: "Support Agent",
-      }));
-
-      // Update chats to include system and support agents
-      setChats((prev) => [
-        prev[0], // Keep system group
-        ...supportChats,
-      ]);
-
-      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
       const token = await user.getIdToken();
-      
+
       const response = await userServicesApi.get("/users", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -120,16 +66,16 @@ const Communications = () => {
         withCredentials: true,
       });
       console.log('Fetched users:', response.data);
-      
+
       if (response.status === 200 && response.data.status === "success") {
         // Filter only support agents
         const supportUsers = response.data.users.filter(user => 
           user.accountType && user.accountType.toLowerCase() === 'support'
         );
-        
+
         console.log('Support agents found:', supportUsers);
         setSupportAgents(supportUsers);
-        
+
         // Add support agents to chats
         const supportChats = supportUsers.map(agent => ({
           id: `support_${agent.email}`, // Use email as unique identifier
@@ -143,14 +89,13 @@ const Communications = () => {
           isOnline: agent.status === 'ACTIVE',
           role: 'Support Agent'
         }));
-        
+
         // Update chats to include system and support agents
         setChats(prev => [
           prev[0], // Keep system group
           ...supportChats
         ]);
       }
-      */
     } catch (error) {
       console.error("Error fetching support agents:", error);
     } finally {
@@ -161,16 +106,6 @@ const Communications = () => {
   // Function to get user ID from Firebase by email
   const getUserIdByEmail = async (email) => {
     try {
-      // TEMPORARILY DISABLED - Return mock user ID
-      console.log(`Using mock user ID for ${email}`);
-      const mockUserIds = {
-        "sarah.johnson@islandhop.com": "mock_user_id_sarah",
-        "mike.wilson@islandhop.com": "mock_user_id_mike",
-        "emma.davis@islandhop.com": "mock_user_id_emma",
-      };
-      return mockUserIds[email] || "mock_user_id_default";
-
-      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       const response = await fetch(`http://localhost:8093/api/v1/firebase/user/uid-by-email?email=${email}`, {
         method: 'GET',
         headers: {
@@ -186,7 +121,6 @@ const Communications = () => {
         console.error(`Failed to get user ID for ${email}:`, response.status);
         return null;
       }
-      */
     } catch (error) {
       console.error(`Error getting user ID for ${email}:`, error);
       return null;
@@ -256,24 +190,6 @@ const Communications = () => {
     }
 
     try {
-      // TEMPORARILY DISABLED - Return mock display names
-      console.log(`Using mock display name for ${userId}`);
-      const mockDisplayNames = {
-        mock_user_id_sarah: "Sarah Johnson",
-        mock_user_id_mike: "Mike Wilson",
-        mock_user_id_emma: "Emma Davis",
-        mock_user_id_default: "Support Agent",
-      };
-
-      const displayName =
-        mockDisplayNames[userId] || `User ${userId.slice(-4)}`;
-      setUserDisplayNames((prev) => ({
-        ...prev,
-        [userId]: displayName,
-      }));
-      return displayName;
-
-      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       const response = await fetch(`http://localhost:8091/api/v1/firebase/user/display-name/${userId}`, {
         method: 'GET',
         headers: {
@@ -291,12 +207,11 @@ const Communications = () => {
         return displayName;
       } else {
         console.error(`Failed to fetch display name for ${userId}:`, response.status);
-        return userId; // Fallback to userId
+        return userId;
       }
-      */
     } catch (error) {
       console.error(`Error fetching display name for ${userId}:`, error);
-      return userId; // Fallback to userId
+      return userId;
     }
   };
 
@@ -309,6 +224,59 @@ const Communications = () => {
       const userId = auth.currentUser.uid;
 
       try {
+        // ORIGINAL API CALL - TEMPORARILY DISABLED
+        const response = await fetch(`http://localhost:8090/api/v1/chat/personal/conversations/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        const data = await response.json();
+        console.log('Fetched personal conversations:', data);
+        setPersonalConversations(Array.isArray(data) ? data : []);
+        
+        // Fetch display names for all receivers
+        const conversationsWithNames = await Promise.all(
+          data.map(async (conv) => {
+            const displayName = await fetchDisplayNameFromBackend(conv.receiverId);
+            return {
+              id: conv.conversationId,
+              name: displayName,
+              type: 'personal',
+              avatar: null,
+              lastMessage: conv.lastMessage || '',
+              lastTime: conv.lastMessageTime ? new Date(conv.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
+              unreadCount: 0,
+              isOnline: conv.isOnline || false,
+              role: conv.receiverRole || '',
+              receiverId: conv.receiverId // Store the actual receiverId
+            };
+          })
+        );
+        
+        // Add to chats state (keep system group and support agents)
+        setChats(prev => {
+          const systemChat = prev.find(chat => chat.id === 'system');
+          const supportChats = prev.filter(chat => chat.type === 'support');
+          return [
+            systemChat,
+            ...supportChats,
+            ...conversationsWithNames
+          ].filter(Boolean);
+        });
+        
+        // Fetch unread counts
+        const unreadResponse = await fetch(`http://localhost:8090/api/v1/chat/personal/unread-count/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        const unreadData = await unreadResponse.json();
+        setUnreadCounts(unreadData || {});
+        /*
         // TEMPORARILY DISABLED - Use mock conversations
         console.log("Using mock personal conversations");
         const mockConversations = [
@@ -376,59 +344,6 @@ const Communications = () => {
           conv_1: 2,
           conv_2: 0,
         });
-
-        /* ORIGINAL API CALL - TEMPORARILY DISABLED
-        const response = await fetch(`http://localhost:8090/api/v1/chat/personal/conversations/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
-        
-        const data = await response.json();
-        console.log('Fetched personal conversations:', data);
-        setPersonalConversations(Array.isArray(data) ? data : []);
-        
-        // Fetch display names for all receivers
-        const conversationsWithNames = await Promise.all(
-          data.map(async (conv) => {
-            const displayName = await fetchDisplayNameFromBackend(conv.receiverId);
-            return {
-              id: conv.conversationId,
-              name: displayName,
-              type: 'personal',
-              avatar: null,
-              lastMessage: conv.lastMessage || '',
-              lastTime: conv.lastMessageTime ? new Date(conv.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
-              unreadCount: 0,
-              isOnline: conv.isOnline || false,
-              role: conv.receiverRole || '',
-              receiverId: conv.receiverId // Store the actual receiverId
-            };
-          })
-        );
-        
-        // Add to chats state (keep system group and support agents)
-        setChats(prev => {
-          const systemChat = prev.find(chat => chat.id === 'system');
-          const supportChats = prev.filter(chat => chat.type === 'support');
-          return [
-            systemChat,
-            ...supportChats,
-            ...conversationsWithNames
-          ].filter(Boolean);
-        });
-        
-        // Fetch unread counts
-        const unreadResponse = await fetch(`http://localhost:8090/api/v1/chat/personal/unread-count/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
-        
-        const unreadData = await unreadResponse.json();
-        setUnreadCounts(unreadData || {});
         */
       } catch (error) {
         console.error("Error fetching personal conversations:", error);
@@ -446,6 +361,42 @@ const Communications = () => {
       const conversation = chats.find((c) => c.id === selectedChat);
       if (!conversation) return;
 
+      // ORIGINAL API CALL - TEMPORARILY DISABLED
+      // Safely get receiverId
+      let receiverId = '';
+      if (typeof conversation.receiverId === 'string' && conversation.receiverId) {
+        receiverId = conversation.receiverId;
+      } else if (typeof conversation.id === 'string' && conversation.id) {
+        receiverId = conversation.id.replace(userId, '').replace(/-/g, '');
+      }
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(async (data) => {
+          console.log('Fetched personal messages:', data);
+          const messages = Array.isArray(data.content) ? data.content : [];
+          
+          // Fetch display names for all message senders
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
+          setPersonalMessages(prev => ({
+            ...prev,
+            [selectedChat]: messagesWithNames
+          }));
+        });
+      /*
       // TEMPORARILY DISABLED - Use mock personal messages
       console.log("Using mock personal messages for chat:", selectedChat);
 
@@ -503,42 +454,6 @@ const Communications = () => {
           [selectedChat]: mockPersonalMessages[selectedChat],
         }));
       }
-
-      /* ORIGINAL API CALL - TEMPORARILY DISABLED
-      // Safely get receiverId
-      let receiverId = '';
-      if (typeof conversation.receiverId === 'string' && conversation.receiverId) {
-        receiverId = conversation.receiverId;
-      } else if (typeof conversation.id === 'string' && conversation.id) {
-        receiverId = conversation.id.replace(userId, '').replace(/-/g, '');
-      }
-      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      })
-        .then(res => res.json())
-        .then(async (data) => {
-          console.log('Fetched personal messages:', data);
-          const messages = Array.isArray(data.content) ? data.content : [];
-          
-          // Fetch display names for all message senders
-          const messagesWithNames = await Promise.all(
-            messages.map(async (msg) => {
-              if (!msg.senderName && msg.senderId) {
-                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
-                return { ...msg, senderName: displayName };
-              }
-              return msg;
-            })
-          );
-          
-          setPersonalMessages(prev => ({
-            ...prev,
-            [selectedChat]: messagesWithNames
-          }));
-        });
       */
     }
   }, [selectedChat, authToken, chats, auth.currentUser, userDisplayNames]);
@@ -570,6 +485,53 @@ const Communications = () => {
   // Fetch group details and messages for system group
   useEffect(() => {
     if (selectedChat === "system" && authToken) {
+      // ORIGINAL API CALLS - TEMPORARILY DISABLED
+      // Fetch group details
+      fetch('http://localhost:8090/api/v1/chat/group/6872785e3372e21e0948ecc8', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setGroupDetails(data);
+          setChats(prev => prev.map(chat =>
+            chat.id === 'system'
+              ? { ...chat, participants: data.members || [], name: data.name || 'System' }
+              : chat
+          ));
+        });
+
+      // Fetch group messages
+      setLoadingMessages(true);
+      fetch('http://localhost:8090/api/v1/chat/group/6872785e3372e21e0948ecc8/messages?page=0&size=20', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(async (data) => {
+          console.log('Fetched group messages:', data);
+          const messages = Array.isArray(data.content) ? data.content : [];
+          
+          // Fetch display names for all message senders
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
+          setGroupMessages(messagesWithNames);
+          setLoadingMessages(false);
+        })
+        .catch(() => setLoadingMessages(false));
+      /*
       // TEMPORARILY DISABLED - Use mock data for system group
       console.log("Using mock system group data");
 
@@ -625,53 +587,6 @@ const Communications = () => {
         setGroupMessages(mockMessages);
         setLoadingMessages(false);
       }, 1000); // Simulate loading delay
-
-      /* ORIGINAL API CALLS - TEMPORARILY DISABLED
-      // Fetch group details
-      fetch('http://localhost:8090/api/v1/chat/group/6872785e3372e21e0948ecc8', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      })
-        .then(res => res.json())
-        .then(data => {
-          setGroupDetails(data);
-          setChats(prev => prev.map(chat =>
-            chat.id === 'system'
-              ? { ...chat, participants: data.members || [], name: data.name || 'System' }
-              : chat
-          ));
-        });
-
-      // Fetch group messages
-      setLoadingMessages(true);
-      fetch('http://localhost:8090/api/v1/chat/group/6872785e3372e21e0948ecc8/messages?page=0&size=20', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      })
-        .then(res => res.json())
-        .then(async (data) => {
-          console.log('Fetched group messages:', data);
-          const messages = Array.isArray(data.content) ? data.content : [];
-          
-          // Fetch display names for all message senders
-          const messagesWithNames = await Promise.all(
-            messages.map(async (msg) => {
-              if (!msg.senderName && msg.senderId) {
-                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
-                return { ...msg, senderName: displayName };
-              }
-              return msg;
-            })
-          );
-          
-          setGroupMessages(messagesWithNames);
-          setLoadingMessages(false);
-        })
-        .catch(() => setLoadingMessages(false));
       */
     }
   }, [selectedChat, authToken, userDisplayNames]);
@@ -690,24 +605,7 @@ const Communications = () => {
     if (selectedChat === "system") {
       setSending(true);
       try {
-        // TEMPORARILY DISABLED - Mock message sending
-        console.log("Mock: Sending message to system group");
-
-        // Create mock message
-        const newMockMessage = {
-          id: `msg_${Date.now()}`,
-          senderId: auth.currentUser?.uid || "current_admin",
-          senderName: auth.currentUser?.displayName || "Admin",
-          content: messageInput,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Add to existing messages
-        setGroupMessages((prev) => [...prev, newMockMessage]);
-        setMessageInput("");
-        console.log("Mock message sent successfully");
-
-        /* ORIGINAL API CALL - TEMPORARILY DISABLED
+        // ORIGINAL API CALL - TEMPORARILY DISABLED
         const messagePayload = {
           groupId: '6872785e3372e21e0948ecc8',
           senderId: auth.currentUser.uid,
@@ -757,6 +655,23 @@ const Communications = () => {
         } else {
           console.error('Failed to send group message:', res.status);
         }
+        /*
+        // TEMPORARILY DISABLED - Mock message sending
+        console.log("Mock: Sending message to system group");
+
+        // Create mock message
+        const newMockMessage = {
+          id: `msg_${Date.now()}`,
+          senderId: auth.currentUser?.uid || "current_admin",
+          senderName: auth.currentUser?.displayName || "Admin",
+          content: messageInput,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Add to existing messages
+        setGroupMessages((prev) => [...prev, newMockMessage]);
+        setMessageInput("");
+        console.log("Mock message sent successfully");
         */
       } catch (err) {
         console.error("Error sending group message:", err);
@@ -768,39 +683,10 @@ const Communications = () => {
       const agentEmail = selectedChat.replace("support_", "");
 
       try {
-        // TEMPORARILY DISABLED - Mock support message sending
-        console.log("Mock: Sending message to support agent:", agentEmail);
-
+        // ORIGINAL API CALL - TEMPORARILY DISABLED
         const receiverId = await getUserIdByEmail(agentEmail);
         if (!receiverId) {
           console.error("Could not get user ID for agent:", agentEmail);
-          setSending(false);
-          return;
-        }
-
-        // Create mock conversation and message
-        const newConversationId = `conv_${Date.now()}`;
-        const newMockMessage = {
-          id: `msg_${Date.now()}`,
-          senderId: auth.currentUser?.uid || "current_admin",
-          senderName: auth.currentUser?.displayName || "Admin",
-          content: messageInput,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Add to personal messages
-        setPersonalMessages((prev) => ({
-          ...prev,
-          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
-        }));
-
-        setMessageInput("");
-        console.log("Mock message sent to support agent successfully");
-
-        /* ORIGINAL API CALL - TEMPORARILY DISABLED
-        const receiverId = await getUserIdByEmail(agentEmail);
-        if (!receiverId) {
-          console.error('Could not get user ID for agent:', agentEmail);
           setSending(false);
           return;
         }
@@ -833,6 +719,35 @@ const Communications = () => {
         } else {
           console.error('Failed to send message to support agent:', res.status);
         }
+        /*
+        // TEMPORARILY DISABLED - Mock support message sending
+        console.log("Mock: Sending message to support agent:", agentEmail);
+
+        const receiverId = await getUserIdByEmail(agentEmail);
+        if (!receiverId) {
+          console.error("Could not get user ID for agent:", agentEmail);
+          setSending(false);
+          return;
+        }
+
+        // Create mock conversation and message
+        const newConversationId = `conv_${Date.now()}`;
+        const newMockMessage = {
+          id: `msg_${Date.now()}`,
+          senderId: auth.currentUser?.uid || "current_admin",
+          senderName: auth.currentUser?.displayName || "Admin",
+          content: messageInput,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Add to personal messages
+        setPersonalMessages((prev) => ({
+          ...prev,
+          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
+        }));
+
+        setMessageInput("");
+        console.log("Mock message sent to support agent successfully");
         */
       } catch (err) {
         console.error("Error sending message to support agent:", err);
@@ -849,27 +764,7 @@ const Communications = () => {
         conversation.id.replace(userId, "").replace("-", "");
 
       try {
-        // TEMPORARILY DISABLED - Mock personal message sending
-        console.log("Mock: Sending personal message");
-
-        const newMockMessage = {
-          id: `msg_${Date.now()}`,
-          senderId: auth.currentUser?.uid || "current_admin",
-          senderName: auth.currentUser?.displayName || "Admin",
-          content: messageInput,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Add to personal messages
-        setPersonalMessages((prev) => ({
-          ...prev,
-          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
-        }));
-
-        setMessageInput("");
-        console.log("Mock personal message sent successfully");
-
-        /* ORIGINAL API CALL - TEMPORARILY DISABLED
+        // ORIGINAL API CALL - TEMPORARILY DISABLED
         const messagePayload = {
           senderId: userId,
           receiverId,
@@ -924,6 +819,26 @@ const Communications = () => {
         } else {
           console.error('Failed to send personal message:', res.status);
         }
+        /*
+        // TEMPORARILY DISABLED - Mock personal message sending
+        console.log("Mock: Sending personal message");
+
+        const newMockMessage = {
+          id: `msg_${Date.now()}`,
+          senderId: auth.currentUser?.uid || "current_admin",
+          senderName: auth.currentUser?.displayName || "Admin",
+          content: messageInput,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Add to personal messages
+        setPersonalMessages((prev) => ({
+          ...prev,
+          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
+        }));
+
+        setMessageInput("");
+        console.log("Mock personal message sent successfully");
         */
       } catch (err) {
         console.error("Error sending personal message:", err);
@@ -1013,6 +928,32 @@ const Communications = () => {
           isOwn: msg.senderId === auth.currentUser?.uid,
           status: msg.read ? "read" : "delivered",
         }));
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      setLoadingChats(true);
+      try {
+        await fetchSupportAgents(); // Fetch support agents as part of chats
+        // Add any additional chat fetching logic here if needed
+      } catch (error) {
+        console.error("Error loading chats:", error);
+      } finally {
+        setLoadingChats(false);
+      }
+    };
+
+    fetchChats();
+  }, []); // Fetch chats on component mount
+
+  if (loadingChats) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-secondary-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">

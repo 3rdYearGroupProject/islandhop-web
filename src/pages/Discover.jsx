@@ -154,7 +154,7 @@ const Discover = () => {
           const filteredResults = results.filter(place => 
             place.rating && place.rating >= 3.5 && place.user_ratings_total > 10
           );
-          setPlaces(filteredResults.slice(0, 20)); // Limit to 20 results
+          setPlaces(filteredResults.slice(0, 10)); // Limit to 10 results
         } else {
           console.error('Places search failed:', status);
         }
