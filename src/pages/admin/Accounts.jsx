@@ -26,10 +26,18 @@ const Accounts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [accountsPerPage] = useState(10);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addEmail, setAddEmail] = useState("");
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
   const [addSuccess, setAddSuccess] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    first_name: "",
+    last_name: "",
+    address: "",
+    contact_no: "",
+    permission: ""
+  });
+  const [formErrors, setFormErrors] = useState({});
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -269,39 +277,149 @@ const Accounts = () => {
     }
   };
 
+  // Form validation
+  const validateForm = () => {
+    const errors = {};
+    
+    // Email validation
+    if (!formData.email) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    // First name validation
+    if (!formData.first_name) {
+      errors.first_name = "First name is required";
+    } else if (formData.first_name.length < 2) {
+      errors.first_name = "First name must be at least 2 characters";
+    }
+    
+    // Last name validation
+    if (!formData.last_name) {
+      errors.last_name = "Last name is required";
+    } else if (formData.last_name.length < 2) {
+      errors.last_name = "Last name must be at least 2 characters";
+    }
+    
+    // Address validation
+    if (!formData.address) {
+      errors.address = "Address is required";
+    } else if (formData.address.length < 10) {
+      errors.address = "Please enter a complete address (minimum 10 characters)";
+    }
+    
+    // Contact number validation
+    if (!formData.contact_no) {
+      errors.contact_no = "Contact number is required";
+    } else if (!/^\+94[0-9]{9}$/.test(formData.contact_no)) {
+      errors.contact_no = "Please enter a valid Sri Lankan phone number (+94xxxxxxxxx)";
+    }
+    
+    // Permission validation
+    if (!formData.permission) {
+      errors.permission = "Permission level is required";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      email: "",
+      first_name: "",
+      last_name: "",
+      address: "",
+      contact_no: "",
+      permission: ""
+    });
+    setFormErrors({});
+    setAddError("");
+    setAddSuccess("");
+  };
+
   // Update the account creation logic
   const handleCreateSupportAccount = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     setAddLoading(true);
     setAddError("");
     setAddSuccess("");
-    if (!addEmail) {
-      setAddError("Email is required");
-      setAddLoading(false);
-      return;
-    }
+    
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
+      
       const token = await user.getIdToken();
-      const response = await userServicesApi.post("/admin/create/support", { email: addEmail }, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
+      
+      // Make API call to backend with all form data
+      const response = await fetch('http://localhost:8061/register-support-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          address: formData.address,
+          contact_no: formData.contact_no,
+          permission: parseInt(formData.permission)
+        })
       });
-      if (response.status === 200 && response.data.message) {
-        setAddSuccess(response.data.message);
-        setAddEmail("");
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAddSuccess("Support agent account created successfully! Credentials have been sent via email.");
+        
         // Send email to group
-        await sendEmailToGroup(addEmail);
-      } else if (response.status === 409) {
-        setAddError("Account already exists");
+        await sendEmailToGroup(formData.email);
+        
+        // Reset form and refresh accounts list
+        setTimeout(() => {
+          setShowAddModal(false);
+          resetForm();
+          // Refresh accounts list
+          getAllUsers()
+            .then((users) => {
+              setAccounts(users || []);
+              setLoading(false);
+            })
+            .catch(() => {
+              setLoading(false);
+            });
+        }, 2000);
+        
       } else {
-        setAddError(response.data.message || "Failed to create account");
+        setAddError(data.message || "Failed to create support agent account");
       }
     } catch (err) {
-      setAddError(err?.response?.data?.message || err.message || "Error creating account");
+      console.error("Error creating support account:", err);
+      setAddError("Network error. Please try again.");
+    } finally {
+      setAddLoading(false);
     }
-    setAddLoading(false);
   };
 
   if (loading) {
@@ -337,26 +455,141 @@ const Accounts = () => {
         {/* Add Support Account Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Create Support Agent Account</h3>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Support Agent Email</label>
-              <input
-                type="email"
-                value={addEmail}
-                onChange={e => setAddEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white mb-4"
-                placeholder="Enter email address"
-                disabled={addLoading}
-              />
-              {addError && <div className="text-danger-600 mb-2 text-sm">{addError}</div>}
-              {addSuccess && <div className="text-success-600 mb-2 text-sm">{addSuccess}</div>}
-              <div className="flex gap-3 justify-end mt-4">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-6">Create Support Agent Account</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Email */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={e => handleFormChange('email', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.email ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                    }`}
+                    placeholder="Enter email address"
+                    disabled={addLoading}
+                  />
+                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
+                </div>
+
+                {/* First Name */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.first_name}
+                    onChange={e => handleFormChange('first_name', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.first_name ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                    }`}
+                    placeholder="Enter first name"
+                    disabled={addLoading}
+                  />
+                  {formErrors.first_name && <p className="text-red-500 text-sm mt-1">{formErrors.first_name}</p>}
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.last_name}
+                    onChange={e => handleFormChange('last_name', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.last_name ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                    }`}
+                    placeholder="Enter last name"
+                    disabled={addLoading}
+                  />
+                  {formErrors.last_name && <p className="text-red-500 text-sm mt-1">{formErrors.last_name}</p>}
+                </div>
+
+                {/* Contact Number */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Contact Number *
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.contact_no}
+                    onChange={e => handleFormChange('contact_no', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.contact_no ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                    }`}
+                    placeholder="+94771234567"
+                    disabled={addLoading}
+                  />
+                  {formErrors.contact_no && <p className="text-red-500 text-sm mt-1">{formErrors.contact_no}</p>}
+                </div>
+
+                {/* Permission Level */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Permission Level *
+                  </label>
+                  <select
+                    value={formData.permission}
+                    onChange={e => handleFormChange('permission', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.permission ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                    }`}
+                    disabled={addLoading}
+                  >
+                    <option value="">Select permission level</option>
+                    <option value="1">Verification</option>
+                    <option value="2">Reviews</option>
+                    <option value="3">Complaints</option>
+                    <option value="4">All</option>
+                  </select>
+                  {formErrors.permission && <p className="text-red-500 text-sm mt-1">{formErrors.permission}</p>}
+                </div>
+
+                {/* Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Address *
+                  </label>
+                  <textarea
+                    value={formData.address}
+                    onChange={e => handleFormChange('address', e.target.value)}
+                    rows={3}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none ${
+                      formErrors.address ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                    }`}
+                    placeholder="Enter complete address"
+                    disabled={addLoading}
+                  />
+                  {formErrors.address && <p className="text-red-500 text-sm mt-1">{formErrors.address}</p>}
+                </div>
+              </div>
+
+              {/* Error and Success Messages */}
+              {addError && (
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-red-600 dark:text-red-400 text-sm">{addError}</p>
+                </div>
+              )}
+              {addSuccess && (
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-green-600 dark:text-green-400 text-sm">{addSuccess}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-neutral-200 dark:border-secondary-700">
                 <button
                   onClick={() => {
                     setShowAddModal(false);
-                    setAddEmail("");
-                    setAddError("");
-                    setAddSuccess("");
+                    resetForm();
                   }}
                   className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-secondary-700 hover:bg-neutral-200 dark:hover:bg-secondary-600 rounded-lg transition-colors"
                   disabled={addLoading}
@@ -365,10 +598,17 @@ const Accounts = () => {
                 </button>
                 <button
                   onClick={handleCreateSupportAccount}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                  className="px-6 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={addLoading}
                 >
-                  {addLoading ? "Creating..." : "Create"}
+                  {addLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
                 </button>
               </div>
             </div>
