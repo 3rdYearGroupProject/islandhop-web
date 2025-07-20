@@ -13,8 +13,6 @@ import {
   Settings,
   AlertCircle
 } from 'lucide-react';
-import DriverStatusCard from '../../components/driver/DriverStatusCard';
-import ReportIssueModal from '../../components/driver/ReportIssueModal';
 import DriverTripModal from '../../components/driver/DriverTripModal';
 import MapPopupModal from '../../components/driver/MapPopupModal';
 import TripDetailsModal from '../../components/TripDetailsModal';
@@ -24,10 +22,10 @@ import { Link } from 'react-router-dom';
 
 const DriverDashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [loading, setLoading] = useState(false);
   const toast = useToast();
 
   const [driverStats, setDriverStats] = useState({
@@ -45,14 +43,15 @@ const DriverDashboard = () => {
     id: 'TR001',
     passenger: 'Sarah Johnson',
     pickupLocation: 'Colombo Airport',
-    destination: 'Galle Fort',
+    destination: 'Kandy City',
     distance: '120 km',
     estimatedTime: '2h 30m',
-    fare: 89.50,
+    fare: 8900.50,
     status: 'in_progress',
     startTime: '2:30 PM',
     passengerRating: 4.9,
-    passengerPhone: '+94 77 123 4567'
+    passengerPhone: '+94 77 123 4567',
+    passengerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
   });
 
   const [pendingRequests, setPendingRequests] = useState([
@@ -65,7 +64,7 @@ const DriverDashboard = () => {
       estimatedFare: 95.00,
       requestTime: '5 mins ago',
       passengerRating: 4.7,
-      tripType: 'full_trip'
+     
     },
     {
       id: 'TR003',
@@ -76,8 +75,7 @@ const DriverDashboard = () => {
       estimatedFare: 180.00,
       requestTime: '8 mins ago',
       passengerRating: 4.9,
-      tripType: 'partial_trip',
-      note: 'Leg 2 of 3 - Ella to Colombo'
+      
     }
   ]);
 
@@ -112,7 +110,14 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -123,12 +128,7 @@ const DriverDashboard = () => {
         </div>
       </div>
 
-      {/* Driver Status Card */}
-      <div className="mb-8">
-        <DriverStatusCard showToggle={true} onReportIssue={() => setReportModalOpen(true)} />
-      </div>
-      {/* Report Issue Modal */}
-      <ReportIssueModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
+     
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -139,7 +139,7 @@ const DriverDashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">This Month's Earnings</p>
-              <p className="text-2xl font-bold text-gray-900">${driverStats.monthlyEarnings}</p>
+              <p className="text-2xl font-bold text-gray-900">LKR{driverStats.monthlyEarnings}</p>
             </div>
           </div>
         </div>
@@ -188,9 +188,6 @@ const DriverDashboard = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                  <Phone className="h-4 w-4" />
-                </button>
-                <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
                   <MessageCircle className="h-4 w-4" />
                 </button>
               </div>
@@ -216,7 +213,7 @@ const DriverDashboard = () => {
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-500">Fare</p>
-                <p className="font-semibold">${activeTrip.fare}</p>
+                <p className="font-semibold">LKR{activeTrip.fare}</p>
               </div>
             </div>
             <div className="flex space-x-3">
@@ -254,17 +251,10 @@ const DriverDashboard = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">{request.passenger}</h3>
                     <div className="flex items-center text-sm text-gray-500">
-                      <Star className="h-3 w-3 text-yellow-400 mr-1" />
-                      {request.passengerRating}
-                      <span className="mx-2">•</span>
                       <span>{request.requestTime}</span>
                     </div>
                   </div>
-                  {request.tripType === 'partial_trip' && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">
-                      Partial Trip
-                    </span>
-                  )}
+                 
                 </div>
 
                 <div className="space-y-1 mb-3">
@@ -291,7 +281,7 @@ const DriverDashboard = () => {
                   <div className="text-sm text-gray-600">
                     <span>{request.distance}</span>
                     <span className="mx-2">•</span>
-                    <span className="font-semibold text-gray-900">${request.estimatedFare}</span>
+                    <span className="font-semibold text-gray-900">LKR{request.estimatedFare}</span>
                   </div>
                   <div className="flex space-x-2">
                     <button
@@ -335,7 +325,7 @@ const DriverDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-1">This Week</p>
-            <p className="text-2xl font-bold text-gray-900">${driverStats.weeklyEarnings}</p>
+            <p className="text-2xl font-bold text-gray-900">LKR{driverStats.weeklyEarnings}</p>
             <div className="flex items-center justify-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
               <span className="text-sm text-green-600">+12.5%</span>
@@ -343,7 +333,7 @@ const DriverDashboard = () => {
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-1">This Month</p>
-            <p className="text-2xl font-bold text-gray-900">${driverStats.monthlyEarnings}</p>
+            <p className="text-2xl font-bold text-gray-900">LKR{driverStats.monthlyEarnings}</p>
             <div className="flex items-center justify-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
               <span className="text-sm text-green-600">+8.3%</span>
@@ -351,7 +341,7 @@ const DriverDashboard = () => {
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-1">Average per Trip</p>
-            <p className="text-2xl font-bold text-gray-900">${(driverStats.monthlyEarnings / driverStats.completedTrips).toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">LKR{(driverStats.monthlyEarnings / driverStats.completedTrips).toFixed(2)}</p>
             <div className="flex items-center justify-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
               <span className="text-sm text-green-600">+5.2%</span>

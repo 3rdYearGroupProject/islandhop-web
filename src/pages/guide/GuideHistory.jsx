@@ -226,7 +226,7 @@ const GuideHistory = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">${stats.totalEarnings}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">LKR{stats.totalEarnings}</p>
             </div>
           </div>
         </div>
@@ -337,9 +337,7 @@ const GuideHistory = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
+               
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-secondary-800 divide-y divide-gray-200 dark:divide-secondary-700">
@@ -383,7 +381,7 @@ const GuideHistory = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${tour.earnings.toFixed(2)}
+                      LKR{tour.earnings.toFixed(2)}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {tour.paymentMethod}
@@ -397,14 +395,7 @@ const GuideHistory = () => {
                       {tour.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => setSelectedTour(tour)}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                    >
-                      <EyeIcon className="h-5 w-5" />
-                    </button>
-                  </td>
+                  
                 </tr>
               ))}
             </tbody>

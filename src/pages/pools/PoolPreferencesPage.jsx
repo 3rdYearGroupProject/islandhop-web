@@ -4,7 +4,7 @@ import { ArrowRight, Mountain, Waves, Camera, MapPin, Utensils, Music, Gamepad2,
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
-import { getUserUID } from '../../utils/userStorage';
+import { getUserUID, getUserData } from '../../utils/userStorage';
 
 const PoolPreferencesPage = () => {
   const location = useLocation();
@@ -65,6 +65,12 @@ const PoolPreferencesPage = () => {
         navigate('/login');
         return;
       }
+
+      const currentUser = getUserData();
+      if (!currentUser || !currentUser.email) {
+        alert('User data not found. Please log in again.');
+        return;
+      }
       
       // Prepare dates in YYYY-MM-DD format
       const startDate = selectedDates && selectedDates[0] ? 
@@ -77,8 +83,8 @@ const PoolPreferencesPage = () => {
         return;
       }
       
-      // Prepare request data according to the API schema
-      const requestData = {
+      // Prepare preferences data for the new API
+      const preferences = {
         userId: userId,
         baseCity: "Colombo", // Always hardcoded as requested
         startDate: startDate,
@@ -90,68 +96,23 @@ const PoolPreferencesPage = () => {
         multiCityAllowed: true // Default value
       };
       
-      console.log('📦 Pre-check API Request data:', requestData);
+      console.log('📦 Navigating to compatible groups page with preferences:', preferences);
       
-      // Make API call to pre-check compatible groups
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083'}/api/v1/public-pooling/pre-check`;
-      
-      console.log('📡 Making POST request to:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestData)
+      // Navigate to the new CompatibleGroupsPage with preferences
+      navigate('/compatible-groups', {
+        state: {
+          preferences,
+          poolName,
+          selectedDates,
+          poolSize,
+          poolPrivacy
+        }
       });
-      
-      console.log('📨 Pre-check API Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ Pre-check API Error response:', errorData);
-        
-        if (response.status === 400) {
-          alert(`Invalid request: ${errorData.message || 'Please check your preferences'}`);
-        } else if (response.status === 500) {
-          alert(`Server error: ${errorData.message || 'Please try again later'}`);
-        } else {
-          alert(`Failed to check groups: ${errorData.message || 'Unknown error'}`);
-        }
-        return;
-      }
-      
-      const result = await response.json();
-      console.log('✅ Pre-check API Success response:', result);
-      
-      // Handle successful response
-      if (result.status === 'success') {
-        const groups = result.compatibleGroups || [];
-        setCompatibleGroups(groups);
-        setShowCompatibleGroups(true);
-        
-        if (groups.length === 0) {
-          console.log('🔍 No compatible groups found - showing create group option');
-        } else {
-          console.log(`🎉 Found ${groups.length} compatible groups`);
-        }
-      } else {
-        console.error('❌ Unexpected pre-check response format:', result);
-        alert(`Failed to check groups: ${result.message || 'Unexpected response format'}`);
-      }
       
     } catch (error) {
       console.error('❌ PRE-CHECK COMPATIBLE GROUPS FAILED');
       console.error('❌ Error:', error);
-      
-      // Network or other errors
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        alert('Network error: Please check your internet connection and try again');
-      } else {
-        alert(`Failed to check groups: ${error.message || 'Unknown error occurred'}`);
-      }
+      alert(`Failed to check groups: ${error.message || 'Unknown error occurred'}`);
     } finally {
       setIsCheckingGroups(false);
     }
@@ -202,7 +163,7 @@ const PoolPreferencesPage = () => {
       console.log('📦 Join API Request data:', requestData);
       
       // Make API call to request to join group
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083'}/api/v1/groups/${groupId}/join`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/groups/${groupId}/join`;
       
       console.log('📡 Making POST request to:', apiUrl);
       
@@ -263,12 +224,14 @@ const PoolPreferencesPage = () => {
         
         // Navigate to the group's trip planning page
         if (result.tripId) {
-          navigate(`/trip-planning/${result.tripId}?groupId=${groupId}`, {
+          navigate(`/pool-itinerary`, {
             state: {
               tripId: result.tripId,
               groupId: groupId,
               tripName: groupName,
-              joinedGroup: true,
+              poolName: groupName,
+              selectedDates: selectedDates,
+              userUid: userUid,
               selectedTerrains: selectedTerrainPreferences,
               selectedActivities: selectedActivityPreferences
             }
@@ -334,6 +297,8 @@ const PoolPreferencesPage = () => {
         startDate: startDate,
         endDate: endDate,
         baseCity: "Colombo", // Always hardcoded as requested
+        groupName: poolName || 'My Pool', // Use pool name from state or default
+
         
         // Optional fields with defaults
         multiCityAllowed: true,
@@ -341,7 +306,7 @@ const PoolPreferencesPage = () => {
         budgetLevel: "Medium",
         preferredTerrains: selectedTerrainPreferences,
         preferredActivities: selectedActivityPreferences,
-        visibility: poolPrivacy || "public", // Use privacy setting from modal
+        visibility: poolPrivacy, // Use privacy setting from modal
         maxMembers: poolSize || 6,
         requiresApproval: false,
         additionalPreferences: {}
@@ -350,7 +315,7 @@ const PoolPreferencesPage = () => {
       console.log('📦 API Request data:', requestData);
       
       // Make API call to create group with trip
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083'}/groups/with-trip`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/groups/with-trip`;
       
       console.log('📡 Making POST request to:', apiUrl);
       
@@ -394,14 +359,15 @@ const PoolPreferencesPage = () => {
         // Show success notification
         alert(`Group created successfully! You can now plan your trip.`);
         
-        // Redirect to trip planning interface
-        navigate(`/trip-planning/${result.tripId}?groupId=${result.groupId}`, {
+        // Redirect to pool itinerary page
+        navigate('/pool-itinerary', {
           state: {
             tripId: result.tripId,
             groupId: result.groupId,
             tripName: poolName,
-            startDate: startDate,
-            endDate: endDate,
+            poolName: poolName,
+            startDate,
+            endDate,
             selectedTerrains: selectedTerrainPreferences,
             selectedActivities: selectedActivityPreferences,
             userUid: userId,

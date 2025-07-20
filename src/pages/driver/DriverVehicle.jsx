@@ -195,8 +195,14 @@ const DriverVehicle = () => {
   ];
 
   return (
-    
-      <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-secondary-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+      
         {/* Header */}
         <div className="mb-8">
           <div className="flex justify-between items-start">
@@ -254,6 +260,76 @@ const DriverVehicle = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Vehicle Make Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Make</label>
+                  {isEditing ? (
+                    <select
+                      value={vehicleData.make}
+                      onChange={e => setVehicleData(prev => ({ ...prev, make: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select Make</option>
+                      <option value="Toyota">Toyota</option>
+                      <option value="Nissan">Nissan</option>
+                      <option value="Honda">Honda</option>
+                      <option value="Mazda">Mazda</option>
+                      <option value="Suzuki">Suzuki</option>
+                      <option value="Mitsubishi">Mitsubishi</option>
+                      <option value="Hyundai">Hyundai</option>
+                      <option value="KIA">KIA</option>
+                      <option value="BMW">BMW</option>
+                      <option value="Mercedes-Benz">Mercedes-Benz</option>
+                      <option value="Audi">Audi</option>
+                      <option value="Volkswagen">Volkswagen</option>
+                      <option value="Peugeot">Peugeot</option>
+                      <option value="Micro">Micro</option>
+                      <option value="Bajaj">Bajaj</option>
+                      <option value="Tata">Tata</option>
+                      <option value="Mahindra">Mahindra</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
+                      {vehicleData.make || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Vehicle Body Type Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Body Type</label>
+                  {isEditing ? (
+                    <select
+                      value={vehicleData.type}
+                      onChange={e => setVehicleData(prev => ({ ...prev, type: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select Body Type</option>
+                      <option value="Sedan">Sedan</option>
+                      <option value="Hatchback">Hatchback</option>
+                      <option value="SUV">SUV</option>
+                      <option value="Crossover">Crossover</option>
+                      <option value="Wagon">Wagon</option>
+                      <option value="Coupe">Coupe</option>
+                      <option value="Convertible">Convertible</option>
+                      <option value="Van">Van</option>
+                      <option value="Minivan">Minivan</option>
+                      <option value="Pickup Truck">Pickup Truck</option>
+                      <option value="Bus">Bus</option>
+                      <option value="Minibus">Minibus</option>
+                      <option value="Three Wheeler">Three Wheeler</option>
+                      <option value="Tuk Tuk">Tuk Tuk</option>
+                      <option value="Motorcycle">Motorcycle</option>
+                      <option value="Scooter">Scooter</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
+                      {vehicleData.type || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
                 {/* Fuel Type Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fuel Type</label>
@@ -263,6 +339,7 @@ const DriverVehicle = () => {
                       onChange={e => setVehicleData(prev => ({ ...prev, fuelType: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
                     >
+                      <option value="">Select Fuel Type</option>
                       <option value="petrol">Petrol</option>
                       <option value="diesel">Diesel</option>
                       <option value="hybrid">Hybrid</option>
@@ -270,10 +347,11 @@ const DriverVehicle = () => {
                     </select>
                   ) : (
                     <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
-                      {vehicleData.fuelType.charAt(0).toUpperCase() + vehicleData.fuelType.slice(1)}
+                      {vehicleData.fuelType ? vehicleData.fuelType.charAt(0).toUpperCase() + vehicleData.fuelType.slice(1) : 'Not specified'}
                     </p>
                   )}
                 </div>
+
                 {/* Capacity with unit */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Capacity ({vehicleData.fuelType === 'electric' ? 'kW' : 'CC'})</label>
@@ -283,18 +361,20 @@ const DriverVehicle = () => {
                       value={vehicleData.capacity}
                       onChange={e => setVehicleData(prev => ({ ...prev, capacity: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                      placeholder="Enter capacity"
                     />
                   ) : (
                     <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
-                      {vehicleData.capacity} {vehicleData.fuelType === 'electric' ? 'kW' : 'CC'}
+                      {vehicleData.capacity ? `${vehicleData.capacity} ${vehicleData.fuelType === 'electric' ? 'kW' : 'CC'}` : 'Not specified'}
                     </p>
                   )}
                 </div>
+
                 {/* Other fields */}
-                {['make','model','year','color','plateNumber','type'].map(key => (
+                {['model','year','color','plateNumber'].map(key => (
                   <div key={key}>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
-                      {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                      {key === 'plateNumber' ? 'Plate Number' : key.replace(/([A-Z])/g, ' $1').toLowerCase()}
                     </label>
                     {isEditing ? (
                       <input
@@ -302,10 +382,11 @@ const DriverVehicle = () => {
                         value={vehicleData[key]}
                         onChange={e => setVehicleData(prev => ({ ...prev, [key]: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                        placeholder={`Enter ${key === 'plateNumber' ? 'plate number' : key}`}
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
-                        {vehicleData[key]}
+                        {vehicleData[key] || 'Not specified'}
                       </p>
                     )}
                   </div>
@@ -344,10 +425,18 @@ const DriverVehicle = () => {
                       <CameraIcon className="h-12 w-12 text-gray-400" />
                     )}
                     {isEditing && (
-                      <label className="absolute bottom-2 left-2 w-4/5">
+                      <label className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-4/5">
                         <span className="block w-full px-3 py-2 bg-blue-600 text-white text-center rounded-lg cursor-pointer hover:bg-blue-700 transition-colors text-sm">Upload</span>
                         <input type="file" accept="image/*" className="hidden" onChange={e => handleVehiclePicChange(i, e.target.files[0])} />
                       </label>
+                    )}
+                    {isEditing && vehiclePicPreviews[i] && (
+                      <button
+                        onClick={() => handleVehiclePicChange(i, null)}
+                        className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Remove
+                      </button>
                     )}
                   </div>
                 ))}
@@ -449,7 +538,7 @@ const DriverVehicle = () => {
           </div>
         )}
       </div>
-    
+    // </div>
   );
 };
 
