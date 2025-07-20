@@ -183,7 +183,7 @@ const SupportDashboard = ({ onPageChange }) => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <Modal
+      {/* <Modal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         title="Complete Your Profile"
@@ -199,7 +199,7 @@ const SupportDashboard = ({ onPageChange }) => {
             Go to Profile
           </Link>
         </div>
-      </Modal>
+      </Modal> */}
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>

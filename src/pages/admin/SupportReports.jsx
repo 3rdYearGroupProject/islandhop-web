@@ -16,6 +16,35 @@ import {
 const SupportReports = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [agents, setAgents] = useState([
+    { id: 1, name: 'Sarah Johnson', tickets: 89, resolved: 85, avgTime: '1.8 hours', rating: 4.9, accountType: 1 },
+    { id: 2, name: 'Mike Chen', tickets: 76, resolved: 72, avgTime: '2.1 hours', rating: 4.7, accountType: 2 },
+    { id: 3, name: 'Emma Wilson', tickets: 94, resolved: 88, avgTime: '2.3 hours', rating: 4.8, accountType: 1 },
+    { id: 4, name: 'David Brown', tickets: 67, resolved: 63, avgTime: '2.5 hours', rating: 4.6, accountType: 3 },
+    { id: 5, name: 'Lisa Garcia', tickets: 82, resolved: 79, avgTime: '1.9 hours', rating: 4.8, accountType: 2 }
+  ]);
+
+  // Function to handle account type change
+  const handleAccountTypeChange = (agentId, newAccountType) => {
+    setAgents(prevAgents => 
+      prevAgents.map(agent => 
+        agent.id === agentId 
+          ? { ...agent, accountType: parseInt(newAccountType) }
+          : agent
+      )
+    );
+  };
+
+  // Function to get account type text
+  const getAccountTypeText = (accountType) => {
+    switch(accountType) {
+      case 1: return 'Verification';
+      case 2: return 'Reports';
+      case 3: return 'Complaints';
+      case 4: return 'All';
+      default: return 'Unknown';
+    }
+  };
 
   // Mock data for reports
   const reportData = {
@@ -54,13 +83,7 @@ const SupportReports = () => {
       'general-inquiry': { name: 'General Inquiry', count: 189, resolved: 178, percentage: 15.2 },
       'complaints': { name: 'Complaints', count: 128, resolved: 75, percentage: 10.3 }
     },
-    agentPerformance: [
-      { name: 'Sarah Johnson', tickets: 89, resolved: 85, avgTime: '1.8 hours', rating: 4.9 },
-      { name: 'Mike Chen', tickets: 76, resolved: 72, avgTime: '2.1 hours', rating: 4.7 },
-      { name: 'Emma Wilson', tickets: 94, resolved: 88, avgTime: '2.3 hours', rating: 4.8 },
-      { name: 'David Brown', tickets: 67, resolved: 63, avgTime: '2.5 hours', rating: 4.6 },
-      { name: 'Lisa Garcia', tickets: 82, resolved: 79, avgTime: '1.9 hours', rating: 4.8 }
-    ]
+    agentPerformance: agents
   };
 
   const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color = 'primary' }) => {
@@ -130,7 +153,7 @@ const SupportReports = () => {
     );
   };
 
-  const AgentPerformanceCard = ({ agent }) => (
+  const AgentPerformanceCard = ({ agent, onAccountTypeChange, getAccountTypeText }) => (
     <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
       <div className="flex items-center space-x-3 mb-4">
         <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
@@ -138,11 +161,32 @@ const SupportReports = () => {
             {agent.name.split(' ').map(n => n[0]).join('')}
           </span>
         </div>
-        <div>
+        <div className="flex-1">
           <h4 className="font-semibold text-gray-900 dark:text-white">{agent.name}</h4>
           <p className="text-sm text-gray-600 dark:text-gray-400">Support Agent</p>
         </div>
       </div>
+      
+      {/* Account Type Selector */}
+      <div className="mb-4 p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Account Type
+        </label>
+        <select
+          value={agent.accountType}
+          onChange={(e) => onAccountTypeChange(agent.id, e.target.value)}
+          className="w-full px-3 py-2 text-sm bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        >
+          <option value={1}>Verification</option>
+          <option value={2}>Reports</option>
+          <option value={3}>Complaints</option>
+          <option value={4}>All</option>
+        </select>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Current: {getAccountTypeText(agent.accountType)}
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <span className="text-gray-600 dark:text-gray-400">Tickets:</span>
@@ -326,7 +370,12 @@ const SupportReports = () => {
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Agent Performance</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {reportData.agentPerformance.map((agent, index) => (
-              <AgentPerformanceCard key={index} agent={agent} />
+              <AgentPerformanceCard 
+                key={agent.id || index} 
+                agent={agent}
+                onAccountTypeChange={handleAccountTypeChange}
+                getAccountTypeText={getAccountTypeText}
+              />
             ))}
           </div>
         </div>
