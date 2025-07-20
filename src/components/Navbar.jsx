@@ -25,6 +25,8 @@ const Navbar = () => {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [currentCurrency, setCurrentCurrency] = useState('USD');
   const [currentUnits, setCurrentUnits] = useState('Imperial');
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const translateRef = useRef(null);
   const userMenuRef = useRef(null);
 
@@ -215,10 +217,21 @@ const Navbar = () => {
   // Fetch profile from backend and check completion
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!tempUser) {
+        setProfileLoading(false);
+        return;
+      }
+
+      setProfileLoading(true);
+      setImageLoaded(false);
+      
       try {
         const auth = getAuth();
         const email = auth.currentUser?.email || tempUser?.email || '';
-        if (!email) return;
+        if (!email) {
+          setProfileLoading(false);
+          return;
+        }
 
         const res = await api.get('/tourist/profile', { params: { email } });
         const profileData = res.data;
@@ -251,12 +264,15 @@ const Navbar = () => {
         checkProfileCompletion(updatedProfile);
       } catch (err) {
         console.error('Failed to fetch profile:', err);
+      } finally {
+        // Add a small delay to show loading animation
+        setTimeout(() => {
+          setProfileLoading(false);
+        }, 500);
       }
     };
 
-    if (tempUser) {
-      fetchProfile();
-    }
+    fetchProfile();
   }, [tempUser]);
 
   // Fetch settings from backend
@@ -371,14 +387,36 @@ const Navbar = () => {
                 aria-expanded={showUserMenu}
               >
                 <span className="text-gray-700 font-medium">{user.displayName || user.email || 'User'}</span>
-                {user.photoURL || userProfile.profilePicture ? (
-                  <img src={userProfile.profilePicture || user.photoURL} alt="Profile" className="w-12 h-12 rounded-full object-cover" />
-                ) : (
-                  <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-lg font-medium">
-                      {(user.displayName?.[0] || user.email?.[0] || userProfile.firstName?.[0] || 'U').toUpperCase()}
-                    </span>
+                
+                {profileLoading ? (
+                  /* Loading animation */
+                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
+                ) : (
+                  /* Profile image or avatar */
+                  <>
+                    {(user.photoURL || userProfile.profilePicture) && !imageLoaded && (
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                    {user.photoURL || userProfile.profilePicture ? (
+                      <img 
+                        src={userProfile.profilePicture || user.photoURL} 
+                        alt="Profile" 
+                        className={`w-12 h-12 rounded-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
+                        onLoad={() => setImageLoaded(true)}
+                        onError={() => setImageLoaded(true)}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-lg font-medium">
+                          {(user.displayName?.[0] || user.email?.[0] || userProfile.firstName?.[0] || 'U').toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </button>
               {(showUserMenu || userMenuAnimation === 'animate-navbar-dropdown-leave') && (
