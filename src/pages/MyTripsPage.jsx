@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
+import CreateAiTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
@@ -39,6 +40,7 @@ const placeholder = placeholderImage;
 
 const MyTripsPage = () => {
   const [isCreateTripModalOpen, setIsCreateTripModalOpen] = useState(false);
+  const [isCreateAiTripModalOpen, setIsCreateAiTripModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
@@ -660,7 +662,7 @@ const MyTripsPage = () => {
         userUid: currentUser?.uid
       } 
     });
-    setIsCreateTripModalOpen(false);
+    setIsCreateAiTripModalOpen(false);
   };
 
   const handleTripClick = (trip) => {
@@ -969,8 +971,8 @@ const MyTripsPage = () => {
         onCreateTrip={handleCreateTrip}
       />
       {/* Enhanced Create Trip Modal */}
-      <CreateTripModal
-        isOpen={isCreateTripModalOpen}
+      <CreateAiTripModal
+        isOpen={isCreateAiTripModalOpen}
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateAITrip}
       />

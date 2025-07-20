@@ -24,6 +24,7 @@ const SystemData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingVehicle, setEditingVehicle] = useState(null);
   const [newVehicle, setNewVehicle] = useState({
     typeName: '',
     capacity: '',
@@ -83,15 +84,31 @@ const SystemData = () => {
 
   const updateVehicle = async (id, updatedData) => {
     try {
-      const response = await adminServicesApi.put(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, updatedData);
+      // Prepare data according to backend API specification
+      const updatePayload = {
+        typeName: updatedData.typeName,
+        description: updatedData.description,
+        fuelType: updatedData.fuelType,
+        capacity: parseInt(updatedData.capacity),
+        pricePerKm: parseFloat(updatedData.pricePerKm),
+        available: updatedData.isAvailable || updatedData.available
+      };
+
+      console.log('Sending update payload:', updatePayload);
+
+      const response = await adminServicesApi.put(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, updatePayload);
 
       if (response.status === 200 && response.data && response.data.data) {
         setVehicles((prev) => prev.map((v) => (v.id === id ? response.data.data : v)));
+        setEditingVehicle(null); // Close edit modal
+        setError(null); // Clear any previous errors
       } else {
         throw new Error('Failed to update vehicle');
       }
     } catch (err) {
-      setError(err.message);
+      console.error('Error updating vehicle:', err);
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.message || err.message);
     }
   };
 
@@ -115,6 +132,46 @@ const SystemData = () => {
 
   const addGuide = async () => {
     // Logic for adding a guide
+  };
+
+  const openEditModal = (vehicle) => {
+    setEditingVehicle({
+      id: vehicle.id,
+      typeName: vehicle.typeName,
+      capacity: vehicle.capacity.toString(),
+      description: vehicle.description,
+      fuelType: vehicle.fuelType,
+      isAvailable: vehicle.isAvailable,
+      pricePerKm: vehicle.pricePerKm.toString()
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingVehicle(null);
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!editingVehicle.typeName || !editingVehicle.description || !editingVehicle.fuelType || 
+        !editingVehicle.capacity || !editingVehicle.pricePerKm) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate numeric fields
+    if (isNaN(editingVehicle.capacity) || parseInt(editingVehicle.capacity) <= 0) {
+      setError('Capacity must be a positive number');
+      return;
+    }
+
+    if (isNaN(editingVehicle.pricePerKm) || parseFloat(editingVehicle.pricePerKm) < 0) {
+      setError('Price per KM must be a non-negative number');
+      return;
+    }
+
+    updateVehicle(editingVehicle.id, editingVehicle);
   };
 
   // Filter vehicles based on search term
@@ -407,7 +464,20 @@ const SystemData = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => updateVehicle(vehicle.id, { ...vehicle, isAvailable: !vehicle.isAvailable })}
+                                onClick={() => openEditModal(vehicle)}
+                                className="px-3 py-1 bg-primary-100 text-primary-800 hover:bg-primary-200 dark:bg-primary-900/20 dark:text-primary-300 text-xs rounded-lg transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => updateVehicle(vehicle.id, { 
+                                  typeName: vehicle.typeName,
+                                  description: vehicle.description,
+                                  fuelType: vehicle.fuelType,
+                                  capacity: vehicle.capacity,
+                                  pricePerKm: vehicle.pricePerKm,
+                                  isAvailable: !vehicle.isAvailable
+                                })}
                                 className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                                   vehicle.isAvailable
                                     ? 'bg-warning-100 text-warning-800 hover:bg-warning-200 dark:bg-warning-900/20 dark:text-warning-300'
@@ -590,6 +660,131 @@ const SystemData = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Vehicle Modal */}
+      {editingVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Edit Vehicle Type
+                </h3>
+                <button
+                  onClick={closeEditModal}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Vehicle Type Name
+                </label>
+                <input
+                  type="text"
+                  value={editingVehicle.typeName}
+                  onChange={(e) => setEditingVehicle(prev => ({ ...prev, typeName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Capacity (people)
+                </label>
+                <input
+                  type="number"
+                  value={editingVehicle.capacity}
+                  onChange={(e) => setEditingVehicle(prev => ({ ...prev, capacity: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                  min="1"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editingVehicle.description}
+                  onChange={(e) => setEditingVehicle(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                  rows="3"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Fuel Type
+                </label>
+                <select
+                  value={editingVehicle.fuelType}
+                  onChange={(e) => setEditingVehicle(prev => ({ ...prev, fuelType: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                  required
+                >
+                  <option value="">Select Fuel Type</option>
+                  <option value="Petrol">Petrol</option>
+                  <option value="Diesel">Diesel</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Electric">Electric</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Price per KM ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingVehicle.pricePerKm}
+                  onChange={(e) => setEditingVehicle(prev => ({ ...prev, pricePerKm: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                  min="0"
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="editAvailable"
+                  checked={editingVehicle.isAvailable}
+                  onChange={(e) => setEditingVehicle(prev => ({ ...prev, isAvailable: e.target.checked }))}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="editAvailable" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  Available for booking
+                </label>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Update Vehicle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -137,31 +137,29 @@ const Discover = () => {
 
     setLoading(true);
     try {
-      const service = new window.google.maps.places.PlacesService(
-        document.createElement('div')
-      );
-
+      const searchText = query || `${selectedCategory} near ${location.lat},${location.lng} Sri Lanka`;
+      
       const request = {
-        location: new window.google.maps.LatLng(location.lat, location.lng),
-        radius: 50000, // 50km radius
-        type: selectedCategory,
-        keyword: query || 'Sri Lanka tourist attraction',
+        textQuery: searchText,
+        fields: ['displayName', 'location', 'rating', 'userRatingCount', 'photos', 'priceLevel', 'types', 'formattedAddress'],
+        maxResultCount: 8,
       };
 
-      service.nearbySearch(request, (results, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-          // Filter results to focus on Sri Lanka and popular attractions
-          const filteredResults = results.filter(place => 
-            place.rating && place.rating >= 3.5 && place.user_ratings_total > 10
-          );
-          setPlaces(filteredResults.slice(0, 10)); // Limit to 10 results
-        } else {
-          console.error('Places search failed:', status);
-        }
-        setLoading(false);
-      });
+      const { places } = await window.google.maps.places.Place.searchByText(request);
+
+      if (places && places.length > 0) {
+        const filteredResults = places.filter(place => 
+          place.rating && place.rating >= 3.5 && place.userRatingCount > 10
+        );
+        setPlaces(filteredResults);
+      } else {
+        console.error('No places found');
+        setPlaces([]);
+      }
     } catch (error) {
       console.error('Error searching places:', error);
+      setPlaces([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -191,29 +189,8 @@ const Discover = () => {
   };
 
   const getPlaceDetails = async (place) => {
-    if (!GOOGLE_PLACES_API_KEY) return;
-
     setSelectedPlace(place);
-    setPlaceDetails(null);
-
-    const service = new window.google.maps.places.PlacesService(
-      document.createElement('div')
-    );
-
-    const request = {
-      placeId: place.place_id,
-      fields: [
-        'name', 'formatted_address', 'photos', 'rating', 'user_ratings_total',
-        'opening_hours', 'formatted_phone_number', 'website', 'reviews',
-        'price_level', 'types'
-      ]
-    };
-
-    service.getDetails(request, (result, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-        setPlaceDetails(result);
-      }
-    });
+    setPlaceDetails(place); // Since new API already returns most details
   };
 
   const renderStars = (rating) => {
@@ -240,8 +217,19 @@ const Discover = () => {
   };
 
   const getPhotoUrl = (photo, maxWidth = 400) => {
-    if (!photo || !photo.getUrl) return 'https://placehold.co/400x300?text=No+Image';
-    return photo.getUrl({ maxWidth });
+    if (!photo) return 'https://placehold.co/400x300?text=No+Image';
+    
+    // Handle new Places API photo format
+    if (photo.name) {
+      return `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_PLACES_API_KEY}`;
+    }
+    
+    // Fallback for old format
+    if (photo.getUrl) {
+      return photo.getUrl({ maxWidth });
+    }
+    
+    return 'https://placehold.co/400x300?text=No+Image';
   };
 
   // Load favorites from localStorage on component mount
@@ -381,25 +369,25 @@ const Discover = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {places.map((place) => (
                 <Card
-                  key={place.place_id}
+                  key={place.id}
                   hover
                   className="group cursor-pointer"
                   onClick={() => getPlaceDetails(place)}
                 >
                   <div className="relative">
                     <img
-                      src={place.photos ? getPhotoUrl(place.photos[0]) : 'https://placehold.co/400x300?text=No+Image'}
-                      alt={place.name}
+                      src={place.photos && place.photos.length > 0 ? getPhotoUrl(place.photos[0]) : 'https://placehold.co/400x300?text=No+Image'}
+                      alt={place.displayName?.text || place.name}
                       className="w-full h-48 object-cover"
                     />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleFavorite(place.place_id);
+                        toggleFavorite(place.id);
                       }}
                       className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
                     >
-                      {favorites.has(place.place_id) ? (
+                      {favorites.has(place.id) ? (
                         <HeartSolidIcon className="h-5 w-5 text-red-500" />
                       ) : (
                         <HeartIcon className="h-5 w-5 text-gray-600" />
@@ -409,14 +397,14 @@ const Discover = () => {
                   
                   <CardBody>
                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 group-hover:text-primary-600 transition-colors">
-                      {place.name}
+                      {place.displayName?.text || place.name}
                     </h3>
                     
                     {place.rating && (
                       <div className="flex items-center mb-2">
                         <div className="flex">{renderStars(place.rating)}</div>
                         <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                          {place.rating} ({place.user_ratings_total})
+                          {place.rating} ({place.userRatingCount || place.user_ratings_total})
                         </span>
                       </div>
                     )}
@@ -424,7 +412,7 @@ const Discover = () => {
                     <div className="flex items-start mb-3">
                       <MapPinIcon className="h-4 w-4 text-gray-400 mt-1 mr-2 flex-shrink-0" />
                       <span className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {place.vicinity}
+                        {place.formattedAddress || place.vicinity}
                       </span>
                     </div>
 
@@ -465,7 +453,7 @@ const Discover = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {selectedPlace.name}
+                  {selectedPlace.displayName?.text || selectedPlace.name}
                 </h2>
                 <button
                   onClick={() => setSelectedPlace(null)}
@@ -477,10 +465,10 @@ const Discover = () => {
             </CardHeader>
             
             <CardBody>
-              {selectedPlace.photos && (
+              {selectedPlace.photos && selectedPlace.photos.length > 0 && (
                 <img
                   src={getPhotoUrl(selectedPlace.photos[0], 600)}
-                  alt={selectedPlace.name}
+                  alt={selectedPlace.displayName?.text || selectedPlace.name}
                   className="w-full h-64 object-cover rounded-lg mb-6"
                 />
               )}
@@ -492,7 +480,7 @@ const Discover = () => {
                     {selectedPlace.rating}
                   </span>
                   <span className="ml-1 text-gray-600 dark:text-gray-400">
-                    ({selectedPlace.user_ratings_total} reviews)
+                    ({selectedPlace.userRatingCount || selectedPlace.user_ratings_total} reviews)
                   </span>
                 </div>
               )}
@@ -501,7 +489,7 @@ const Discover = () => {
                 <div className="flex items-start">
                   <MapPinIcon className="h-5 w-5 text-gray-400 mt-1 mr-3 flex-shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
-                    {selectedPlace.vicinity}
+                    {selectedPlace.formattedAddress || selectedPlace.vicinity}
                   </span>
                 </div>
 
@@ -549,14 +537,14 @@ const Discover = () => {
 
               <div className="flex space-x-4 mt-6">
                 <button
-                  onClick={() => toggleFavorite(selectedPlace.place_id)}
+                  onClick={() => toggleFavorite(selectedPlace.id)}
                   className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors ${
-                    favorites.has(selectedPlace.place_id)
+                    favorites.has(selectedPlace.id)
                       ? 'bg-red-500 text-white hover:bg-red-600'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-secondary-700 dark:text-white dark:hover:bg-secondary-600'
                   }`}
                 >
-                  {favorites.has(selectedPlace.place_id) ? 'Remove from Favorites' : 'Add to Favorites'}
+                  {favorites.has(selectedPlace.id) ? 'Remove from Favorites' : 'Add to Favorites'}
                 </button>
                 <button className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 transition-colors">
                   Get Directions
