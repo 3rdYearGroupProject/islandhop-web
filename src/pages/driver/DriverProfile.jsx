@@ -29,6 +29,9 @@ const DriverProfile = () => {
   const [showDeactivate, setShowDeactivate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  
   const [loading, setLoading] = useState(false);
   const [firebaseData, setFirebaseData] = useState({ email: '', memberSince: '' });
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -110,6 +113,16 @@ const DriverProfile = () => {
 
   const { success: showSuccessToast, error: showErrorToast } = useToast();
 
+  // Utility function to convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+      reader.onerror = error => reject(error);
+    });
+  };
+
   useEffect(() => {
     let unsubscribe;
     setLoadingProfile(true);
@@ -134,7 +147,11 @@ const DriverProfile = () => {
               address: res.data.address || '',
               emergencyContact: res.data.emergencyContactNumber || '',
               emergencyContactName: res.data.emergencyContactName || '',
-              profilePicture: res.data.profilePicture || prevData.profilePicture,
+              profilePicture: res.data.profilePictureUrl ? 
+                (res.data.profilePictureUrl.startsWith('data:') ? 
+                  res.data.profilePictureUrl : 
+                  `data:image/jpeg;base64,${res.data.profilePictureUrl}`) : 
+                prevData.profilePicture,
               documents: {
                 drivingLicense: {
                   image: res.data.drivingLicenseImage || '',
@@ -171,74 +188,74 @@ const DriverProfile = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      let payload;
-      let config = {};
+      let payload = {
+        email: firebaseData.email,
+        firstName: driverData.firstName,
+        lastName: driverData.lastName,
+        phone: driverData.phone,
+        dateOfBirth: driverData.dateOfBirth,
+        address: driverData.address,
+        emergencyContact: driverData.emergencyContact,
+        emergencyContactName: driverData.emergencyContactName,
+        acceptPartialTrips: driverData.preferences.acceptPartialTrips ? 1 : 0,
+        autoAcceptTrips: driverData.preferences.autoAcceptTrips ? 1 : 0,
+        maxDistance: driverData.preferences.maxDistance
+      };
+
+      // If a new profile picture is selected, convert it to base64
       if (profilePictureFile) {
-        // Use FormData if a new image is selected
-        payload = new FormData();
-        payload.append('email', firebaseData.email);
-        payload.append('firstName', driverData.firstName);
-        payload.append('lastName', driverData.lastName);
-        payload.append('phone', driverData.phone);
-        payload.append('dateOfBirth', driverData.dateOfBirth);
-        payload.append('address', driverData.address);
-        payload.append('emergencyContact', driverData.emergencyContact);
-        payload.append('emergencyContactName', driverData.emergencyContactName);
-        payload.append('acceptPartialTrips', driverData.preferences.acceptPartialTrips ? 1 : 0);
-        payload.append('autoAcceptTrips', driverData.preferences.autoAcceptTrips ? 1 : 0);
-        payload.append('maxDistance', driverData.preferences.maxDistance);
-        payload.append('profilePicture', profilePictureFile);
-        config.headers = { 'Content-Type': 'multipart/form-data' };
+        try {
+          const base64Image = await fileToBase64(profilePictureFile);
+          payload.profilePicture = base64Image;
+          console.log('Profile picture converted to base64, length:', base64Image.length);
+        } catch (error) {
+          console.error('Error converting image to base64:', error);
+          showErrorToast('Failed to process profile picture. Please try again.');
+          setLoading(false);
+          return;
+        }
       } else {
-        // Fallback to JSON if no new image
-        payload = {
-          email: firebaseData.email,
-          firstName: driverData.firstName,
-          lastName: driverData.lastName,
-          phone: driverData.phone,
-          dateOfBirth: driverData.dateOfBirth,
-          address: driverData.address,
-          emergencyContact: driverData.emergencyContact,
-          emergencyContactName: driverData.emergencyContactName,
-          profilePicture: driverData.profilePicture,
-          acceptPartialTrips: driverData.preferences.acceptPartialTrips ? 1 : 0,
-          autoAcceptTrips: driverData.preferences.autoAcceptTrips ? 1 : 0,
-          maxDistance: driverData.preferences.maxDistance
-        };
+        // Keep existing profile picture if no new one is selected
+        payload.profilePicture = driverData.profilePicture;
       }
-      await api.put('/driver/profile', payload, config);
+
+      console.log('Sending payload:', { ...payload, profilePicture: payload.profilePicture ? `[base64 data - ${payload.profilePicture.length} chars]` : 'none' });
+
+      await api.put('/driver/profile', payload);
       setIsEditing(false);
       setProfilePictureFile(null);
+      showSuccessToast('Profile updated successfully!');
     } catch (err) {
-      // handle error
+      console.error('Error saving profile:', err);
+      showErrorToast('Failed to update profile. Please try again.');
     }
     setLoading(false);
   };
 
  const handleDrivingLicenseUpload = async (file) => {
-  // Update state to show upload in progress
-  setDriverData(prev => ({
-    ...prev,
-    documents: {
-      ...prev.documents,
-      drivingLicense: {
-        ...prev.documents.drivingLicense,
-        image: URL.createObjectURL(file),
-        uploadedAt: new Date().toISOString().slice(0, 10),
-        status: 'uploading',
-      }
-    }
-  }));
-
   try {
-    const formData = new FormData();
-    formData.append('drivingLicense', file);
-    
+    // Update state to show upload in progress
+    setDriverData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        drivingLicense: {
+          ...prev.documents.drivingLicense,
+          status: 'uploading',
+        }
+      }
+    }));
+
     console.log('Uploading driving license document');
+    
+    // Create FormData with the file
+    const formData = new FormData();
+    formData.append('email', firebaseData.email);
+    formData.append('drivingLicense', file);
     
     const response = await api.post('/driver/uploadDrivingLicense', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        // Don't set Content-Type manually - let axios handle it for FormData
       }
     });
     
@@ -246,12 +263,16 @@ const DriverProfile = () => {
     
     if (response.status === 200) {
       console.log('Driving license uploaded successfully');
+      
+      // Backend will return the base64 string, so we can use it directly
       setDriverData(prev => ({
         ...prev,
         documents: {
           ...prev.documents,
           drivingLicense: {
             ...prev.documents.drivingLicense,
+            image: response.data.image || response.data.drivingLicenseImage, // Use the base64 from backend
+            uploadedAt: new Date().toISOString().slice(0, 10),
             status: 'pending',
           }
         }
@@ -279,29 +300,29 @@ const DriverProfile = () => {
 };
 
 const handleSltdaLicenseUpload = async (file) => {
-  // Update state to show upload in progress
-  setDriverData(prev => ({
-    ...prev,
-    documents: {
-      ...prev.documents,
-      sltdaLicense: {
-        ...prev.documents.sltdaLicense,
-        image: URL.createObjectURL(file),
-        uploadedAt: new Date().toISOString().slice(0, 10),
-        status: 'uploading',
-      }
-    }
-  }));
-
   try {
-    const formData = new FormData();
-    formData.append('sltdaLicense', file);
-    
+    // Update state to show upload in progress
+    setDriverData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        sltdaLicense: {
+          ...prev.documents.sltdaLicense,
+          status: 'uploading',
+        }
+      }
+    }));
+
     console.log('Uploading SLTDA license document');
+    
+    // Create FormData with the file
+    const formData = new FormData();
+    formData.append('email', firebaseData.email);
+    formData.append('sltdaLicense', file);
     
     const response = await api.post('/driver/uploadSltdaLicense', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        // Don't set Content-Type manually - let axios handle it for FormData
       }
     });
     
@@ -309,12 +330,16 @@ const handleSltdaLicenseUpload = async (file) => {
     
     if (response.status === 200) {
       console.log('SLTDA license uploaded successfully');
+      
+      // Backend will return the base64 string, so we can use it directly
       setDriverData(prev => ({
         ...prev,
         documents: {
           ...prev.documents,
           sltdaLicense: {
             ...prev.documents.sltdaLicense,
+            image: response.data.image || response.data.sltdaLicenseImage, // Use the base64 from backend
+            uploadedAt: new Date().toISOString().slice(0, 10),
             status: 'pending',
           }
         }
@@ -415,6 +440,10 @@ const handleSltdaLicenseUpload = async (file) => {
               src={driverData.profilePicture}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover"
+              onError={(e) => {
+                console.log('Profile picture failed to load, using fallback');
+                e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face';
+              }}
             />
             {isEditing && (
               <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
@@ -622,7 +651,20 @@ const handleSltdaLicenseUpload = async (file) => {
                       </div>
                     )}
                     <div className="flex space-x-2">
-                      <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                      <button 
+                        className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        onClick={() => {
+                          if (docData.image) {
+                            setSelectedDocument({
+                              type: docType,
+                              title: docType === 'drivingLicense' ? 'Driving License' : 'SLTDA License',
+                              documentData: docData.image
+                            });
+                            setShowDocumentModal(true);
+                          }
+                        }}
+                        disabled={!docData.image}
+                      >
                         View Document
                       </button>
                       {isEditing && (
@@ -828,6 +870,99 @@ const handleSltdaLicenseUpload = async (file) => {
           )}
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {showDocumentModal && selectedDocument && (
+        
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative">
+            {/* Modal Header */}
+            <div className="bg-primary-600 p-4 text-white relative">
+              <button
+                onClick={() => {
+                  setShowDocumentModal(false);
+                  setSelectedDocument(null);
+                }}
+                className="absolute top-4 right-4 text-white hover:text-gray-200 text-2xl font-bold z-10"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-bold">Document Details</h2>
+              <p className="text-white/80 text-sm mt-1">
+                {selectedDocument.title}
+              </p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              {/* Document viewing */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Document</h3>
+                {console.log('Selected Document:', selectedDocument) || console.log('Document Data Present:', !!selectedDocument.documentData) || console.log('Document Data Length:', selectedDocument.documentData?.length) || selectedDocument.documentData ? (
+                  <div className="flex justify-center">
+                    <iframe
+                      src={`data:application/pdf;base64,${selectedDocument.documentData}`}
+                      className="w-full h-96 border border-gray-200 rounded-lg"
+                      title="Document PDF"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <div 
+                      className="text-center text-gray-500 py-8"
+                      style={{ display: 'none' }}
+                    >
+                      <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg font-medium mb-2">PDF Viewer Not Supported</p>
+                      <p className="text-sm">Your browser doesn't support inline PDF viewing.</p>
+                      <p className="text-sm">Please use the download button to view the document.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-lg font-medium mb-2">No Document Available</p>
+                    <p className="text-sm">No document file has been uploaded for this entry</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  {selectedDocument.documentData && (
+                    <button
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `data:application/pdf;base64,${selectedDocument.documentData}`;
+                        link.download = `${selectedDocument.title.replace(/\s+/g, '_')}.pdf`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
+                      Download PDF Document
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDocumentModal(false);
+                    setSelectedDocument(null);
+                  }}
+                  className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
