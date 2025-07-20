@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
@@ -14,8 +14,10 @@ import {
   HeartIcon,
   StarIcon,
   BellIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import { auth } from "../../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { clearUserData } from "../../utils/userStorage";
 import islandHopIcon from "../../assets/islandHopIcon.png";
 import islandHopLogo from "../../assets/IslandHop.png";
@@ -23,6 +25,51 @@ import islandHopLogo from "../../assets/IslandHop.png";
 const SupportSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [userPermission, setUserPermission] = useState(null);
+  const [isLoadingPermission, setIsLoadingPermission] = useState(true);
+
+  // Fetch user permission on component mount
+  useEffect(() => {
+    const fetchUserPermission = async () => {
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+          try {
+            const token = await currentUser.getIdToken();
+            const response = await fetch(`http://localhost:8061/permission/${currentUser.email}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success) {
+                setUserPermission(data.permission);
+              }
+            } else {
+              console.error('Failed to fetch user permission');
+            }
+          } catch (error) {
+            console.error('Error fetching user permission:', error);
+          }
+        }
+        setIsLoadingPermission(false);
+      });
+
+      return () => unsubscribe();
+    };
+
+    fetchUserPermission();
+  }, []);
+
+  // Check if user has access to a specific menu item
+  const hasAccess = (requiredPermissions) => {
+    if (userPermission === 4) return true; // All permissions
+    if (userPermission === null) return false; // No permission loaded
+    return requiredPermissions.includes(userPermission);
+  };
 
   const supportMenuItems = [
     {
@@ -30,60 +77,70 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       path: "/support/dashboard",
       icon: HomeIcon,
       description: "Overview & Stats",
+      permissions: [1, 2, 3, 4], // All users can access dashboard
     },
     {
       name: "View Tickets",
       path: "/support/tickets",
       icon: TicketIcon,
       description: "Manage Support Tickets",
+      permissions: [1, 2, 3, 4], // All users can view tickets
     },
     {
       name: "Reviews",
       path: "/support/reviews",
       icon: StarIcon,
       description: "Customer Reviews",
+      permissions: [2, 4], // Only Reviews and All permissions
     },
     {
       name: "Chat & Email",
       path: "/support/chat-email",
       icon: ChatBubbleLeftRightIcon,
       description: "Live Support",
+      permissions: [1, 2, 3, 4], // All users can access chat
     },
     {
       name: "Communications",
       path: "/support/communications",
       icon: ChatBubbleLeftRightIcon,
       description: "Chat with System Admin & Support Agents",
+      permissions: [1, 2, 3, 4], // All users can access communications
     },
     {
       name: "Resolve Complaints",
       path: "/support/resolve-complaint",
       icon: ExclamationTriangleIcon,
       description: "Handle Complaints",
+      permissions: [3, 4], // Only Complaints and All permissions
     },
     {
       name: "Verifications",
       path: "/support/verifications",
       icon: DocumentTextIcon,
       description: "Manage Verifications",
+      permissions: [1, 4], // Only Verification and All permissions
     },
     {
       name: "Lost Items",
       path: "/support/lost-item-tracker",
       icon: ArchiveBoxXMarkIcon,
       description: "Track Lost Items",
+      permissions: [1, 2, 3, 4], // All users can access lost items
     },
     {
       name: "Panic Alerts",
       path: "/support/panic-alerts",
       icon: ShieldExclamationIcon,
       description: "Emergency Response",
+      permissions: [1, 2, 3, 4], // All users can access panic alerts
     },
     {
       name: "Profile",
       path: "/support/profile",
       icon: UserIcon,
       description: "Agent Profile",
+      permissions: [1, 2, 3, 4], // All users can access profile
     },
   ];
 
@@ -167,58 +224,83 @@ const SupportSidebar = ({ isOpen, onClose }) => {
 
         {/* Navigation Items */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          {supportMenuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const Icon = item.icon;
+          {isLoadingPermission ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+          ) : (
+            supportMenuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              const hasPermission = hasAccess(item.permissions);
 
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                onClick={onClose}
-                className={`group flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-800 hover:text-primary-600 dark:hover:text-primary-400 hover:shadow-md"
-                }`}
-              >
-                <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-lg mr-3 transition-colors duration-200 ${
+              if (!hasPermission) {
+                return (
+                  <div
+                    key={item.name}
+                    className="group flex items-center px-3 py-3 rounded-xl text-sm font-medium opacity-50 cursor-not-allowed"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg mr-3 bg-gray-100 dark:bg-secondary-700">
+                      <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-400">
+                        {item.name}
+                      </div>
+                      <div className="text-xs mt-0.5 text-gray-400">
+                        Access Restricted
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  onClick={onClose}
+                  className={`group flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "bg-white/20"
-                      : "bg-gray-100 dark:bg-secondary-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20"
+                      ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-800 hover:text-primary-600 dark:hover:text-primary-400 hover:shadow-md"
                   }`}
                 >
-                  <Icon
-                    className={`h-5 w-5 ${
-                      isActive
-                        ? "text-white"
-                        : "text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400"
-                    }`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
                   <div
-                    className={`font-semibold ${isActive ? "text-white" : ""}`}
-                  >
-                    {item.name}
-                  </div>
-                  <div
-                    className={`text-xs mt-0.5 ${
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg mr-3 transition-colors duration-200 ${
                       isActive
-                        ? "text-white/80"
-                        : "text-gray-500 dark:text-gray-400 group-hover:text-primary-500 dark:group-hover:text-primary-400"
+                        ? "bg-white/20"
+                        : "bg-gray-100 dark:bg-secondary-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20"
                     }`}
                   >
-                    {item.description}
+                    <Icon
+                      className={`h-5 w-5 ${
+                        isActive
+                          ? "text-white"
+                          : "text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400"
+                      }`}
+                    />
                   </div>
-                </div>
-                {/* {isActive && (
-                  <div className="w-2 h-2 bg-white rounded-full shadow-sm"></div>
-                )} */}
-              </Link>
-            );
-          })}
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={`font-semibold ${isActive ? "text-white" : ""}`}
+                    >
+                      {item.name}
+                    </div>
+                    <div
+                      className={`text-xs mt-0.5 ${
+                        isActive
+                          ? "text-white/80"
+                          : "text-gray-500 dark:text-gray-400 group-hover:text-primary-500 dark:group-hover:text-primary-400"
+                      }`}
+                    >
+                      {item.description}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })
+          )}
         </nav>
 
         {/* Footer */}
