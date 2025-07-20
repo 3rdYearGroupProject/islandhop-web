@@ -1,331 +1,388 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FiMapPin, FiUsers, FiCalendar, FiDollarSign, FiStar, FiArrowRight, FiCheck, FiX } from 'react-icons/fi';
-import { PoolsApi } from '../../api/poolsApi';
-import { useAuth } from '../../hooks/useAuth';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Users, 
+  Calendar, 
+  MapPin, 
+  Star,
+  Camera,
+  CheckCircle
+} from 'lucide-react';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
+import PoolCard from '../../components/PoolCard';
 import JoinPoolModal from '../../components/JoinPoolModal';
+import PoolsApi from '../../api/poolsApi';
+import { getUserUID } from '../../utils/userStorage';
+import { useAuth } from '../../hooks/useAuth';
 
 const TripSuggestionsPage = () => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
-  const [selectedPool, setSelectedPool] = useState(null);
-  const [finalizingGroup, setFinalizingGroup] = useState(null);
+  // Get data from PoolItineraryPage
+  const {
+    tripId,
+    groupId,
+    tripName,
+    startDate,
+    endDate,
+    destinations,
+    terrains,
+    activities,
+    itinerary,
+    userUid,
+    suggestions = [],
+    totalSuggestions = 0,
+    hasSuggestions = false,
+    backendResponse
+  } = location.state || {};
 
-  // Get trip data from navigation state
-  const tripData = location.state?.tripData;
-  const groupId = location.state?.groupId;
+  const [isFinalizingTrip, setIsFinalizingTrip] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [selectedTripToJoin, setSelectedTripToJoin] = useState(null);
+  const [isJoining, setIsJoining] = useState(false);
+
+  console.log('🎯 ===== TRIP SUGGESTIONS PAGE INITIALIZATION =====');
+  console.log('🎯 Received state from PoolItineraryPage:', location.state);
+  console.log('🎯 Trip information:');
+  console.log('  - tripId:', tripId);
+  console.log('  - groupId:', groupId);
+  console.log('  - tripName:', tripName);
+  console.log('  - startDate:', startDate);
+  console.log('  - endDate:', endDate);
+  console.log('  - destinations:', destinations);
+  console.log('  - userUid:', userUid);
+  console.log('🎯 Suggestions information:');
+  console.log('  - suggestions count:', suggestions?.length || 0);
+  console.log('  - totalSuggestions:', totalSuggestions);
+  console.log('  - hasSuggestions:', hasSuggestions);
+  console.log('  - suggestions data:', suggestions);
+  console.log('🎯 Backend response:', backendResponse);
+  console.log('🎯 ===== END INITIALIZATION =====');
 
   useEffect(() => {
-    if (tripData && groupId && user) {
-      fetchSuggestions();
-    } else {
-      setError('Missing trip data or user information');
-      setLoading(false);
-    }
-  }, [tripData, groupId, user]);
-
-  const fetchSuggestions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const result = await PoolsApi.saveTripAndGetSuggestions(groupId, {
-        userId: user.uid,
-        tripDetails: tripData,
-        optionalField: 'suggestion_request'
-      });
-
-      setSuggestions(result.suggestions || []);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleJoinExistingPool = (pool) => {
-    setSelectedPool(pool);
-    setJoinModalOpen(true);
-  };
-
-  const handleJoinSuccess = async (result) => {
-    console.log('Join request sent:', result);
-    alert('Join request sent successfully! All group members must approve before you can join.');
-    setJoinModalOpen(false);
-    setSelectedPool(null);
-  };
-
-  const handleFinalizeNewGroup = async () => {
-    if (!groupId || !user) {
-      alert('Missing group information');
+    // Redirect if no required data
+    if (!tripId || !groupId || !tripName) {
+      console.warn('⚠️ Missing required trip data, redirecting to pool preferences');
+      navigate('/pool-preferences');
       return;
     }
+  }, [tripId, groupId, tripName, navigate]);
 
-    try {
-      setFinalizingGroup(groupId);
+  // Transform suggestions to PoolCard format
+  const transformSuggestionToPoolFormat = (suggestion) => {
+    return {
+      id: suggestion.groupId || suggestion.id,
+      name: suggestion.groupName || suggestion.name || 'Adventure Trip',
+      image: suggestion.image || '/api/placeholder/400/250',
+      price: suggestion.estimatedCost || 'Price TBD',
+      owner: suggestion.organizer || 'Group Organizer',
+      destinations: suggestion.destinations?.join(', ') || suggestion.baseCity || 'Sri Lanka',
+      date: suggestion.startDate && suggestion.endDate 
+        ? `${formatDate(suggestion.startDate)} - ${formatDate(suggestion.endDate)}`
+        : 'Dates TBD',
+      duration: suggestion.tripDuration || calculateDuration(suggestion.startDate, suggestion.endDate),
+      participants: suggestion.memberCount || suggestion.currentMembers || 0,
+      maxParticipants: suggestion.maxMembers || suggestion.maxParticipants || 6,
+      status: suggestion.status || 'open',
+      highlights: suggestion.preferredActivities || suggestion.activities || [],
       
-      const result = await PoolsApi.finalizeGroup(groupId, {
-        userId: user.uid,
+      // Additional compatibility data
+      compatibilityScore: suggestion.compatibilityScore,
+      compatibilityDetails: suggestion.compatibilityDetails,
+      
+      // Original suggestion data for join operations
+      originalGroup: suggestion
+    };
+  };
+
+  // Helper functions
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch {
+      return 'Date TBD';
+    }
+  };
+
+  const calculateDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return null;
+    
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return `${diffDays} days`;
+    } catch {
+      return null;
+    }
+  };
+
+  // Handle creating user's own trip (finalize)
+  const handleCreateMyTrip = async () => {
+    console.log('🎯 ===== FINALIZING USER\'S OWN TRIP =====');
+    console.log('🎯 Trip and user information:');
+    console.log('  - groupId:', groupId);
+    console.log('  - tripId:', tripId);
+    console.log('  - userUid (from state):', userUid);
+    console.log('  - user?.uid (from auth):', user?.uid);
+    console.log('  - getUserUID() (from storage):', getUserUID());
+    console.log('  - user object:', user);
+    console.log('🎯 Group creation context (from backend response):');
+    console.log('  - backendResponse:', backendResponse);
+    
+    setIsFinalizingTrip(true);
+    
+    try {
+      // Use the same getUserUID() function that was used for group creation
+      const currentUserId = getUserUID() || user?.uid || userUid;
+      
+      const finalizeData = {
+        groupId: groupId,  // Include groupId in the request body
+        userId: currentUserId,
         action: 'finalize'
-      });
-
-      alert('Group finalized successfully! Your new travel group is now active.');
-      navigate('/trips'); // Navigate to user's trips page
+      };
       
+      console.log('🎯 ===== FINALIZE REQUEST DETAILS =====');
+      console.log('🎯 Request URL will be: /groups/{groupId}/finalize');
+      console.log('🎯 Group ID in URL:', groupId);
+      console.log('🎯 Request body data:', finalizeData);
+      console.log('🎯 User ID being sent:', finalizeData.userId);
+      console.log('🎯 Action being sent:', finalizeData.action);
+      console.log('🎯 getUserUID():', getUserUID());
+      console.log('🎯 user?.uid:', user?.uid);
+      console.log('🎯 userUid:', userUid);
+      console.log('🎯 Final userId chosen:', currentUserId);
+      console.log('🎯 ===== END FINALIZE REQUEST DETAILS =====');
+      
+      console.log('🎯 Calling PoolsApi.finalizeGroup with groupId:', groupId, 'and data:', finalizeData);
+      
+      const response = await PoolsApi.finalizeGroup(groupId, finalizeData);
+      
+      console.log('🎯 ===== FINALIZE RESPONSE ANALYSIS =====');
+      console.log('🎯 Finalize response:', response);
+      console.log('🎯 Response success:', response?.success);
+      console.log('🎯 Response status:', response?.status);
+      console.log('🎯 Response message:', response?.message);
+      console.log('🎯 ===== END FINALIZE RESPONSE ANALYSIS =====');
+      
+      if (response.success || response.status === 'success') {
+        console.log('✅ Trip finalized successfully');
+        
+        alert('Trip created and finalized successfully!');
+        
+        // Navigate to pools page with success message
+        navigate('/pools', {
+          state: {
+            newPool: {
+              id: groupId || tripId || Date.now(),
+              tripId: tripId,
+              groupId: groupId,
+              name: tripName,
+              startDate: startDate,
+              endDate: endDate,
+              terrains: terrains,
+              activities: activities,
+              itinerary: itinerary,
+              createdAt: new Date(),
+              status: 'finalized'
+            },
+            message: 'Trip created and finalized successfully!'
+          }
+        });
+      } else {
+        throw new Error(response.message || 'Failed to finalize trip');
+      }
     } catch (error) {
-      console.error('Error finalizing group:', error);
-      alert(`Failed to finalize group: ${error.message}`);
-    } finally {
-      setFinalizingGroup(null);
-    }
-  };
-
-  const handleCancelGroup = async (reason) => {
-    if (!groupId || !user) {
-      alert('Missing group information');
-      return;
-    }
-
-    try {
-      setFinalizingGroup(groupId);
+      console.error('❌ ===== FINALIZE ERROR ANALYSIS =====');
+      console.error('❌ Error finalizing trip:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ ===== END FINALIZE ERROR ANALYSIS =====');
       
-      const result = await PoolsApi.finalizeGroup(groupId, {
-        userId: user.uid,
-        action: 'cancel',
-        reason: reason || 'User chose to join existing group'
-      });
-
-      console.log('Group cancelled:', result);
-      
-    } catch (error) {
-      console.error('Error cancelling group:', error);
-      // Don't show error to user as this might be called when joining another group
-    } finally {
-      setFinalizingGroup(null);
+      alert(`Error finalizing trip: ${error.message}`);
     }
+    
+    setIsFinalizingTrip(false);
   };
 
-  const handleGoBack = () => {
-    navigate(-1);
+  // Handle joining a similar trip
+  const handleJoinSimilarTrip = (suggestionPool) => {
+    console.log('🤝 ===== JOINING SIMILAR TRIP =====');
+    console.log('🤝 Selected trip to join:', suggestionPool);
+    console.log('🤝 Original group data:', suggestionPool.originalGroup);
+    console.log('🤝 ===== END JOIN SIMILAR TRIP =====');
+    
+    setSelectedTripToJoin(suggestionPool);
+    setShowJoinModal(true);
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900">Please log in</h3>
-          <p className="text-gray-600">You need to be logged in to view trip suggestions.</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Log In
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Handle pool card click (view details)
+  const handlePoolClick = (poolData) => {
+    console.log('👀 Pool card clicked for details:', poolData);
+    // Could navigate to detailed trip view in the future
+  };
+
+  // Handle successful join
+  const handleJoinSuccess = () => {
+    console.log('✅ Successfully joined similar trip');
+    setShowJoinModal(false);
+    
+    alert('Successfully joined similar trip!');
+    
+    // Navigate to pools page
+    navigate('/pools', {
+      state: {
+        message: 'Successfully joined similar trip!'
+      }
+    });
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    navigate(-1); // Go back to PoolItineraryPage
+  };
+
+  // Transform suggestions to pool format
+  const transformedSuggestions = suggestions.map(transformSuggestionToPoolFormat);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  Trip Suggestions
-                </h1>
-                <p className="text-gray-600">
-                  Found similar groups for your trip "{tripData?.tripName || 'Unnamed Trip'}"
-                </p>
+      <Navbar />
+      
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to Itinerary
+            </button>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Trip Suggestions for "{tripName}"
+            </h1>
+            <p className="text-gray-600 mb-4">
+              We've saved your trip and found {totalSuggestions} similar trips. 
+              You can join an existing group or continue with your own trip.
+            </p>
+            
+            {/* Trip Summary */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 mb-3">Your Trip Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <span><strong>Dates:</strong> {formatDate(startDate)} - {formatDate(endDate)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <span><strong>Destinations:</strong> {destinations?.map(d => d.name).join(', ') || 'Various'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span><strong>Activities:</strong> {activities?.slice(0, 2).join(', ') || 'Various'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-blue-600" />
+                  <span><strong>Terrains:</strong> {terrains?.slice(0, 2).join(', ') || 'Various'}</span>
+                </div>
               </div>
-              <button
-                onClick={handleGoBack}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                ← Back
-              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
-            <span className="ml-3 text-gray-600">Finding similar groups...</span>
+        {/* Similar Trips Section */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Similar Trips Available {totalSuggestions > 0 && `(${totalSuggestions} found)`}
+            </h2>
           </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <div className="text-red-600 mb-4">{error}</div>
+
+          {transformedSuggestions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {transformedSuggestions.map((pool) => (
+                <PoolCard 
+                  key={pool.id} 
+                  pool={pool} 
+                  onJoinPool={handleJoinSimilarTrip}
+                  onClick={handlePoolClick}
+                  buttonText="Request to Join"
+                  showCompatibilityScore={true}
+                  compatibilityScore={pool.compatibilityScore}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Similar Trips Found</h3>
+              <p className="text-gray-600 mb-6">
+                No existing trips match your preferences right now. 
+                You can create your own trip with your exact preferences!
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="border-t border-gray-200 pt-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={fetchSuggestions}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={handleCreateMyTrip}
+              disabled={isFinalizingTrip}
+              className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Try Again
+              {isFinalizingTrip ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Finalizing Trip...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Create My Trip
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleBack}
+              className="bg-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-400 transition-colors font-medium"
+            >
+              Back to Itinerary
             </button>
           </div>
-        ) : (
-          <>
-            {/* Trip Summary */}
-            <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Trip Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-medium text-gray-900">Trip Name</h3>
-                  <p className="text-gray-600">{tripData?.tripName || 'Unnamed Trip'}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Places to Visit</h3>
-                  <p className="text-gray-600">
-                    {tripData?.places?.join(', ') || 'No places specified'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Suggestions */}
-            {suggestions.length > 0 ? (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                  Similar Groups Available
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {suggestions.map((suggestion) => (
-                    <div key={suggestion.groupId} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {suggestion.groupName}
-                          </h3>
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                            Available
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-3 mb-6">
-                          <div className="flex items-center text-gray-600">
-                            <FiMapPin className="w-4 h-4 mr-2" />
-                            <span className="text-sm">{suggestion.baseCity}</span>
-                          </div>
-                          
-                          {suggestion.memberCount && (
-                            <div className="flex items-center text-gray-600">
-                              <FiUsers className="w-4 h-4 mr-2" />
-                              <span className="text-sm">
-                                {suggestion.memberCount}/{suggestion.maxMembers || 'N/A'} members
-                              </span>
-                            </div>
-                          )}
-                          
-                          {suggestion.startDate && (
-                            <div className="flex items-center text-gray-600">
-                              <FiCalendar className="w-4 h-4 mr-2" />
-                              <span className="text-sm">
-                                {new Date(suggestion.startDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                          
-                          {suggestion.estimatedCost && (
-                            <div className="flex items-center text-gray-600">
-                              <FiDollarSign className="w-4 h-4 mr-2" />
-                              <span className="text-sm">${suggestion.estimatedCost}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <button
-                          onClick={() => handleJoinExistingPool(suggestion)}
-                          className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                        >
-                          <FiArrowRight className="w-4 h-4 mr-2" />
-                          Request to Join
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12 mb-8">
-                <FiUsers className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Similar Groups Found
-                </h3>
-                <p className="text-gray-600">
-                  No existing groups match your trip preferences. You can create a new group instead.
-                </p>
-              </div>
-            )}
-
-            {/* Create New Group Option */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 border border-blue-200">
-              <div className="text-center">
-                <FiUsers className="mx-auto h-12 w-12 text-blue-600 mb-4" />
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Create Your Own Group
-                </h2>
-                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                  {suggestions.length > 0 
-                    ? "Didn't find the perfect match? Create your own travel group and invite others to join your adventure!"
-                    : "Start your own travel group and connect with like-minded travelers for your trip."
-                  }
-                </p>
-                
-                <div className="flex items-center justify-center space-x-4">
-                  <button
-                    onClick={handleGoBack}
-                    className="flex items-center px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                  >
-                    <FiX className="w-4 h-4 mr-2" />
-                    Go Back
-                  </button>
-                  
-                  <button
-                    onClick={handleFinalizeNewGroup}
-                    disabled={finalizingGroup === groupId}
-                    className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    {finalizingGroup === groupId ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    ) : (
-                      <FiCheck className="w-4 h-4 mr-2" />
-                    )}
-                    Create New Group
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+          <p className="text-center text-sm text-gray-500 mt-3">
+            You can create your own trip or join one of the similar trips above
+          </p>
+        </div>
       </div>
 
-      {/* Join Pool Modal */}
+      {/* Join Modal */}
       <JoinPoolModal
-        open={joinModalOpen}
-        onClose={() => {
-          setJoinModalOpen(false);
-          setSelectedPool(null);
-        }}
-        poolData={selectedPool}
-        onSuccess={(result) => {
-          handleJoinSuccess(result);
-          // Cancel the new group since user is joining existing one
-          handleCancelGroup('User joined existing group');
-        }}
+        show={showJoinModal}
+        onClose={() => setShowJoinModal(false)}
+        pool={selectedTripToJoin}
+        onJoinSuccess={handleJoinSuccess}
       />
+
+      <Footer />
     </div>
   );
 };

@@ -712,10 +712,61 @@ export class PoolsApi {
    */
   static async saveTripAndGetSuggestions(groupId, tripData) {
     try {
-      console.log('💾 Saving trip and getting suggestions:', { groupId, tripData });
+      console.log('💾 ===== SAVE TRIP AND GET SUGGESTIONS API CALL =====');
+      console.log('💾 Group ID:', groupId);
+      console.log('💾 Raw tripData received:', tripData);
+      console.log('💾 tripData type:', typeof tripData);
+      console.log('💾 tripData keys:', Object.keys(tripData || {}));
+      
+      // Log each property individually
+      if (tripData) {
+        console.log('💾 tripData.userId:', tripData.userId);
+        console.log('💾 tripData.tripId:', tripData.tripId);
+        console.log('💾 tripData.tripData:', tripData.tripData);
+        console.log('💾 tripData.tripDetails:', tripData.tripDetails);
+        console.log('💾 tripData.optionalField:', tripData.optionalField);
+        
+        // If tripData has nested structure, log it too
+        if (tripData.tripData) {
+          console.log('💾 tripData.tripData structure:', {
+            keys: Object.keys(tripData.tripData),
+            name: tripData.tripData.name,
+            tripName: tripData.tripData.tripName,
+            startDate: tripData.tripData.startDate,
+            endDate: tripData.tripData.endDate,
+            destinations: tripData.tripData.destinations,
+            destinationsType: Array.isArray(tripData.tripData.destinations) ? 'Array' : typeof tripData.tripData.destinations,
+            destinationsLength: tripData.tripData.destinations?.length,
+            terrains: tripData.tripData.terrains,
+            activities: tripData.tripData.activities,
+            places: tripData.tripData.places,
+            placesType: Array.isArray(tripData.tripData.places) ? 'Array' : typeof tripData.tripData.places,
+            itinerary: tripData.tripData.itinerary ? 'Present' : 'Not present'
+          });
+          
+          // Log destinations in detail if they exist
+          if (tripData.tripData.destinations) {
+            console.log('💾 Destinations detailed analysis:');
+            console.log('  - Type:', Array.isArray(tripData.tripData.destinations) ? 'Array' : typeof tripData.tripData.destinations);
+            console.log('  - Length:', tripData.tripData.destinations?.length);
+            console.log('  - Content:', tripData.tripData.destinations);
+            if (Array.isArray(tripData.tripData.destinations)) {
+              tripData.tripData.destinations.forEach((dest, index) => {
+                console.log(`  - [${index}]:`, dest, '(type:', typeof dest, ')');
+              });
+            }
+          }
+        }
+      }
       
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
       const fullUrl = `${baseUrl}/api/v1/public-pooling/groups/${groupId}/save-trip`;
+      
+      console.log('💾 Full API URL:', fullUrl);
+      console.log('💾 Request body (stringified):', JSON.stringify(tripData, null, 2));
+      
+      const requestPayload = JSON.stringify(tripData);
+      console.log('💾 Final request payload length:', requestPayload.length);
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -724,24 +775,48 @@ export class PoolsApi {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(tripData)
+        body: requestPayload
       });
 
+      console.log('💾 Response status:', response.status);
+      console.log('💾 Response status text:', response.statusText);
+      console.log('💾 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const errorText = await response.text();
+        console.log('💾❌ Error response body:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Unknown error' };
+        }
+        
+        console.log('💾❌ Parsed error data:', errorData);
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log('💾 Trip saved and suggestions received:', result);
+      const responseText = await response.text();
+      console.log('💾 Raw response text:', responseText);
+      
+      const result = JSON.parse(responseText);
+      console.log('💾 Parsed response result:', result);
+      console.log('💾 Response result keys:', Object.keys(result || {}));
       
       // Return the result with proper structure expected by frontend
-      return {
+      const finalResult = {
         success: true,
         ...result
       };
+      
+      console.log('💾 Final result being returned:', finalResult);
+      console.log('💾 ===== END SAVE TRIP API CALL =====');
+      
+      return finalResult;
     } catch (error) {
       console.error('💾❌ Error saving trip and getting suggestions:', error);
+      console.error('💾❌ Error stack:', error.stack);
       throw new Error(`Failed to save trip and get suggestions: ${error.message}`);
     }
   }
@@ -757,10 +832,38 @@ export class PoolsApi {
    */
   static async finalizeGroup(groupId, finalizeData) {
     try {
-      console.log('🏁 Finalizing group:', { groupId, finalizeData });
+      console.log('🏁 ===== FINALIZE GROUP REQUEST DETAILS =====');
+      console.log('🏁 Group ID parameter:', groupId);
+      console.log('🏁 Group ID type:', typeof groupId);
+      console.log('🏁 Finalize data received:', finalizeData);
+      console.log('🏁 Finalize data type:', typeof finalizeData);
+      console.log('🏁 Finalize data keys:', Object.keys(finalizeData || {}));
+      
+      // Log each property individually
+      if (finalizeData) {
+        console.log('🏁 finalizeData.userId:', finalizeData.userId, '(type:', typeof finalizeData.userId, ')');
+        console.log('🏁 finalizeData.groupId:', finalizeData.groupId, '(type:', typeof finalizeData.groupId, ')');
+        console.log('🏁 finalizeData.action:', finalizeData.action, '(type:', typeof finalizeData.action, ')');
+        console.log('🏁 finalizeData.reason:', finalizeData.reason, '(type:', typeof finalizeData.reason, ')');
+      }
       
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
       const fullUrl = `${baseUrl}/api/v1/public-pooling/groups/${groupId}/finalize`;
+      
+      console.log('🏁 ===== FINALIZE GROUP HTTP REQUEST =====');
+      console.log('🏁 Full API URL:', fullUrl);
+      console.log('🏁 HTTP Method: POST');
+      console.log('🏁 Request headers:');
+      console.log('  - Accept: application/json');
+      console.log('  - Content-Type: application/json');
+      console.log('  - credentials: include');
+      console.log('🏁 Request body (raw object):', finalizeData);
+      console.log('🏁 Request body (stringified):', JSON.stringify(finalizeData, null, 2));
+      
+      const requestPayload = JSON.stringify(finalizeData);
+      console.log('🏁 Final request payload:', requestPayload);
+      console.log('🏁 Final request payload length:', requestPayload.length);
+      console.log('🏁 ===== SENDING REQUEST =====');
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -769,24 +872,86 @@ export class PoolsApi {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(finalizeData)
+        body: requestPayload
       });
 
+      console.log('🏁 ===== FINALIZE GROUP RESPONSE RECEIVED =====');
+      console.log('🏁 Response status:', response.status);
+      console.log('🏁 Response status text:', response.statusText);
+      console.log('🏁 Response ok:', response.ok);
+      console.log('🏁 Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('🏁 ===== PROCESSING RESPONSE =====');
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const errorText = await response.text();
+        console.log('🏁❌ ===== ERROR RESPONSE ANALYSIS =====');
+        console.log('🏁❌ Error response status:', response.status);
+        console.log('🏁❌ Error response body (raw):', errorText);
+        console.log('🏁❌ Error response length:', errorText.length);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+          console.log('🏁❌ Error response parsed successfully:', errorData);
+        } catch (parseError) {
+          console.log('🏁❌ Error parsing response JSON:', parseError.message);
+          errorData = { message: errorText || 'Unknown error' };
+        }
+        
+        console.log('🏁❌ Final parsed error data:', errorData);
+        console.log('🏁❌ Error message to throw:', errorData.message || `HTTP ${response.status}`);
+        console.log('🏁❌ ===== END ERROR ANALYSIS =====');
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log('🏁 Group finalized successfully:', result);
+      const responseText = await response.text();
+      console.log('🏁✅ ===== SUCCESS RESPONSE ANALYSIS =====');
+      console.log('🏁✅ Raw response text:', responseText);
+      console.log('🏁✅ Response text length:', responseText.length);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('🏁✅ Response parsed successfully:', result);
+        console.log('🏁✅ Response result type:', typeof result);
+        console.log('🏁✅ Response result keys:', Object.keys(result || {}));
+        
+        // Log specific response properties
+        if (result) {
+          console.log('🏁✅ result.status:', result.status);
+          console.log('🏁✅ result.success:', result.success);
+          console.log('🏁✅ result.message:', result.message);
+          console.log('🏁✅ result.data:', result.data);
+        }
+        console.log('🏁✅ ===== END SUCCESS ANALYSIS =====');
+      } catch (parseError) {
+        console.log('🏁❌ Error parsing success response JSON:', parseError.message);
+        console.log('🏁❌ Falling back to text response');
+        result = { status: 'success', message: responseText };
+      }
       
       // Return the result with proper structure expected by frontend
-      return {
+      const finalResult = {
         success: true,
         ...result
       };
+      
+      console.log('🏁✅ ===== RETURNING SUCCESS RESULT =====');
+      console.log('🏁✅ Final result being returned:', finalResult);
+      console.log('🏁✅ Final result type:', typeof finalResult);
+      console.log('🏁✅ Final result keys:', Object.keys(finalResult));
+      console.log('🏁✅ ===== END FINALIZE GROUP API CALL SUCCESS =====');
+      
+      return finalResult;
     } catch (error) {
-      console.error('🏁❌ Error finalizing group:', error);
+      console.error('🏁❌ ===== FINALIZE GROUP API ERROR CAUGHT =====');
+      console.error('🏁❌ Error object:', error);
+      console.error('🏁❌ Error type:', typeof error);
+      console.error('🏁❌ Error name:', error.name);
+      console.error('🏁❌ Error message:', error.message);
+      console.error('🏁❌ Error stack:', error.stack);
+      console.error('🏁❌ Error constructor:', error.constructor.name);
+      console.error('🏁❌ ===== THROWING ENHANCED ERROR =====');
       throw new Error(`Failed to finalize group: ${error.message}`);
     }
   }

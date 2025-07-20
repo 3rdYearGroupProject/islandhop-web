@@ -9,6 +9,7 @@ import AddTransportationModal from '../../components/AddTransportationModal';
 import { tripPlanningApi } from '../../api/axios';
 import { PoolsApi } from '../../api/poolsApi';
 import { useAuth } from '../../hooks/useAuth';
+import { getUserUID } from '../../utils/userStorage';
 import JoinPoolModal from '../../components/JoinPoolModal';
 
 import Navbar from '../../components/Navbar';
@@ -882,7 +883,7 @@ const PoolItineraryPage = () => {
   };
 
   const handleSaveTrip = async () => {
-    console.log('💾 Starting comprehensive trip creation process...');
+    console.log('💾 Starting trip save process to get suggestions...');
     
     setIsSavingTrip(true);
     setIsLoadingSuggestions(true);
@@ -901,47 +902,119 @@ const PoolItineraryPage = () => {
     }
 
     try {
+      // Fix destinations data structure - backend expects simple string array or Map format
+      const destinationsList = Object.values(destinations)
+        .filter(dest => dest && dest.name) // Filter out empty destinations
+        .map(dest => dest.name); // Extract just the name string
+      
+      // If no destinations with names, create a simple array from destination names
+      const finalDestinations = destinationsList.length > 0 
+        ? destinationsList 
+        : Object.values(destinations).map(dest => typeof dest === 'string' ? dest : dest?.name).filter(Boolean);
+      
+      console.log('🏙️ ===== DESTINATIONS DATA PREPARATION =====');
+      console.log('🏙️ Raw destinations object:', destinations);
+      console.log('🏙️ Object.values(destinations):', Object.values(destinations));
+      console.log('🏙️ Filtered destination names:', destinationsList);
+      console.log('🏙️ Final destinations array:', finalDestinations);
+      console.log('🏙️ ===== END DESTINATIONS PREPARATION =====');
+      
       // Prepare trip data for backend in the correct nested structure
       // Backend expects "tripData" not "tripDetails"
       const tripData = {
         name: normalizedTripName, // Backend expects "name" not "tripName"
         startDate: normalizedDates[0],
         endDate: normalizedDates[normalizedDates.length - 1],
-        destinations: Object.values(destinations),
+        destinations: finalDestinations, // Send as simple string array
         terrains: normalizedTerrains || [],
         activities: normalizedActivities || [],
         itinerary: itinerary,
-        places: Object.values(destinations).map(dest => dest.name || dest).filter(Boolean)
+        places: finalDestinations // Use the same cleaned destinations for places
       };
 
       const requestData = {
-        userId: user?.uid || userUid,
+        userId: getUserUID() || user?.uid || userUid,
+        tripId: tripId, // Add the tripId that was received when the group was created
+        groupId: groupId, // Include groupId in request body as well
         tripData: tripData, // Changed from tripDetails to tripData to match backend
         optionalField: 'save_and_suggest'
       };
 
-      console.log('� Saving trip and getting suggestions...', { groupId, requestData });
+      console.log('🔍 ===== PREPARING TRIP DATA FOR SAVE-TRIP API =====');
+      console.log('🔍 User ID comparison:');
+      console.log('  - getUserUID():', getUserUID());
+      console.log('  - user?.uid:', user?.uid);
+      console.log('  - userUid (from state):', userUid);
+      console.log('  - Final userId chosen:', getUserUID() || user?.uid || userUid);
+      console.log('🔍 Raw inputs:');
+      console.log('  - normalizedTripName:', normalizedTripName);
+      console.log('  - normalizedDates:', normalizedDates);
+      console.log('  - destinations:', destinations);
+      console.log('  - normalizedTerrains:', normalizedTerrains);
+      console.log('  - normalizedActivities:', normalizedActivities);
+      console.log('  - itinerary length:', itinerary ? itinerary.length : 'null');
+      console.log('  - userUid:', userUid);
+      console.log('  - user?.uid:', user?.uid);
+      console.log('  - groupId:', groupId);
+      console.log('  - tripId:', tripId); // Add tripId to the logging
+      
+      console.log('🔍 Constructed tripData object:', tripData);
+      console.log('🔍 Final requestData object:', requestData);
+      console.log('🔍 JSON stringified requestData:', JSON.stringify(requestData, null, 2));
+      console.log('🔍 ===== END TRIP DATA PREPARATION =====');
+
+      console.log('🚀 Saving trip and getting suggestions...', { groupId, requestData });
 
       // Call the backend API to save trip and get similar trip suggestions
       const response = await PoolsApi.saveTripAndGetSuggestions(groupId, requestData);
       
-      // Backend response structure: { tripId, groupId, similarTrips, totalSuggestions, message, hasSimilarTrips }
-      if (response && response.similarTrips && response.similarTrips.length > 0) {
-        console.log('✅ Found similar trips:', response.similarTrips);
-        setSimilarTrips(response.similarTrips);
-        setShowSimilarTrips(true);
-      } else {
-        console.log('ℹ️ No similar trips found, proceeding with trip finalization');
-        // No similar trips found, directly finalize the trip
-        handleFinalizeTrip();
-        return;
-      }
+      console.log('📊 ===== SAVE-TRIP RESPONSE ANALYSIS =====');
+      console.log('📊 Full response object:', response);
+      console.log('📊 Response type:', typeof response);
+      console.log('📊 Response keys:', Object.keys(response || {}));
+      console.log('📊 Response status:', response?.status);
+      console.log('📊 Response success:', response?.success);
+      console.log('📊 Response message:', response?.message);
+      console.log('📊 Similar trips count:', response?.similarTrips?.length || 0);
+      console.log('📊 Total suggestions:', response?.totalSuggestions);
+      console.log('📊 Has similar trips:', response?.hasSimilarTrips);
+      console.log('📊 Similar trips data:', response?.similarTrips);
+      console.log('📊 ===== END SAVE-TRIP RESPONSE ANALYSIS =====');
+      
+      // Always navigate to suggestions page, whether we have suggestions or not
+      console.log('🔄 Navigating to trip suggestions page...');
+      navigate('/trip-suggestions', {
+        state: {
+          // Trip information
+          tripId: tripId,
+          groupId: groupId,
+          tripName: normalizedTripName,
+          startDate: normalizedDates[0],
+          endDate: normalizedDates[normalizedDates.length - 1],
+          destinations: Object.values(destinations),
+          terrains: normalizedTerrains,
+          activities: normalizedActivities,
+          itinerary: itinerary,
+          userUid: user?.uid || userUid,
+          
+          // Suggestions data from backend
+          suggestions: response?.similarTrips || response?.suggestions || [],
+          totalSuggestions: response?.totalSuggestions || 0,
+          hasSuggestions: response?.hasSimilarTrips || false,
+          
+          // Backend response for debugging
+          backendResponse: response
+        }
+      });
+      
     } catch (error) {
-      console.error('❌ Error saving trip and getting suggestions:', error);
-      alert('Error getting trip suggestions. Would you like to proceed with creating your trip?');
-      // On error, offer to proceed with trip finalization
-      handleFinalizeTrip();
-      return;
+      console.error('❌ ===== SAVE-TRIP ERROR ANALYSIS =====');
+      console.error('❌ Error object:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ ===== END SAVE-TRIP ERROR ANALYSIS =====');
+      
+      alert('Error saving trip and getting suggestions. Please try again.');
     }
 
     setIsSavingTrip(false);
@@ -1306,7 +1379,7 @@ const PoolItineraryPage = () => {
               disabled={isSavingTrip || isLoadingSuggestions}
               className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoadingSuggestions ? 'Finding Similar Trips...' : isSavingTrip ? 'Saving...' : 'Save Trip'}
+              {isLoadingSuggestions ? 'Finding Similar Trips...' : isSavingTrip ? 'Saving...' : 'Save & Find Similar Trips'}
             </button>
           </div>
         </div>

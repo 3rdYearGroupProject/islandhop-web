@@ -18,6 +18,84 @@ import PoolCard from '../../components/PoolCard';
 import PoolsApi from '../../api/poolsApi';
 import { getUserUID } from '../../utils/userStorage';
 
+// Utility function to remove duplicates and sort by compatibility
+const deduplicateAndSortGroups = (groups) => {
+  if (!groups || !Array.isArray(groups)) return [];
+  
+  // Create a map to track unique groups by name and base location
+  const uniqueGroups = new Map();
+  
+  groups.forEach(group => {
+    const key = `${group.groupName?.toLowerCase()}_${group.baseCity?.toLowerCase()}`;
+    
+    // Keep the group with higher compatibility score if duplicates exist
+    if (!uniqueGroups.has(key) || 
+        (group.compatibilityScore && group.compatibilityScore > uniqueGroups.get(key).compatibilityScore)) {
+      uniqueGroups.set(key, group);
+    }
+  });
+  
+  // Convert back to array and sort by compatibility score (highest first)
+  return Array.from(uniqueGroups.values())
+    .sort((a, b) => (b.compatibilityScore || 0) - (a.compatibilityScore || 0));
+};
+
+// Transform compatible groups data to match PoolCard expected format
+const transformGroupToPoolFormat = (group) => {
+  return {
+    // Required PoolCard fields
+    id: group.groupId || group.id,
+    name: group.groupName || 'Adventure Group',
+    image: group.image || '/api/placeholder/400/250', // Default placeholder
+    price: group.estimatedCost || 'Price TBD',
+    owner: group.organizer || 'Group Organizer',
+    destinations: group.baseCity || group.destinations || 'Sri Lanka',
+    date: group.startDate && group.endDate 
+      ? `${formatDate(group.startDate)} - ${formatDate(group.endDate)}`
+      : 'Dates TBD',
+    duration: group.tripDuration || calculateDuration(group.startDate, group.endDate),
+    participants: group.memberCount || group.currentMembers || 0,
+    maxParticipants: group.maxMembers || group.maxParticipants || 6,
+    status: group.status || 'open',
+    highlights: group.preferredActivities || group.activities || [],
+    
+    // Additional compatibility data
+    compatibilityScore: group.compatibilityScore,
+    compatibilityDetails: group.compatibilityDetails,
+    
+    // Original group data for join operations
+    originalGroup: group
+  };
+};
+
+// Helper function to calculate duration between dates
+const calculateDuration = (startDate, endDate) => {
+  if (!startDate || !endDate) return null;
+  
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} days`;
+  } catch {
+    return null;
+  }
+};
+
+// Helper function to format dates
+const formatDate = (dateString) => {
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  } catch {
+    return 'Date TBD';
+  }
+};
+
 const CompatibleGroupsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -61,8 +139,11 @@ const CompatibleGroupsPage = () => {
       const response = await PoolsApi.preCheckCompatibleGroups(preferences);
       
       if (response.status === 'success') {
-        setCompatibleGroups(response.compatibleGroups || []);
-        console.log(`✅ Found ${response.compatibleGroups?.length || 0} compatible groups`);
+        const uniqueGroups = deduplicateAndSortGroups(response.suggestions || []);
+        // Transform groups to match PoolCard format
+        const transformedGroups = uniqueGroups.map(transformGroupToPoolFormat);
+        setCompatibleGroups(transformedGroups);
+        console.log(`✅ Found ${response.suggestions?.length || 0} total groups, ${uniqueGroups.length} unique groups after deduplication`);
       } else {
         throw new Error(response.message || 'Failed to find compatible groups');
       }
@@ -75,9 +156,11 @@ const CompatibleGroupsPage = () => {
     }
   };
 
-  const handleJoinGroup = async (group) => {
+  const handleJoinGroup = async (poolData) => {
     try {
-      setJoiningGroup(group.groupId);
+      // Extract original group data from the transformed pool data
+      const group = poolData.originalGroup || poolData;
+      setJoiningGroup(group.groupId || poolData.id);
       
       const userId = getUserUID();
       if (!userId) {
@@ -86,13 +169,13 @@ const CompatibleGroupsPage = () => {
         return;
       }
 
-      console.log('🤝 Requesting to join group:', group.groupName);
+      console.log('🤝 Requesting to join group:', group.groupName || poolData.name);
       
       // For now, we'll use a simple join request
       // You can expand this to use a proper join request API
-      const result = await PoolsApi.joinPool(group.groupId, userId);
+      const result = await PoolsApi.joinPool(group.groupId || poolData.id, userId);
       
-      alert(`Successfully requested to join ${group.groupName}!`);
+      alert(`Successfully requested to join ${group.groupName || poolData.name}!`);
       
       // Navigate to the group details or pools page
       navigate('/pools');
@@ -103,6 +186,14 @@ const CompatibleGroupsPage = () => {
     } finally {
       setJoiningGroup(null);
     }
+  };
+
+  const handlePoolClick = (poolData) => {
+    // Navigate to group details or show more info
+    const group = poolData.originalGroup || poolData;
+    console.log('👀 View details for group:', group.groupId || poolData.id);
+    // You can navigate to a detailed group view page here
+    // navigate(`/pools/${group.groupId || poolData.id}`);
   };
 
   const handleCreateNewGroup = async () => {
@@ -186,18 +277,6 @@ const CompatibleGroupsPage = () => {
 
   const handleRefresh = () => {
     fetchCompatibleGroups();
-  };
-
-  const formatDate = (dateString) => {
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    } catch {
-      return 'Date TBD';
-    }
   };
 
   const formatPreferences = (items) => {
@@ -339,13 +418,16 @@ const CompatibleGroupsPage = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {compatibleGroups.map((group) => (
-                <CompatibleGroupCard 
-                  key={group.groupId} 
-                  group={group}
-                  onJoin={handleJoinGroup}
-                  isJoining={joiningGroup === group.groupId}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {compatibleGroups.map((pool) => (
+                <PoolCard 
+                  key={pool.id} 
+                  pool={pool} 
+                  onJoinPool={handleJoinGroup}
+                  onClick={handlePoolClick}
+                  buttonText="Request to Join"
+                  showCompatibilityScore={true}
+                  compatibilityScore={pool.compatibilityScore}
                 />
               ))}
             </div>
@@ -354,78 +436,6 @@ const CompatibleGroupsPage = () => {
       </div>
 
       <Footer />
-    </div>
-  );
-};
-
-// Compatible Group Card Component
-const CompatibleGroupCard = ({ group, onJoin, isJoining }) => {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{group.groupName}</h3>
-            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-              Compatible
-            </span>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              <span>{group.baseCity}</span>
-            </div>
-            {group.memberCount !== undefined && (
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>{group.memberCount} members</span>
-              </div>
-            )}
-            {group.rating && (
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <span>{group.rating}/5</span>
-              </div>
-            )}
-          </div>
-          
-          {group.description && (
-            <p className="text-gray-700 text-sm mb-4">{group.description}</p>
-          )}
-        </div>
-        
-        <div className="flex flex-col items-end gap-2">
-          <button
-            onClick={() => onJoin(group)}
-            disabled={isJoining}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isJoining ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Joining...
-              </>
-            ) : (
-              <>
-                <Users className="w-4 h-4" />
-                Request to Join
-              </>
-            )}
-          </button>
-          
-          <button 
-            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1 transition-colors"
-            onClick={() => {
-              // Navigate to group details if available
-              console.log('View details for group:', group.groupId);
-            }}
-          >
-            View Details
-            <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
