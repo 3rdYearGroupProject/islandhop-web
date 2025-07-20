@@ -77,19 +77,36 @@ const MyTripsPage = () => {
         }
         
         // Fetch user trips from backend
+        console.log('🚀 STARTING API FETCH FOR USER:', user.uid);
+        console.log('🔧 Environment variables check:');
+        console.log('  - REACT_APP_USE_MOCK_DATA:', process.env.REACT_APP_USE_MOCK_DATA);
+        console.log('  - REACT_APP_API_BASE_URL_TRIP_PLANNING:', process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING);
+        console.log('  - NODE_ENV:', process.env.NODE_ENV);
+        
         try {
+          console.log('📡 Calling fetchUserTrips...');
           const userTrips = await fetchUserTrips(user.uid);
-          console.log('📊 Setting trips from backend:', userTrips.length, 'trips');
+          console.log('✅ API CALL SUCCESS! Received trips:', userTrips.length);
+          console.log('📊 First trip data sample:', userTrips[0]);
           setTrips(userTrips);
-        } catch (error) {
-          console.warn('⚠️ Failed to fetch trips from backend, using mock data');
-          console.error('Backend fetch error:', error);
-          
-          // Use mock data instead of showing error to user
-          setTrips(mockTrips);
-          
-          // Clear any API error state to prevent error displays
           setApiError(null);
+        } catch (error) {
+          console.error('❌ API CALL FAILED!');
+          console.error('❌ Error type:', error.constructor.name);
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Full error object:', error);
+          console.error('❌ Error stack:', error.stack);
+          
+          // Only use mock data for specific network errors, not all errors
+          if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+            console.warn('⚠️ Network error detected - using mock data as fallback');
+            setTrips(mockTrips);
+            setApiError('Unable to connect to server. Showing sample data.');
+          } else {
+            console.error('❌ API Error - NOT using mock data. Showing error state.');
+            setTrips([]);
+            setApiError(error.message);
+          }
         }
       } else {
         setCurrentUser(null);
@@ -350,16 +367,21 @@ const MyTripsPage = () => {
 
   // API function to fetch user trips
   const fetchUserTrips = async (userId) => {
-    console.log('📥 FETCH USER TRIPS START');
+    console.log('📥 ===== FETCH USER TRIPS START =====');
     console.log('👤 Fetching trips for userId:', userId);
+    console.log('🌍 Full API URL will be constructed as:');
+    
+    const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary?userId=${userId}`;
+    console.log('🔗 Complete API URL:', apiUrl);
     
     try {
       setIsLoadingTrips(true);
       setApiError(null);
       
-      console.log('📡 Making GET ITINERARIES API request to:', `/api/v1/itinerary?userId=${userId}`);
-      
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary?userId=${userId}`;
+      console.log('📡 Making fetch request with options:');
+      console.log('  - Method: GET');
+      console.log('  - Headers: Accept: application/json, Content-Type: application/json');
+      console.log('  - Credentials: include');
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -370,56 +392,91 @@ const MyTripsPage = () => {
         credentials: 'include'
       });
       
-      console.log('📨 GET ITINERARIES API Response status:', response.status);
+      console.log('📨 ===== RESPONSE RECEIVED =====');
+      console.log('📨 Response status:', response.status);
+      console.log('📨 Response statusText:', response.statusText);
+      console.log('📨 Response ok:', response.ok);
+      console.log('📨 Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
+        console.error('❌ Response not OK - handling error...');
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Error response data:', errorData);
         
         if (response.status === 400) {
-          alert(`Invalid user ID: ${errorData.message || 'Please check your login status'}`);
+          const msg = `Invalid user ID: ${errorData.message || 'Please check your login status'}`;
+          console.error('❌ 400 Error:', msg);
+          alert(msg);
           throw new Error(`Invalid userId: ${errorData.message}`);
         } else if (response.status === 404) {
-          console.log('📝 No trips found for user');
+          console.log('📝 404 - No trips found for user');
           alert('No trips found. Start planning your first adventure!');
           return []; // Return empty array for no trips
         } else if (response.status === 500) {
-          alert(`Server error: ${errorData.message || 'Please try again later'}`);
+          const msg = `Server error: ${errorData.message || 'Please try again later'}`;
+          console.error('❌ 500 Error:', msg);
+          alert(msg);
           throw new Error(`Server error: ${errorData.message}`);
         } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const msg = `HTTP ${response.status}: ${response.statusText}`;
+          console.error('❌ Other HTTP Error:', msg);
+          throw new Error(msg);
         }
       }
       
+      console.log('✅ Response OK - parsing JSON...');
       const data = await response.json();
-      console.log('📦 GET ITINERARIES API Response data:', data);
+      console.log('📦 ===== RAW API RESPONSE DATA =====');
+      console.log('📦 Data type:', typeof data);
+      console.log('📦 Is Array:', Array.isArray(data));
+      console.log('📦 Data length:', Array.isArray(data) ? data.length : 'Not array');
+      console.log('📦 Raw data:', data);
+      console.log('📦 First item sample:', Array.isArray(data) && data.length > 0 ? data[0] : 'No items');
       
       // Transform backend trip summaries to match frontend expected format
       const backendTrips = Array.isArray(data) ? data : [];
-      const transformedTrips = backendTrips.map(trip => transformBackendTripSummary(trip));
+      console.log('🔄 Processing', backendTrips.length, 'trips for transformation...');
       
-      console.log('✅ FETCH USER TRIPS SUCCESS - Found', transformedTrips.length, 'trips');
-      console.log('📊 Transformed trips:', transformedTrips);
+      const transformedTrips = backendTrips.map((trip, index) => {
+        console.log(`🔄 Transforming trip ${index + 1}:`, trip);
+        const transformed = transformBackendTripSummary(trip);
+        console.log(`✅ Transformed trip ${index + 1}:`, transformed);
+        return transformed;
+      });
+      
+      console.log('✅ ===== FETCH USER TRIPS SUCCESS =====');
+      console.log('✅ Total trips found:', transformedTrips.length);
+      console.log('✅ Transformed trips summary:', transformedTrips.map(t => ({ id: t.id, name: t.name, status: t.status })));
       
       return transformedTrips;
     } catch (error) {
-      console.error('❌ FETCH USER TRIPS FAILED');
-      console.error('❌ Fetch trips error:', error);
-      console.error('❌ Fetch trips error message:', error.message);
+      console.error('❌ ===== FETCH USER TRIPS FAILED =====');
+      console.error('❌ Error type:', error.constructor.name);
+      console.error('❌ Error name:', error.name);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Full error object:', error);
       
-      // Handle different types of errors
+      // Handle different types of errors with detailed logging
       let userFriendlyMessage = 'Failed to fetch trips';
       
       if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
         userFriendlyMessage = 'Unable to connect to server. Please check if the backend is running or your internet connection.';
-        console.warn('⚠️ Network error detected - backend may not be running');
+        console.error('❌ NETWORK ERROR DETECTED - backend may not be running on localhost:8084');
       } else if (error.message.includes('Invalid userId')) {
         userFriendlyMessage = 'Authentication issue. Please try logging in again.';
+        console.error('❌ AUTHENTICATION ERROR');
       } else if (error.message.includes('Server error')) {
         userFriendlyMessage = 'Server error occurred. Please try again later.';
+        console.error('❌ SERVER ERROR');
       } else if (error.message.includes('No trips found')) {
         userFriendlyMessage = 'No trips found. Start planning your first adventure!';
+        console.error('❌ NO TRIPS FOUND');
+      } else {
+        console.error('❌ UNKNOWN ERROR TYPE');
       }
       
+      console.error('❌ User-friendly message:', userFriendlyMessage);
       setApiError(userFriendlyMessage);
       
       // Don't show alert for network errors to avoid double alerts
