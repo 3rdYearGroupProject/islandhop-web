@@ -15,8 +15,8 @@ const APIs = () => {
     googleMaps: {
       name: 'Google Maps API',
       status: 'active',
-      cost: '$127.45',
-      monthlyCost: '$1,480.00',
+      cost: 'LKR 127.45',
+      monthlyCost: 'LKR 1,480.00',
       requests: '45,230',
       monthlyRequests: '523,400',
       latency: '187ms',
@@ -32,8 +32,8 @@ const APIs = () => {
     weather: {
       name: 'OpenWeather API',
       status: 'active',
-      cost: '$23.80',
-      monthlyCost: '$89.50',
+      cost: 'LKR 23.80',
+      monthlyCost: 'LKR 89.50',
       requests: '12,450',
       monthlyRequests: '156,780',
       latency: '120ms',
@@ -49,8 +49,8 @@ const APIs = () => {
     messaging: {
       name: 'Twilio SMS API',
       status: 'active',
-      cost: '$45.20',
-      monthlyCost: '$198.75',
+      cost: 'LKR 45.20',
+      monthlyCost: 'LKR 198.75',
       requests: '3,240',
       monthlyRequests: '38,920',
       latency: '95ms',
@@ -66,8 +66,8 @@ const APIs = () => {
     payment: {
       name: 'Stripe Payment API',
       status: 'warning',
-      cost: '$89.30',
-      monthlyCost: '$1,200.40',
+      cost: 'LKR 89.30',
+      monthlyCost: 'LKR 1,200.40',
       requests: '8,920',
       monthlyRequests: '95,430',
       latency: '210ms',
@@ -161,7 +161,7 @@ const APIs = () => {
                   Total Monthly Cost
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  ${totalCost.toLocaleString()}
+                  {/* ${totalCost.toLocaleString()} */}LKR 234,788.78
                 </p>
                 <p className="text-sm text-success-600 dark:text-success-400 mt-1">
                   +8.2% from last month
