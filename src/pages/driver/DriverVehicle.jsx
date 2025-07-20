@@ -44,6 +44,7 @@ const DriverVehicle = () => {
     capacity: '',
     type: '',
     fuelType: '',
+    bootCapacity: '',
     vehicle_registration_status: 2,
     insurance_certificate_status: 2
   });
@@ -85,6 +86,7 @@ const DriverVehicle = () => {
           capacity: res.data.Capacity || '',
           type: res.data.Type || '',
           fuelType: res.data.Fueltype || '',
+          bootCapacity: res.data['Boot Capacity'] || '',
           vehicle_registration_status: res.data['Vehicle registration status'] || 2,
           insurance_certificate_status: res.data['Insurance certificate status'] || 2
         });
@@ -101,7 +103,7 @@ const DriverVehicle = () => {
         // Check for missing required fields
         const requiredFields = [
           res.data.Make, res.data.Model, res.data.Year, res.data.Color, res.data['Plate Number'],
-          res.data.Capacity, res.data.Type, res.data.Fueltype,
+          res.data.Capacity, res.data.Type, res.data.Fueltype, res.data['Boot Capacity'],
           res.data.Veh_pic_1, res.data['Vehicle_registration(pic)'], res.data['Insurance Pic']
         ];
         if (requiredFields.some(f => !f)) {
@@ -156,6 +158,7 @@ const DriverVehicle = () => {
       formData.append('Color', vehicleData.color);
       formData.append('Plate Number', vehicleData.plateNumber);
       formData.append('Type', vehicleData.type);
+      formData.append('Boot Capacity', vehicleData.bootCapacity);
       // Images
       vehiclePics.forEach((file, idx) => {
         if (file) formData.append(`Veh_pic_${idx+1}`, file);
@@ -354,7 +357,7 @@ const DriverVehicle = () => {
 
                 {/* Capacity with unit */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Capacity ({vehicleData.fuelType === 'electric' ? 'kW' : 'CC'})</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Engine Capacity ({vehicleData.fuelType === 'electric' ? 'kW' : 'CC'})</label>
                   {isEditing ? (
                     <input
                       type="text"
@@ -366,6 +369,29 @@ const DriverVehicle = () => {
                   ) : (
                     <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
                       {vehicleData.capacity ? `${vehicleData.capacity} ${vehicleData.fuelType === 'electric' ? 'kW' : 'CC'}` : 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Boot Capacity Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Boot Capacity</label>
+                  {isEditing ? (
+                    <select
+                      value={vehicleData.bootCapacity}
+                      onChange={e => setVehicleData(prev => ({ ...prev, bootCapacity: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select Boot Capacity</option>
+                      <option value="Small (200-400L)">Small (200-400L)</option>
+                      <option value="Medium (400-600L)">Medium (400-600L)</option>
+                      <option value="Large (600-800L)">Large (600-800L)</option>
+                      <option value="Extra Large (800L+)">Extra Large (800L+)</option>
+                      
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-secondary-700 px-3 py-2 rounded-lg">
+                      {vehicleData.bootCapacity || 'Not specified'}
                     </p>
                   )}
                 </div>
