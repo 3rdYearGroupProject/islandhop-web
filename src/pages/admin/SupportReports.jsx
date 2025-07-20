@@ -23,16 +23,64 @@ const SupportReports = () => {
     { id: 4, name: 'David Brown', tickets: 67, resolved: 63, avgTime: '2.5 hours', rating: 4.6, accountType: 3 },
     { id: 5, name: 'Lisa Garcia', tickets: 82, resolved: 79, avgTime: '1.9 hours', rating: 4.8, accountType: 2 }
   ]);
+  const [pendingChanges, setPendingChanges] = useState({});
+  const [savingAgents, setSavingAgents] = useState(new Set());
 
-  // Function to handle account type change
+  // Function to handle account type change (tracks pending changes)
   const handleAccountTypeChange = (agentId, newAccountType) => {
-    setAgents(prevAgents => 
-      prevAgents.map(agent => 
-        agent.id === agentId 
-          ? { ...agent, accountType: parseInt(newAccountType) }
-          : agent
-      )
-    );
+    setPendingChanges(prev => ({
+      ...prev,
+      [agentId]: parseInt(newAccountType)
+    }));
+  };
+
+  // Function to save account type changes
+  const saveAccountTypeChange = async (agentId) => {
+    const newAccountType = pendingChanges[agentId];
+    if (newAccountType === undefined) return;
+
+    setSavingAgents(prev => new Set([...prev, agentId]));
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the agents state
+      setAgents(prevAgents => 
+        prevAgents.map(agent => 
+          agent.id === agentId 
+            ? { ...agent, accountType: newAccountType }
+            : agent
+        )
+      );
+
+      // Remove from pending changes
+      setPendingChanges(prev => {
+        const { [agentId]: removed, ...rest } = prev;
+        return rest;
+      });
+
+      // TODO: Replace with actual API call
+      console.log(`Saved account type ${newAccountType} for agent ${agentId}`);
+      
+    } catch (error) {
+      console.error('Failed to save account type:', error);
+      // Handle error (could show toast notification)
+    } finally {
+      setSavingAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(agentId);
+        return newSet;
+      });
+    }
+  };
+
+  // Function to cancel pending changes
+  const cancelAccountTypeChange = (agentId) => {
+    setPendingChanges(prev => {
+      const { [agentId]: removed, ...rest } = prev;
+      return rest;
+    });
   };
 
   // Function to get account type text
@@ -153,60 +201,93 @@ const SupportReports = () => {
     );
   };
 
-  const AgentPerformanceCard = ({ agent, onAccountTypeChange, getAccountTypeText }) => (
-    <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
-      <div className="flex items-center space-x-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
-          <span className="text-white font-semibold text-sm">
-            {agent.name.split(' ').map(n => n[0]).join('')}
-          </span>
-        </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-gray-900 dark:text-white">{agent.name}</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Support Agent</p>
-        </div>
-      </div>
-      
-      {/* Account Type Selector */}
-      <div className="mb-4 p-3 bg-gray-50 dark:bg-secondary-700 rounded-lg">
-        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Account Type
-        </label>
-        <select
-          value={agent.accountType}
-          onChange={(e) => onAccountTypeChange(agent.id, e.target.value)}
-          className="w-full px-3 py-2 text-sm bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-        >
-          <option value={1}>Verification</option>
-          <option value={2}>Reports</option>
-          <option value={3}>Complaints</option>
-          <option value={4}>All</option>
-        </select>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Current: {getAccountTypeText(agent.accountType)}
-        </p>
-      </div>
+  const AgentPerformanceCard = ({ agent, onAccountTypeChange, getAccountTypeText, pendingChange, onSave, onCancel, isSaving }) => {
+    const currentAccountType = pendingChange !== undefined ? pendingChange : agent.accountType;
+    const hasChanges = pendingChange !== undefined;
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <span className="text-gray-600 dark:text-gray-400">Tickets:</span>
-          <span className="ml-2 font-semibold text-gray-900 dark:text-white">{agent.tickets}</span>
+    return (
+      <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
+            <span className="text-white font-semibold text-sm">
+              {agent.name.split(' ').map(n => n[0]).join('')}
+            </span>
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 dark:text-white">{agent.name}</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Support Agent</p>
+          </div>
         </div>
-        <div>
-          <span className="text-gray-600 dark:text-gray-400">Resolved:</span>
-          <span className="ml-2 font-semibold text-gray-900 dark:text-white">{agent.resolved}</span>
+        
+        {/* Account Type Selector */}
+        <div className={`mb-4 p-3 rounded-lg ${hasChanges ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : 'bg-gray-50 dark:bg-secondary-700'}`}>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Account Type
+          </label>
+          <select
+            value={currentAccountType}
+            onChange={(e) => onAccountTypeChange(agent.id, e.target.value)}
+            disabled={isSaving}
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+          >
+            <option value={1}>Verification</option>
+            <option value={2}>Reports</option>
+            <option value={3}>Complaints</option>
+            <option value={4}>All</option>
+          </select>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Current: {getAccountTypeText(agent.accountType)}
+              {hasChanges && (
+                <span className="ml-2 text-yellow-600 dark:text-yellow-400 font-medium">
+                  → {getAccountTypeText(currentAccountType)} (Pending)
+                </span>
+              )}
+            </p>
+          </div>
+          
+          {/* Save/Cancel Buttons */}
+          {hasChanges && (
+            <div className="flex space-x-2 mt-3">
+              <button
+                onClick={() => onSave(agent.id)}
+                disabled={isSaving}
+                className="flex-1 px-3 py-2 bg-primary-600 text-white text-xs rounded-md hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => onCancel(agent.id)}
+                disabled={isSaving}
+                className="flex-1 px-3 py-2 bg-gray-500 text-white text-xs rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
-        <div>
-          <span className="text-gray-600 dark:text-gray-400">Avg Time:</span>
-          <span className="ml-2 font-semibold text-gray-900 dark:text-white">{agent.avgTime}</span>
-        </div>
-        <div>
-          <span className="text-gray-600 dark:text-gray-400">Rating:</span>
-          <span className="ml-2 font-semibold text-warning-600">{agent.rating} ⭐</span>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-gray-600 dark:text-gray-400">Tickets:</span>
+            <span className="ml-2 font-semibold text-gray-900 dark:text-white">{agent.tickets}</span>
+          </div>
+          <div>
+            <span className="text-gray-600 dark:text-gray-400">Resolved:</span>
+            <span className="ml-2 font-semibold text-gray-900 dark:text-white">{agent.resolved}</span>
+          </div>
+          <div>
+            <span className="text-gray-600 dark:text-gray-400">Avg Time:</span>
+            <span className="ml-2 font-semibold text-gray-900 dark:text-white">{agent.avgTime}</span>
+          </div>
+          <div>
+            <span className="text-gray-600 dark:text-gray-400">Rating:</span>
+            <span className="ml-2 font-semibold text-warning-600">{agent.rating} ⭐</span>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 ">
@@ -375,6 +456,10 @@ const SupportReports = () => {
                 agent={agent}
                 onAccountTypeChange={handleAccountTypeChange}
                 getAccountTypeText={getAccountTypeText}
+                pendingChange={pendingChanges[agent.id]}
+                onSave={saveAccountTypeChange}
+                onCancel={cancelAccountTypeChange}
+                isSaving={savingAgents.has(agent.id)}
               />
             ))}
           </div>
