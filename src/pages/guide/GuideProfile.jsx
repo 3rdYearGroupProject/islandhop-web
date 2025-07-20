@@ -311,11 +311,9 @@ const GuideProfile = () => {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Loading Screen */}
       {isLoading ? (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex my-20 justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile...</h2>
-            <p className="text-gray-600">Please wait while we fetch your information</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           </div>
         </div>
       ) : (

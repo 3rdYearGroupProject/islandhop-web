@@ -93,6 +93,7 @@ const SupportProfile = () => {
                 profilePicture: profilePicture,
                 joinedDate: formattedJoinedDate,
                 lastActive: formattedLastActive,
+                permission: profileData.permission || prevUser.permission,
               }));
             } else {
               setUser((prevUser) => ({
@@ -183,12 +184,13 @@ const SupportProfile = () => {
             </p>
             <p className="text-neutral-900 dark:text-white">{user.phoneNumber}</p>
           </div>
-          <div className="md:col-span-2">
+          <div>
             <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               Address
             </p>
             <p className="text-neutral-900 dark:text-white">{user.address}</p>
           </div>
+          
           <div>
             <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               Joined Date
@@ -201,6 +203,20 @@ const SupportProfile = () => {
             </p>
             <p className="text-neutral-900 dark:text-white">{user.lastActive}</p>
           </div>
+          <div>
+            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Account Type
+            </p>
+            <p className="text-neutral-900 dark:text-white">
+              {user.permission === 1 ? "Verification" : 
+               user.permission === 2 ? "Reviews" : 
+               user.permission === 3 ? "Complaints" : 
+               user.permission === 4 ? "All" : 
+               user.permission || "Unknown"}
+            </p>
+          </div>
+          
+          
         </div>
 
         <div className="mt-6 flex justify-end">
