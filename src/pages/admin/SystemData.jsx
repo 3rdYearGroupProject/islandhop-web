@@ -91,7 +91,7 @@ const SystemData = () => {
         fuelType: updatedData.fuelType,
         capacity: parseInt(updatedData.capacity),
         pricePerKm: parseFloat(updatedData.pricePerKm),
-        available: updatedData.isAvailable || updatedData.available
+        isAvailable: updatedData.isAvailable || updatedData.available
       };
 
       console.log('Sending update payload:', updatePayload);
@@ -337,7 +337,7 @@ const SystemData = () => {
                   </div>
                   <div className="ml-4">
                     <div className="text-2xl font-bold text-info-600 dark:text-info-400">
-                      ${vehicleStats.avgPrice}
+                      LKR {vehicleStats.avgPrice}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       Avg Price/KM
@@ -445,7 +445,7 @@ const SystemData = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              ${vehicle.pricePerKm}
+                              LKR {vehicle.pricePerKm}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -740,7 +740,7 @@ const SystemData = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Price per KM ($)
+                  Price per KM (LKR)
                 </label>
                 <input
                   type="number"
