@@ -200,7 +200,6 @@ const AddFoodAndDrinkModal = ({
                 ))}
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

@@ -200,7 +200,6 @@ const AddPlacesToStayModal = ({
                 ))}
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

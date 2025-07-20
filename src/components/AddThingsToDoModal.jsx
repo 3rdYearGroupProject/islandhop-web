@@ -200,7 +200,6 @@ const AddThingsToDoModal = ({
                 ))}
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

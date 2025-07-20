@@ -220,7 +220,6 @@ const PoolItineraryPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [itinerary, setItinerary] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
-  const [selectedStayDates, setSelectedStayDates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Destination management states
@@ -646,17 +645,6 @@ const PoolItineraryPage = () => {
     });
     setShowAddModal(false);
     setShowDestinationModal(false);
-    setSelectedStayDates([]);
-  };
-
-  const handleStayDateSelect = (dayIndex) => {
-    setSelectedStayDates(prev => {
-      if (prev.includes(dayIndex)) {
-        return prev.filter(d => d !== dayIndex);
-      } else {
-        return [...prev, dayIndex].sort((a, b) => a - b);
-      }
-    });
   };
 
   // API call function for modals to use directly
@@ -1543,14 +1531,11 @@ const PoolItineraryPage = () => {
         onClose={() => {
           console.log('🚪 Closing Things to Do modal');
           setShowAddModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         fetchSuggestionsForModal={fetchSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1563,14 +1548,11 @@ const PoolItineraryPage = () => {
         onClose={() => {
           console.log('🚪 Closing Places to Stay modal');
           setShowAddModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         fetchSuggestionsForModal={fetchSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1588,8 +1570,6 @@ const PoolItineraryPage = () => {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         fetchSuggestionsForModal={fetchSuggestionsForModal}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1601,14 +1581,11 @@ const PoolItineraryPage = () => {
         show={showAddModal && selectedCategory === 'transportation'}
         onClose={() => {
           setShowAddModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         getFilteredSuggestions={getFilteredSuggestions}
-        selectedStayDates={selectedStayDates}
-        setSelectedStayDates={setSelectedStayDates}
         days={days}
         formatDate={formatDate}
         addItemToItinerary={addItemToItinerary}
@@ -1618,7 +1595,6 @@ const PoolItineraryPage = () => {
         show={showDestinationModal}
         onClose={() => {
           setShowDestinationModal(false);
-          setSelectedStayDates([]);
           setSearchQuery('');
         }}
         searchQuery={searchQuery}
