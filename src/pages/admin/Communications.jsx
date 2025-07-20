@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { auth } from '../../firebase';
-import { 
+import React, { useState, useRef, useEffect } from "react";
+import { auth } from "../../firebase";
+import {
   ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
   UserGroupIcon,
@@ -9,17 +9,17 @@ import {
   PaperClipIcon,
   EllipsisVerticalIcon,
   CheckIcon,
-  PlusIcon
-} from '@heroicons/react/24/outline';
-import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
+  PlusIcon,
+} from "@heroicons/react/24/outline";
+import { CheckIcon as CheckIconSolid } from "@heroicons/react/24/solid";
 import { getAuth } from "firebase/auth";
 import userServicesApi from "../../api/axios";
 
 const Communications = () => {
-  const [selectedChat, setSelectedChat] = useState('system');
-  const [messageInput, setMessageInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [authToken, setAuthToken] = useState('');
+  const [selectedChat, setSelectedChat] = useState("system");
+  const [messageInput, setMessageInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [authToken, setAuthToken] = useState("");
   const [groupDetails, setGroupDetails] = useState(null);
   const [groupMessages, setGroupMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -31,16 +31,16 @@ const Communications = () => {
   // Chats state: system group and personal conversations from backend
   const [chats, setChats] = useState([
     {
-      id: 'system',
-      name: 'System',
-      type: 'group',
+      id: "system",
+      name: "System",
+      type: "group",
       avatar: null,
-      lastMessage: '',
-      lastTime: '',
+      lastMessage: "",
+      lastTime: "",
       unreadCount: 0,
       isOnline: true,
-      participants: []
-    }
+      participants: [],
+    },
   ]);
   const [personalConversations, setPersonalConversations] = useState([]);
   const [personalMessages, setPersonalMessages] = useState({});
@@ -48,11 +48,66 @@ const Communications = () => {
   const [userDisplayNames, setUserDisplayNames] = useState({});
 
   // Remove old mock messages state
-  
+
   // Function to fetch all users and filter support agents
   const fetchSupportAgents = async () => {
     setLoadingSupportAgents(true);
     try {
+      // TEMPORARILY DISABLED - Mock data instead of API call
+      console.log("Using mock support agents data");
+
+      // Mock support agents data
+      const mockSupportUsers = [
+        {
+          email: "sarah.johnson@islandhop.com",
+          firstName: "Sarah",
+          lastName: "Johnson",
+          accountType: "support",
+          status: "ACTIVE",
+          profilePicUrl: null,
+        },
+        {
+          email: "mike.wilson@islandhop.com",
+          firstName: "Mike",
+          lastName: "Wilson",
+          accountType: "support",
+          status: "ACTIVE",
+          profilePicUrl: null,
+        },
+        {
+          email: "emma.davis@islandhop.com",
+          firstName: "Emma",
+          lastName: "Davis",
+          accountType: "support",
+          status: "INACTIVE",
+          profilePicUrl: null,
+        },
+      ];
+
+      console.log("Support agents found:", mockSupportUsers);
+      setSupportAgents(mockSupportUsers);
+
+      // Add support agents to chats
+      const supportChats = mockSupportUsers.map((agent) => ({
+        id: `support_${agent.email}`, // Use email as unique identifier
+        name: `${agent.firstName} ${agent.lastName}`,
+        email: agent.email,
+        type: "support",
+        avatar: agent.profilePicUrl || null,
+        lastMessage: "",
+        lastTime: "",
+        unreadCount: 0,
+        isOnline: agent.status === "ACTIVE",
+        role: "Support Agent",
+      }));
+
+      // Update chats to include system and support agents
+      setChats((prev) => [
+        prev[0], // Keep system group
+        ...supportChats,
+      ]);
+
+      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
@@ -95,6 +150,7 @@ const Communications = () => {
           ...supportChats
         ]);
       }
+      */
     } catch (error) {
       console.error("Error fetching support agents:", error);
     } finally {
@@ -105,6 +161,16 @@ const Communications = () => {
   // Function to get user ID from Firebase by email
   const getUserIdByEmail = async (email) => {
     try {
+      // TEMPORARILY DISABLED - Return mock user ID
+      console.log(`Using mock user ID for ${email}`);
+      const mockUserIds = {
+        "sarah.johnson@islandhop.com": "mock_user_id_sarah",
+        "mike.wilson@islandhop.com": "mock_user_id_mike",
+        "emma.davis@islandhop.com": "mock_user_id_emma",
+      };
+      return mockUserIds[email] || "mock_user_id_default";
+
+      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       const response = await fetch(`http://localhost:8093/api/v1/firebase/user/uid-by-email?email=${email}`, {
         method: 'GET',
         headers: {
@@ -120,6 +186,7 @@ const Communications = () => {
         console.error(`Failed to get user ID for ${email}:`, response.status);
         return null;
       }
+      */
     } catch (error) {
       console.error(`Error getting user ID for ${email}:`, error);
       return null;
@@ -131,51 +198,82 @@ const Communications = () => {
     try {
       const userId = await getUserIdByEmail(agentEmail);
       if (!userId) {
-        console.error('Could not get user ID for agent:', agentEmail);
+        console.error("Could not get user ID for agent:", agentEmail);
         return;
       }
 
       const currentUserId = auth.currentUser.uid;
-      
+
       // Create conversation payload
       const conversationPayload = {
         senderId: currentUserId,
         receiverId: userId,
         content: `Hello! This is an admin message.`,
-        messageType: 'TEXT',
-        senderName: auth.currentUser?.displayName || 'Admin'
+        messageType: "TEXT",
+        senderName: auth.currentUser?.displayName || "Admin",
       };
 
       // Send initial message to create conversation
-      const response = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify(conversationPayload)
-      });
-      console.log('Starting conversation with agent:', agentEmail, 'Payload:', conversationPayload);
+      const response = await fetch(
+        "http://localhost:8090/api/v1/chat/personal/send",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(conversationPayload),
+        }
+      );
+      console.log(
+        "Starting conversation with agent:",
+        agentEmail,
+        "Payload:",
+        conversationPayload
+      );
 
       if (response.ok) {
-        console.log('Conversation started with agent:', agentEmail);
+        console.log("Conversation started with agent:", agentEmail);
         // Refresh personal conversations
         fetchPersonalConversations();
       } else {
-        console.error('Failed to start conversation with agent:', response.status);
+        console.error(
+          "Failed to start conversation with agent:",
+          response.status
+        );
       }
     } catch (error) {
-      console.error('Error starting conversation with agent:', error);
+      console.error("Error starting conversation with agent:", error);
     }
   };
   const fetchDisplayNameFromBackend = async (userId) => {
     console.log(`Fetching display name for user: ${userId}`);
     if (userDisplayNames[userId]) {
-      console.log(`Display name already cached for ${userId}: ${userDisplayNames[userId]}`);
+      console.log(
+        `Display name already cached for ${userId}: ${userDisplayNames[userId]}`
+      );
       return userDisplayNames[userId];
     }
 
     try {
+      // TEMPORARILY DISABLED - Return mock display names
+      console.log(`Using mock display name for ${userId}`);
+      const mockDisplayNames = {
+        mock_user_id_sarah: "Sarah Johnson",
+        mock_user_id_mike: "Mike Wilson",
+        mock_user_id_emma: "Emma Davis",
+        mock_user_id_default: "Support Agent",
+      };
+
+      const displayName =
+        mockDisplayNames[userId] || `User ${userId.slice(-4)}`;
+      setUserDisplayNames((prev) => ({
+        ...prev,
+        [userId]: displayName,
+      }));
+      return displayName;
+
+      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       const response = await fetch(`http://localhost:8091/api/v1/firebase/user/display-name/${userId}`, {
         method: 'GET',
         headers: {
@@ -195,6 +293,7 @@ const Communications = () => {
         console.error(`Failed to fetch display name for ${userId}:`, response.status);
         return userId; // Fallback to userId
       }
+      */
     } catch (error) {
       console.error(`Error fetching display name for ${userId}:`, error);
       return userId; // Fallback to userId
@@ -204,10 +303,81 @@ const Communications = () => {
   // Fetch personal conversations for current user
   const fetchPersonalConversations = async () => {
     if (authToken && auth.currentUser) {
-      console.log(`Fetching personal conversations for user: ${auth.currentUser.uid}`);
+      console.log(
+        `Fetching personal conversations for user: ${auth.currentUser.uid}`
+      );
       const userId = auth.currentUser.uid;
-      
+
       try {
+        // TEMPORARILY DISABLED - Use mock conversations
+        console.log("Using mock personal conversations");
+        const mockConversations = [
+          {
+            conversationId: "conv_1",
+            receiverId: "mock_user_id_sarah",
+            lastMessage: "Hello, how can I help you today?",
+            lastMessageTime: new Date().toISOString(),
+            isOnline: true,
+            receiverRole: "Support Agent",
+          },
+          {
+            conversationId: "conv_2",
+            receiverId: "mock_user_id_mike",
+            lastMessage: "I will look into this issue for you.",
+            lastMessageTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+            isOnline: false,
+            receiverRole: "Support Agent",
+          },
+        ];
+
+        console.log("Mock personal conversations:", mockConversations);
+        setPersonalConversations(mockConversations);
+
+        // Fetch display names for all receivers
+        const conversationsWithNames = await Promise.all(
+          mockConversations.map(async (conv) => {
+            const displayName = await fetchDisplayNameFromBackend(
+              conv.receiverId
+            );
+            return {
+              id: conv.conversationId,
+              name: displayName,
+              type: "personal",
+              avatar: null,
+              lastMessage: conv.lastMessage || "",
+              lastTime: conv.lastMessageTime
+                ? new Date(conv.lastMessageTime).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                : "",
+              unreadCount: 0,
+              isOnline: conv.isOnline || false,
+              role: conv.receiverRole || "",
+              receiverId: conv.receiverId, // Store the actual receiverId
+            };
+          })
+        );
+
+        // Add to chats state (keep system group and support agents)
+        setChats((prev) => {
+          const systemChat = prev.find((chat) => chat.id === "system");
+          const supportChats = prev.filter((chat) => chat.type === "support");
+          return [
+            systemChat,
+            ...supportChats,
+            ...conversationsWithNames,
+          ].filter(Boolean);
+        });
+
+        // Mock unread counts
+        setUnreadCounts({
+          conv_1: 2,
+          conv_2: 0,
+        });
+
+        /* ORIGINAL API CALL - TEMPORARILY DISABLED
         const response = await fetch(`http://localhost:8090/api/v1/chat/personal/conversations/${userId}`, {
           method: 'GET',
           headers: {
@@ -259,8 +429,9 @@ const Communications = () => {
         
         const unreadData = await unreadResponse.json();
         setUnreadCounts(unreadData || {});
+        */
       } catch (error) {
-        console.error('Error fetching personal conversations:', error);
+        console.error("Error fetching personal conversations:", error);
       }
     }
   };
@@ -270,10 +441,70 @@ const Communications = () => {
   }, [authToken, auth.currentUser, userDisplayNames]);
   // Fetch personal messages for selected chat
   useEffect(() => {
-    if (selectedChat !== 'system' && authToken && auth.currentUser) {
+    if (selectedChat !== "system" && authToken && auth.currentUser) {
       const userId = auth.currentUser.uid;
-      const conversation = chats.find(c => c.id === selectedChat);
+      const conversation = chats.find((c) => c.id === selectedChat);
       if (!conversation) return;
+
+      // TEMPORARILY DISABLED - Use mock personal messages
+      console.log("Using mock personal messages for chat:", selectedChat);
+
+      const mockPersonalMessages = {
+        conv_1: [
+          {
+            id: "pmsg_1",
+            senderId: "mock_user_id_sarah",
+            senderName: "Sarah Johnson",
+            content: "Hello! How can I help you today?",
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+            read: true,
+          },
+          {
+            id: "pmsg_2",
+            senderId: auth.currentUser?.uid || "current_admin",
+            senderName: auth.currentUser?.displayName || "Admin",
+            content: "I need assistance with user verification process.",
+            createdAt: new Date(Date.now() - 1800000).toISOString(),
+            read: true,
+          },
+          {
+            id: "pmsg_3",
+            senderId: "mock_user_id_sarah",
+            senderName: "Sarah Johnson",
+            content:
+              "I can help you with that. What specific issue are you facing?",
+            createdAt: new Date(Date.now() - 900000).toISOString(),
+            read: false,
+          },
+        ],
+        conv_2: [
+          {
+            id: "pmsg_4",
+            senderId: "mock_user_id_mike",
+            senderName: "Mike Wilson",
+            content: "I will look into this issue for you.",
+            createdAt: new Date(Date.now() - 7200000).toISOString(),
+            read: true,
+          },
+          {
+            id: "pmsg_5",
+            senderId: auth.currentUser?.uid || "current_admin",
+            senderName: auth.currentUser?.displayName || "Admin",
+            content: "Thank you for your help!",
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+            read: true,
+          },
+        ],
+      };
+
+      if (mockPersonalMessages[selectedChat]) {
+        setPersonalMessages((prev) => ({
+          ...prev,
+          [selectedChat]: mockPersonalMessages[selectedChat],
+        }));
+      }
+
+      /* ORIGINAL API CALL - TEMPORARILY DISABLED
       // Safely get receiverId
       let receiverId = '';
       if (typeof conversation.receiverId === 'string' && conversation.receiverId) {
@@ -308,6 +539,7 @@ const Communications = () => {
             [selectedChat]: messagesWithNames
           }));
         });
+      */
     }
   }, [selectedChat, authToken, chats, auth.currentUser, userDisplayNames]);
 
@@ -319,9 +551,9 @@ const Communications = () => {
         try {
           const token = await currentUser.getIdToken();
           setAuthToken(token);
-          console.log('Display name:', currentUser.displayName);
+          console.log("Display name:", currentUser.displayName);
         } catch (err) {
-          setAuthToken('');
+          setAuthToken("");
         }
       }
     };
@@ -337,7 +569,64 @@ const Communications = () => {
 
   // Fetch group details and messages for system group
   useEffect(() => {
-    if (selectedChat === 'system' && authToken) {
+    if (selectedChat === "system" && authToken) {
+      // TEMPORARILY DISABLED - Use mock data for system group
+      console.log("Using mock system group data");
+
+      // Mock group details
+      const mockGroupDetails = {
+        name: "System Admin Chat",
+        members: ["Admin", "System Manager", "Support Lead"],
+      };
+      setGroupDetails(mockGroupDetails);
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === "system"
+            ? {
+                ...chat,
+                participants: mockGroupDetails.members || [],
+                name: mockGroupDetails.name || "System",
+              }
+            : chat
+        )
+      );
+
+      // Mock group messages
+      setLoadingMessages(true);
+      setTimeout(() => {
+        const mockMessages = [
+          {
+            id: "msg_1",
+            senderId: "system_user_1",
+            senderName: "System Manager",
+            content:
+              "Good morning everyone! System maintenance is scheduled for tonight.",
+            createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+          },
+          {
+            id: "msg_2",
+            senderId: auth.currentUser?.uid || "current_admin",
+            senderName: auth.currentUser?.displayName || "Admin",
+            content:
+              "Thanks for the update. What time will the maintenance begin?",
+            createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          },
+          {
+            id: "msg_3",
+            senderId: "system_user_2",
+            senderName: "Support Lead",
+            content:
+              "Maintenance will start at 11 PM and expected to complete by 2 AM.",
+            createdAt: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
+          },
+        ];
+
+        console.log("Mock group messages:", mockMessages);
+        setGroupMessages(mockMessages);
+        setLoadingMessages(false);
+      }, 1000); // Simulate loading delay
+
+      /* ORIGINAL API CALLS - TEMPORARILY DISABLED
       // Fetch group details
       fetch('http://localhost:8090/api/v1/chat/group/6872785e3372e21e0948ecc8', {
         method: 'GET',
@@ -383,12 +672,13 @@ const Communications = () => {
           setLoadingMessages(false);
         })
         .catch(() => setLoadingMessages(false));
+      */
     }
   }, [selectedChat, authToken, userDisplayNames]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [groupMessages, personalMessages, selectedChat]);
 
   const handleSendMessage = async (e) => {
@@ -397,9 +687,27 @@ const Communications = () => {
 
     console.log(`Sending message to ${selectedChat}:`, messageInput);
 
-    if (selectedChat === 'system') {
+    if (selectedChat === "system") {
       setSending(true);
       try {
+        // TEMPORARILY DISABLED - Mock message sending
+        console.log("Mock: Sending message to system group");
+
+        // Create mock message
+        const newMockMessage = {
+          id: `msg_${Date.now()}`,
+          senderId: auth.currentUser?.uid || "current_admin",
+          senderName: auth.currentUser?.displayName || "Admin",
+          content: messageInput,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Add to existing messages
+        setGroupMessages((prev) => [...prev, newMockMessage]);
+        setMessageInput("");
+        console.log("Mock message sent successfully");
+
+        /* ORIGINAL API CALL - TEMPORARILY DISABLED
         const messagePayload = {
           groupId: '6872785e3372e21e0948ecc8',
           senderId: auth.currentUser.uid,
@@ -449,16 +757,47 @@ const Communications = () => {
         } else {
           console.error('Failed to send group message:', res.status);
         }
+        */
       } catch (err) {
-        console.error('Error sending group message:', err);
+        console.error("Error sending group message:", err);
       }
       setSending(false);
-    } else if (selectedChat.startsWith('support_')) {
+    } else if (selectedChat.startsWith("support_")) {
       // Handle support agent messaging
       setSending(true);
-      const agentEmail = selectedChat.replace('support_', '');
-      
+      const agentEmail = selectedChat.replace("support_", "");
+
       try {
+        // TEMPORARILY DISABLED - Mock support message sending
+        console.log("Mock: Sending message to support agent:", agentEmail);
+
+        const receiverId = await getUserIdByEmail(agentEmail);
+        if (!receiverId) {
+          console.error("Could not get user ID for agent:", agentEmail);
+          setSending(false);
+          return;
+        }
+
+        // Create mock conversation and message
+        const newConversationId = `conv_${Date.now()}`;
+        const newMockMessage = {
+          id: `msg_${Date.now()}`,
+          senderId: auth.currentUser?.uid || "current_admin",
+          senderName: auth.currentUser?.displayName || "Admin",
+          content: messageInput,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Add to personal messages
+        setPersonalMessages((prev) => ({
+          ...prev,
+          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
+        }));
+
+        setMessageInput("");
+        console.log("Mock message sent to support agent successfully");
+
+        /* ORIGINAL API CALL - TEMPORARILY DISABLED
         const receiverId = await getUserIdByEmail(agentEmail);
         if (!receiverId) {
           console.error('Could not get user ID for agent:', agentEmail);
@@ -494,19 +833,43 @@ const Communications = () => {
         } else {
           console.error('Failed to send message to support agent:', res.status);
         }
+        */
       } catch (err) {
-        console.error('Error sending message to support agent:', err);
+        console.error("Error sending message to support agent:", err);
       }
       setSending(false);
     } else {
       // Personal chat
       setSending(true);
       const userId = auth.currentUser.uid;
-      const conversation = chats.find(c => c.id === selectedChat);
+      const conversation = chats.find((c) => c.id === selectedChat);
       if (!conversation) return;
-      const receiverId = conversation.receiverId || conversation.id.replace(userId, '').replace('-', '');
-      
+      const receiverId =
+        conversation.receiverId ||
+        conversation.id.replace(userId, "").replace("-", "");
+
       try {
+        // TEMPORARILY DISABLED - Mock personal message sending
+        console.log("Mock: Sending personal message");
+
+        const newMockMessage = {
+          id: `msg_${Date.now()}`,
+          senderId: auth.currentUser?.uid || "current_admin",
+          senderName: auth.currentUser?.displayName || "Admin",
+          content: messageInput,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Add to personal messages
+        setPersonalMessages((prev) => ({
+          ...prev,
+          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
+        }));
+
+        setMessageInput("");
+        console.log("Mock personal message sent successfully");
+
+        /* ORIGINAL API CALL - TEMPORARILY DISABLED
         const messagePayload = {
           senderId: userId,
           receiverId,
@@ -561,8 +924,9 @@ const Communications = () => {
         } else {
           console.error('Failed to send personal message:', res.status);
         }
+        */
       } catch (err) {
-        console.error('Error sending personal message:', err);
+        console.error("Error sending personal message:", err);
       }
       setSending(false);
     }
@@ -570,16 +934,16 @@ const Communications = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'sent':
+      case "sent":
         return <CheckIcon className="h-3 w-3 text-gray-400" />;
-      case 'delivered':
+      case "delivered":
         return (
           <div className="flex">
             <CheckIcon className="h-3 w-3 text-gray-400 -mr-1" />
             <CheckIcon className="h-3 w-3 text-gray-400" />
           </div>
         );
-      case 'read':
+      case "read":
         return (
           <div className="flex">
             <CheckIconSolid className="h-3 w-3 text-primary-500 -mr-1" />
@@ -591,42 +955,64 @@ const Communications = () => {
     }
   };
 
-  const currentChat = chats.find(chat => chat.id === selectedChat) || 
-    (selectedChat.startsWith('support_') ? 
-      supportAgents.find(agent => selectedChat === `support_${agent.email}`) && 
-      {
-        id: selectedChat,
-        name: (() => {
-          const agent = supportAgents.find(agent => selectedChat === `support_${agent.email}`);
-          return agent ? `${agent.firstName} ${agent.lastName}` : 'Support Agent';
-        })(),
-        type: 'support',
-        isOnline: (() => {
-          const agent = supportAgents.find(agent => selectedChat === `support_${agent.email}`);
-          return agent ? agent.status === 'ACTIVE' : false;
-        })(),
-        role: 'Support Agent'
-      } : null);
+  const currentChat =
+    chats.find((chat) => chat.id === selectedChat) ||
+    (selectedChat.startsWith("support_")
+      ? supportAgents.find(
+          (agent) => selectedChat === `support_${agent.email}`
+        ) && {
+          id: selectedChat,
+          name: (() => {
+            const agent = supportAgents.find(
+              (agent) => selectedChat === `support_${agent.email}`
+            );
+            return agent
+              ? `${agent.firstName} ${agent.lastName}`
+              : "Support Agent";
+          })(),
+          type: "support",
+          isOnline: (() => {
+            const agent = supportAgents.find(
+              (agent) => selectedChat === `support_${agent.email}`
+            );
+            return agent ? agent.status === "ACTIVE" : false;
+          })(),
+          role: "Support Agent",
+        }
+      : null);
 
-  const currentMessages = selectedChat === 'system'
-    ? groupMessages.map(msg => ({
-        id: msg.id,
-        sender: msg.senderName || msg.senderId,
-        content: msg.content,
-        timestamp: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
-        isOwn: msg.senderId === auth.currentUser?.uid,
-        status: 'read'
-      }))
-    : selectedChat.startsWith('support_')
-    ? [] // For now, support agent messages will be empty until we fetch them
-    : (personalMessages[selectedChat] || []).map(msg => ({
-        id: msg.id,
-        sender: msg.senderName || msg.senderId,
-        content: msg.content,
-        timestamp: msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '',
-        isOwn: msg.senderId === auth.currentUser?.uid,
-        status: msg.read ? 'read' : 'delivered'
-      }));
+  const currentMessages =
+    selectedChat === "system"
+      ? groupMessages.map((msg) => ({
+          id: msg.id,
+          sender: msg.senderName || msg.senderId,
+          content: msg.content,
+          timestamp: msg.createdAt
+            ? new Date(msg.createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "",
+          isOwn: msg.senderId === auth.currentUser?.uid,
+          status: "read",
+        }))
+      : selectedChat.startsWith("support_")
+      ? [] // For now, support agent messages will be empty until we fetch them
+      : (personalMessages[selectedChat] || []).map((msg) => ({
+          id: msg.id,
+          sender: msg.senderName || msg.senderId,
+          content: msg.content,
+          timestamp: msg.createdAt
+            ? new Date(msg.createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "",
+          isOwn: msg.senderId === auth.currentUser?.uid,
+          status: msg.read ? "read" : "delivered",
+        }));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
@@ -660,66 +1046,72 @@ const Communications = () => {
 
                 {/* Recent Conversations Section - moved to top */}
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Recent Conversations</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
+                    Recent Conversations
+                  </h3>
                   <div className="space-y-3">
-                    {chats.filter(chat => chat.type !== 'support').map((chat) => (
-                      <div
-                        key={chat.id}
-                        onClick={() => setSelectedChat(chat.id)}
-                        className={`p-4 cursor-pointer rounded-xl mb-3 transition-all duration-200 transform hover:scale-[1.02] ${
-                          selectedChat === chat.id 
-                            ? 'bg-primary-50 dark:bg-primary-900/30 shadow-md border-2 border-primary-300 dark:border-primary-600' 
-                            : 'hover:bg-gray-50 dark:hover:bg-secondary-700/50 border-2 border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="relative">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
-                              chat.type === 'group' 
-                                ? 'bg-primary-100 dark:bg-primary-900/30' 
-                                : 'bg-gray-100 dark:bg-secondary-600'
-                            }`}>
-                              {chat.type === 'group' ? (
-                                <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                              ) : (
-                                <UserIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                    {chats
+                      .filter((chat) => chat.type !== "support")
+                      .map((chat) => (
+                        <div
+                          key={chat.id}
+                          onClick={() => setSelectedChat(chat.id)}
+                          className={`p-4 cursor-pointer rounded-xl mb-3 transition-all duration-200 transform hover:scale-[1.02] ${
+                            selectedChat === chat.id
+                              ? "bg-primary-50 dark:bg-primary-900/30 shadow-md border-2 border-primary-300 dark:border-primary-600"
+                              : "hover:bg-gray-50 dark:hover:bg-secondary-700/50 border-2 border-transparent"
+                          }`}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className="relative">
+                              <div
+                                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                                  chat.type === "group"
+                                    ? "bg-primary-100 dark:bg-primary-900/30"
+                                    : "bg-gray-100 dark:bg-secondary-600"
+                                }`}
+                              >
+                                {chat.type === "group" ? (
+                                  <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                                ) : (
+                                  <UserIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                                )}
+                              </div>
+                              {chat.isOnline && chat.type === "personal" && (
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
                               )}
                             </div>
-                            {chat.isOnline && chat.type === 'personal' && (
-                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
-                            )}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                                {chat.name}
-                              </h3>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
-                                {chat.lastTime}
-                              </span>
-                            </div>
-                            
-                            {chat.type === 'personal' && (
-                              <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
-                                {chat.role}
-                              </p>
-                            )}
-                            
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                {chat.lastMessage || 'No messages yet'}
-                              </p>
-                              {chat.unreadCount > 0 && (
-                                <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 ml-2 font-semibold shadow-sm">
-                                  {chat.unreadCount}
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                  {chat.name}
+                                </h3>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
+                                  {chat.lastTime}
                                 </span>
+                              </div>
+
+                              {chat.type === "personal" && (
+                                <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
+                                  {chat.role}
+                                </p>
                               )}
+
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                  {chat.lastMessage || "No messages yet"}
+                                </p>
+                                {chat.unreadCount > 0 && (
+                                  <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 ml-2 font-semibold shadow-sm">
+                                    {chat.unreadCount}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
 
@@ -727,8 +1119,10 @@ const Communications = () => {
                 <div className="flex flex-col flex-1 min-h-0">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-sm font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wide">Support Team</h3>
-                      <button 
+                      <h3 className="text-sm font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wide">
+                        Support Team
+                      </h3>
+                      <button
                         onClick={fetchSupportAgents}
                         disabled={loadingSupportAgents}
                         className="p-2 rounded-xl text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-white/50 dark:hover:bg-primary-800/30 transition-all duration-200 shadow-sm"
@@ -744,11 +1138,13 @@ const Communications = () => {
                     {supportAgents.map((agent) => (
                       <button
                         key={agent.email}
-                        onClick={() => setSelectedChat(`support_${agent.email}`)}
+                        onClick={() =>
+                          setSelectedChat(`support_${agent.email}`)
+                        }
                         className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] ${
-                          selectedChat === `support_${agent.email}` 
-                            ? 'bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600' 
-                            : 'hover:bg-white/60 dark:hover:bg-secondary-700/50 border-2 border-transparent'
+                          selectedChat === `support_${agent.email}`
+                            ? "bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600"
+                            : "hover:bg-white/60 dark:hover:bg-secondary-700/50 border-2 border-transparent"
                         }`}
                       >
                         <div className="flex items-center space-x-3">
@@ -756,7 +1152,7 @@ const Communications = () => {
                             <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shadow-sm">
                               <UserIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                             </div>
-                            {agent.status === 'ACTIVE' && (
+                            {agent.status === "ACTIVE" && (
                               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
                             )}
                           </div>
@@ -764,7 +1160,9 @@ const Communications = () => {
                             <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                               {agent.firstName} {agent.lastName}
                             </p>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Support Agent</p>
+                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                              Support Agent
+                            </p>
                           </div>
                         </div>
                       </button>
@@ -785,40 +1183,57 @@ const Communications = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="relative">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
-                            currentChat.type === 'group' 
-                              ? 'bg-primary-100 dark:bg-primary-900/30' 
-                              : currentChat.type === 'support'
-                              ? 'bg-purple-100 dark:bg-purple-900/30'
-                              : 'bg-gray-100 dark:bg-secondary-600'
-                          }`}>
-                            {currentChat.type === 'group' ? (
+                          <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                              currentChat.type === "group"
+                                ? "bg-primary-100 dark:bg-primary-900/30"
+                                : currentChat.type === "support"
+                                ? "bg-purple-100 dark:bg-purple-900/30"
+                                : "bg-gray-100 dark:bg-secondary-600"
+                            }`}
+                          >
+                            {currentChat.type === "group" ? (
                               <UserGroupIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                             ) : (
-                              <UserIcon className={`h-6 w-6 ${
-                                currentChat.type === 'support' 
-                                  ? 'text-purple-600 dark:text-purple-400'
-                                  : 'text-gray-600 dark:text-gray-400'
-                              }`} />
+                              <UserIcon
+                                className={`h-6 w-6 ${
+                                  currentChat.type === "support"
+                                    ? "text-purple-600 dark:text-purple-400"
+                                    : "text-gray-600 dark:text-gray-400"
+                                }`}
+                              />
                             )}
                           </div>
-                          {currentChat.isOnline && currentChat.type !== 'group' && (
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
-                          )}
+                          {currentChat.isOnline &&
+                            currentChat.type !== "group" && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-secondary-800 shadow-sm"></div>
+                            )}
                         </div>
                         <div>
                           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                             {currentChat.name}
                           </h2>
-                          {currentChat.type === 'group' ? (
+                          {currentChat.type === "group" ? (
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {groupDetails ? (groupDetails.members || []).join(', ') : currentChat.participants?.join(', ') || 'System Group Chat'}
+                              {groupDetails
+                                ? (groupDetails.members || []).join(", ")
+                                : currentChat.participants?.join(", ") ||
+                                  "System Group Chat"}
                             </p>
                           ) : (
                             <div className="flex items-center space-x-2">
-                              <div className={`w-2 h-2 rounded-full ${currentChat.isOnline ? 'bg-success-500' : 'bg-gray-400'}`}></div>
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  currentChat.isOnline
+                                    ? "bg-success-500"
+                                    : "bg-gray-400"
+                                }`}
+                              ></div>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {currentChat.isOnline ? 'Online' : 'Last seen recently'} • {currentChat.role}
+                                {currentChat.isOnline
+                                  ? "Online"
+                                  : "Last seen recently"}{" "}
+                                • {currentChat.role}
                               </p>
                             </div>
                           )}
@@ -832,30 +1247,43 @@ const Communications = () => {
 
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-secondary-900">
-                    {loadingMessages && selectedChat === 'system' ? (
+                    {loadingMessages && selectedChat === "system" ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-3"></div>
-                          <p className="text-gray-500 dark:text-gray-400">Loading messages...</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Loading messages...
+                          </p>
                         </div>
                       </div>
-                    ) : selectedChat.startsWith('support_') ? (
+                    ) : selectedChat.startsWith("support_") ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-center max-w-md">
                           <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
                             <UserIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start a Conversation</h3>
-                          <p className="text-gray-600 dark:text-gray-400">Send a message to begin chatting with this support agent</p>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            Start a Conversation
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-400">
+                            Send a message to begin chatting with this support
+                            agent
+                          </p>
                         </div>
                       </div>
                     ) : (
                       currentMessages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'} mb-4`}
+                          className={`flex ${
+                            message.isOwn ? "justify-end" : "justify-start"
+                          } mb-4`}
                         >
-                          <div className={`max-w-xs lg:max-w-md ${message.isOwn ? 'order-2' : 'order-1'}`}>
+                          <div
+                            className={`max-w-xs lg:max-w-md ${
+                              message.isOwn ? "order-2" : "order-1"
+                            }`}
+                          >
                             {!message.isOwn && (
                               <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 ml-1">
                                 {message.sender}
@@ -864,15 +1292,19 @@ const Communications = () => {
                             <div
                               className={`rounded-2xl px-4 py-3 shadow-sm ${
                                 message.isOwn
-                                  ? 'bg-primary-500 text-white rounded-br-md ml-auto'
-                                  : 'bg-white dark:bg-secondary-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-secondary-600'
+                                  ? "bg-primary-500 text-white rounded-br-md ml-auto"
+                                  : "bg-white dark:bg-secondary-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-secondary-600"
                               }`}
                             >
-                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className="text-sm leading-relaxed">
+                                {message.content}
+                              </p>
                             </div>
-                            <div className={`flex items-center space-x-2 mt-2 ${
-                              message.isOwn ? 'justify-end' : 'justify-start'
-                            }`}>
+                            <div
+                              className={`flex items-center space-x-2 mt-2 ${
+                                message.isOwn ? "justify-end" : "justify-start"
+                              }`}
+                            >
                               <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
                                 {message.timestamp}
                               </span>
@@ -887,7 +1319,10 @@ const Communications = () => {
 
                   {/* Message Input */}
                   <div className="p-6 bg-white dark:bg-secondary-800 border-t border-gray-200 dark:border-secondary-600">
-                    <form onSubmit={handleSendMessage} className="flex items-center space-x-4">
+                    <form
+                      onSubmit={handleSendMessage}
+                      className="flex items-center space-x-4"
+                    >
                       <div className="flex-1 relative">
                         <input
                           type="text"
@@ -921,7 +1356,8 @@ const Communications = () => {
                       Welcome to Communications
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                      Select a conversation from the sidebar to start messaging with your team members or support agents.
+                      Select a conversation from the sidebar to start messaging
+                      with your team members or support agents.
                     </p>
                   </div>
                 </div>
