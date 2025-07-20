@@ -135,13 +135,6 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Emergency Response",
       permissions: [1, 2, 3, 4], // All users can access panic alerts
     },
-    {
-      name: "Profile",
-      path: "/support/profile",
-      icon: UserIcon,
-      description: "Agent Profile",
-      permissions: [1, 2, 3, 4], // All users can access profile
-    },
   ];
 
   // Sign out handler
@@ -309,18 +302,42 @@ const SupportSidebar = ({ isOpen, onClose }) => {
           <Link
             to="/support/profile"
             onClick={onClose}
-            className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors mb-3"
+            className={`group flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 mb-3 ${
+              location.pathname === "/support/profile"
+                ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-800 hover:text-primary-600 dark:hover:text-primary-400 hover:shadow-md"
+            }`}
           >
-            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold">S</span>
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-lg mr-3 transition-colors duration-200 ${
+                location.pathname === "/support/profile"
+                  ? "bg-white/20"
+                  : "bg-gray-100 dark:bg-secondary-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20"
+              }`}
+            >
+              <UserIcon
+                className={`h-5 w-5 ${
+                  location.pathname === "/support/profile"
+                    ? "text-white"
+                    : "text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400"
+                }`}
+              />
             </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                Support Agent
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Customer Support
-              </p>
+            <div className="flex-1 min-w-0">
+              <div
+                className={`font-semibold ${location.pathname === "/support/profile" ? "text-white" : ""}`}
+              >
+                Profile
+              </div>
+              <div
+                className={`text-xs mt-0.5 ${
+                  location.pathname === "/support/profile"
+                    ? "text-white/80"
+                    : "text-gray-500 dark:text-gray-400 group-hover:text-primary-500 dark:group-hover:text-primary-400"
+                }`}
+              >
+                Agent Profile
+              </div>
             </div>
           </Link>
 
