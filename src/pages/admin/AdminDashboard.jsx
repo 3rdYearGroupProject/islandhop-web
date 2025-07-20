@@ -36,7 +36,7 @@ const AdminDashboard = ({ onPageChange }) => {
     },
     {
       title: "Revenue",
-      value: "$324,567",
+      value: "LKR 324,567",
       change: "+15%",
       changeType: "positive",
       icon: ChartBarIcon,

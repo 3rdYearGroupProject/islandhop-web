@@ -23,6 +23,7 @@ const ProtectedSupportRoute = ({ children, requiredPermissions = [] }) => {
           });
 
           if (response.ok) {
+            console.log('Response',response)
             const data = await response.json();
             if (data.success) {
               setUserPermission(data.permission);
