@@ -102,20 +102,17 @@ const Accounts = () => {
     // Filter accounts based on search and filters
     let filtered = accounts.filter((account) => {
       const matchesSearch =
-        account.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        account.email.toLowerCase().includes(filters.search.toLowerCase());
+        (account.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+         account.email?.toLowerCase().includes(filters.search.toLowerCase())) ?? false;
+
       let matchesStatus = false;
       if (filters.status === "all") {
         matchesStatus = true;
-      } else if (filters.status === "active") {
-        matchesStatus = account.status === "active";
-      } else if (filters.status === "inactive") {
-        matchesStatus = account.status === "inactive" || account.status === "deactivated";
+      } else {
+        matchesStatus = account.status?.toLowerCase() === filters.status.toLowerCase();
       }
-      const matchesUserType =
-        filters.userType === "all" || account.userType === filters.userType;
 
-      return matchesSearch && matchesStatus && matchesUserType;
+      return matchesSearch && matchesStatus;
     });
 
     setFilteredAccounts(filtered);
