@@ -7,6 +7,7 @@ console.log('🔧 Environment Debug:', {
   USER_SERVICES_URL: process.env.REACT_APP_API_BASE_URL_USER_SERVICES,
   TRIP_PLANNING_URL: process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING,
   ADMIN_SERVICES_URL: process.env.REACT_APP_API_BASE_URL_ADMIN_SERVICES,
+  POOLING_SERVICES_URL: process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE,
   ENVIRONMENT: process.env.REACT_APP_ENVIRONMENT,
   ALL_ENV_VARS: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
 });
@@ -15,7 +16,8 @@ console.log('🔧 Environment Debug:', {
 const BASE_URLS = {
   USER_SERVICES: process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1',
   TRIP_PLANNING: process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1',
-  ADMIN_SERVICES: process.env.REACT_APP_API_BASE_URL_ADMIN_SERVICES || 'http://localhost:8091/api/v1'
+  ADMIN_SERVICES: process.env.REACT_APP_API_BASE_URL_ADMIN_SERVICES || 'http://localhost:8091/api/v1',
+  POOLING_SERVICES: process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1'
 };
 
 // Create base axios instance
@@ -116,6 +118,7 @@ const createApiInstance = (baseURL) => {
 export const userServicesApi = createApiInstance(BASE_URLS.USER_SERVICES);
 export const tripPlanningApi = createApiInstance(BASE_URLS.TRIP_PLANNING);
 export const adminServicesApi = createApiInstance(BASE_URLS.ADMIN_SERVICES);
+export const poolingServicesApi = createApiInstance(BASE_URLS.POOLING_SERVICES);
 
 // Default export (User Services for backward compatibility)
 export default userServicesApi;

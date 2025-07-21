@@ -21,6 +21,12 @@ import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
 import PoolDetailsPage from '../pages/pools/PoolDetailsPage';
+import CompatibleGroupsPage from '../pages/pools/CompatibleGroupsPage';
+import TripSuggestionsPage from '../pages/pools/TripSuggestionsPage';
+import InvitationsAndRequests from '../pages/pools/InvitationsAndRequests';
+import AITripDurationPage from '../pages/AITripDurationPage';
+import AITripPreferencesPage from '../pages/AITripPreferencesPage';
+import AITripView from '../pages/AITripView';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -117,6 +123,16 @@ const GeneralRoutes = () => (
         <PoolPreferencesPage />
       </PublicRoute>
     } />
+    <Route path="/compatible-groups" element={
+      <PublicRoute>
+        <CompatibleGroupsPage />
+      </PublicRoute>
+    } />
+    <Route path="/trip-suggestions" element={
+      <PublicRoute>
+        <TripSuggestionsPage />
+      </PublicRoute>
+    } />
     <Route path="/pool-itinerary" element={
       <PublicRoute>
         <PoolItineraryPage />
@@ -127,6 +143,29 @@ const GeneralRoutes = () => (
         <PoolDetailsPage />
       </PublicRoute>
     } />
+    <Route path="/invitations" element={
+      <PublicRoute>
+        <InvitationsAndRequests />
+      </PublicRoute>
+    } />
+    
+    {/* AI Trip Routes */}
+    <Route path="/ai-trip-duration" element={
+      <PublicRoute>
+        <AITripDurationPage />
+      </PublicRoute>
+    } />
+    <Route path="/ai-trip-preferences" element={
+      <PublicRoute>
+        <AITripPreferencesPage />
+      </PublicRoute>
+    } />
+    <Route path="/ai-trip-view" element={
+      <PublicRoute>
+        <AITripView />
+      </PublicRoute>
+    } />
+
     
     {/* Protected Routes */}
     <Route path="/signup" element={

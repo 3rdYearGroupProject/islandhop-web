@@ -23,16 +23,6 @@ import islandHopLogo from "../../assets/IslandHop.png";
 const AdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
-  const handleViewProfile = () => {
-    setIsDropdownOpen(false);
-    navigate("/admin/profile");
-  };
 
   const adminMenuItems = [
     {
@@ -78,24 +68,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       description: "Manage System Data",
     },
     {
-      name: "Hosting",
-      path: "/admin/hosting",
-      icon: ComputerDesktopIcon,
-      description: "Server Management",
-    },
-    {
-      name: "Reviews",
-      path: "/admin/reviews",
-      icon: StarIcon,
-      description: "Review Moderation",
-    },
-    {
-      name: "Notifications",
-      path: "/admin/notifications",
-      icon: BellIcon,
-      description: "System Alerts",
-    },
-    {
       name: "APIs",
       path: "/admin/apis",
       icon: CircleStackIcon,
@@ -106,12 +78,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       path: "/admin/history",
       icon: ClockIcon,
       description: "Audit Logs",
-    },
-    {
-      name: "Profile",
-      path: "/admin/profile",
-      icon: UserIcon,
-      description: "Admin Profile",
     },
   ];
 
@@ -175,26 +141,18 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* IslandHop Header (Desktop) */}
-        <div className="hidden lg:flex items-center px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white rounded-lg shadow-lg">
-              <img
-                src={islandHopIcon}
-                alt="IslandHop Icon"
-                className="h-8 w-8 object-contain"
-              />
-            </div>
-            <div>
-              <img
-                src={islandHopLogo}
-                alt="IslandHop Logo"
-                className="h-6 object-contain"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Admin Dashboard
-              </p>
-            </div>
+        <div className="hidden lg:flex flex-col items-start px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
+          <div className="flex items-center mb-1 ml-3">
+            <img
+              src={islandHopIcon}
+              alt="IslandHop Icon"
+              className="h-8 w-8 mr-2"
+            />
+            <img src={islandHopLogo} alt="IslandHop Logo" className="h-6" />
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 ml-[51px]">
+            Admin Dashboard
+          </p>
         </div>
 
         {/* Navigation Items */}
@@ -253,94 +211,63 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* System Status */}
-        <div className="px-4 py-4 border-t border-gray-200 dark:border-secondary-700">
-          <div className="bg-gray-50 dark:bg-secondary-800 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                System Status
-              </span>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-success-600 dark:text-success-400 font-medium">
-                  Online
-                </span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="text-gray-600 dark:text-gray-400">
-                <span className="block font-medium">Uptime</span>
-                <span className="text-success-600 dark:text-success-400">
-                  99.9%
-                </span>
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                <span className="block font-medium">Load</span>
-                <span className="text-warning-600 dark:text-warning-400">
-                  Medium
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Footer */}
         <div className="px-4 py-3 border-t border-gray-200 dark:border-secondary-700">
-          {/* Admin Profile Dropdown */}
-          <div className="relative mb-3">
-            <button
-              onClick={toggleDropdown}
-              className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-secondary-800 transition-colors"
+          {/* Admin Profile */}
+          <Link
+            to="/admin/profile"
+            onClick={onClose}
+            className={`group flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 mb-3 ${
+              location.pathname === "/admin/profile"
+                ? "bg-primary-500 text-white shadow-lg shadow-primary-500/25 border-l-4 border-primary-300"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-800 hover:text-primary-600 dark:hover:text-primary-400 hover:shadow-md"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-lg mr-3 transition-colors duration-200 ${
+                location.pathname === "/admin/profile"
+                  ? "bg-white/20"
+                  : "bg-gray-100 dark:bg-secondary-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20"
+              }`}
             >
-              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold">A</span>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  Admin
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  System Administrator
-                </p>
-              </div>
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
+              <UserIcon
+                className={`h-5 w-5 ${
+                  location.pathname === "/admin/profile"
+                    ? "text-white"
+                    : "text-gray-600 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400"
                 }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div
+                className={`font-semibold ${
+                  location.pathname === "/admin/profile" ? "text-white" : ""
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            {isDropdownOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-gray-200 dark:border-secondary-700 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={handleViewProfile}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-secondary-700"
-                  >
-                    View Profile
-                  </button>
-                </div>
+                Profile
               </div>
-            )}
-          </div>
+              <div
+                className={`text-xs mt-0.5 ${
+                  location.pathname === "/admin/profile"
+                    ? "text-white/80"
+                    : "text-gray-500 dark:text-gray-400 group-hover:text-primary-500 dark:group-hover:text-primary-400"
+                }`}
+              >
+                Admin Profile
+              </div>
+            </div>
+          </Link>
 
           {/* Quick Actions */}
           <div className=" py-4 border-t border-gray-200 dark:border-secondary-700">
             <div className="space-y-2">
-              <button className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-secondary-800 hover:bg-gray-200 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors duration-200">
+              <Link
+                to="notifications"
+                className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-secondary-800 hover:bg-gray-200 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors duration-200"
+              >
                 <BellIcon className="h-4 w-4 mr-2" />
                 Notifications
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -364,7 +291,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             Sign Out
           </button>
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            © 2024 IslandHop Admin
+            © 2025 IslandHop Admin
           </p>
         </div>
       </div>

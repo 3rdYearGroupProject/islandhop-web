@@ -1,17 +1,42 @@
 import React from 'react';
-import { Heart, MoreHorizontal, MapPin, Calendar, Users, Star, Share2, UserPlus, Eye } from 'lucide-react';
+import { Heart, MoreHorizontal, MapPin, Calendar, Users, Star, Share2, UserPlus, Eye, TrendingUp } from 'lucide-react';
 
-const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonIcon = UserPlus }) => {
+const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonIcon = UserPlus, showCompatibilityScore = false, compatibilityScore }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'open':
+      case 'active':
         return 'bg-green-100 text-green-800 border-green-400';
+      case 'open':
+        return 'bg-blue-100 text-blue-800 border-blue-400';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-400';
       case 'full':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'closed':
         return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       default:
         return 'bg-blue-100 text-blue-800 border-blue-200';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'open':
+        return 'Open';
+      case 'draft':
+        return 'Draft';
+      case 'full':
+        return 'Full';
+      case 'closed':
+        return 'Closed';
+      case 'completed':
+        return 'Completed';
+      default:
+        return 'Available';
     }
   };
 
@@ -42,9 +67,19 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
         />
         <div className="absolute top-4 left-4">
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(pool.status || 'open')}`}>
-            {(pool.status || 'open').charAt(0).toUpperCase() + (pool.status || 'open').slice(1)}
+            {getStatusText(pool.status || 'open')}
           </span>
         </div>
+        
+        {/* Compatibility Score Badge */}
+        {showCompatibilityScore && compatibilityScore && (
+          <div className="absolute top-4 left-4 mt-8">
+            <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              {Math.round(compatibilityScore * 100)}% Match
+            </div>
+          </div>
+        )}
         <div className="absolute top-4 right-4">
           <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
             <Heart className="h-4 w-4 text-gray-600 hover:text-red-500" />
@@ -108,6 +143,27 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
                 <span className="inline-block px-3 py-1 bg-gray-50 text-gray-600 text-xs rounded-full font-medium">
                   +{pool.highlights.length - 3} more
                 </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Compatibility Details for Similar Trips */}
+        {showCompatibilityScore && pool.compatibilityDetails && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-xs font-medium text-green-800 mb-2">Why this matches:</div>
+            <div className="space-y-1">
+              {pool.compatibilityDetails.commonActivities?.length > 0 && (
+                <div className="text-xs text-green-700">
+                  <span className="font-medium">Common activities:</span> {pool.compatibilityDetails.commonActivities.slice(0, 3).join(', ')}
+                  {pool.compatibilityDetails.commonActivities.length > 3 && ` +${pool.compatibilityDetails.commonActivities.length - 3} more`}
+                </div>
+              )}
+              {pool.compatibilityDetails.commonTerrains?.length > 0 && (
+                <div className="text-xs text-green-700">
+                  <span className="font-medium">Common terrains:</span> {pool.compatibilityDetails.commonTerrains.slice(0, 3).join(', ')}
+                  {pool.compatibilityDetails.commonTerrains.length > 3 && ` +${pool.compatibilityDetails.commonTerrains.length - 3} more`}
+                </div>
               )}
             </div>
           </div>

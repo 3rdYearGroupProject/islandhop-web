@@ -69,6 +69,10 @@ const GuideProfile = () => {
   const [isEditingCerts, setIsEditingCerts] = useState(false);
   const [isEditingLangs, setIsEditingLangs] = useState(false);
 
+  // Certificate modal state
+  const [certificateModalOpen, setCertificateModalOpen] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
+
   // Track uploaded profile picture file
   const [profilePictureFile, setProfilePictureFile] = useState(null);
 
@@ -100,7 +104,7 @@ const GuideProfile = () => {
       
       if (userEmail) {
         // Fetch certificates
-        const certsRes = await userServicesApi.get(`/guide/certificates?email=${userEmail}`);
+        const certsRes = await userServicesApi.get(`/guide/certificates`);
         if (certsRes.status === 200 && Array.isArray(certsRes.data)) {
           setGuideData(prev => ({ ...prev, certifications: certsRes.data }));
         }
@@ -307,11 +311,9 @@ const GuideProfile = () => {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Loading Screen */}
       {isLoading ? (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex my-20 justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Profile...</h2>
-            <p className="text-gray-600">Please wait while we fetch your information</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           </div>
         </div>
       ) : (
@@ -609,7 +611,7 @@ const GuideProfile = () => {
                     <div key={cert.id} className="border border-gray-200 rounded-lg p-6 flex flex-col gap-2">
                       {/* Only allow upload, display all other fields as read-only */}
                       <div className="space-y-2 text-sm text-gray-600">
-                        <div><span className="font-medium">Issuer:</span> {cert.issuer}</div>
+                        <div><span className="font-medium">Issuer:</span> {cert.certificateIssuer}</div>
                         <div><span className="font-medium">Issue Date:</span> {cert.issueDate}</div>
                         <div><span className="font-medium">Expiry:</span> {cert.expiryDate}</div>
                         <div><span className="font-medium">Verification #:</span> {cert.verificationNumber}</div>
@@ -647,7 +649,14 @@ const GuideProfile = () => {
                         </>
                       )}
                       <div className="mt-4 flex space-x-2">
-                        <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                        <button 
+                          className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                          onClick={() => {
+                            setSelectedCertificate(cert);
+                            setCertificateModalOpen(true);
+                          }}
+                          disabled={!cert.certificatePictureBase64 && !cert.documentUrl}
+                        >
                           View Certificate
                         </button>
                       </div>
@@ -710,18 +719,35 @@ const GuideProfile = () => {
                       <div key={lang.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-2">
                         {isEditingLangs ? (
                           <>
-                            <input
-                              type="text"
-                              placeholder="Language"
-                              value={lang.language}
+                            <select
                               className="w-full p-2 border border-gray-300 rounded-lg"
+                              value={lang.language}
                               onChange={e => {
                                 const newLangs = [...guideData.languages];
                                 newLangs[idx].language = e.target.value;
                                 setGuideData(prev => ({ ...prev, languages: newLangs }));
                               }}
                               required
-                            />
+                            >
+                              <option value="">Select Language</option>
+                              <option value="English">English</option>
+                              <option value="Sinhala">Sinhala</option>
+                              <option value="Tamil">Tamil</option>
+                              <option value="French">French</option>
+                              <option value="German">German</option>
+                              <option value="Spanish">Spanish</option>
+                              <option value="Italian">Italian</option>
+                              <option value="Japanese">Japanese</option>
+                              <option value="Chinese">Chinese</option>
+                              <option value="Korean">Korean</option>
+                              <option value="Russian">Russian</option>
+                              <option value="Arabic">Arabic</option>
+                              <option value="Hindi">Hindi</option>
+                              <option value="Dutch">Dutch</option>
+                              <option value="Portuguese">Portuguese</option>
+                              <option value="Thai">Thai</option>
+                              <option value="Other">Other</option>
+                            </select>
                             <select
                               className="w-full p-2 border border-gray-300 rounded-lg"
                               value={lang.proficiency}
@@ -782,6 +808,144 @@ const GuideProfile = () => {
         </div>
       </div>
         </>
+      )}
+
+      {/* Certificate View Modal */}
+      {certificateModalOpen && selectedCertificate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative">
+            {/* Modal Header */}
+            <div className="bg-primary-600 p-4 text-white relative">
+              <button
+                onClick={() => {
+                  setCertificateModalOpen(false);
+                  setSelectedCertificate(null);
+                }}
+                className="absolute top-4 right-4 text-white hover:text-gray-200 text-2xl font-bold z-10"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-bold">Certificate Details</h2>
+              <p className="text-white/80 text-sm mt-1">
+                {selectedCertificate.issuer} - {selectedCertificate.verificationNumber}
+              </p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              {/* Certificate Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Issuer:</span>
+                    <p className="text-gray-900 font-medium">{selectedCertificate.issuer}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Issue Date:</span>
+                    <p className="text-gray-900">{selectedCertificate.issueDate || 'Not specified'}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Expiry Date:</span>
+                    <p className="text-gray-900">{selectedCertificate.expiryDate || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Status:</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedCertificate.status)}`}>
+                      {selectedCertificate.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Certificate Image/Document */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Certificate Document</h3>
+                {selectedCertificate.certificatePictureBase64 ? (
+                  <div className="flex justify-center">
+                    <iframe
+                      src={`data:application/pdf;base64,${selectedCertificate.certificatePictureBase64}`}
+                      className="w-full h-96 border border-gray-200 rounded-lg"
+                      title="Certificate PDF"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <div 
+                      className="text-center text-gray-500 py-8"
+                      style={{ display: 'none' }}
+                    >
+                      <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg font-medium mb-2">PDF Viewer Not Supported</p>
+                      <p className="text-sm">Your browser doesn't support inline PDF viewing.</p>
+                      <p className="text-sm">Please use the download button to view the certificate.</p>
+                    </div>
+                  </div>
+                ) : selectedCertificate.documentUrl ? (
+                  <div className="flex justify-center">
+                    <iframe
+                      src={selectedCertificate.documentUrl}
+                      className="w-full h-96 border border-gray-200 rounded-lg"
+                      title="Certificate PDF"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <div 
+                      className="text-center text-gray-500 py-8"
+                      style={{ display: 'none' }}
+                    >
+                      <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <p>Unable to display certificate</p>
+                      <p className="text-sm">The certificate file could not be loaded</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-lg font-medium mb-2">No Certificate Document</p>
+                    <p className="text-sm">No certificate file has been uploaded for this entry</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  {selectedCertificate.certificatePictureBase64 && (
+                    <button
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `data:application/pdf;base64,${selectedCertificate.certificatePictureBase64}`;
+                        link.download = `certificate-${selectedCertificate.verificationNumber || 'document'}.pdf`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
+                      Download PDF Certificate
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setCertificateModalOpen(false);
+                    setSelectedCertificate(null);
+                  }}
+                  className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

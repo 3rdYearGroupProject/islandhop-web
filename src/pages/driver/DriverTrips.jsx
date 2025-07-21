@@ -22,6 +22,7 @@ const DriverTrips = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, active, completed, cancelled
+  const [loading, setLoading] = useState(false);
   const [trips, setTrips] = useState([
     {
       id: 'TR001',
@@ -31,7 +32,7 @@ const DriverTrips = () => {
       destination: 'Galle Fort',
       distance: '120 km',
       estimatedTime: '2h 30m',
-      fare: 89.50,
+      fare: 890.50,
       status: 'active',
       startTime: '2:30 PM',
       passengerRating: 4.9,
@@ -48,7 +49,7 @@ const DriverTrips = () => {
       destination: 'Nuwara Eliya',
       distance: '75 km',
       estimatedTime: '1h 45m',
-      fare: 95.00,
+      fare: 950.00,
       status: 'pending',
       passengerRating: 4.7,
       tripType: 'full_trip',
@@ -63,12 +64,11 @@ const DriverTrips = () => {
       destination: 'Colombo',
       distance: '200 km',
       estimatedTime: '4h 30m',
-      fare: 180.00,
+      fare: 1800.00,
       status: 'pending',
       passengerRating: 4.9,
       tripType: 'partial_trip',
       requestTime: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
-      note: 'Leg 2 of 3 - Ella to Colombo. Other drivers will handle other segments.'
     },
     {
       id: 'TR004',
@@ -78,7 +78,7 @@ const DriverTrips = () => {
       destination: 'Dambulla Cave Temple',
       distance: '22 km',
       estimatedTime: '45m',
-      fare: 35.00,
+      fare: 3500.00,
       status: 'completed',
       completedTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
       passengerRating: 4.8,
@@ -94,7 +94,7 @@ const DriverTrips = () => {
       destination: 'Colombo Airport',
       distance: '85 km',
       estimatedTime: '1h 30m',
-      fare: 75.00,
+      fare: 750.00,
       status: 'completed',
       completedTime: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
       passengerRating: 4.6,
@@ -156,7 +156,14 @@ const DriverTrips = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Trips</h1>
@@ -314,9 +321,9 @@ const DriverTrips = () => {
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Fare</p>
-                        <p className="font-semibold text-sm">${trip.fare}</p>
+                        <p className="font-semibold text-sm">LKR{trip.fare}</p>
                         {trip.tip && trip.tip > 0 && (
-                          <p className="text-xs text-green-600">+${trip.tip} tip</p>
+                          <p className="text-xs text-green-600">+LKR{trip.tip} tip</p>
                         )}
                       </div>
                     </div>

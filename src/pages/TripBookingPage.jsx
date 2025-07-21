@@ -46,7 +46,9 @@ const TripBookingPage = () => {
   // Google Maps API loading
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: ['places', 'marker'], // Use same libraries as ViewTripPage
+    preventGoogleFontsLoading: true
   });
 
   // Load PayHere script

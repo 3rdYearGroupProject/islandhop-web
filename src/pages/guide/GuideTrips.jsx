@@ -37,7 +37,7 @@ const GuideTrips = () => {
       distance: '25 km',
       estimatedTime: '6 hours',
       groupSize: 4,
-      fare: 600.00,
+      fare: 6000.00,
       status: 'pending',
       startTime: '09:00 AM',
       requestTime: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
@@ -60,7 +60,7 @@ const GuideTrips = () => {
       distance: '15 km',
       estimatedTime: '8 hours',
       groupSize: 2,
-      fare: 360.00,
+      fare: 3600.00,
       status: 'active',
       startTime: '07:00 AM',
       requestTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
@@ -84,7 +84,7 @@ const GuideTrips = () => {
       distance: '12 km',
       estimatedTime: '4 hours',
       groupSize: 3,
-      fare: 285.00,
+      fare: 28500.00,
       status: 'pending',
       startTime: '04:00 PM',
       requestTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
@@ -107,14 +107,14 @@ const GuideTrips = () => {
       distance: '22 km',
       estimatedTime: '5 hours',
       groupSize: 6,
-      fare: 900.00,
+      fare: 9000.00,
       status: 'completed',
       startTime: '08:00 AM',
       completedTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
       tripType: 'historical_tour',
       tourDate: '2024-12-12',
       guideRating: 5,
-      tip: 50.00
+      tip: 5000.00
     },
     {
       id: 'TR005',
@@ -131,14 +131,14 @@ const GuideTrips = () => {
       distance: '8 km',
       estimatedTime: '3 hours',
       groupSize: 2,
-      fare: 180.00,
+      fare: 18000.00,
       status: 'completed',
       startTime: '10:00 AM',
       completedTime: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
       tripType: 'walking_tour',
       tourDate: '2024-12-11',
       guideRating: 4,
-      tip: 20.00
+      tip: 2000.00
     }
   ]);
 
@@ -356,22 +356,22 @@ const GuideTrips = () => {
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Fee</p>
-                        <p className="font-semibold text-sm">${trip.fare}</p>
+                        <p className="font-semibold text-sm">LKR{trip.fare}</p>
                         {trip.tip && trip.tip > 0 && (
-                          <p className="text-xs text-green-600">+${trip.tip} tip</p>
+                          <p className="text-xs text-green-600">+LKR{trip.tip} tip</p>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {trip.note && (
+                  {/* {trip.note && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                       <div className="flex items-start">
                         <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
                         <span className="text-sm text-blue-700">{trip.note}</span>
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   {trip.status === 'active' && trip.progress && (
                     <div className="mb-4">

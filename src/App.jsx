@@ -1,3 +1,4 @@
+import OngoingTripPage from './pages/OngoingTripPage';
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from './components/ToastProvider'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -35,6 +36,8 @@ function App() {
         <Routes>
           {/* General/Public and Tourist Routes */}
           <Route path="/*" element={<GeneralRoutes />} />
+          {/* Ongoing Trip Page */}
+          <Route path="/ongoing-trip" element={<OngoingTripPage />} />
           {/* Admin Dashboard */}
           <Route path="/admin/*" element={<AdminRoutes />} />
           {/* Support Dashboard */}

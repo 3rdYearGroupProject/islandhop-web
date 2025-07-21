@@ -6,6 +6,10 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SharePoolModal from '../components/SharePoolModal';
 import JoinPoolModal from '../components/JoinPoolModal';
+import InviteUserModal from '../components/InviteUserModal';
+import JoinRequestsManager from '../components/JoinRequestsManager';
+import { PoolsApi } from '../api/poolsApi';
+import { useAuth } from '../hooks/useAuth';
 
 // Mock participant data (replace with real data as needed)
 const mockParticipants = {
@@ -62,8 +66,10 @@ const ViewPoolPage = () => {
   const [loading, setLoading] = useState(true);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const { user } = useAuth();
   // Mock join requests data
   const mockJoinRequests = [
     {
@@ -395,8 +401,29 @@ const ViewPoolPage = () => {
       <JoinPoolModal
         open={joinModalOpen}
         onClose={() => setJoinModalOpen(false)}
-        participants={[mockParticipants.owner, ...mockParticipants.participants]}
-        onRequestJoin={handleRequestJoin}
+        poolData={pool}
+        onSuccess={(result) => {
+          console.log('Join request sent:', result);
+          alert('Join request sent successfully!');
+        }}
+      />
+      <InviteUserModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        groupData={pool}
+        onSuccess={(result) => {
+          console.log('Invitation sent:', result);
+          alert('Invitation sent successfully!');
+        }}
+      />
+      <JoinRequestsManager
+        groupId={pool?.id}
+        isOpen={joinRequestsModalOpen}
+        onClose={() => setJoinRequestsModalOpen(false)}
+        onRequestUpdate={(result) => {
+          console.log('Join request updated:', result);
+          // Refresh pool data if needed
+        }}
       />
       {/* Floating Bill-shaped Navbar overlays the top, so pull content down and let blue header go behind */}
       <div className="relative z-10">
@@ -444,6 +471,14 @@ const ViewPoolPage = () => {
                   >
                     <Share2 className="w-5 h-5 mr-2" />
                     Share Pool
+                  </button>
+                  <button
+                    onClick={() => setInviteModalOpen(true)}
+                    className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
+                    title="Invite Users"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Invite Users
                   </button>
                   <button
                     onClick={() => setJoinRequestsModalOpen(true)}
