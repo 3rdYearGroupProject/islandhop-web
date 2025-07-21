@@ -18,7 +18,10 @@ const center = {
 
 const MapPopupModal = ({ open, onClose, pickup, destination }) => {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: 'MOCK_KEY', // Use a mock key for now
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'MOCK_KEY',
+    libraries: ['places', 'marker'], // Use consistent libraries
+    preventGoogleFontsLoading: true
   });
 
   if (!open) return null;
