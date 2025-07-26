@@ -109,7 +109,7 @@ const TripPreferencesPage = () => {
     try {
       console.log('🚀 Creating trip itinerary...', requestPayload);
       
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1';
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1';
       const response = await fetch(`${apiBaseUrl}/itinerary/initiate`, {
         method: 'POST',
         headers: {

@@ -371,7 +371,7 @@ const MyTripsPage = () => {
     console.log('👤 Fetching trips for userId:', userId);
     console.log('🌍 Full API URL will be constructed as:');
     
-    const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary?userId=${userId}`;
+    const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary?userId=${userId}`;
     console.log('🔗 Complete API URL:', apiUrl);
     
     try {
@@ -462,7 +462,7 @@ const MyTripsPage = () => {
       
       if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
         userFriendlyMessage = 'Unable to connect to server. Please check if the backend is running or your internet connection.';
-        console.error('❌ NETWORK ERROR DETECTED - backend may not be running on localhost:8084');
+        console.error('❌ NETWORK ERROR DETECTED - backend may not be running on localhost:8085');
       } else if (error.message.includes('Invalid userId')) {
         userFriendlyMessage = 'Authentication issue. Please try logging in again.';
         console.error('❌ AUTHENTICATION ERROR');
@@ -853,7 +853,7 @@ const MyTripsPage = () => {
                     {apiError.includes('backend') && (
                       <div className="text-xs text-red-600 bg-red-100 p-2 rounded">
                         <strong>For developers:</strong> Make sure your backend servers are running on:
-                        <br />• Trip Planning: {process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}
+                        <br />• Trip Planning: {process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}
                         <br />• User Services: {process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1'}
                       </div>
                     )}
