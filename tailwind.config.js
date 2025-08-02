@@ -172,7 +172,7 @@ module.exports = {
         'brand-lg': '0 10px 40px 0 rgb(37 99 235 / 0.15)',
       },
       screens: {
-        'xs': '475px',
+        'xs': '375px',
         'sm': '640px',
         'md': '768px',
         'lg': '1024px',
@@ -181,8 +181,17 @@ module.exports = {
         '3xl': '1920px',
         // Custom breakpoints for mobile-first approach
         'mobile': { 'max': '767px' },
+        'mobile-lg': { 'max': '639px' },
+        'mobile-sm': { 'max': '374px' },
         'tablet': { 'min': '768px', 'max': '1023px' },
         'desktop': { 'min': '1024px' },
+        'desktop-lg': { 'min': '1280px' },
+        // Touch device specific
+        'touch': { 'raw': '(hover: none) and (pointer: coarse)' },
+        'no-touch': { 'raw': '(hover: hover) and (pointer: fine)' },
+        // Landscape/Portrait
+        'landscape': { 'raw': '(orientation: landscape)' },
+        'portrait': { 'raw': '(orientation: portrait)' },
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

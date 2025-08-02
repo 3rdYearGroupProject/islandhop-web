@@ -406,13 +406,163 @@
     @apply hidden md:block lg:hidden;
   }
   
-  /* Hide scrollbar for horizontal scrolling */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
+  /* Mobile Responsive Utilities */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
   }
+  
+  .mobile-section-padding {
+    @apply py-8 sm:py-12 lg:py-16;
+  }
+  
+  .mobile-text-responsive {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+  
+  .mobile-heading-xl {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
+  }
+  
+  .mobile-heading-lg {
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl;
+  }
+  
+  .mobile-heading-md {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+  
+  /* Touch-friendly interactions */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  .touch-button {
+    @apply touch-manipulation select-none min-h-[44px] px-4 py-2;
+  }
+  
+  /* Mobile-first card layouts */
+  .mobile-card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+  
+  .mobile-card-grid-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6;
+  }
+  
+  .mobile-card-grid-dense {
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4;
+  }
+  
+  /* Mobile scroll containers */
+  .mobile-scroll-container {
+    @apply flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide;
+  }
+  
+  .mobile-scroll-item {
+    @apply flex-shrink-0 w-72 sm:w-80;
+  }
+  
+  /* Mobile modal and overlay improvements */
+  .mobile-modal {
+    @apply fixed inset-0 sm:inset-4 sm:max-w-4xl sm:max-h-[90vh] sm:mx-auto sm:my-auto bg-white rounded-none sm:rounded-xl;
+  }
+  
+  .mobile-modal-content {
+    @apply h-full sm:h-auto overflow-y-auto;
+  }
+  
+  /* Mobile navigation */
+  .mobile-nav-item {
+    @apply block w-full px-4 py-3 text-left rounded-lg transition-colors touch-manipulation;
+  }
+  
+  /* Mobile form elements */
+  .mobile-input {
+    @apply form-input text-base; /* Prevents zoom on iOS */
+  }
+  
+  .mobile-button {
+    @apply touch-button font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .mobile-button-primary {
+    @apply mobile-button bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  
+  .mobile-button-secondary {
+    @apply mobile-button border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white focus:ring-primary-500;
+  }
+  
+  /* Mobile-specific animations */
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-in-up {
+    animation: slideInUp 0.3s ease-out;
+  }
+  
+  /* Safe area handling for devices with notches */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Scrollbar hiding for mobile scroll containers */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Safari and Chrome */
+    display: none;
+  }
+  
+  /* Mobile-optimized spacing */
+  .mobile-space-y-sm > * + * {
+    @apply mt-2 sm:mt-3;
+  }
+  
+  .mobile-space-y-md > * + * {
+    @apply mt-3 sm:mt-4 lg:mt-6;
+  }
+  
+  .mobile-space-y-lg > * + * {
+    @apply mt-4 sm:mt-6 lg:mt-8;
+  }
+  
+  /* Mobile typography improvements */
+  .mobile-text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Responsive video containers */
+  .mobile-video-container {
+    @apply relative w-full overflow-hidden rounded-lg sm:rounded-xl;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  }
+  
+  .mobile-video-container video,
+  .mobile-video-container iframe {
+    @apply absolute top-0 left-0 w-full h-full object-cover;
   }
 }
 
