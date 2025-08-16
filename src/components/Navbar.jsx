@@ -173,6 +173,11 @@ const Navbar = () => {
     };
   }, []);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [location.pathname]);
+
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -302,16 +307,16 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-50 bg-white/95 shadow-lg rounded-xl sm:rounded-full border border-gray-200">
+      <nav className="fixed top-2 left-1/2 transform -translate-x-1/2 w-[calc(100%-1rem)] sm:top-4 sm:w-[calc(100%-2rem)] z-50 bg-white/95 shadow-lg rounded-xl sm:rounded-full border border-gray-200 max-w-full overflow-hidden">
         {/* Blur overlay when profile popup is open */}
         {showProfilePopup && (
           <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}></div>
         )}
-        <div className="w-full flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6">
+        <div className="w-full flex items-center justify-between h-16 sm:h-20 px-3 sm:px-6 min-w-0">
           {/* Logo - Left */}
-          <Link to="/" className="flex items-center flex-shrink-0">
-            <img src={logo} alt="IslandHop Icon" className="h-6 w-6 sm:h-8 sm:w-8 mr-2" />
-            <img src={logoText} alt="IslandHop" className="h-4 sm:h-6" />
+          <Link to="/" className="flex items-center flex-shrink-0 min-w-0">
+            <img src={logo} alt="IslandHop Icon" className="h-6 w-6 sm:h-8 sm:w-8 mr-2 flex-shrink-0" />
+            <img src={logoText} alt="IslandHop" className="h-4 sm:h-6 flex-shrink-0" />
           </Link>
           
           {/* Desktop Nav Links - Center */}
@@ -339,7 +344,7 @@ const Navbar = () => {
           </div>
           
           {/* Desktop User/Currency/Language - Right */}
-          <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
+          <div className="hidden lg:flex items-center space-x-2 lg:space-x-4 desktop-only">
             {/* Currency Display */}
             <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center text-sm lg:text-base transition-colors">
               {currentCurrency}
@@ -435,7 +440,7 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors mobile-menu-btn flex-shrink-0"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             aria-label="Toggle mobile menu"
           >
@@ -453,46 +458,46 @@ const Navbar = () => {
         <>
           {/* Mobile Menu Overlay */}
           <div 
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden" 
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden mobile-overlay" 
             onClick={() => setShowMobileMenu(false)}
           />
           
           {/* Mobile Menu Panel */}
-          <div className="fixed top-20 left-2 right-2 z-50 bg-white rounded-xl shadow-lg border border-gray-200 md:hidden">
-            <div className="p-4 space-y-4">
+          <div className="fixed top-20 left-2 right-2 z-50 bg-white rounded-xl shadow-lg border border-gray-200 lg:hidden animate-slide-in mobile-menu-panel">
+            <div className="p-4 space-y-4 overflow-hidden w-full">
               {/* Mobile Navigation Links */}
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Link 
                   to="/" 
-                  className={`block px-4 py-3 rounded-lg transition-colors ${location.pathname === '/' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Home
                 </Link>
                 <Link 
                   to="/discover" 
-                  className={`block px-4 py-3 rounded-lg transition-colors ${location.pathname === '/discover' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/discover' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Discover
                 </Link>
                 <Link 
                   to="/trips" 
-                  className={`block px-4 py-3 rounded-lg transition-colors ${location.pathname === '/trips' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/trips' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Trips
                 </Link>
                 <Link 
                   to="/pools" 
-                  className={`block px-4 py-3 rounded-lg transition-colors ${location.pathname === '/pools' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/pools' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Pools
                 </Link>
                 <Link 
                   to="/about" 
-                  className={`block px-4 py-3 rounded-lg transition-colors ${location.pathname === '/about' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/about' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   About
@@ -530,36 +535,36 @@ const Navbar = () => {
                     </div>
                   </div>
                   <button 
-                    className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="block w-full text-left px-4 py-4 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
                     onClick={() => {setShowProfilePopup(true); setShowMobileMenu(false);}}
                   >
                     Profile
                   </button>
                   <button 
-                    className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="block w-full text-left px-4 py-4 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
                     onClick={() => {setShowSettingsPopup(true); setShowMobileMenu(false);}}
                   >
                     Settings
                   </button>
                   <button 
-                    className="block w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="block w-full text-left px-4 py-4 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-base font-medium"
                     onClick={() => {handleLogout(); setShowMobileMenu(false);}}
                   >
                     Logout
                   </button>
                 </div>
               ) : (
-                <div className="border-t border-gray-200 pt-4 space-y-2">
+                <div className="border-t border-gray-200 pt-4 space-y-1">
                   <Link 
                     to="/login" 
-                    className="block px-4 py-3 text-center text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="block px-4 py-4 text-center text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     Sign in
                   </Link>
                   <Link 
                     to="/signup" 
-                    className="block px-4 py-3 bg-primary-600 text-white text-center rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                    className="block px-4 py-4 bg-primary-600 text-white text-center rounded-lg font-semibold hover:bg-primary-700 transition-colors text-base"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     Sign up
@@ -568,19 +573,44 @@ const Navbar = () => {
               )}
 
               {/* Mobile Language & Currency */}
-              <div className="border-t border-gray-200 pt-4 space-y-2">
+              <div className="border-t border-gray-200 pt-4 space-y-3">
+                {/* Language Switcher for Mobile */}
                 <div className="flex items-center justify-between px-4 py-2">
                   <span className="text-gray-700 font-medium">Language</span>
-                  <button
-                    onClick={toggleLanguageDropdown}
-                    className="flex items-center px-3 py-1 border rounded-lg text-sm"
-                  >
-                    🌐 {currentLang}
-                  </button>
+                  <div className="relative" ref={translateRef}>
+                    <button
+                      onClick={toggleLanguageDropdown}
+                      className="flex items-center px-3 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      🌐 <span className="ml-1">{currentLang}</span>
+                      <svg 
+                        className={`ml-1 h-3 w-3 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showLang && (
+                      <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-w-[220px] max-h-64 overflow-y-auto">
+                        {languages.map((lang) => (
+                          <button
+                            key={lang.code}
+                            onClick={() => handleLanguageChange(lang.code, lang.name)}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                          >
+                            <span className="text-lg">{lang.flag}</span>
+                            <span className="text-gray-700 truncate">{lang.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between px-4 py-2">
                   <span className="text-gray-700 font-medium">Currency</span>
-                  <span className="text-gray-600">{currentCurrency}</span>
+                  <span className="text-gray-600 font-medium">{currentCurrency}</span>
                 </div>
               </div>
             </div>
