@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { getProfileCompletionStatus } from '../utils/profileStorage';
 import LoginRequiredPopup from '../components/LoginRequiredPopup';
 import CompleteProfilePopup from '../components/CompleteProfilePopup';
+import CustomDropdown from '../components/CustomDropdown';
 import { 
   Plus, 
   Calendar, 
@@ -44,6 +45,20 @@ const MyTripsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
+  
+  // Dropdown options
+  const filterOptions = [
+    { value: 'all', label: 'All Trips' },
+    { value: 'active', label: 'Active' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'draft', label: 'Drafts' }
+  ];
+  
+  const sortOptions = [
+    { value: 'recent', label: 'Recent' },
+    { value: 'name', label: 'Name' },
+    { value: 'date', label: 'Date' }
+  ];
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingTrips, setIsLoadingTrips] = useState(false);
   const [apiError, setApiError] = useState(null);
@@ -733,7 +748,7 @@ const MyTripsPage = () => {
       <Navbar />
 
       {/* Enhanced Hero Video Section */}
-      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
+      <section className="relative w-full h-[65vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover scale-105"
           autoPlay 
@@ -747,27 +762,29 @@ const MyTripsPage = () => {
         
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <div className="max-w-4xl mx-auto mt-16 md:mt-24">
+          <div className="max-w-4xl mx-auto mt-16 sm:mt-20 md:mt-24">
             <h1 className="text-4xl md:text-6xl font-normal mb-6 leading-tight text-white">
               Your Travel Dreams Come to Life
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto text-blue-100">
               Plan, organize, and experience unforgettable journeys with our intelligent trip planner
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-row gap-3 sm:gap-4 justify-center">
               <button
                 onClick={handlePlanNewAdventure}
-                className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl flex-1 sm:flex-none"
               >
-                <Plus className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
-                Plan New Adventure
+                <Plus className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-90 transition-transform duration-300" />
+                <span className="hidden sm:inline">Plan New Adventure</span>
+                <span className="sm:hidden">Plan Adventure</span>
               </button>
               <button 
                 onClick={handleAITripSuggestions}
-                className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 border-2 border-white text-white rounded-full font-bold text-sm sm:text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm flex-1 sm:flex-none"
               >
-                <Sparkles className="mr-3 h-6 w-6" />
-                AI Trip Suggestions
+                <Sparkles className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6" />
+                <span className="hidden sm:inline">AI Trip Suggestions</span>
+                <span className="sm:hidden">AI Suggestions</span>
               </button>
             </div>
           </div>
@@ -778,11 +795,11 @@ const MyTripsPage = () => {
       <main className="relative z-10 -mt-10 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Enhanced Control Panel */}
-          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-5 mb-20 w-fit mx-auto relative z-20">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end space-y-4 lg:space-y-0">
-              <div className="flex flex-col sm:flex-row gap-4 w-full justify-end">
+          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-4 sm:p-5 mb-6 sm:mb-20 w-full sm:w-fit mx-auto relative z-20">
+            <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-end">
+              <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:gap-4 w-full sm:justify-end">
                 {/* Search */}
-                <div className="relative flex-[3_3_0%] min-w-[500px] md:min-w-[600px] lg:min-w-[700px]">
+                <div className="relative w-full sm:flex-[3_3_0%] sm:min-w-[400px] md:min-w-[500px] lg:min-w-[600px] xl:min-w-[700px]">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
                   <form onSubmit={e => { e.preventDefault(); }} className="w-full">
                     <div className="relative w-full">
@@ -791,46 +808,55 @@ const MyTripsPage = () => {
                         placeholder="Search trips..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base bg-white"
+                        className="pl-12 pr-4 sm:pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base bg-white"
                       />
                       <button
                         type="submit"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-colors text-sm"
+                        className="hidden sm:block absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-colors text-sm"
                       >
                         Search
                       </button>
                     </div>
                   </form>
                 </div>
-                {/* Filter */}
-                <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
-                  <select
+                
+                {/* Filter and Sort - Hidden on mobile, shown on larger screens */}
+                <div className="hidden sm:flex gap-4">
+                  {/* Filter */}
+                  <CustomDropdown
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none pr-10"
-                  >
-                    <option value="all">All Trips</option>
-                    <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                    <option value="draft">Drafts</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                </div>
-                {/* Sort */}
-                <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
-                  <select
+                    onChange={setFilterStatus}
+                    options={filterOptions}
+                    className="flex-1 sm:flex-[0_1_160px] sm:min-w-[120px] sm:max-w-[160px]"
+                  />
+                  {/* Sort */}
+                  <CustomDropdown
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none pr-10"
-                  >
-                    <option value="recent">Recent</option>
-                    <option value="name">Name</option>
-                    <option value="date">Date</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    onChange={setSortBy}
+                    options={sortOptions}
+                    className="flex-1 sm:flex-[0_1_160px] sm:min-w-[120px] sm:max-w-[160px]"
+                  />
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Mobile Filter Controls - Outside container */}
+          <div className="flex gap-4 mb-14 sm:hidden px-4">
+            {/* Filter */}
+            <CustomDropdown
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={filterOptions}
+              className="flex-1"
+            />
+            {/* Sort */}
+            <CustomDropdown
+              value={sortBy}
+              onChange={setSortBy}
+              options={sortOptions}
+              className="flex-1"
+            />
           </div>
 
           {/* Error Display */}
