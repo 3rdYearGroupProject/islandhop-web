@@ -314,7 +314,7 @@ const Navbar = () => {
         )}
         <div className="w-full flex items-center justify-between h-16 sm:h-20 px-3 sm:px-6 min-w-0">
           {/* Logo - Left */}
-          <Link to="/" className="flex items-center flex-shrink-0 min-w-0">
+          <Link to="/" className="flex items-center flex-shrink-0 min-w-0 ml-2 sm:ml-3">
             <img src={logo} alt="IslandHop Icon" className="h-6 w-6 sm:h-8 sm:w-8 mr-2 flex-shrink-0" />
             <img src={logoText} alt="IslandHop" className="h-4 sm:h-6 flex-shrink-0" />
           </Link>
