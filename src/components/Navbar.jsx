@@ -307,7 +307,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-2 left-1/2 transform -translate-x-1/2 w-[calc(100%-1rem)] sm:top-4 sm:w-[calc(100%-2rem)] z-50 bg-white/95 shadow-lg rounded-xl sm:rounded-full border border-gray-200 max-w-full overflow-hidden">
+      <nav className="fixed top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-50 bg-white/95 shadow-lg rounded-full border border-gray-200">
         {/* Blur overlay when profile popup is open */}
         {showProfilePopup && (
           <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}></div>
@@ -463,7 +463,7 @@ const Navbar = () => {
           />
           
           {/* Mobile Menu Panel */}
-          <div className="fixed top-20 left-2 right-2 z-50 bg-white rounded-xl shadow-lg border border-gray-200 lg:hidden animate-slide-in mobile-menu-panel">
+          <div className="fixed top-20 left-2 right-2 z-50 bg-white rounded-2xl shadow-lg border border-gray-200 lg:hidden animate-slide-in mobile-menu-panel">
             <div className="p-4 space-y-4 overflow-hidden w-full">
               {/* Mobile Navigation Links */}
               <div className="space-y-1">
