@@ -24,15 +24,22 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import './App.css'
 import QuickActionsButton from './components/QuickActionsButton';
 import { useAuth } from './hooks/useAuth';
+//import { getUserData, getUserRole, isLoggedIn, clearUserData, getUserDisplayInfo } from './utils/userStorage';
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  if (loading) {
+    return <div>Loading...</div>; 
+  }
+  console.log("isLoggedIn from app.jsx", isAuthenticated);
+  console.log("user from app.jsx", user);
   return (
     <ErrorBoundary>
       <ToastProvider>
         <DevTools />
         {/* Quick Actions Button always visible for logged in users */}
         <QuickActionsButton isLoggedIn={isAuthenticated} />
+       
         <Routes>
           {/* General/Public and Tourist Routes */}
           <Route path="/*" element={<GeneralRoutes />} />
