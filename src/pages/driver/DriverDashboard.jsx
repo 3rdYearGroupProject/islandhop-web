@@ -312,8 +312,7 @@ const DriverDashboard = () => {
       <MapPopupModal 
         open={mapModalOpen} 
         onClose={() => setMapModalOpen(false)} 
-        pickup={activeTrip?.pickupLocation} 
-        destination={activeTrip?.destination} 
+        tripId={activeTrip?.id} 
       />
       {/* Trip Details Modal for Pending Requests */}
       <TripDetailsModal
