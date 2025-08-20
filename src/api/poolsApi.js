@@ -396,10 +396,13 @@ export class PoolsApi {
    */
   static async getUserInvitations(userId) {
     try {
-      console.log('📨 Getting invitations for user:', userId);
+      console.log('📨 Starting getUserInvitations for userId:', userId);
       
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
       const fullUrl = `${baseUrl}/api/v1/groups/invitations/${userId}`;
+      
+      console.log('📨 Making request to URL:', fullUrl);
+      console.log('📨 Base URL from env:', process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE);
       
       const response = await fetch(fullUrl, {
         method: 'GET',
@@ -410,16 +413,26 @@ export class PoolsApi {
         credentials: 'include'
       });
 
+      console.log('📨 Response status:', response.status);
+      console.log('📨 Response ok:', response.ok);
+      console.log('📨 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📨 Error response data:', errorData);
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
       const result = await response.json();
       console.log('📨 User invitations fetched successfully:', result);
+      console.log('📨 Result type:', typeof result);
+      console.log('📨 Result keys:', Object.keys(result || {}));
       return result;
     } catch (error) {
       console.error('📨❌ Error fetching user invitations:', error);
+      console.error('📨❌ Error name:', error.name);
+      console.error('📨❌ Error message:', error.message);
+      console.error('📨❌ Error stack:', error.stack);
       throw new Error(`Failed to fetch user invitations: ${error.message}`);
     }
   }
@@ -435,10 +448,13 @@ export class PoolsApi {
    */
   static async respondToInvitation(responseData) {
     try {
-      console.log('📮 Responding to invitation:', responseData);
+      console.log('📮 Starting respondToInvitation with data:', responseData);
       
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
       const fullUrl = `${baseUrl}/api/v1/groups/invitations/respond`;
+      
+      console.log('📮 Making request to URL:', fullUrl);
+      console.log('📮 Request body:', JSON.stringify(responseData, null, 2));
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -450,16 +466,26 @@ export class PoolsApi {
         body: JSON.stringify(responseData)
       });
 
+      console.log('📮 Response status:', response.status);
+      console.log('📮 Response ok:', response.ok);
+      console.log('📮 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📮 Error response data:', errorData);
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
       const result = await response.json();
       console.log('📮 Invitation response sent successfully:', result);
+      console.log('📮 Result type:', typeof result);
+      console.log('📮 Result keys:', Object.keys(result || {}));
       return result;
     } catch (error) {
       console.error('📮❌ Error responding to invitation:', error);
+      console.error('📮❌ Error name:', error.name);
+      console.error('📮❌ Error message:', error.message);
+      console.error('📮❌ Error stack:', error.stack);
       throw new Error(`Failed to respond to invitation: ${error.message}`);
     }
   }
@@ -713,7 +739,7 @@ export class PoolsApi {
   static async saveTripAndGetSuggestions(groupId, tripData) {
     try {
       console.log('💾 ===== SAVE TRIP AND GET SUGGESTIONS API CALL =====');
-      console.log('💾 Group ID:', groupId);
+      console.log('💾 Group ID:', groupId); 
       console.log('💾 Raw tripData received:', tripData);
       console.log('💾 tripData type:', typeof tripData);
       console.log('💾 tripData keys:', Object.keys(tripData || {}));
@@ -953,6 +979,65 @@ export class PoolsApi {
       console.error('🏁❌ Error constructor:', error.constructor.name);
       console.error('🏁❌ ===== THROWING ENHANCED ERROR =====');
       throw new Error(`Failed to finalize group: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get comprehensive trip details including itinerary and joined members
+   * @param {string} tripId - Trip ID to fetch comprehensive details for
+   * @param {string} [userId] - Optional user ID for personalized data
+   * @returns {Promise<Object>} Comprehensive trip response matching ComprehensiveTripResponse DTO
+   */
+  static async getComprehensiveTripDetails(tripId, userId = null) {
+    try {
+      console.log('🔍📋 ===== FETCHING COMPREHENSIVE TRIP DETAILS =====');
+      console.log('🔍📋 Trip ID:', tripId);
+      console.log('🔍📋 User ID:', userId);
+      console.log('🔍📋 API Base URL:', poolingServicesApi.defaults.baseURL);
+      
+      // Construct the API endpoint
+      const endpoint = `/api/v1/public-pooling/trips/${tripId}/comprehensive`;
+      console.log('🔍📋 Endpoint:', endpoint);
+      
+      // Prepare query parameters
+      const params = {};
+      if (userId) {
+        params.userId = userId;
+        console.log('🔍📋 Including userId in params:', userId);
+      }
+      
+      console.log('🔍📋 Making API request...');
+      const response = await poolingServicesApi.get(endpoint, { params });
+      
+      console.log('🔍📋 ===== API RESPONSE RECEIVED =====');
+      console.log('🔍📋 Status:', response.status);
+      console.log('🔍📋 Status Text:', response.statusText);
+      console.log('🔍📋 Response Headers:', response.headers);
+      console.log('🔍📋 Response Data Keys:', Object.keys(response.data || {}));
+      console.log('🔍📋 Full Response Data:', response.data);
+      
+      if (response.data) {
+        console.log('🔍📋 Trip Details:', response.data.tripDetails);
+        console.log('🔍📋 Group Info:', response.data.groupInfo);
+        console.log('🔍📋 Members Count:', response.data.members?.length || 0);
+        console.log('🔍📋 Daily Plans Count:', response.data.tripDetails?.dailyPlans?.length || 0);
+      }
+      
+      console.log('🔍📋 ===== COMPREHENSIVE TRIP DETAILS FETCHED SUCCESSFULLY =====');
+      return response.data;
+    } catch (error) {
+      console.error('🔍📋❌ ===== COMPREHENSIVE TRIP DETAILS ERROR =====');
+      console.error('🔍📋❌ Error object:', error);
+      console.error('🔍📋❌ Error type:', typeof error);
+      console.error('🔍📋❌ Error name:', error.name);
+      console.error('🔍📋❌ Error message:', error.message);
+      console.error('🔍📋❌ Error stack:', error.stack);
+      console.error('🔍📋❌ Response status:', error.response?.status);
+      console.error('🔍📋❌ Response data:', error.response?.data);
+      console.error('🔍📋❌ Response headers:', error.response?.headers);
+      console.error('🔍📋❌ ===== END ERROR DETAILS =====');
+      
+      throw new Error(`Failed to fetch comprehensive trip details: ${error.response?.data?.message || error.message}`);
     }
   }
 }

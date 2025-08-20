@@ -237,8 +237,13 @@ const FindPools = () => {
 
   const handlePoolClick = (pool) => {
     console.log('🔍 Viewing pool:', pool.name);
+    console.log('🔍 Pool data:', { groupId: pool.id, tripId: pool.tripId });
+    
+    // Use tripId for the URL since that's what the comprehensive endpoint expects
+    const urlId = pool.tripId || pool.id; // Fallback to groupId if no tripId
+    
     // Navigate to the view pool page with pool data
-    navigate(`/pool/${pool.id}`, { 
+    navigate(`/pool/${urlId}`, { 
       state: { 
         pool: pool,
         sourcePage: 'findPools'

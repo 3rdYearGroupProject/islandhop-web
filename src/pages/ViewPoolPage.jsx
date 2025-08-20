@@ -178,17 +178,267 @@ const ViewPoolPage = () => {
     };
   };
 
+  /**
+   * Transform comprehensive trip response to existing pool format
+   * @param {Object} comprehensiveData - Response from comprehensive trip endpoint
+   * @returns {Object} Pool object in existing format
+   */
+  const transformComprehensiveToPoolFormat = (comprehensiveData) => {
+    console.log('🔄 Transforming comprehensive data to pool format:', comprehensiveData);
+    
+    const { tripDetails, groupInfo, members } = comprehensiveData;
+    
+    // Extract dates
+    const startDate = tripDetails?.startDate ? new Date(tripDetails.startDate) : new Date();
+    const endDate = tripDetails?.endDate ? new Date(tripDetails.endDate) : new Date();
+    
+    // Calculate duration
+    const diffTime = Math.abs(endDate - startDate);
+    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    
+  // Transform daily plans to itinerary format
+  const itinerary = {};
+  if (tripDetails?.dailyPlans) {
+    tripDetails.dailyPlans.forEach((dayPlan, index) => {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(startDate.getDate() + index);
+      
+      itinerary[index] = {
+        date: dayDate,
+        city: dayPlan.city,
+        userSelected: dayPlan.userSelected,
+        attractionsCount: dayPlan.attractionsCount || 0,
+        hotelsCount: dayPlan.hotelsCount || 0,
+        restaurantsCount: dayPlan.restaurantsCount || 0,
+        activities: dayPlan.attractions?.map((attraction, actIndex) => ({
+          id: `${index}-${actIndex}`,
+          name: attraction.name,
+          location: attraction.address || dayPlan.city || tripDetails.baseCity,
+          duration: '2-3 hours',
+          rating: attraction.rating || 4.5,
+          description: `Visit ${attraction.name} in ${dayPlan.city || tripDetails.baseCity}`,
+          price: 'Varies',
+          time: `${9 + actIndex * 2}:00`,
+          category: attraction.category || 'Attraction',
+          userSelected: attraction.userSelected
+        })) || [],
+        places: dayPlan.hotels?.map((hotel, hotelIndex) => ({
+          id: `${index}-hotel-${hotelIndex}`,
+          name: hotel.name,
+          location: hotel.address || dayPlan.city || tripDetails.baseCity,
+          rating: hotel.rating || 4.0,
+          description: `Stay at ${hotel.name}`,
+          price: 'Contact for rates',
+          category: hotel.category || 'Hotel',
+          userSelected: hotel.userSelected
+        })) || [],
+        food: dayPlan.restaurants?.map((restaurant, restIndex) => ({
+          id: `${index}-restaurant-${restIndex}`,
+          name: restaurant.name,
+          location: restaurant.address || dayPlan.city || tripDetails.baseCity,
+          rating: restaurant.rating || 4.2,
+          description: `Dine at ${restaurant.name}`,
+          price: 'Rs. 1,500 - 3,000',
+          category: restaurant.category || 'Restaurant',
+          userSelected: restaurant.userSelected
+        })) || [],
+        transportation: []
+      };
+    });
+  }    // Extract destinations from daily plans or use base city
+    const destinations = tripDetails?.dailyPlans?.map(plan => plan.city).filter(Boolean) || [tripDetails?.baseCity || 'Various Locations'];
+    const uniqueDestinations = [...new Set(destinations)];
+    
+    // Format dates for display
+    const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${endDate.getFullYear()}`;
+    
+    // Determine price based on budget level
+    const priceMap = {
+      'low': 'Rs. 10,000 - 15,000',
+      'medium': 'Rs. 15,000 - 25,000', 
+      'high': 'Rs. 25,000+',
+      'budget': 'Rs. 8,000 - 12,000',
+      'luxury': 'Rs. 30,000+'
+    };
+    const price = priceMap[tripDetails?.budgetLevel?.toLowerCase()] || 'Contact for pricing';
+    
+    const transformedData = {
+      id: tripDetails?.tripId || 'unknown',
+      tripId: tripDetails?.tripId,
+      groupId: groupInfo?.groupId,
+      name: tripDetails?.tripName || 'Trip Adventure',
+      owner: members?.find(m => m.role === 'leader')?.name || 'Trip Leader',
+      destinations: uniqueDestinations.join(', '),
+      destinationsArray: uniqueDestinations,
+      participants: groupInfo?.currentMembers || members?.length || 0,
+      maxParticipants: groupInfo?.maxMembers || 6,
+      rating: 4.5, // Default rating
+      price: price,
+      date: dateRange,
+      duration: `${totalDays} day${totalDays > 1 ? 's' : ''}`,
+      status: groupInfo?.status || 'active',
+      
+      // Additional pool-specific data
+      dates: [tripDetails?.startDate, tripDetails?.endDate],
+      terrains: tripDetails?.preferredTerrains || ['Mixed'],
+      activities: tripDetails?.preferredActivities || [],
+      createdAt: tripDetails?.createdAt || new Date().toISOString(),
+      totalDays: totalDays,
+      coverImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+      
+      // Group and member information
+      groupInfo: groupInfo,
+      members: members || [],
+      
+      // Itinerary data
+      itinerary: itinerary,
+      
+      // Trip preferences
+      budgetLevel: tripDetails?.budgetLevel,
+      activityPacing: tripDetails?.activityPacing,
+      multiCityAllowed: tripDetails?.multiCityAllowed,
+      
+      // Highlights based on attractions
+      highlights: tripDetails?.dailyPlans?.flatMap(day => 
+        day.attractions?.slice(0, 2).map(attraction => attraction.name) || []
+      ).slice(0, 5) || ['Scenic Views', 'Cultural Experience', 'Adventure Activities']
+    };
+    
+    console.log('🔄 Transformed pool data:', transformedData);
+    return transformedData;
+  };
+
   useEffect(() => {
-    // Load pool data - either from route state or mock data
-    const loadPool = () => {
+    // Load pool data using comprehensive trip endpoint
+    const loadPool = async () => {
+      console.log('🔍📋 ===== LOADING POOL DATA =====');
+      console.log('🔍📋 Pool ID from URL:', poolId);
+      console.log('🔍📋 Pool from state:', poolFromState);
+      console.log('🔍📋 Current user:', user);
+      
       setLoading(true);
       
-      // Use pool from state if available, otherwise use mock data
-      let poolData = poolFromState;
-      
-      // If no pool data provided, use mock data
-      if (!poolData) {
-        poolData = {
+      try {
+        let tripId = null;
+        
+        // First, try to get tripId from the pool state if available
+        if (poolFromState && poolFromState.tripId) {
+          tripId = poolFromState.tripId;
+          console.log('🔍📋 Using tripId from pool state:', tripId);
+        } else if (poolId) {
+          // poolId in URL is actually groupId, we need to get tripId
+          console.log('🔍📋 URL poolId is actually groupId:', poolId);
+          console.log('🔍📋 Need to get tripId from groupId...');
+          
+          // If no pool state available, we need to get tripId from groupId
+          // For now, let's try using the poolId directly as tripId
+          // This will fail if it's a groupId, but we have fallback logic
+          tripId = poolId;
+        }
+        
+        // If we have tripId, fetch comprehensive trip details from API
+        if (tripId) {
+          console.log('🔍📋 Fetching comprehensive trip details for tripId:', tripId);
+          
+          // Call the comprehensive trip endpoint
+          const comprehensiveData = await PoolsApi.getComprehensiveTripDetails(
+            tripId, // Use the tripId we determined
+            user?.uid || null // Optional userId for personalized data
+          );
+          
+          console.log('🔍📋 Comprehensive data received:', comprehensiveData);
+          
+          // Transform comprehensive response to existing pool format
+          const tripData = transformComprehensiveToPoolFormat(comprehensiveData);
+          console.log('🔍📋 Transformed trip data:', tripData);
+          
+          setPool(tripData);
+          
+          // Initialize expanded days - expand first few days by default
+          const totalDays = tripData.totalDays || 5;
+          const initialExpanded = {};
+          for (let i = 0; i < totalDays; i++) {
+            initialExpanded[i] = i < 3; // Expand first 3 days
+          }
+          setExpandedDays(initialExpanded);
+          
+        } else {
+          console.log('🔍📋 No poolId provided, using fallback data');
+          
+          // Use pool from state if available, otherwise use mock data
+          let poolData = poolFromState;
+          
+          // If no pool data provided, use mock data
+          if (!poolData) {
+            console.log('🔍📋 Using mock data as fallback');
+            poolData = {
+              id: 1,
+              image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+              name: 'Adventure to Ella',
+              owner: 'John Doe',
+              destinations: 'Kandy, Nuwara Eliya, Ella',
+              participants: 3,
+              maxParticipants: 5,
+              rating: 4.8,
+              price: 'Rs. 15,000',
+              date: 'Aug 15-17, 2025',
+              duration: '3 days',
+              status: 'open',
+              highlights: ['Tea Plantations', 'Nine Arch Bridge', 'Little Adams Peak'],
+              itinerary: [
+                {
+                  day: 1,
+                  date: 'Aug 15, 2025',
+                  location: 'Kandy',
+                  activities: [
+                    'Temple of the Sacred Tooth visit',
+                    'Kandy Lake walk',
+                    'Traditional cultural show'
+                  ]
+                },
+                {
+                  day: 2,
+                  date: 'Aug 16, 2025',
+                  location: 'Nuwara Eliya',
+                  activities: [
+                    'Tea plantation tour',
+                    'Gregory Lake activities',
+                    'Strawberry farm visit'
+                  ]
+                },
+                {
+                  day: 3,
+                  date: 'Aug 17, 2025',
+                  location: 'Ella',
+                  activities: [
+                    'Nine Arch Bridge exploration',
+                    'Little Adams Peak hike',
+                    'Ella Rock viewpoint'
+                  ]
+                }
+              ]
+            };
+          }
+          
+          // Convert pool data to trip format
+          const tripData = convertPoolToTripFormat(poolData);
+          setPool(tripData);
+          
+          // Initialize expanded days - expand first few days by default
+          const totalDays = tripData.totalDays || 5;
+          const initialExpanded = {};
+          for (let i = 0; i < totalDays; i++) {
+            initialExpanded[i] = i < 3; // Expand first 3 days
+          }
+          setExpandedDays(initialExpanded);
+        }
+        
+      } catch (error) {
+        console.error('🔍📋❌ Error loading pool data:', error);
+        console.log('🔍📋 Falling back to mock data due to error');
+        
+        // Fallback to mock data on error
+        const mockData = {
           id: 1,
           image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
           name: 'Adventure to Ella',
@@ -207,53 +457,27 @@ const ViewPoolPage = () => {
               day: 1,
               date: 'Aug 15, 2025',
               location: 'Kandy',
-              activities: [
-                'Temple of the Sacred Tooth visit',
-                'Kandy Lake walk',
-                'Traditional cultural show'
-              ]
-            },
-            {
-              day: 2,
-              date: 'Aug 16, 2025',
-              location: 'Nuwara Eliya',
-              activities: [
-                'Tea plantation tour',
-                'Gregory Lake activities',
-                'Strawberry farm visit'
-              ]
-            },
-            {
-              day: 3,
-              date: 'Aug 17, 2025',
-              location: 'Ella',
-              activities: [
-                'Nine Arch Bridge exploration',
-                'Little Adams Peak hike',
-                'Ella Rock viewpoint'
-              ]
+              activities: ['Temple of the Sacred Tooth visit', 'Kandy Lake walk']
             }
           ]
         };
+        
+        const tripData = convertPoolToTripFormat(mockData);
+        setPool(tripData);
+        
+        const initialExpanded = {};
+        for (let i = 0; i < 3; i++) {
+          initialExpanded[i] = i < 3;
+        }
+        setExpandedDays(initialExpanded);
       }
-      
-      // Convert pool data to trip format
-      const tripData = convertPoolToTripFormat(poolData);
-      setPool(tripData);
-      
-      // Initialize expanded days - expand first few days by default
-      const totalDays = tripData.totalDays || 5;
-      const initialExpanded = {};
-      for (let i = 0; i < totalDays; i++) {
-        initialExpanded[i] = i < 3; // Expand first 3 days
-      }
-      setExpandedDays(initialExpanded);
       
       setLoading(false);
+      console.log('🔍📋 ===== POOL DATA LOADING COMPLETE =====');
     };
 
     loadPool();
-  }, [poolFromState, poolId]);
+  }, [poolFromState, poolId, user]);
 
   // Generate days array from pool dates
   const generateDays = () => {
@@ -395,13 +619,15 @@ const ViewPoolPage = () => {
       <SharePoolModal
         open={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        participants={[mockParticipants.owner, ...mockParticipants.participants]}
+        participants={pool?.members || []}
+        currentCount={pool?.participants || 0}
+        maxCount={pool?.maxParticipants || 0}
         onInvite={handleInvite}
       />
       <JoinPoolModal
         open={joinModalOpen}
         onClose={() => setJoinModalOpen(false)}
-        poolData={pool}
+        poolData={comprehensiveTripData || pool}
         onSuccess={(result) => {
           console.log('Join request sent:', result);
           alert('Join request sent successfully!');
@@ -410,14 +636,14 @@ const ViewPoolPage = () => {
       <InviteUserModal
         isOpen={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
-        groupData={pool}
+        groupData={comprehensiveTripData || pool}
         onSuccess={(result) => {
           console.log('Invitation sent:', result);
           alert('Invitation sent successfully!');
         }}
       />
       <JoinRequestsManager
-        groupId={pool?.id}
+        groupId={comprehensiveTripData?.groupInfo?.groupId || pool?.id}
         isOpen={joinRequestsModalOpen}
         onClose={() => setJoinRequestsModalOpen(false)}
         onRequestUpdate={(result) => {
@@ -569,7 +795,7 @@ const ViewPoolPage = () => {
                           
                           <div className="mt-6 pt-4 border-t border-gray-200">
                             <p className="text-sm text-gray-500 text-center">
-                              Pool capacity: {mockParticipants.current}/{mockParticipants.max} participants
+                              Pool capacity: {pool?.participants || 0}/{pool?.maxParticipants || 0} participants
                             </p>
                           </div>
                         </div>
@@ -589,21 +815,28 @@ const ViewPoolPage = () => {
           <div className="w-full">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-lg font-semibold text-gray-900">Participants</div>
-              <span className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{mockParticipants.current} / {mockParticipants.max}</span>
+              <span className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">
+                {pool?.participants || 0} / {pool?.maxParticipants || 0}
+              </span>
             </div>
             <div className="flex items-center mb-2">
-              {mockParticipants.participants.map((p, idx) => (
-                <img
-                  key={idx}
-                  src={p.avatar}
-                  alt={p.name}
-                  title={p.name}
-                  className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover -ml-2 first:ml-0 cursor-pointer"
-                  style={{ zIndex: 10 - idx }}
-                  onClick={() => setSelectedParticipant(idx)}
-                />
-              ))}
-              {mockParticipants.current < mockParticipants.max && (
+              {pool?.members?.map((member, idx) => {
+                // Generate a placeholder avatar URL if none provided
+                const avatarUrl = member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&color=fff`;
+                
+                return (
+                  <img
+                    key={member.userId || idx}
+                    src={avatarUrl}
+                    alt={member.name}
+                    title={`${member.name} (${member.role})`}
+                    className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover -ml-2 first:ml-0 cursor-pointer"
+                    style={{ zIndex: 10 - idx }}
+                    onClick={() => setSelectedParticipant(idx)}
+                  />
+                );
+              })}
+              {(pool?.participants || 0) < (pool?.maxParticipants || 0) && (
                 <span className="w-10 h-10 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xl font-bold -ml-2 bg-gray-50">+</span>
               )}
             </div>
@@ -611,12 +844,12 @@ const ViewPoolPage = () => {
               <div className="flex-1 bg-gray-100 rounded-full h-2">
                 <div
                   className="bg-primary-600 h-2 rounded-full"
-                  style={{ width: `${(mockParticipants.current / mockParticipants.max) * 100}%` }}
+                  style={{ width: `${((pool?.participants || 0) / (pool?.maxParticipants || 1)) * 100}%` }}
                 ></div>
               </div>
               <div className="flex flex-col items-end min-w-[80px]">
                 <span className="text-xs text-gray-500">Capacity</span>
-                <span className="font-bold text-primary-700 text-lg">{mockParticipants.max}</span>
+                <span className="font-bold text-primary-700 text-lg">{pool?.maxParticipants || 0}</span>
               </div>
             </div>
             {/* Extra Info Row */}
@@ -629,7 +862,7 @@ const ViewPoolPage = () => {
               {/* Cost per participant */}
               <div className="flex items-center text-gray-700">
                 <span className="font-medium mr-1">Cost/participant:</span>
-                <span className="text-primary-700 font-semibold">${(grandTotal / (mockParticipants.current || 1)).toFixed(2)}</span>
+                <span className="text-primary-700 font-semibold">${(grandTotal / (pool?.participants || 1)).toFixed(2)}</span>
               </div>
               {/* Driver appointed */}
               <div className="flex items-center text-gray-700">
@@ -655,24 +888,34 @@ const ViewPoolPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Owner row */}
-                  <tr className="bg-primary-50">
-                    <td className="px-3 py-2"><img src={mockParticipants.owner.avatar} alt={mockParticipants.owner.name} className="w-8 h-8 rounded-full object-cover" /></td>
-                    <td className="px-3 py-2 font-medium text-primary-700">{mockParticipants.owner.name} <span className="text-xs text-gray-400">(Organizer)</span></td>
-                    <td className="px-3 py-2">{mockParticipants.owner.nationality}</td>
-                    <td className="px-3 py-2">{mockParticipants.owner.languages.join(', ')}</td>
-                    <td className="px-3 py-2">{mockParticipants.owner.age}</td>
-                  </tr>
-                  {/* Participants rows */}
-                  {mockParticipants.participants.map((p, idx) => (
-                    <tr key={idx} className="even:bg-gray-50">
-                      <td className="px-3 py-2"><img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full object-cover" /></td>
-                      <td className="px-3 py-2 font-medium">{p.name}</td>
-                      <td className="px-3 py-2">{p.nationality}</td>
-                      <td className="px-3 py-2">{p.languages.join(', ')}</td>
-                      <td className="px-3 py-2">{p.age}</td>
+                  {/* Member rows */}
+                  {pool?.members?.map((member, idx) => {
+                    const avatarUrl = member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&color=fff`;
+                    const isLeader = member.role === 'leader';
+                    
+                    return (
+                      <tr key={member.userId || idx} className={isLeader ? "bg-primary-50" : "even:bg-gray-50"}>
+                        <td className="px-3 py-2">
+                          <img src={avatarUrl} alt={member.name} className="w-8 h-8 rounded-full object-cover" />
+                        </td>
+                        <td className="px-3 py-2 font-medium">
+                          <span className={isLeader ? "text-primary-700" : ""}>{member.name}</span>
+                          {isLeader && <span className="text-xs text-gray-400 ml-1">(Organizer)</span>}
+                        </td>
+                        <td className="px-3 py-2">{member.nationality || 'Not specified'}</td>
+                        <td className="px-3 py-2">{member.languages ? member.languages.join(', ') : 'Not specified'}</td>
+                        <td className="px-3 py-2">{member.age || 'Not specified'}</td>
+                      </tr>
+                    );
+                  })}
+                  {/* Show placeholder rows if no members */}
+                  {(!pool?.members || pool.members.length === 0) && (
+                    <tr>
+                      <td colSpan="5" className="px-3 py-6 text-center text-gray-500">
+                        No participants yet
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -718,12 +961,20 @@ const ViewPoolPage = () => {
                       onClick={() => toggleDayExpansion(dayIndex)}
                       className="ml-4 flex items-center text-lg font-semibold text-gray-900 hover:text-primary-600"
                     >
-                      Day {dayIndex + 1} - {formatDate(day)}
+                      <div className="flex flex-col items-start">
+                        <span>Day {dayIndex + 1} - {formatDate(day)}</span>
+                        {dayItinerary.city && (
+                          <span className="text-sm font-normal text-gray-600">{dayItinerary.city}</span>
+                        )}
+                      </div>
                       <ChevronDown className={`w-4 h-4 ml-2 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </button>
                     {hasItems && (
                       <span className="ml-3 text-sm text-gray-500">
-                        ({Object.entries(dayItinerary).reduce((total, [, items]) => total + (Array.isArray(items) ? items.length : 0), 0)} items)
+                        ({Object.entries(dayItinerary).reduce((total, [key, items]) => 
+                          key !== 'city' && key !== 'userSelected' && key !== 'attractionsCount' && key !== 'hotelsCount' && key !== 'restaurantsCount' 
+                            ? total + (Array.isArray(items) ? items.length : 0) 
+                            : total, 0)} items)
                       </span>
                     )}
                   </div>
@@ -734,6 +985,7 @@ const ViewPoolPage = () => {
                         <div className="space-y-4">
                           {/* Sort all items by time and display chronologically */}
                           {Object.entries(dayItinerary)
+                            .filter(([category]) => ['activities', 'places', 'food', 'transportation'].includes(category))
                             .flatMap(([category, items]) => 
                               Array.isArray(items) ? items.map(item => ({ ...item, category })) : []
                             )
@@ -768,7 +1020,14 @@ const ViewPoolPage = () => {
                                       {getCategoryIcon(item.category)}
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
-                                          <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
+                                          <div className="flex items-center gap-2">
+                                            <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
+                                            {item.userSelected && (
+                                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                                Selected
+                                              </span>
+                                            )}
+                                          </div>
                                           {item.time && (
                                             <span className="text-sm text-gray-500 ml-2">{item.time}</span>
                                           )}

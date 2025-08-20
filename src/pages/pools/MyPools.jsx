@@ -275,7 +275,12 @@ const MyPools = () => {
                         onJoinPool={handlePoolAction}
                         buttonText="View Details"
                         buttonIcon={Eye}
-                        onClick={() => navigate(`/pool/${pool.id}`, { state: { pool } })}
+                        onClick={() => {
+                          console.log('🔍 MyPools - Viewing pool:', pool.name);
+                          console.log('🔍 MyPools - Pool data:', { groupId: pool.id, tripId: pool.tripId });
+                          const urlId = pool.tripId || pool.id;
+                          navigate(`/pool/${urlId}`, { state: { pool } });
+                        }}
                       />
                     </div>
                   ))}
