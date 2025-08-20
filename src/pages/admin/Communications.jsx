@@ -356,7 +356,7 @@ const Communications = () => {
   }, [authToken, auth.currentUser, userDisplayNames]);
 
 
-  // Fetch personal messages for selected chat
+// Fetch personal messages for selected chat
 useEffect(() => {
   if (selectedChat !== "system" && authToken && auth.currentUser) {
     console.log("Selected chat:", selectedChat);
@@ -366,49 +366,58 @@ useEffect(() => {
       const agentEmail = selectedChat.replace("support_", "");
       console.log("Fetching messages for support agent:", agentEmail);
       
-      // For now, using hardcoded values
-      let userid = auth.currentUser.uid;
-      let receiverId = "npC6sQSFcPQ9eN4ex9bwUJ8isnC2";
-      
-      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userid}&receiverId=${receiverId}&page=0&size=20`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
+      // Get the receiver ID dynamically
+      const fetchMessagesForAgent = async () => {
+        const receiverId = await getUserIdByEmail(agentEmail);
+        if (!receiverId) {
+          console.error("Could not get receiver ID for agent:", agentEmail);
+          return;
         }
-      })
-        .then(res => res.json())
-        .then(async (data) => {
-          console.log('Fetched support agent messages:', data);
-          const messages = Array.isArray(data.content) ? data.content : [];
-          
-          // Fetch display names for all message senders
-          const messagesWithNames = await Promise.all(
-            messages.map(async (msg) => {
-              if (!msg.senderName && msg.senderId) {
-                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
-                return { ...msg, senderName: displayName };
-              }
-              return msg;
-            })
-          );
-          
-          setPersonalMessages(prev => ({
-            ...prev,
-            [selectedChat]: messagesWithNames
-          }));
+        
+        const senderId = auth.currentUser.uid;
+        
+        fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${senderId}&receiverId=${receiverId}&page=0&size=20`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         })
-        .catch(error => {
-          console.error("Error fetching support agent messages:", error);
-        });
+          .then(res => res.json())
+          .then(async (data) => {
+            console.log('Fetched support agent messages:', data);
+            const messages = Array.isArray(data.content) ? data.content : [];
+            
+            // Fetch display names for all message senders
+            const messagesWithNames = await Promise.all(
+              messages.map(async (msg) => {
+                if (!msg.senderName && msg.senderId) {
+                  const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                  return { ...msg, senderName: displayName };
+                }
+                return msg;
+              })
+            );
+            
+            setPersonalMessages(prev => ({
+              ...prev,
+              [selectedChat]: messagesWithNames
+            }));
+          })
+          .catch(error => {
+            console.error("Error fetching support agent messages:", error);
+          });
+      };
+      
+      fetchMessagesForAgent();
     } else {
       // Handle regular personal conversations
       const conversation = chats.find((c) => c.id === selectedChat);
-      if (!conversation) return;
+      if (!conversation || !conversation.receiverId) return;
 
-      let userid = "am4pZG4dCJgOQQ9Et6FJC7PhYY32";
-      let receiverId = "npC6sQSFcPQ9eN4ex9bwUJ8isnC2";
+      const senderId = auth.currentUser.uid;
+      const receiverId = conversation.receiverId;
 
-      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userid}&receiverId=${receiverId}&page=0&size=20`, {
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${senderId}&receiverId=${receiverId}&page=0&size=20`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -586,128 +595,140 @@ useEffect(() => {
       }
       setSending(false);
     } else if (selectedChat.startsWith("support_")) {
-      // Handle support agent messaging
-      setSending(true);
-      const agentEmail = selectedChat.replace("support_", "");
+  // Handle support agent messaging
+  setSending(true);
+  const agentEmail = selectedChat.replace("support_", "");
 
-      try {
-        // ORIGINAL API CALL - TEMPORARILY DISABLED
-                // First ensure conversation exists with the agent
-        await startConversationWithAgent(agentEmail);
-        
-        // Then send the actual message
-        const receiverId = await getUserIdByEmail(agentEmail);
-        if (!receiverId) {
-          console.error("Could not get user ID for agent:", agentEmail);
-          setSending(false);
-          return;
-        }
-
-        const messagePayload = {
-          senderId: auth.currentUser.uid,
-          receiverId,
-          content: messageInput,
-          messageType: 'TEXT',
-          //senderName: auth.currentUser?.displayName || 'Admin'
-        };
-        console.log('Support agent message payload:', messagePayload);
-
-        console.log('sending 1');
-        
-        const res = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(messagePayload)
-        });
-        
-        if (res.ok) {
-          console.log('Message sent to support agent successfully');
-          setMessageInput('');
-          // Refresh personal conversations
-          fetchPersonalConversations();
-        } else {
-          console.error('Failed to send message to support agent:', res.status);
-        }
-
-      } catch (err) {
-        console.error("Error sending message to support agent:", err);
-      }
+  try {
+    // Get the receiver ID dynamically
+    const receiverId = await getUserIdByEmail(agentEmail);
+    if (!receiverId) {
+      console.error("Could not get user ID for agent:", agentEmail);
       setSending(false);
-    } else {
-      // Personal chat
-      setSending(true);
-      const userId = auth.currentUser.uid;
-      const conversation = chats.find((c) => c.id === selectedChat);
-      if (!conversation) return;
-      const receiverId =
-        conversation.receiverId ||
-        conversation.id.replace(userId, "").replace("-", "");
-
-      try {
-        // ORIGINAL API CALL - TEMPORARILY DISABLED
-        const messagePayload = {
-          senderId: userId,
-          receiverId,
-          content: messageInput,
-          messageType: 'TEXT',
-          senderName: auth.currentUser?.displayName || 'Admin'
-        };
-        console.log('Personal message payload:', messagePayload);
-
-        console.log('sending 2');
-        
-        const res = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(messagePayload)
-        });
-        
-        if (res.ok) {
-          console.log('Personal message sent successfully');
-          setMessageInput('');
-          // Refresh personal messages
-          fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
-          })
-            .then(res => res.json())
-            .then(async (data) => {
-              console.log('Refreshed personal messages:', data);
-              const messages = Array.isArray(data.content) ? data.content : [];
-              
-              // Fetch display names for all message senders
-              const messagesWithNames = await Promise.all(
-                messages.map(async (msg) => {
-                  if (!msg.senderName && msg.senderId) {
-                    const displayName = await fetchDisplayNameFromBackend(msg.senderId);
-                    return { ...msg, senderName: displayName };
-                  }
-                  return msg;
-                })
-              );
-              
-              setPersonalMessages(prev => ({
-                ...prev,
-                [selectedChat]: messagesWithNames
-              }));
-            });
-        } else {
-          console.error('Failed to send personal message:', res.status);
-        }
-       
-      } catch (err) {
-        console.error("Error sending personal message:", err);
-      }
-      setSending(false);
+      return;
     }
+
+    const messagePayload = {
+      senderId: auth.currentUser.uid,
+      receiverId,
+      content: messageInput,
+      messageType: 'TEXT',
+    };
+    console.log('Support agent message payload:', messagePayload);
+    
+    const res = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(messagePayload)
+    });
+    
+    if (res.ok) {
+      console.log('Message sent to support agent successfully');
+      setMessageInput('');
+      
+      // Refresh messages
+      const senderId = auth.currentUser.uid;
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${senderId}&receiverId=${receiverId}&page=0&size=20`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(async (data) => {
+          const messages = Array.isArray(data.content) ? data.content : [];
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
+          setPersonalMessages(prev => ({
+            ...prev,
+            [selectedChat]: messagesWithNames
+          }));
+        });
+    } else {
+      console.error('Failed to send message to support agent:', res.status);
+    }
+
+  } catch (err) {
+    console.error("Error sending message to support agent:", err);
+  }
+  setSending(false);
+}
+else {
+  // Personal chat
+  setSending(true);
+  const userId = auth.currentUser.uid;
+  const conversation = chats.find((c) => c.id === selectedChat);
+  if (!conversation || !conversation.receiverId) return;
+  
+  const receiverId = conversation.receiverId;
+
+  try {
+    const messagePayload = {
+      senderId: userId,
+      receiverId,
+      content: messageInput,
+      messageType: 'TEXT',
+      senderName: auth.currentUser?.displayName || 'Admin'
+    };
+    console.log('Personal message payload:', messagePayload);
+    
+    const res = await fetch('http://localhost:8090/api/v1/chat/personal/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(messagePayload)
+    });
+    
+    if (res.ok) {
+      console.log('Personal message sent successfully');
+      setMessageInput('');
+      // Refresh personal messages
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(async (data) => {
+          const messages = Array.isArray(data.content) ? data.content : [];
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
+          setPersonalMessages(prev => ({
+            ...prev,
+            [selectedChat]: messagesWithNames
+          }));
+        });
+    } else {
+      console.error('Failed to send personal message:', res.status);
+    }
+   
+  } catch (err) {
+    console.error("Error sending personal message:", err);
+  }
+  setSending(false);
+}
   };
 
   const getStatusIcon = (status) => {
@@ -940,19 +961,29 @@ useEffect(() => {
                   </div>
                   <div className="space-y-2 flex-1 overflow-y-auto">
                     {supportAgents.map((agent) => (
-                      <button
-                        key={agent.email}
-                          onClick={async () => {
-                          setSelectedChat(`support_${agent.email}`);
-                          // Start conversation with agent when selecting them
-                          // await startConversationWithAgent(agent.email);
-                        }}
-                        className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] ${
-                          selectedChat === `support_${agent.email}`
-                            ? "bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600"
-                            : "hover:bg-white/60 dark:hover:bg-secondary-700/50 border-2 border-transparent"
-                        }`}
-                      >
+              // Update the onClick handler for support agents
+<button
+  key={agent.email}
+  onClick={async () => {
+    setSelectedChat(`support_${agent.email}`);
+    
+    // Fetch the Firebase UID for this agent
+    const agentUid = await getUserIdByEmail(agent.email);
+    if (agentUid) {
+      // Store the UID in a state or in the chat object
+      setChats(prev => prev.map(chat => 
+        chat.id === `support_${agent.email}` 
+          ? { ...chat, receiverId: agentUid }
+          : chat
+      ));
+    }
+  }}
+  className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] ${
+    selectedChat === `support_${agent.email}`
+      ? "bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600"
+      : "hover:bg-white/60 dark:hover:bg-secondary-700/50 border-2 border-transparent"
+  }`}
+>
                         <div className="flex items-center space-x-3">
                           <div className="relative">
                             <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shadow-sm">
