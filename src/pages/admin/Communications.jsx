@@ -354,22 +354,61 @@ const Communications = () => {
   useEffect(() => {
     fetchPersonalConversations();
   }, [authToken, auth.currentUser, userDisplayNames]);
+
+
   // Fetch personal messages for selected chat
-  useEffect(() => {
-    if (selectedChat !== "system" && authToken && auth.currentUser) {
-      const userId = auth.currentUser.uid;
+useEffect(() => {
+  if (selectedChat !== "system" && authToken && auth.currentUser) {
+    console.log("Selected chat:", selectedChat);
+    
+    // Handle support agent chats
+    if (selectedChat.startsWith("support_")) {
+      const agentEmail = selectedChat.replace("support_", "");
+      console.log("Fetching messages for support agent:", agentEmail);
+      
+      // For now, using hardcoded values
+      let userid = auth.currentUser.uid;
+      let receiverId = "npC6sQSFcPQ9eN4ex9bwUJ8isnC2";
+      
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userid}&receiverId=${receiverId}&page=0&size=20`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+        .then(res => res.json())
+        .then(async (data) => {
+          console.log('Fetched support agent messages:', data);
+          const messages = Array.isArray(data.content) ? data.content : [];
+          
+          // Fetch display names for all message senders
+          const messagesWithNames = await Promise.all(
+            messages.map(async (msg) => {
+              if (!msg.senderName && msg.senderId) {
+                const displayName = await fetchDisplayNameFromBackend(msg.senderId);
+                return { ...msg, senderName: displayName };
+              }
+              return msg;
+            })
+          );
+          
+          setPersonalMessages(prev => ({
+            ...prev,
+            [selectedChat]: messagesWithNames
+          }));
+        })
+        .catch(error => {
+          console.error("Error fetching support agent messages:", error);
+        });
+    } else {
+      // Handle regular personal conversations
       const conversation = chats.find((c) => c.id === selectedChat);
       if (!conversation) return;
 
-      // ORIGINAL API CALL - TEMPORARILY DISABLED
-      // Safely get receiverId
-      let receiverId = '';
-      if (typeof conversation.receiverId === 'string' && conversation.receiverId) {
-        receiverId = conversation.receiverId;
-      } else if (typeof conversation.id === 'string' && conversation.id) {
-        receiverId = conversation.id.replace(userId, '').replace(/-/g, '');
-      }
-      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userId}&receiverId=${receiverId}&page=0&size=20`, {
+      let userid = "am4pZG4dCJgOQQ9Et6FJC7PhYY32";
+      let receiverId = "npC6sQSFcPQ9eN4ex9bwUJ8isnC2";
+
+      fetch(`http://localhost:8090/api/v1/chat/personal/messages?senderId=${userid}&receiverId=${receiverId}&page=0&size=20`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -396,67 +435,9 @@ const Communications = () => {
             [selectedChat]: messagesWithNames
           }));
         });
-      /*
-      // TEMPORARILY DISABLED - Use mock personal messages
-      console.log("Using mock personal messages for chat:", selectedChat);
-
-      const mockPersonalMessages = {
-        conv_1: [
-          {
-            id: "pmsg_1",
-            senderId: "mock_user_id_sarah",
-            senderName: "Sarah Johnson",
-            content: "Hello! How can I help you today?",
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            read: true,
-          },
-          {
-            id: "pmsg_2",
-            senderId: auth.currentUser?.uid || "current_admin",
-            senderName: auth.currentUser?.displayName || "Admin",
-            content: "I need assistance with user verification process.",
-            createdAt: new Date(Date.now() - 1800000).toISOString(),
-            read: true,
-          },
-          {
-            id: "pmsg_3",
-            senderId: "mock_user_id_sarah",
-            senderName: "Sarah Johnson",
-            content:
-              "I can help you with that. What specific issue are you facing?",
-            createdAt: new Date(Date.now() - 900000).toISOString(),
-            read: false,
-          },
-        ],
-        conv_2: [
-          {
-            id: "pmsg_4",
-            senderId: "mock_user_id_mike",
-            senderName: "Mike Wilson",
-            content: "I will look into this issue for you.",
-            createdAt: new Date(Date.now() - 7200000).toISOString(),
-            read: true,
-          },
-          {
-            id: "pmsg_5",
-            senderId: auth.currentUser?.uid || "current_admin",
-            senderName: auth.currentUser?.displayName || "Admin",
-            content: "Thank you for your help!",
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            read: true,
-          },
-        ],
-      };
-
-      if (mockPersonalMessages[selectedChat]) {
-        setPersonalMessages((prev) => ({
-          ...prev,
-          [selectedChat]: mockPersonalMessages[selectedChat],
-        }));
-      }
-      */
     }
-  }, [selectedChat, authToken, chats, auth.currentUser, userDisplayNames]);
+  }
+}, [selectedChat, authToken, chats, auth.currentUser, userDisplayNames]);
 
   // Get Firebase auth token
   useEffect(() => {
@@ -531,63 +512,7 @@ const Communications = () => {
           setLoadingMessages(false);
         })
         .catch(() => setLoadingMessages(false));
-      /*
-      // TEMPORARILY DISABLED - Use mock data for system group
-      console.log("Using mock system group data");
-
-      // Mock group details
-      const mockGroupDetails = {
-        name: "System Admin Chat",
-        members: ["Admin", "System Manager", "Support Lead"],
-      };
-      setGroupDetails(mockGroupDetails);
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === "system"
-            ? {
-                ...chat,
-                participants: mockGroupDetails.members || [],
-                name: mockGroupDetails.name || "System",
-              }
-            : chat
-        )
-      );
-
-      // Mock group messages
-      setLoadingMessages(true);
-      setTimeout(() => {
-        const mockMessages = [
-          {
-            id: "msg_1",
-            senderId: "system_user_1",
-            senderName: "System Manager",
-            content:
-              "Good morning everyone! System maintenance is scheduled for tonight.",
-            createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          },
-          {
-            id: "msg_2",
-            senderId: auth.currentUser?.uid || "current_admin",
-            senderName: auth.currentUser?.displayName || "Admin",
-            content:
-              "Thanks for the update. What time will the maintenance begin?",
-            createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          },
-          {
-            id: "msg_3",
-            senderId: "system_user_2",
-            senderName: "Support Lead",
-            content:
-              "Maintenance will start at 11 PM and expected to complete by 2 AM.",
-            createdAt: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-          },
-        ];
-
-        console.log("Mock group messages:", mockMessages);
-        setGroupMessages(mockMessages);
-        setLoadingMessages(false);
-      }, 1000); // Simulate loading delay
-      */
+ 
     }
   }, [selectedChat, authToken, userDisplayNames]);
 
@@ -655,24 +580,7 @@ const Communications = () => {
         } else {
           console.error('Failed to send group message:', res.status);
         }
-        /*
-        // TEMPORARILY DISABLED - Mock message sending
-        console.log("Mock: Sending message to system group");
 
-        // Create mock message
-        const newMockMessage = {
-          id: `msg_${Date.now()}`,
-          senderId: auth.currentUser?.uid || "current_admin",
-          senderName: auth.currentUser?.displayName || "Admin",
-          content: messageInput,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Add to existing messages
-        setGroupMessages((prev) => [...prev, newMockMessage]);
-        setMessageInput("");
-        console.log("Mock message sent successfully");
-        */
       } catch (err) {
         console.error("Error sending group message:", err);
       }
@@ -684,6 +592,10 @@ const Communications = () => {
 
       try {
         // ORIGINAL API CALL - TEMPORARILY DISABLED
+                // First ensure conversation exists with the agent
+        await startConversationWithAgent(agentEmail);
+        
+        // Then send the actual message
         const receiverId = await getUserIdByEmail(agentEmail);
         if (!receiverId) {
           console.error("Could not get user ID for agent:", agentEmail);
@@ -719,36 +631,7 @@ const Communications = () => {
         } else {
           console.error('Failed to send message to support agent:', res.status);
         }
-        /*
-        // TEMPORARILY DISABLED - Mock support message sending
-        console.log("Mock: Sending message to support agent:", agentEmail);
 
-        const receiverId = await getUserIdByEmail(agentEmail);
-        if (!receiverId) {
-          console.error("Could not get user ID for agent:", agentEmail);
-          setSending(false);
-          return;
-        }
-
-        // Create mock conversation and message
-        const newConversationId = `conv_${Date.now()}`;
-        const newMockMessage = {
-          id: `msg_${Date.now()}`,
-          senderId: auth.currentUser?.uid || "current_admin",
-          senderName: auth.currentUser?.displayName || "Admin",
-          content: messageInput,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Add to personal messages
-        setPersonalMessages((prev) => ({
-          ...prev,
-          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
-        }));
-
-        setMessageInput("");
-        console.log("Mock message sent to support agent successfully");
-        */
       } catch (err) {
         console.error("Error sending message to support agent:", err);
       }
@@ -819,27 +702,7 @@ const Communications = () => {
         } else {
           console.error('Failed to send personal message:', res.status);
         }
-        /*
-        // TEMPORARILY DISABLED - Mock personal message sending
-        console.log("Mock: Sending personal message");
-
-        const newMockMessage = {
-          id: `msg_${Date.now()}`,
-          senderId: auth.currentUser?.uid || "current_admin",
-          senderName: auth.currentUser?.displayName || "Admin",
-          content: messageInput,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Add to personal messages
-        setPersonalMessages((prev) => ({
-          ...prev,
-          [selectedChat]: [...(prev[selectedChat] || []), newMockMessage],
-        }));
-
-        setMessageInput("");
-        console.log("Mock personal message sent successfully");
-        */
+       
       } catch (err) {
         console.error("Error sending personal message:", err);
       }
@@ -896,38 +759,38 @@ const Communications = () => {
         }
       : null);
 
+
+
   const currentMessages =
-    selectedChat === "system"
-      ? groupMessages.map((msg) => ({
-          id: msg.id,
-          sender: msg.senderName || msg.senderId,
-          content: msg.content,
-          timestamp: msg.createdAt
-            ? new Date(msg.createdAt).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "",
-          isOwn: msg.senderId === auth.currentUser?.uid,
-          status: "read",
-        }))
-      : selectedChat.startsWith("support_")
-      ? [] // For now, support agent messages will be empty until we fetch them
-      : (personalMessages[selectedChat] || []).map((msg) => ({
-          id: msg.id,
-          sender: msg.senderName || msg.senderId,
-          content: msg.content,
-          timestamp: msg.createdAt
-            ? new Date(msg.createdAt).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "",
-          isOwn: msg.senderId === auth.currentUser?.uid,
-          status: msg.read ? "read" : "delivered",
-        }));
+  selectedChat === "system"
+    ? groupMessages.map((msg) => ({
+        id: msg.id,
+        sender: msg.senderName || msg.senderId,
+        content: msg.content,
+        timestamp: msg.createdAt
+          ? new Date(msg.createdAt).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            })
+          : "",
+        isOwn: msg.senderId === auth.currentUser?.uid,
+        status: "read",
+      }))
+    : (personalMessages[selectedChat] || []).map((msg) => ({
+        id: msg.id,
+        sender: msg.senderName || msg.senderId,
+        content: msg.content,
+        timestamp: msg.createdAt
+          ? new Date(msg.createdAt).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            })
+          : "",
+        isOwn: msg.senderId === auth.currentUser?.uid,
+        status: msg.read ? "read" : "delivered",
+      }));
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -1079,9 +942,11 @@ const Communications = () => {
                     {supportAgents.map((agent) => (
                       <button
                         key={agent.email}
-                        onClick={() =>
-                          setSelectedChat(`support_${agent.email}`)
-                        }
+                          onClick={async () => {
+                          setSelectedChat(`support_${agent.email}`);
+                          // Start conversation with agent when selecting them
+                          // await startConversationWithAgent(agent.email);
+                        }}
                         className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] ${
                           selectedChat === `support_${agent.email}`
                             ? "bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600"
@@ -1186,77 +1051,77 @@ const Communications = () => {
                     </div>
                   </div>
 
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-secondary-900">
-                    {loadingMessages && selectedChat === "system" ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-3"></div>
-                          <p className="text-gray-500 dark:text-gray-400">
-                            Loading messages...
-                          </p>
-                        </div>
-                      </div>
-                    ) : selectedChat.startsWith("support_") ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="text-center max-w-md">
-                          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                            <UserIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            Start a Conversation
-                          </h3>
-                          <p className="text-gray-600 dark:text-gray-400">
-                            Send a message to begin chatting with this support
-                            agent
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      currentMessages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${
-                            message.isOwn ? "justify-end" : "justify-start"
-                          } mb-4`}
-                        >
-                          <div
-                            className={`max-w-xs lg:max-w-md ${
-                              message.isOwn ? "order-2" : "order-1"
-                            }`}
-                          >
-                            {!message.isOwn && (
-                              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 ml-1">
-                                {message.sender}
-                              </p>
-                            )}
-                            <div
-                              className={`rounded-2xl px-4 py-3 shadow-sm ${
-                                message.isOwn
-                                  ? "bg-primary-500 text-white rounded-br-md ml-auto"
-                                  : "bg-white dark:bg-secondary-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-secondary-600"
-                              }`}
-                            >
-                              <p className="text-sm leading-relaxed">
-                                {message.content}
-                              </p>
-                            </div>
-                            <div
-                              className={`flex items-center space-x-2 mt-2 ${
-                                message.isOwn ? "justify-end" : "justify-start"
-                              }`}
-                            >
-                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
-                                {message.timestamp}
-                              </span>
-                              {message.isOwn && getStatusIcon(message.status)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
+            
+{/* Messages */}
+<div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-secondary-900">
+  {loadingMessages && selectedChat === "system" ? (
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-3"></div>
+        <p className="text-gray-500 dark:text-gray-400">
+          Loading messages...
+        </p>
+      </div>
+    </div>
+  ) : currentMessages.length === 0 ? (
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+          <UserIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          Start a Conversation
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          Send a message to begin chatting
+        </p>
+      </div>
+    </div>
+  ) : (
+    currentMessages.map((message) => (
+      <div
+        key={message.id}
+        className={`flex ${
+          message.isOwn ? "justify-end" : "justify-start"
+        } mb-4`}
+      >
+        <div
+          className={`max-w-xs lg:max-w-md ${
+            message.isOwn ? "order-2" : "order-1"
+          }`}
+        >
+          {!message.isOwn && (
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 ml-1">
+              {message.sender}
+            </p>
+          )}
+          <div
+            className={`rounded-2xl px-4 py-3 shadow-sm ${
+              message.isOwn
+                ? "bg-primary-500 text-white rounded-br-md ml-auto"
+                : "bg-white dark:bg-secondary-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-secondary-600"
+            }`}
+          >
+            <p className="text-sm leading-relaxed">
+              {message.content}
+            </p>
+          </div>
+          <div
+            className={`flex items-center space-x-2 mt-2 ${
+              message.isOwn ? "justify-end" : "justify-start"
+            }`}
+          >
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
+              {message.timestamp}
+            </span>
+            {message.isOwn && getStatusIcon(message.status)}
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+  <div ref={messagesEndRef} />
+</div>
 
                   {/* Message Input */}
                   <div className="p-6 bg-white dark:bg-secondary-800 border-t border-gray-200 dark:border-secondary-600">
