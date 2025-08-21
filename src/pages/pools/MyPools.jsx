@@ -124,8 +124,8 @@ const MyPools = () => {
       {!loading && !error && (
         <>
           {/* Search and Filters */}
-          <div className="mb-6 sm:mb-10 flex justify-center">
-            <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row items-center justify-center w-full max-w-2xl">
+          <div className="mb-6 sm:mb-10 flex justify-center px-4 sm:px-0">
+            <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row items-center justify-center w-full max-w-full sm:max-w-2xl">
               {/* Search Input */}
               <div className="relative w-full sm:w-96">
                 <input

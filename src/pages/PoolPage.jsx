@@ -79,7 +79,7 @@ const PoolPage = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative w-full h-[65vh] md:h-[45vh] overflow-hidden">
+      <section className="relative w-full h-[75vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover scale-105 z-0"
           autoPlay 
@@ -121,27 +121,57 @@ const PoolPage = () => {
       <div className="relative z-10 -mt-10 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Enhanced Control Panel */}
-          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-4 sm:p-5 mb-6 sm:mb-8 w-full sm:w-fit mx-auto relative z-20">
-            <div className="flex justify-center mb-4 sm:mb-0">
-              <div className="flex gap-2 sm:gap-4 flex-wrap justify-center max-w-full">
+          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-3 sm:p-5 mb-6 sm:mb-8 w-full sm:w-fit mx-auto relative z-20">
+            <div className="flex justify-center">
+              {/* Mobile Layout - Two Rows */}
+              <div className="flex flex-col gap-3 sm:hidden">
+                {/* First Row - First 3 buttons */}
+                <div className="flex gap-2 justify-center">
+                  {tabList.slice(0, 3).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-3 py-2 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-xs flex-shrink-0 ${
+                        activeTab === tab.key
+                          ? 'bg-primary-600 text-white border-primary-600 scale-105'
+                          : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Second Row - Remaining 2 buttons */}
+                <div className="flex gap-2 justify-center">
+                  {tabList.slice(3).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-3 py-2 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-xs flex-shrink-0 ${
+                        activeTab === tab.key
+                          ? 'bg-primary-600 text-white border-primary-600 scale-105'
+                          : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Desktop Layout - Single Row */}
+              <div className="hidden sm:flex gap-4 justify-center max-w-full">
                 {tabList.map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-xs sm:text-base flex-shrink-0 ${
+                    className={`px-6 py-3 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-base flex-shrink-0 ${
                       activeTab === tab.key
                         ? 'bg-primary-600 text-white border-primary-600 scale-105'
                         : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
                     }`}
                   >
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">
-                      {tab.key === 'find' ? 'Find' : 
-                       tab.key === 'my' ? 'My' : 
-                       tab.key === 'confirmed' ? 'Confirmed' : 
-                       tab.key === 'ongoing' ? 'Ongoing' : 
-                       'Invites'}
-                    </span>
+                    {tab.label}
                   </button>
                 ))}
               </div>
