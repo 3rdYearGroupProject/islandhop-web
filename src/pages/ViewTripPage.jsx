@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 // ...existing imports...
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import { auth } from '../firebase';
@@ -11,6 +11,7 @@ import { getCityImageUrl, placeholderImage, logImageError } from '../utils/image
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import MapInfoWindow from '../components/MapInfoWindow';
 
 const ViewTripPage = () => {
   const location = useRouterLocation();
@@ -29,6 +30,7 @@ const ViewTripPage = () => {
   const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka center
   const [places, setPlaces] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
 
   // --- Expandable Cost Breakdown State ---
   const [costExpanded, setCostExpanded] = useState({
@@ -83,7 +85,8 @@ const ViewTripPage = () => {
             rating: 4.5,
             description: 'Airport pickup and transfer to hotel',
             price: '$25',
-            time: '14:00'
+            time: '14:00',
+            coordinates: { lat: 7.1808, lng: 79.8841 }
           },
           {
             id: 2,
@@ -93,7 +96,8 @@ const ViewTripPage = () => {
             rating: 4.3,
             description: 'Explore the bustling capital city',
             price: '$40',
-            time: '16:30'
+            time: '16:30',
+            coordinates: { lat: 6.9271, lng: 79.8612 }
           }
         ],
         places: [
@@ -106,7 +110,8 @@ const ViewTripPage = () => {
             reviews: 2156,
             description: 'Historic luxury hotel facing the Indian Ocean',
             checkIn: '15:00',
-            checkOut: '12:00'
+            checkOut: '12:00',
+            coordinates: { lat: 6.9278, lng: 79.8414 }
           }
         ],
         food: [
@@ -119,7 +124,8 @@ const ViewTripPage = () => {
             reviews: 3247,
             description: 'World-renowned restaurant specializing in Sri Lankan crab',
             priceRange: '$30-50',
-            time: '19:30'
+            time: '19:30',
+            coordinates: { lat: 6.9271, lng: 79.8612 }
           }
         ],
         transportation: [
@@ -146,7 +152,8 @@ const ViewTripPage = () => {
             rating: 4.6,
             description: 'Visit the most sacred Buddhist temple in Sri Lanka',
             price: '$15',
-            time: '10:00'
+            time: '10:00',
+            coordinates: { lat: 7.2936, lng: 80.6414 }
           },
           {
             id: 4,
@@ -156,7 +163,8 @@ const ViewTripPage = () => {
             rating: 4.2,
             description: 'Peaceful walk around the scenic Kandy Lake',
             price: 'Free',
-            time: '17:00'
+            time: '17:00',
+            coordinates: { lat: 7.2906, lng: 80.6337 }
           }
         ],
         places: [
@@ -169,7 +177,8 @@ const ViewTripPage = () => {
             reviews: 867,
             description: 'Charming hotel with lake views',
             checkIn: '15:00',
-            checkOut: '12:00'
+            checkOut: '12:00',
+            coordinates: { lat: 7.2906, lng: 80.6337 }
           }
         ],
         food: [
@@ -182,7 +191,8 @@ const ViewTripPage = () => {
             reviews: 543,
             description: 'Cozy cafe with mountain views',
             priceRange: '$10-20',
-            time: '12:30'
+            time: '12:30',
+            coordinates: { lat: 7.2935, lng: 80.6414 }
           }
         ],
         transportation: [
@@ -209,7 +219,8 @@ const ViewTripPage = () => {
             rating: 4.7,
             description: 'Iconic railway bridge with stunning views',
             price: 'Free',
-            time: '09:00'
+            time: '09:00',
+            coordinates: { lat: 6.8667, lng: 81.0500 }
           },
           {
             id: 6,
@@ -219,7 +230,8 @@ const ViewTripPage = () => {
             rating: 4.5,
             description: 'Moderate hike with panoramic views',
             price: 'Free',
-            time: '14:00'
+            time: '14:00',
+            coordinates: { lat: 6.8708, lng: 81.0456 }
           }
         ],
         places: [
@@ -232,7 +244,8 @@ const ViewTripPage = () => {
             reviews: 432,
             description: 'Beautiful resort surrounded by nature',
             checkIn: '14:00',
-            checkOut: '11:00'
+            checkOut: '11:00',
+            coordinates: { lat: 6.8667, lng: 81.0500 }
           }
         ],
         food: [
@@ -245,7 +258,8 @@ const ViewTripPage = () => {
             reviews: 321,
             description: 'Popular local spot with amazing views',
             priceRange: '$8-15',
-            time: '12:00'
+            time: '12:00',
+            coordinates: { lat: 6.8667, lng: 81.0500 }
           }
         ],
         transportation: [
@@ -411,11 +425,14 @@ const ViewTripPage = () => {
         // If we have both tripId and userId, fetch from API
         if (tripId && currentUserId) {
           console.log('🔍 Fetching trip details from API for tripId:', tripId, 'userId:', currentUserId);
+          console.log('🌐 API endpoint:', `/itinerary/${tripId}?userId=${currentUserId}`);
           
           const response = await tripPlanningApi.get(`/itinerary/${tripId}?userId=${currentUserId}`);
+          console.log('📥 Raw API response:', response);
           
           if (response.data && response.data.status === 'success') {
-            console.log('✅ API Response:', response.data);
+            console.log('✅ API Response Data:', response.data);
+            console.log('📋 Daily Plans:', response.data.dailyPlans);
             
             // Extract all places from the daily plans for the map
             const allPlaces = [];
@@ -489,6 +506,9 @@ const ViewTripPage = () => {
             
             setTrip(tripData);
             
+            console.log('🎯 Using API trip data:', tripData);
+            console.log('🗺️ Places for map:', allPlaces);
+            
             // Initialize expanded days - expand first few days by default
             const initialExpanded = {};
             for (let i = 0; i < tripData.totalDays; i++) {
@@ -502,27 +522,32 @@ const ViewTripPage = () => {
           }
         } else {
           // If no tripId or userId, fall back to local data
+          console.log('⚠️ No tripId or userId available - tripId:', tripId, 'currentUserId:', currentUserId);
+          console.log('📦 Falling back to local/mock data');
           fallbackToLocalData();
         }        } catch (error) {
           console.error('❌ Error fetching trip details:', error);
+          setApiError(`Failed to load trip: ${error.message}`);
           
-          // In development mode with mock data enabled, don't set API error - just fallback
+          // Only fall back to local data if explicitly in development mode with mock enabled
           if (process.env.REACT_APP_ENVIRONMENT === 'development' && 
               process.env.REACT_APP_USE_MOCK_DATA === 'true') {
             console.log('🔄 Development mode: Falling back to mock data due to API error');
-          } else {
-            setApiError(`Failed to load trip: ${error.message}`);
+            fallbackToLocalData();
           }
-          
-          fallbackToLocalData();
         } finally {
         setLoading(false);
       }
     };
     
     const fallbackToLocalData = () => {
+      console.log('📁 fallbackToLocalData called');
+      console.log('🎫 tripFromState:', tripFromState);
+      console.log('🔧 mockSavedTrip available:', !!mockSavedTrip);
+      
       // Use trip from state if available, otherwise use mock data
       let tripData = tripFromState || mockSavedTrip;
+      console.log('📋 Using trip data source:', tripFromState ? 'route state' : 'mock data');
       
       // If tripData comes from MyTripsPage, transform it to match expected structure
       if (tripFromState && !tripFromState.destinations) {
@@ -547,6 +572,66 @@ const ViewTripPage = () => {
       }
       
       setTrip(tripData);
+      
+      // Extract places with coordinates for the map from mock/local data
+      const allPlaces = [];
+      if (tripData.itinerary) {
+        Object.entries(tripData.itinerary).forEach(([dayIndex, dayData]) => {
+          const dayNumber = parseInt(dayIndex) + 1;
+          
+          // Add activities with coordinates
+          if (dayData.activities) {
+            dayData.activities.forEach(activity => {
+              if (activity.coordinates) {
+                allPlaces.push({
+                  ...activity,
+                  location: activity.coordinates,
+                  dayNumber: dayNumber,
+                  placeType: 'attraction'
+                });
+              }
+            });
+          }
+          
+          // Add hotels with coordinates
+          if (dayData.places) {
+            dayData.places.forEach(place => {
+              if (place.coordinates) {
+                allPlaces.push({
+                  ...place,
+                  location: place.coordinates,
+                  dayNumber: dayNumber,
+                  placeType: 'hotel'
+                });
+              }
+            });
+          }
+          
+          // Add restaurants with coordinates
+          if (dayData.food) {
+            dayData.food.forEach(restaurant => {
+              if (restaurant.coordinates) {
+                allPlaces.push({
+                  ...restaurant,
+                  location: restaurant.coordinates,
+                  dayNumber: dayNumber,
+                  placeType: 'restaurant'
+                });
+              }
+            });
+          }
+        });
+      }
+      
+      setPlaces(allPlaces);
+      
+      // If there are places with coordinates, set the map center to the first one
+      if (allPlaces.length > 0 && allPlaces[0].location) {
+        setMapCenter({
+          lat: allPlaces[0].location.lat,
+          lng: allPlaces[0].location.lng
+        });
+      }
       
       // Initialize expanded days - expand first few days by default
       const totalDays = tripData.totalDays || 5;
@@ -774,9 +859,9 @@ const ViewTripPage = () => {
   const handleMarkerClick = (place) => {
     setSelectedMarker(place);
     
-    // Center the map on the selected place
-    if (place.location) {
-      setMapCenter({
+    // Smoothly pan to the selected place
+    if (place.location && mapInstance) {
+      mapInstance.panTo({
         lat: place.location.lat,
         lng: place.location.lng
       });
@@ -786,6 +871,11 @@ const ViewTripPage = () => {
   // Close info window
   const handleInfoWindowClose = () => {
     setSelectedMarker(null);
+  };
+
+  // Handle map load
+  const handleMapLoad = (map) => {
+    setMapInstance(map);
   };
 
   if (loading) {
@@ -799,11 +889,11 @@ const ViewTripPage = () => {
     );
   }
 
-  // Only show error in production or when not using mock data
-  const shouldShowError = process.env.REACT_APP_ENVIRONMENT !== 'development' && 
-                          process.env.REACT_APP_USE_MOCK_DATA !== 'true';
+  // Show error when API fails (unless specifically suppressed in development)
+  const shouldShowError = apiError && !(process.env.REACT_APP_ENVIRONMENT === 'development' && 
+                          process.env.REACT_APP_USE_MOCK_DATA === 'true');
   
-  if (apiError && shouldShowError) {
+  if (shouldShowError) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -1034,6 +1124,7 @@ const ViewTripPage = () => {
                       mapContainerStyle={mapContainerStyle}
                       center={mapCenter}
                       zoom={12}
+                      onLoad={handleMapLoad}
                       options={{
                         fullscreenControl: true,
                         streetViewControl: true,
@@ -1053,38 +1144,10 @@ const ViewTripPage = () => {
                           title={place.name}
                         />
                       ))}
-                      {selectedMarker && (
-                        <InfoWindow
-                          position={{
-                            lat: selectedMarker.location.lat,
-                            lng: selectedMarker.location.lng
-                          }}
-                          onCloseClick={handleInfoWindowClose}
-                        >
-                          <div className="p-2">
-                            <h3 className="font-bold">{selectedMarker.name}</h3>
-                            <p className="text-sm">{selectedMarker.type}</p>
-                            {selectedMarker.rating && (
-                              <div className="flex items-center mt-1">
-                                <span className="text-yellow-500">★</span>
-                                <span className="ml-1 text-sm">{selectedMarker.rating}</span>
-                              </div>
-                            )}
-                            <img 
-                              src={getCityImageUrl(selectedMarker.name || selectedMarker.location?.city || 'Sri Lanka')}
-                              alt={selectedMarker.name} 
-                              className="mt-2 w-full h-24 object-cover rounded"
-                              onError={(e) => {
-                                logImageError('ViewTripPage InfoWindow', selectedMarker, e.target.src);
-                                e.target.src = placeholderImage;
-                              }}
-                            />
-                            <div className="mt-2 text-sm">
-                              <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
-                            </div>
-                          </div>
-                        </InfoWindow>
-                      )}
+                      <MapInfoWindow 
+                        selectedMarker={selectedMarker}
+                        onClose={handleInfoWindowClose}
+                      />
                     </GoogleMap>
                   </div>
                   <div className="p-3 border-t border-gray-100 shrink-0">
