@@ -31,7 +31,8 @@ import {
   PhoneIcon,
   GlobeAltIcon,
   HeartIcon,
-  StarIcon
+  StarIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 
@@ -47,6 +48,7 @@ const Discover = () => {
   const [favorites, setFavorites] = useState(new Set());
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [placeDetails, setPlaceDetails] = useState(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const mapRef = useRef(null);
   // Map filter string to category id
   const filterToCategoryId = (filter) => {
@@ -245,7 +247,7 @@ const Discover = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
+      <section className="relative w-full h-[75vh] md:h-[45vh] overflow-hidden">
         <video 
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 
@@ -275,20 +277,29 @@ const Discover = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Search Bar - Pill Shaped Container */}
-        <div className="bg-white rounded-full shadow-xl border border-gray-100 p-5 mb-8 w-fit mx-auto relative -mt-8 z-20">
+        <div className="bg-white rounded-full shadow-xl border border-gray-100 p-3 md:p-5 mb-8 w-full max-w-4xl mx-auto relative -mt-8 z-20">
           <form onSubmit={handleSearch} className="flex items-center">
-            <div className="relative flex items-center min-w-[500px] md:min-w-[600px] lg:min-w-[700px]">
+            <div className="relative flex items-center w-full md:min-w-[600px] lg:min-w-[700px]">
               <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
+              {/* Mobile input */}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search"
+                className="md:hidden pl-12 pr-20 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full text-base bg-transparent"
+              />
+              {/* Desktop input */}
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for attractions, restaurants, hotels..."
-                className="pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full text-base bg-transparent"
+                className="hidden md:block pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full text-base bg-transparent"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-primary-600 text-white rounded-full font-semibold shadow hover:bg-primary-700 transition-colors text-sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 md:px-6 py-2 bg-primary-600 text-white rounded-full font-semibold shadow hover:bg-primary-700 transition-colors text-sm"
               >
                 Search
               </button>
@@ -319,14 +330,25 @@ const Discover = () => {
         <section className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Categories
+              {categories.find(cat => cat.id === selectedCategory)?.name || 'Tourist Attractions'}
             </h2>
-            <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+            {/* Mobile Filter Button */}
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="md:hidden flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
+            >
+              <FunnelIcon className="h-5 w-5" />
+              <span className="text-sm">Filter by type</span>
+            </button>
+            {/* Desktop Filter Label */}
+            <div className="hidden md:flex items-center space-x-2 text-gray-600 dark:text-gray-300">
               <FunnelIcon className="h-5 w-5" />
               <span className="text-sm">Filter by type</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          
+          {/* Desktop Categories Grid */}
+          <div className="hidden md:grid grid-cols-4 lg:grid-cols-7 gap-3">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -355,18 +377,13 @@ const Discover = () => {
 
         {/* Results Section */}
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {loading ? 'Searching...' : `Found ${places.length} places`}
-            </h2>
-          </div>
 
           {loading ? (
             <div className="flex justify-center py-12">
               <LoadingSpinner size="lg" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {places.map((place) => (
                 <Card
                   key={place.id}
@@ -378,40 +395,40 @@ const Discover = () => {
                     <img
                       src={place.photos && place.photos.length > 0 ? getPhotoUrl(place.photos[0]) : 'https://placehold.co/400x300?text=No+Image'}
                       alt={place.displayName?.text || place.name}
-                      className="w-full h-48 object-cover"
+                      className="w-full h-32 md:h-48 object-cover"
                     />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(place.id);
                       }}
-                      className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
+                      className="absolute top-2 right-2 p-1.5 md:p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
                     >
                       {favorites.has(place.id) ? (
-                        <HeartSolidIcon className="h-5 w-5 text-red-500" />
+                        <HeartSolidIcon className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
                       ) : (
-                        <HeartIcon className="h-5 w-5 text-gray-600" />
+                        <HeartIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
                       )}
                     </button>
                   </div>
                   
-                  <CardBody>
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 group-hover:text-primary-600 transition-colors">
+                  <CardBody className="p-3 md:p-6">
+                    <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white mb-1 md:mb-2 group-hover:text-primary-600 transition-colors leading-tight">
                       {place.displayName?.text || place.name}
                     </h3>
                     
                     {place.rating && (
                       <div className="flex items-center mb-2">
                         <div className="flex">{renderStars(place.rating)}</div>
-                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="ml-1 md:ml-2 text-xs md:text-sm text-gray-600 dark:text-gray-400 font-medium">
                           {place.rating} ({place.userRatingCount || place.user_ratings_total})
                         </span>
                       </div>
                     )}
                     
-                    <div className="flex items-start mb-3">
-                      <MapPinIcon className="h-4 w-4 text-gray-400 mt-1 mr-2 flex-shrink-0" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                    <div className="flex items-start mb-2 md:mb-3">
+                      <MapPinIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-400 mt-0.5 mr-1 md:mr-2 flex-shrink-0" />
+                      <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-tight">
                         {place.formattedAddress || place.vicinity}
                       </span>
                     </div>
@@ -420,7 +437,7 @@ const Discover = () => {
                       {place.types?.slice(0, 2).map((type) => (
                         <span
                           key={type}
-                          className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 text-xs rounded-full"
+                          className="px-1.5 md:px-2 py-0.5 md:py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 text-xs rounded-full whitespace-nowrap max-w-full truncate md:whitespace-normal md:max-w-none"
                         >
                           {type.replace(/_/g, ' ')}
                         </span>
@@ -445,6 +462,61 @@ const Discover = () => {
           )}
         </section>
       </div>
+
+      {/* Category Filter Modal - Mobile Only */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 pt-20 md:hidden">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg max-w-md w-full max-h-[85vh] overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-secondary-700">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Filter by Category</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Choose a category to filter places
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-secondary-700 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+
+            {/* Categories Grid */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="grid grid-cols-2 gap-3">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setShowCategoryModal(false);
+                    }}
+                    className={`group flex flex-col items-center justify-center py-4 px-3 rounded-lg border transition-all duration-300 text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400
+                      ${selectedCategory === category.id
+                        ? 'bg-primary-600 border-primary-600 shadow-lg'
+                        : 'bg-transparent border-gray-300 dark:border-secondary-600 hover:bg-primary-50 dark:hover:bg-secondary-700 hover:border-primary-300'}
+                    `}
+                  >
+                    <span
+                      className={`mb-2 transition-colors duration-300
+                        ${selectedCategory === category.id ? 'text-white' : 'text-gray-900 dark:text-white group-hover:text-primary-700'}`}
+                    >
+                      {React.cloneElement(category.icon, {
+                        className: `h-8 w-8 mx-auto transition-colors duration-300 ${selectedCategory === category.id ? 'text-white' : 'text-gray-900 dark:text-white group-hover:text-primary-700'}`,
+                      })}
+                    </span>
+                    <span className={`text-sm font-medium transition-colors duration-300 ${selectedCategory === category.id ? 'text-white' : 'text-gray-900 dark:text-white group-hover:text-primary-700'}`}>
+                      {category.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Place Details Modal */}
       {selectedPlace && (
@@ -555,6 +627,7 @@ const Discover = () => {
         </div>
       )}
 
+      <div className="mt-16"></div>
       <Footer />
     </div>
   );
