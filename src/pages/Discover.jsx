@@ -388,21 +388,22 @@ const Discover = () => {
                 <Card
                   key={place.id}
                   hover
-                  className="group cursor-pointer"
+                  padding="none"
+                  className="group cursor-pointer bg-white rounded-2xl border border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 transform hover:-translate-y-1 flex flex-col h-[320px] md:h-[380px]"
                   onClick={() => getPlaceDetails(place)}
                 >
                   <div className="relative">
                     <img
                       src={place.photos && place.photos.length > 0 ? getPhotoUrl(place.photos[0]) : 'https://placehold.co/400x300?text=No+Image'}
                       alt={place.displayName?.text || place.name}
-                      className="w-full h-32 md:h-48 object-cover"
+                      className="w-full h-32 md:h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(place.id);
                       }}
-                      className="absolute top-2 right-2 p-1.5 md:p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
+                      className="absolute top-3 right-3 p-1.5 md:p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-md"
                     >
                       {favorites.has(place.id) ? (
                         <HeartSolidIcon className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
@@ -410,38 +411,88 @@ const Discover = () => {
                         <HeartIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
                       )}
                     </button>
-                  </div>
-                  
-                  <CardBody className="p-3 md:p-6">
-                    <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-white mb-1 md:mb-2 group-hover:text-primary-600 transition-colors leading-tight">
-                      {place.displayName?.text || place.name}
-                    </h3>
                     
+                    {/* Rating overlay */}
                     {place.rating && (
-                      <div className="flex items-center mb-2">
-                        <div className="flex">{renderStars(place.rating)}</div>
-                        <span className="ml-1 md:ml-2 text-xs md:text-sm text-gray-600 dark:text-gray-400 font-medium">
-                          {place.rating} ({place.userRatingCount || place.user_ratings_total})
-                        </span>
+                      <div className="absolute top-3 left-3">
+                        <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-md">
+                          <StarIcon className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                          <span className="text-xs md:text-sm font-semibold text-gray-900">{place.rating}</span>
+                        </div>
                       </div>
                     )}
+                  </div>
+                  
+                  <CardBody className="p-3 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-bold text-sm md:text-base text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors leading-tight line-clamp-2 flex-1">
+                        {place.displayName?.text || place.name}
+                      </h3>
+                    </div>
                     
-                    <div className="flex items-start mb-2 md:mb-3">
-                      <MapPinIcon className="h-3 w-3 md:h-4 md:w-4 text-gray-400 mt-0.5 mr-1 md:mr-2 flex-shrink-0" />
-                      <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-tight">
-                        {place.formattedAddress || place.vicinity}
-                      </span>
+                    <div className="space-y-1.5 mb-3 flex-1">
+                      <div className="flex items-start">
+                        <MapPinIcon className="h-3 w-3 md:h-4 md:w-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-tight">
+                          {place.formattedAddress || place.vicinity}
+                        </span>
+                      </div>
+                      
+                      {place.rating && (
+                        <div className="flex items-center">
+                          <StarIcon className="h-3 w-3 md:h-4 md:w-4 text-blue-500 mr-2" />
+                          <span className="text-xs md:text-sm text-gray-600">
+                            {place.rating} ({place.userRatingCount || place.user_ratings_total} reviews)
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-1">
-                      {place.types?.slice(0, 2).map((type) => (
-                        <span
-                          key={type}
-                          className="px-1.5 md:px-2 py-0.5 md:py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 text-xs rounded-full whitespace-nowrap max-w-full truncate md:whitespace-normal md:max-w-none"
+                    {/* Tags */}
+                    <div className="mb-3">
+                      <div className="flex gap-1 overflow-x-auto scrollbar-hide md:flex-wrap md:overflow-visible">
+                        {place.types?.slice(0, 2).map((type) => (
+                          <span
+                            key={type}
+                            className="inline-block px-1.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-md whitespace-nowrap flex-shrink-0"
+                          >
+                            {type.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-auto">
+                      <div className="flex items-center space-x-2 text-xs md:text-sm text-gray-500">
+                        {place.rating && (
+                          <div className="flex items-center">
+                            <StarIcon className="h-3 w-3 md:h-4 md:w-4 text-yellow-400 fill-current mr-1" />
+                            <span className="font-medium">{place.rating}</span>
+                          </div>
+                        )}
+                        {place.priceLevel && (
+                          <div className="flex items-center">
+                            <span className="text-green-600 font-medium">
+                              {'$'.repeat(place.priceLevel)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-1">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Add share functionality
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
-                          {type.replace(/_/g, ' ')}
-                        </span>
-                      ))}
+                          <svg className="h-3 w-3 md:h-4 md:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </CardBody>
                 </Card>
