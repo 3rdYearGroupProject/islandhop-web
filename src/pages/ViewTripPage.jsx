@@ -831,7 +831,9 @@ const ViewTripPage = () => {
   // Google Maps API loading
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: ['places', 'marker'],
+    version: 'weekly'
   });
 
   // Google Maps styles and settings
