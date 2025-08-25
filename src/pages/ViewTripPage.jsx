@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // ...existing imports...
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
@@ -972,13 +972,23 @@ const ViewTripPage = () => {
       {/* Main Content: Itinerary + Map (sticky/fixed) */}
       <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          {/* Left: Itinerary, scrollable - 50% width on desktop */}
-          <div className="w-full md:w-1/2 min-w-0 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
+          {/* Left: Itinerary, scrollable - narrower on mobile, 50% width on desktop */}
+          <div className="w-11/12 md:w-1/2 min-w-0 flex flex-col mx-auto md:mx-0">
+          {/* Back button - mobile only, above Trip Itinerary */}
+          <div className="block md:hidden mb-4">
             <button
               onClick={handleBack}
               className="text-primary-600 hover:text-primary-700 font-medium"
+            >
+              ← Back to Trips
+            </button>
+          </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
+            {/* Back button - desktop only, to the right of Trip Itinerary */}
+            <button
+              onClick={handleBack}
+              className="hidden md:block text-primary-600 hover:text-primary-700 font-medium"
             >
               ← Back to Trips
             </button>
@@ -1051,14 +1061,21 @@ const ViewTripPage = () => {
                               };
                               return (
                                 <div key={`${item.category}-${itemIndex}`} className={`p-4 rounded-lg border ${getCategoryColor(item.category)}`}>
+                                  {/* Time display - mobile only, at the top */}
+                                  {item.time && (
+                                    <div className="block md:hidden text-sm text-gray-500 mb-3 font-medium">
+                                      {item.time}
+                                    </div>
+                                  )}
                                   <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-3 flex-1">
                                       {getCategoryIcon(item.category)}
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
                                           <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
+                                          {/* Time display - desktop only, to the right */}
                                           {item.time && (
-                                            <span className="text-sm text-gray-500 ml-2">{item.time}</span>
+                                            <span className="hidden md:block text-sm text-gray-500 ml-2">{item.time}</span>
                                           )}
                                         </div>
                                         {item.location && (
@@ -1080,7 +1097,8 @@ const ViewTripPage = () => {
                                             )}
                                             {item.rating && (
                                               <span className="flex items-center text-yellow-600">
-                                                ⭐ {item.rating}
+                                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                                {item.rating}
                                               </span>
                                             )}
                                             {item.reviews && (
@@ -1179,11 +1197,11 @@ const ViewTripPage = () => {
           </div>
         </div>
         {/* Trip Summary (below itinerary, left column only) */}
-        <div className="flex gap-8 w-full">
-          {/* Left: Empty (was Trip Summary Card) */}
-          <div className="w-1/2 min-w-0 flex flex-col"></div>
-          {/* Right: Actions Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
+        <div className="flex flex-col md:flex-row gap-8 w-full">
+          {/* Left: Empty on desktop, hidden on mobile */}
+          <div className="hidden md:block md:w-1/2 min-w-0 flex-col"></div>
+          {/* Right: Actions Card - full width on mobile, half width on desktop */}
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col">
             <div className="w-full mt-10">
               <div
                 className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200 flex flex-col justify-center"

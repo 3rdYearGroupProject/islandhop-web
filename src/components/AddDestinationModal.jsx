@@ -459,14 +459,14 @@ const AddDestinationModal = ({
           </div>
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredCities.map((city) => (
               <div key={city.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
                 <div className="relative">
                   <img 
                     src={city.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop'} 
                     alt={city.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-32 md:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
                 <div className="p-4">
@@ -478,20 +478,20 @@ const AddDestinationModal = ({
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  <p className="text-xs md:text-sm text-gray-600 mb-3 line-clamp-2">
                     {city.description || `Explore the beautiful city of ${city.name} in Sri Lanka.`}
                   </p>
                   {city.highlights && city.highlights.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-xs font-medium text-gray-500 mb-2">TOP HIGHLIGHTS</p>
-                      <div className="flex flex-wrap gap-1">
+                      <p className="text-xs font-medium text-gray-500 mb-2 hidden md:block">TOP HIGHLIGHTS</p>
+                      <div className="flex md:flex-wrap gap-1 overflow-x-auto md:overflow-x-visible scrollbar-hide">
                         {city.highlights.slice(0, 3).map((highlight, index) => (
-                          <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                          <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">
                             {highlight}
                           </span>
                         ))}
                         {city.highlights.length > 3 && (
-                          <span className="text-xs text-gray-500">+{city.highlights.length - 3} more</span>
+                          <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">+{city.highlights.length - 3} more</span>
                         )}
                       </div>
                     </div>
