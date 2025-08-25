@@ -71,6 +71,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
         amount: totalAmount,
         currency: "LKR",
         orderId: `ORDER_${tripId || Date.now()}`,
+        tripId: tripId, // Explicitly include tripId
         itemName: "Trip Booking",
         customerDetails: {
           firstName: customerDetails.firstName,
@@ -84,6 +85,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
       };
 
       console.log('Sending payment request to backend:', paymentRequest);
+      console.log('TripId being sent:', tripId);
 
       // Call your backend API
       const response = await axios.post('http://localhost:8088/api/v1/payments/create-payhere-payment', paymentRequest);
