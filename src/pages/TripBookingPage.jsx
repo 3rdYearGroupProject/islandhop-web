@@ -625,7 +625,7 @@ const TripBookingPage = () => {
           </div>
 
           {/* Right Side - Map */}
-          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-160px)]">
+          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
             {isLoaded ? (
               <div className="h-full flex flex-col">
                 <div className="p-4 border-b border-gray-100">
