@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DriverTripModal from '../../components/driver/DriverTripModal';
+import axios from 'axios';
+import { getUserData } from '../../utils/userStorage';
 import { 
   Car, 
   MapPin, 
@@ -22,110 +24,156 @@ const DriverTrips = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, active, completed, cancelled
-  const [loading, setLoading] = useState(false);
-  const [trips, setTrips] = useState([
-    {
-      id: 'TR001',
-      passenger: 'Sarah Johnson',
-      passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
-      pickupLocation: 'Colombo Airport',
-      destination: 'Galle Fort',
-      distance: '120 km',
-      estimatedTime: '2h 30m',
-      fare: 890.50,
-      status: 'active',
-      startTime: '2:30 PM',
-      passengerRating: 4.9,
-      passengerPhone: '+94 77 123 4567',
-      tripType: 'full_trip',
-      requestTime: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      progress: 65
-    },
-    {
-      id: 'TR002',
-      passenger: 'Michael Chen',
-      passengerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      pickupLocation: 'Kandy Central',
-      destination: 'Nuwara Eliya',
-      distance: '75 km',
-      estimatedTime: '1h 45m',
-      fare: 950.00,
-      status: 'pending',
-      passengerRating: 4.7,
-      tripType: 'full_trip',
-      requestTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-      note: 'Please pick up from main entrance'
-    },
-    {
-      id: 'TR003',
-      passenger: 'Emma Wilson',
-      passengerAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      pickupLocation: 'Ella Railway Station',
-      destination: 'Colombo',
-      distance: '200 km',
-      estimatedTime: '4h 30m',
-      fare: 1800.00,
-      status: 'pending',
-      passengerRating: 4.9,
-      tripType: 'partial_trip',
-      requestTime: new Date(Date.now() - 8 * 60 * 1000), // 8 minutes ago
-    },
-    {
-      id: 'TR004',
-      passenger: 'David Kumar',
-      passengerAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      pickupLocation: 'Sigiriya Rock',
-      destination: 'Dambulla Cave Temple',
-      distance: '22 km',
-      estimatedTime: '45m',
-      fare: 3500.00,
-      status: 'completed',
-      completedTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      passengerRating: 4.8,
-      tripType: 'full_trip',
-      driverRating: 5,
-      tip: 5.00
-    },
-    {
-      id: 'TR005',
-      passenger: 'Lisa Anderson',
-      passengerAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-      pickupLocation: 'Bentota Beach',
-      destination: 'Colombo Airport',
-      distance: '85 km',
-      estimatedTime: '1h 30m',
-      fare: 750.00,
-      status: 'completed',
-      completedTime: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-      passengerRating: 4.6,
-      tripType: 'full_trip',
-      driverRating: 4,
-      tip: 0
-    }
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [trips, setTrips] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Get user data from storage
+  const userData = getUserData();
+  const driverEmail = userData?.email;
 
   const [stats, setStats] = useState({
-    totalTrips: trips.length,
-    activeTrips: trips.filter(t => t.status === 'active').length,
-    pendingTrips: trips.filter(t => t.status === 'pending').length,
-    completedTrips: trips.filter(t => t.status === 'completed').length
+    totalTrips: 0,
+    activeTrips: 0,
+    pendingTrips: 0,
+    completedTrips: 0
   });
 
-  const handleTripAction = (tripId, action) => {
-    setTrips(prevTrips => {
-      return prevTrips.map(trip => {
+  // Fetch trips from API
+  useEffect(() => {
+    const fetchTrips = async () => {
+      if (!driverEmail) {
+        setError('Driver email not found in storage');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Fetching trips for driver:', driverEmail);
+        const response = await axios.get(`http://localhost:5006/api/trips/driver/${driverEmail}`);
+        console.log('API Response:', response);
+        
+        if (response.data.success) {
+          const apiTrips = response.data.data.trips;
+          
+          // Transform API data to match component structure
+          const transformedTrips = apiTrips.map(trip => {
+            // Determine status based on driver_status
+            let status = 'pending';
+            if (trip.driver_status === 1) {
+              status = 'active';
+            } else if (trip.driver_status === '' || trip.driver_status === 0 || trip.driver_status === null) {
+              status = 'pending';
+            }
+
+            // Get first and last cities for pickup and destination
+            const firstDay = trip.dailyPlans?.[0];
+            const lastDay = trip.dailyPlans?.[trip.dailyPlans.length - 1];
+            
+            return {
+              id: trip._id,
+              tripName: trip.tripName,
+              passenger: `User ${trip.userId.substring(0, 8)}...`, // Display partial user ID
+              passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+              pickupLocation: firstDay?.city || trip.baseCity || 'Not specified',
+              destination: lastDay?.city || 'Multiple destinations',
+              distance: `${Math.round(trip.averageTripDistance || 0)} km`,
+              estimatedTime: `${Math.ceil((trip.averageTripDistance || 0) / 60)} hours`, // Rough estimate
+              fare: trip.averageDriverCost || 0,
+              status: status,
+              passengerRating: 4.5, // Default rating
+              tripType: 'full_trip',
+              requestTime: new Date(trip.lastUpdated),
+              startDate: trip.startDate,
+              endDate: trip.endDate,
+              arrivalTime: trip.arrivalTime,
+              baseCity: trip.baseCity,
+              dailyPlans: trip.dailyPlans,
+              vehicleType: trip.vehicleType,
+              paidAmount: trip.payedAmount,
+              driverNeeded: trip.driverNeeded,
+              guideNeeded: trip.guideNeeded,
+              guideEmail: trip.guide_email,
+              guideStatus: trip.guide_status
+            };
+          });
+
+          setTrips(transformedTrips);
+
+          // Update stats
+          const newStats = {
+            totalTrips: transformedTrips.length,
+            activeTrips: transformedTrips.filter(t => t.status === 'active').length,
+            pendingTrips: transformedTrips.filter(t => t.status === 'pending').length,
+            completedTrips: transformedTrips.filter(t => t.status === 'completed').length
+          };
+          setStats(newStats);
+        } else {
+          setError('Failed to fetch trips');
+        }
+      } catch (err) {
+        console.error('Error fetching trips:', err);
+        setError('Failed to fetch trips. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, [driverEmail]);
+
+  const handleTripAction = async (tripId, action) => {
+    try {
+      setLoading(true);
+      
+      // Here you would typically make an API call to update the trip status
+      // For now, we'll update the local state
+      
+      setTrips(prevTrips => {
+        return prevTrips.map(trip => {
+          if (trip.id === tripId) {
+            if (action === 'accept') {
+              return { ...trip, status: 'active', acceptedTime: new Date() };
+            } else if (action === 'decline') {
+              return { ...trip, status: 'declined' };
+            } else if (action === 'complete') {
+              return { ...trip, status: 'completed', completedTime: new Date() };
+            }
+          }
+          return trip;
+        });
+      });
+
+      // Update stats after action
+      const updatedTrips = trips.map(trip => {
         if (trip.id === tripId) {
           if (action === 'accept') {
-            return { ...trip, status: 'active', acceptedTime: new Date() };
+            return { ...trip, status: 'active' };
           } else if (action === 'decline') {
             return { ...trip, status: 'declined' };
           } else if (action === 'complete') {
-            return { ...trip, status: 'completed', completedTime: new Date() };
+            return { ...trip, status: 'completed' };
           }
         }
         return trip;
       });
-    });
+
+      const newStats = {
+        totalTrips: updatedTrips.filter(t => t.status !== 'declined').length,
+        activeTrips: updatedTrips.filter(t => t.status === 'active').length,
+        pendingTrips: updatedTrips.filter(t => t.status === 'pending').length,
+        completedTrips: updatedTrips.filter(t => t.status === 'completed').length
+      };
+      setStats(newStats);
+
+    } catch (err) {
+      console.error('Error updating trip:', err);
+      setError('Failed to update trip status');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredTrips = trips.filter(trip => {
@@ -164,10 +212,29 @@ const DriverTrips = () => {
         </div>
       )}
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">{error}</span>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="ml-auto text-red-600 hover:text-red-800 underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Trips</h1>
         <p className="text-gray-600">Manage your trip requests and active rides</p>
+        {driverEmail && (
+          <p className="text-sm text-gray-500">Driver: {driverEmail}</p>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -269,17 +336,17 @@ const DriverTrips = () => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{trip.passenger}</h3>
+                      <h3 className="font-semibold text-gray-900">{trip.tripName || trip.passenger}</h3>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
                         <Star className="h-3 w-3 text-yellow-400" />
                         <span>{trip.passengerRating}</span>
                         <span>•</span>
-                        <span>Trip #{trip.id}</span>
-                        {trip.tripType === 'partial_trip' && (
+                        <span>Trip #{trip.id.substring(0, 8)}...</span>
+                        {trip.vehicleType && (
                           <>
                             <span>•</span>
-                            <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-xs font-medium">
-                              Partial Trip
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                              {trip.vehicleType}
                             </span>
                           </>
                         )}
@@ -308,6 +375,14 @@ const DriverTrips = () => {
                         <MapPin className="h-4 w-4 text-red-500 mr-2" />
                         <span className="text-sm text-gray-600">To: {trip.destination}</span>
                       </div>
+                      {trip.startDate && (
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 text-blue-500 mr-2" />
+                          <span className="text-sm text-gray-600">
+                            {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-3 gap-2 text-center">
@@ -316,14 +391,14 @@ const DriverTrips = () => {
                         <p className="font-semibold text-sm">{trip.distance}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Time</p>
+                        <p className="text-xs text-gray-500">Duration</p>
                         <p className="font-semibold text-sm">{trip.estimatedTime}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Fare</p>
-                        <p className="font-semibold text-sm">LKR{trip.fare}</p>
-                        {trip.tip && trip.tip > 0 && (
-                          <p className="text-xs text-green-600">+LKR{trip.tip} tip</p>
+                        <p className="font-semibold text-sm">LKR {trip.fare ? trip.fare.toLocaleString() : '0'}</p>
+                        {trip.paidAmount && (
+                          <p className="text-xs text-green-600">Paid: LKR {parseFloat(trip.paidAmount).toLocaleString()}</p>
                         )}
                       </div>
                     </div>
@@ -334,6 +409,41 @@ const DriverTrips = () => {
                       <div className="flex items-start">
                         <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
                         <span className="text-sm text-blue-700">{trip.note}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Guide Information */}
+                  {trip.guideNeeded === 1 && trip.guideEmail && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 text-purple-500 mr-2" />
+                        <span className="text-sm text-purple-700">
+                          Guide assigned: {trip.guideEmail}
+                          {trip.guideStatus === 1 && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">Confirmed</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Daily Plans Summary */}
+                  {trip.dailyPlans && trip.dailyPlans.length > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center mb-2">
+                        <MapPin className="h-4 w-4 text-gray-500 mr-2" />
+                        <span className="text-sm font-medium text-gray-700">Itinerary ({trip.dailyPlans.length} days)</span>
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        {trip.dailyPlans.slice(0, 3).map((plan, index) => (
+                          <div key={index}>
+                            Day {plan.day}: {plan.city} ({plan.attractions?.length || 0} attractions)
+                          </div>
+                        ))}
+                        {trip.dailyPlans.length > 3 && (
+                          <div className="text-gray-500">... and {trip.dailyPlans.length - 3} more days</div>
+                        )}
                       </div>
                     </div>
                   )}
