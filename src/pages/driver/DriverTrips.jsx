@@ -128,49 +128,83 @@ const DriverTrips = () => {
     try {
       setLoading(true);
       
-      // Here you would typically make an API call to update the trip status
-      // For now, we'll update the local state
-      
-      setTrips(prevTrips => {
-        return prevTrips.map(trip => {
-          if (trip.id === tripId) {
-            if (action === 'accept') {
-              return { ...trip, status: 'active', acceptedTime: new Date() };
-            } else if (action === 'decline') {
+      if (action === 'accept') {
+
+        console.log('Accepting trip:', tripId, 'for driver:', driverEmail);
+        // Make API call to accept driver assignment
+        const acceptResponse = await axios.post('http://localhost:5006/api/accept_driver', {
+          tripId: tripId,
+          email: driverEmail
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (acceptResponse.data.success) {
+          console.log('Driver accepted successfully:', acceptResponse.data);
+          
+          // Update local state to reflect the acceptance
+          setTrips(prevTrips => {
+            return prevTrips.map(trip => {
+              if (trip.id === tripId) {
+                return { ...trip, status: 'active', acceptedTime: new Date() };
+              }
+              return trip;
+            });
+          });
+
+          // Update stats
+          setStats(prevStats => ({
+            ...prevStats,
+            activeTrips: prevStats.activeTrips + 1,
+            pendingTrips: prevStats.pendingTrips - 1
+          }));
+
+        } else {
+          throw new Error(acceptResponse.data.message || 'Failed to accept trip');
+        }
+      } else if (action === 'decline') {
+        // For decline, we might need a separate API endpoint in the future
+        // For now, just update local state
+        setTrips(prevTrips => {
+          return prevTrips.map(trip => {
+            if (trip.id === tripId) {
               return { ...trip, status: 'declined' };
-            } else if (action === 'complete') {
+            }
+            return trip;
+          });
+        });
+
+        // Update stats
+        setStats(prevStats => ({
+          ...prevStats,
+          pendingTrips: prevStats.pendingTrips - 1
+        }));
+
+      } else if (action === 'complete') {
+        // For complete, we might need a separate API endpoint in the future
+        // For now, just update local state
+        setTrips(prevTrips => {
+          return prevTrips.map(trip => {
+            if (trip.id === tripId) {
               return { ...trip, status: 'completed', completedTime: new Date() };
             }
-          }
-          return trip;
+            return trip;
+          });
         });
-      });
 
-      // Update stats after action
-      const updatedTrips = trips.map(trip => {
-        if (trip.id === tripId) {
-          if (action === 'accept') {
-            return { ...trip, status: 'active' };
-          } else if (action === 'decline') {
-            return { ...trip, status: 'declined' };
-          } else if (action === 'complete') {
-            return { ...trip, status: 'completed' };
-          }
-        }
-        return trip;
-      });
-
-      const newStats = {
-        totalTrips: updatedTrips.filter(t => t.status !== 'declined').length,
-        activeTrips: updatedTrips.filter(t => t.status === 'active').length,
-        pendingTrips: updatedTrips.filter(t => t.status === 'pending').length,
-        completedTrips: updatedTrips.filter(t => t.status === 'completed').length
-      };
-      setStats(newStats);
+        // Update stats
+        setStats(prevStats => ({
+          ...prevStats,
+          activeTrips: prevStats.activeTrips - 1,
+          completedTrips: prevStats.completedTrips + 1
+        }));
+      }
 
     } catch (err) {
       console.error('Error updating trip:', err);
-      setError('Failed to update trip status');
+      setError(`Failed to ${action} trip: ${err.response?.data?.message || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -469,14 +503,20 @@ const DriverTrips = () => {
                       {trip.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => handleTripAction(trip.id, 'decline')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTripAction(trip.id, 'decline');
+                            }}
                             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center"
                           >
                             <X className="h-4 w-4 mr-1" />
                             Decline
                           </button>
                           <button
-                            onClick={() => handleTripAction(trip.id, 'accept')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTripAction(trip.id, 'accept');
+                            }}
                             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center"
                           >
                             <Check className="h-4 w-4 mr-1" />
@@ -487,12 +527,18 @@ const DriverTrips = () => {
                       
                       {trip.status === 'active' && (
                         <>
-                          <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center">
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
+                          >
                             <Navigation className="h-4 w-4 mr-1" />
                             Navigate
                           </button>
                           <button
-                            onClick={() => handleTripAction(trip.id, 'complete')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTripAction(trip.id, 'complete');
+                            }}
                             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center"
                           >
                             <Check className="h-4 w-4 mr-1" />
@@ -502,7 +548,10 @@ const DriverTrips = () => {
                       )}
                       
                       {trip.status === 'completed' && (
-                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center">
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center"
+                        >
                           View Details
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </button>
@@ -511,10 +560,16 @@ const DriverTrips = () => {
 
                     {(trip.status === 'active' || trip.status === 'completed') && (
                       <div className="flex space-x-2">
-                        <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
+                        >
                           <Phone className="h-4 w-4" />
                         </button>
-                        <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
+                        >
                           <MessageCircle className="h-4 w-4" />
                         </button>
                       </div>
