@@ -165,22 +165,39 @@ const DriverTrips = () => {
           throw new Error(acceptResponse.data.message || 'Failed to accept trip');
         }
       } else if (action === 'decline') {
-        // For decline, we might need a separate API endpoint in the future
-        // For now, just update local state
-        setTrips(prevTrips => {
-          return prevTrips.map(trip => {
-            if (trip.id === tripId) {
-              return { ...trip, status: 'declined' };
-            }
-            return trip;
-          });
+        console.log('Declining trip:', tripId, 'for driver:', driverEmail);
+        // Make API call to remove driver from trip
+        const removeResponse = await axios.post('http://localhost:5006/api/remove_driver', {
+          tripId: tripId,
+          email: driverEmail
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
 
-        // Update stats
-        setStats(prevStats => ({
-          ...prevStats,
-          pendingTrips: prevStats.pendingTrips - 1
-        }));
+        if (removeResponse.data.success) {
+          console.log('Driver removed successfully:', removeResponse.data);
+          
+          // Update local state to reflect the decline
+          setTrips(prevTrips => {
+            return prevTrips.map(trip => {
+              if (trip.id === tripId) {
+                return { ...trip, status: 'declined' };
+              }
+              return trip;
+            });
+          });
+
+          // Update stats
+          setStats(prevStats => ({
+            ...prevStats,
+            pendingTrips: prevStats.pendingTrips - 1
+          }));
+
+        } else {
+          throw new Error(removeResponse.data.message || 'Failed to decline trip');
+        }
 
       } else if (action === 'complete') {
         // For complete, we might need a separate API endpoint in the future
