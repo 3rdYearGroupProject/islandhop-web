@@ -627,7 +627,7 @@ const ViewPoolPage = () => {
       <JoinPoolModal
         open={joinModalOpen}
         onClose={() => setJoinModalOpen(false)}
-        poolData={comprehensiveTripData || pool}
+        poolData={pool}
         onSuccess={(result) => {
           console.log('Join request sent:', result);
           alert('Join request sent successfully!');
@@ -636,14 +636,14 @@ const ViewPoolPage = () => {
       <InviteUserModal
         isOpen={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
-        groupData={comprehensiveTripData || pool}
+        groupData={pool}
         onSuccess={(result) => {
           console.log('Invitation sent:', result);
           alert('Invitation sent successfully!');
         }}
       />
       <JoinRequestsManager
-        groupId={comprehensiveTripData?.groupInfo?.groupId || pool?.id}
+        groupId={pool?.groupInfo?.groupId || pool?.id}
         isOpen={joinRequestsModalOpen}
         onClose={() => setJoinRequestsModalOpen(false)}
         onRequestUpdate={(result) => {

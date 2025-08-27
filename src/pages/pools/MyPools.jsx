@@ -31,6 +31,8 @@ const MyPools = () => {
 
   // Initialize user and fetch pools on component mount
   useEffect(() => {
+    console.log('🔴 [MyPools] Component mounted - this should ONLY happen when My Pools tab is active!');
+    
     const initializeComponent = async () => {
       try {
         // Get current user
@@ -54,6 +56,11 @@ const MyPools = () => {
     };
 
     initializeComponent();
+    
+    // Cleanup function to log when component unmounts
+    return () => {
+      console.log('🔴 [MyPools] Component unmounting - this should happen when switching away from My Pools tab');
+    };
   }, []);
 
   /**
@@ -64,11 +71,25 @@ const MyPools = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🏊‍♂️ Fetching user pools...');
+      console.log('🏊‍♂️ [MyPools Component] Fetching user pools for:', userId);
+      console.log('🏊‍♂️ [MyPools Component] Expected API call: http://localhost:8086/api/v1/groups/created-by/' + userId);
 
-      // Use cached data for efficiency
-      const cachedPools = await PoolsApi.getCachedPools();
-      const userPools = await PoolsApi.getUserPools(userId, cachedPools);
+      // Fetch user's pools ONLY from the user-created endpoint - NO other data sources
+      const userPools = await PoolsApi.getUserPools(userId);
+      
+      console.log('🔍 [MyPools Component] Final response from getUserPools:', userPools);
+      console.log('🔍 [MyPools Component] Ongoing pools count:', userPools.ongoing?.length || 0);
+      console.log('🔍 [MyPools Component] Upcoming pools count:', userPools.upcoming?.length || 0);
+      console.log('🔍 [MyPools Component] Past pools count:', userPools.past?.length || 0);
+      console.log('🔍 [MyPools Component] Total pools should match Postman response count');
+      
+      // Log individual pool structures to check visibility
+      if (userPools.ongoing && userPools.ongoing.length > 0) {
+        console.log('🔍 Sample ongoing pool structure:', userPools.ongoing[0]);
+      }
+      if (userPools.upcoming && userPools.upcoming.length > 0) {
+        console.log('🔍 Sample upcoming pool structure:', userPools.upcoming[0]);
+      }
       
       setOngoingPools(userPools.ongoing || []);
       setUpcomingPools(userPools.upcoming || []);

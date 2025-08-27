@@ -65,12 +65,14 @@ const FindPools = () => {
 
   // Initialize user and fetch pools on component mount
   useEffect(() => {
+    console.log('🟡 [FindPools] Component mounted - this should ONLY happen when Find Pools tab is active!');
+    
     const initializeComponent = async () => {
       try {
         // Get current user (optional for public pools)
         const userId = getUserUID();
         setCurrentUser(userId);
-        console.log('🏊‍♂️ Current user:', userId || 'Guest user');
+        console.log('🟡 [FindPools] Current user:', userId || 'Guest user');
         
         // Fetch pools (works with or without user)
         await fetchPools(userId);
@@ -82,6 +84,11 @@ const FindPools = () => {
     };
 
     initializeComponent();
+    
+    // Cleanup function to log when component unmounts
+    return () => {
+      console.log('🟡 [FindPools] Component unmounting - this should happen when switching away from Find Pools tab');
+    };
   }, []);
 
   // Fetch pools with current filters

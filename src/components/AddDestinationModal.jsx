@@ -336,7 +336,8 @@ const AddDestinationModal = ({
   // New props for backend integration
   tripId,
   userUid,
-  startDate
+  startDate,
+  groupId
 }) => {
   // Early return BEFORE any hooks to prevent hook order issues
   if (!show) return null;
@@ -353,7 +354,8 @@ const AddDestinationModal = ({
   const addCityToBackend = async (cityName, dayIndex) => {
     if (!tripId || !userUid || !startDate) {
       console.error('❌ Missing required data for backend API:', { tripId, userUid, startDate });
-      alert('Missing trip information. Please try again.');
+      console.error('🔍 Available data:', { tripId, userUid, startDate, groupId });
+      alert('Missing trip information. Please try again or refresh the page.');
       return false;
     }
 

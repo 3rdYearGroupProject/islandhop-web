@@ -205,6 +205,18 @@ const PoolItineraryPage = () => {
     activities: normalizedActivities
   });
 
+  // Validate required navigation data
+  if (!tripId || !groupId) {
+    console.error('❌ Missing required navigation data:', {
+      tripId: tripId || 'MISSING',
+      groupId: groupId || 'MISSING',
+      userUid: userUid || 'MISSING'
+    });
+    
+    // You can either redirect back or show an error message
+    // For now, let's continue but log the issue clearly
+  }
+
   // Usage of normalized navigation state throughout the component:
   // - normalizedTripName: Used in UI display, progress bar, and save operations
   // - normalizedDates: Used for generating trip days and backend API calls
@@ -1608,6 +1620,7 @@ const PoolItineraryPage = () => {
         tripId={tripId}
         userUid={userUid}
         startDate={normalizedDates?.[0]}
+        groupId={groupId}
       />
 
       <Footer />

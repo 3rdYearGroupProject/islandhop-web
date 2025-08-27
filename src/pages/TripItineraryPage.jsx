@@ -1172,6 +1172,7 @@ const TripItineraryPage = () => {
         tripId={tripId}
         userUid={userUid}
         startDate={selectedDates?.[0]}
+        groupId={null} // Individual trips don't have groupId
       />
 
       <Footer />

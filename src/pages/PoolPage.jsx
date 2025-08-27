@@ -58,6 +58,7 @@ const PoolPage = () => {
   };
 
   const renderTabContent = () => {
+    // Only render the active tab component to prevent unwanted API calls
     switch (activeTab) {
       case 'find':
         return <FindPools />;
@@ -135,7 +136,7 @@ const PoolPage = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="min-h-[400px]">
+        <div className="min-h-[400px]" key={activeTab}>
           {renderTabContent()}
         </div>
       </div>
