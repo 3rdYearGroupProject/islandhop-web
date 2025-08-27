@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { getUserUID } from '../utils/userStorage';
 
-const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting, tripId }) => {
+const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting, tripId, tripData }) => {
   const [paymentError, setPaymentError] = useState(null);
   const [payHereLoaded, setPayHereLoaded] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
@@ -52,6 +53,49 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
     return true;
   };
 
+  const createChatGroup = async (orderId) => {
+    try {
+      const userUID = getUserUID();
+      if (!userUID) {
+        console.warn('User UID not found, skipping group creation');
+        return;
+      }
+
+      // Prepare group data
+      const groupName = tripData?.name || `Trip ${tripId || orderId}`;
+      const description = tripData?.destinations?.length > 0 
+        ? tripData.destinations.join(', ') 
+        : 'Trip destinations';
+
+      const groupData = {
+        groupName: groupName,
+        description: description,
+        groupType: 'PRIVATE',
+        memberIds: [userUID],
+        adminId: userUID
+      };
+
+      console.log('Creating chat group for successful payment:', groupData);
+
+      const groupResponse = await axios.post('http://localhost:8090/api/v1/chat/group/create', groupData, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000 // 10 second timeout
+      });
+
+      if (groupResponse.data) {
+        console.log('Chat group created successfully:', groupResponse.data);
+        // You could store the group ID for future reference if needed
+        // localStorage.setItem(`trip_${tripId}_group`, groupResponse.data.groupId);
+      }
+    } catch (error) {
+      console.error('Failed to create chat group:', error.response?.data || error.message);
+      // Don't fail the payment process if group creation fails
+      // This is a supplementary feature that shouldn't block the main flow
+    }
+  };
+
   const handlePayment = async () => {
     if (!validateForm()) {
       return;
@@ -97,8 +141,12 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
         const paymentData = response.data.payHereData;
 
         // Setup PayHere event handlers
-        window.payhere.onCompleted = function onCompleted(orderId) {
+        window.payhere.onCompleted = async function onCompleted(orderId) {
           console.log("Payment completed. OrderID:" + orderId);
+          
+          // Create chat group after successful payment
+          await createChatGroup(orderId);
+          
           setSubmitting(false);
           onPaymentSuccess(orderId);
         };

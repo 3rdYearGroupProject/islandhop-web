@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { getUserUID, getUserData } from '../../utils/userStorage';
 import { 
   MessageCircle, 
   Phone, 
@@ -12,171 +14,217 @@ import {
   MapPin,
   Clock,
   Car,
-  User
+  User,
+  Users,
+  AlertCircle,
+  Loader
 } from 'lucide-react';
 
 const DriverChat = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [selectedGroupMessages, setSelectedGroupMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const messagesEndRef = React.useRef(null);
 
-  const chatList = [
-    {
-      id: 1,
-      passenger: {
-        name: 'Sarah Johnson',
-        avatar: 'https://images.unsplash.com/photo-1589302701986-b539f78cae26?q=80&w=1070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        rating: 4.9
-      },
-      trip: {
-        id: 'TR001',
-        from: 'Colombo Airport',
-        to: 'Galle Fort',
-        startTime: '2:30 PM'
-      },
-      lastMessage: {
-        text: 'I\'m waiting at the pickup point',
-        time: new Date(Date.now() - 5 * 60 * 1000),
-        sender: 'passenger',
-        unread: true
-      },
-      messages: [
-        {
-          id: 1,
-          text: 'Hi! I\'m your driver for today. I\'ll be there in 5 minutes.',
-          time: new Date(Date.now() - 15 * 60 * 1000),
-          sender: 'driver'
-        },
-        {
-          id: 2,
-          text: 'Great! I\'m at the main entrance.',
-          time: new Date(Date.now() - 12 * 60 * 1000),
-          sender: 'passenger'
-        },
-        {
-          id: 3,
-          text: 'Perfect, I can see you. White Toyota Prius, plate CAR-1234',
-          time: new Date(Date.now() - 10 * 60 * 1000),
-          sender: 'driver'
-        },
-        {
-          id: 4,
-          text: 'I\'m waiting at the pickup point',
-          time: new Date(Date.now() - 5 * 60 * 1000),
-          sender: 'passenger'
-        }
-      ]
-    },
-    {
-      id: 2,
-      passenger: {
-        name: 'Michael Chen',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-        rating: 4.7
-      },
-      trip: {
-        id: 'TR002',
-        from: 'Kandy Central',
-        to: 'Nuwara Eliya',
-        status: 'pending',
-        requestTime: '3:45 PM'
-      },
-      lastMessage: {
-        text: 'When can you pick me up?',
-        time: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        sender: 'passenger',
-        unread: false
-      },
-      messages: [
-        {
-          id: 1,
-          text: 'Hi! I saw your trip request. I can pick you up in about 30 minutes.',
-          time: new Date(Date.now() - 3 * 60 * 60 * 1000),
-          sender: 'driver'
-        },
-        {
-          id: 2,
-          text: 'That works for me. I\'ll be ready.',
-          time: new Date(Date.now() - 2.5 * 60 * 60 * 1000),
-          sender: 'passenger'
-        },
-        {
-          id: 3,
-          text: 'When can you pick me up?',
-          time: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          sender: 'passenger'
-        }
-      ]
-    },
-    {
-      id: 3,
-      passenger: {
-        name: 'Emma Wilson',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-        rating: 4.9
-      },
-      trip: {
-        id: 'TR003',
-        from: 'Ella Station',
-        to: 'Colombo',
-        status: 'pending',
-        completedTime: '1:00 PM'
-      },
-      lastMessage: {
-        text: 'Thank you for the great ride! ⭐⭐⭐⭐⭐',
-        time: new Date(Date.now() - 4 * 60 * 60 * 1000),
-        sender: 'passenger',
-        unread: false
-      },
-      messages: [
-        {
-          id: 1,
-          text: 'Welcome to my car! Ready for the journey to Colombo?',
-          time: new Date(Date.now() - 6 * 60 * 60 * 1000),
-          sender: 'driver'
-        },
-        {
-          id: 2,
-          text: 'Yes! Thanks for accepting the partial trip.',
-          time: new Date(Date.now() - 5.5 * 60 * 60 * 1000),
-          sender: 'passenger'
-        },
-        {
-          id: 3,
-          text: 'We\'ve arrived safely! Thank you for choosing IslandHop.',
-          time: new Date(Date.now() - 4.2 * 60 * 60 * 1000),
-          sender: 'driver'
-        },
-        {
-          id: 4,
-          text: 'Thank you for the great ride! ⭐⭐⭐⭐⭐',
-          time: new Date(Date.now() - 4 * 60 * 60 * 1000),
-          sender: 'passenger'
-        }
-      ]
-    }
-  ];
+  // Get current user's Firebase UID and data
+  const currentUserUID = getUserUID();
+  console.log('Current User UID:', currentUserUID);
+  const userData = getUserData();
+  const currentUserName = userData?.firstName ? `${userData.firstName} ${userData.lastName || ''}`.trim() : `Driver ${currentUserUID?.substring(0, 8) || 'User'}`;
 
-  const filteredChats = chatList.filter(chat =>
-    chat.passenger.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.trip.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.trip.to.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Chat API base URL
+  const CHAT_API_BASE = 'http://localhost:8090/api/v1';
 
-  const handleSendMessage = () => {
-    if (message.trim() && selectedChat) {
-      const newMessage = {
-        id: selectedChat.messages.length + 1,
-        text: message,
-        time: new Date(),
-        sender: 'driver'
-      };
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Scroll to bottom when messages change
+  React.useEffect(() => {
+    scrollToBottom();
+  }, [selectedGroupMessages]);
+
+  // Fetch user's groups
+  useEffect(() => {
+    const fetchUserGroups = async () => {
+      if (!currentUserUID) {
+        setError('User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Fetching groups for user:', currentUserUID);
+        const response = await axios.get(`${CHAT_API_BASE}/chat/group/user/${currentUserUID}`);
+        
+        if (response.data && Array.isArray(response.data)) {
+          const transformedGroups = response.data.map(group => ({
+            id: group.groupId,
+            groupName: group.groupName,
+            description: group.description,
+            groupType: group.groupType,
+            memberCount: group.memberIds ? group.memberIds.length : 0,
+            adminId: group.adminId,
+            createdAt: new Date(group.createdAt),
+            lastActivity: group.lastActivity ? new Date(group.lastActivity) : new Date(group.createdAt),
+            unreadCount: 0, // This would need to be calculated from messages
+            isAdmin: group.adminId === currentUserUID
+          }));
+          
+          setGroups(transformedGroups);
+          console.log('Fetched groups:', transformedGroups);
+        } else {
+          setGroups([]);
+        }
+      } catch (err) {
+        console.error('Error fetching groups:', err);
+        setError('Failed to fetch groups: ' + (err.response?.data?.message || err.message));
+        setGroups([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserGroups();
+  }, [currentUserUID]);
+
+  // Fetch messages for selected group
+  const fetchGroupMessages = async (groupId) => {
+    try {
+      setMessagesLoading(true);
+      console.log('Fetching messages for group:', groupId);
       
-      // Add message to chat (in real app, this would be sent to server)
-      selectedChat.messages.push(newMessage);
-      setMessage('');
+      const response = await axios.get(`${CHAT_API_BASE}/chat/group/${groupId}/messages?page=0&size=50`);
+      
+      if (response.data && response.data.content && Array.isArray(response.data.content)) {
+        const messages = response.data.content.map(msg => ({
+          id: msg.messageId,
+          content: msg.content,
+          senderId: msg.senderId,
+          senderName: msg.senderName || `User ${msg.senderId.substring(0, 8)}`,
+          timestamp: new Date(msg.timestamp),
+          messageType: msg.messageType,
+          isRead: msg.isRead || false
+        }));
+        
+        // Sort messages by timestamp
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+        setSelectedGroupMessages(messages);
+        console.log('Fetched messages:', messages);
+      } else {
+        setSelectedGroupMessages([]);
+      }
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+      if (err.response?.status === 404) {
+        setSelectedGroupMessages([]);
+      } else {
+        setError('Failed to fetch messages: ' + (err.response?.data?.message || err.message));
+        setSelectedGroupMessages([]);
+      }
+    } finally {
+      setMessagesLoading(false);
     }
   };
+
+  // Auto-refresh messages for selected group
+  useEffect(() => {
+    if (selectedChat && selectedChat.id) {
+      const interval = setInterval(() => {
+        fetchGroupMessages(selectedChat.id);
+      }, 10000); // Refresh every 10 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [selectedChat]);
+
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Send message to group
+  const sendGroupMessage = async (groupId, content) => {
+    if (!content.trim() || !currentUserUID) return;
+
+    try {
+      setSendingMessage(true);
+      
+      const messagePayload = {
+        groupId: groupId,
+        senderId: currentUserUID,
+        content: content.trim(),
+        messageType: 'TEXT',
+        senderName: currentUserName
+      };
+
+      console.log('Sending message:', messagePayload);
+      
+      const response = await axios.post(`${CHAT_API_BASE}/chat/group/send`, messagePayload, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data) {
+        console.log('Message sent successfully:', response.data);
+        
+        // Add the new message to the current messages
+        const newMessage = {
+          id: response.data.messageId || Date.now().toString(),
+          content: content.trim(),
+          senderId: currentUserUID,
+          senderName: currentUserName,
+          timestamp: new Date(),
+          messageType: 'TEXT',
+          isRead: true
+        };
+
+        setSelectedGroupMessages(prev => [...prev, newMessage]);
+        setMessage('');
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // Handle group selection
+  const handleGroupSelect = (group) => {
+    setSelectedChat(group);
+    setSelectedGroupMessages([]);
+    fetchGroupMessages(group.id);
+  };
+
+  // Handle sending message
+  const handleSendMessage = () => {
+    if (message.trim() && selectedChat && !sendingMessage) {
+      sendGroupMessage(selectedChat.id, message);
+    }
+  };
+
+  // Filter groups based on search
+  const filteredGroups = groups.filter(group =>
+    group.groupName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const formatTime = (date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -195,18 +243,17 @@ const DriverChat = () => {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  if (!currentUserUID) {
+    return (
+      <div className="h-[calc(100vh-8rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-16 w-16 text-red-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Required</h3>
+          <p className="text-gray-600">Please log in to access chat features</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-8rem)] bg-gray-50">
@@ -215,12 +262,26 @@ const DriverChat = () => {
         <div className="w-80  border-r border-gray-200 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Messages</h1>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Group Chats</h1>
+                {currentUserUID && (
+                  <p className="text-sm text-gray-500">User: {currentUserUID.substring(0, 12)}...</p>
+                )}
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Refresh groups"
+              >
+                <Loader className="h-5 w-5" />
+              </button>
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder="Search groups..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -229,56 +290,95 @@ const DriverChat = () => {
           </div>
 
           {/* Chat List */}
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg m-4">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                <span className="text-red-700 text-sm">{error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center p-8">
+              <Loader className="h-6 w-6 animate-spin text-primary-600 mr-2" />
+              <span className="text-gray-600">Loading groups...</span>
+            </div>
+          )}
+
+          {/* Groups List */}
           <div className="flex-1 overflow-y-auto">
-            {filteredChats.map(chat => (
+            {!loading && filteredGroups.map(group => (
               <div
-                key={chat.id}
-                onClick={() => setSelectedChat(chat)}
+                key={group.id}
+                onClick={() => handleGroupSelect(group)}
                 className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedChat?.id === chat.id ? 'bg-primary-50 border-primary-200' : ''
+                  selectedChat?.id === group.id ? 'bg-primary-50 border-primary-200' : ''
                 }`}
               >
                 <div className="flex items-start space-x-3">
                   <div className="relative">
-                    <img
-                      src={chat.passenger.avatar}
-                      alt={chat.passenger.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
+                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                      <Users className="h-6 w-6 text-primary-600" />
+                    </div>
+                    {group.unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {group.unreadCount}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    {/* Trip Name */}
-                    <div className="text-xs font-medium text-primary-600 mb-1">
-                      Trip #{chat.trip.id} - {chat.trip.from} → {chat.trip.to}
-                    </div>
-                    
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-gray-900 truncate">
-                        {chat.passenger.name}
+                        {group.groupName}
                       </h3>
                       <div className="flex items-center space-x-1">
-                        {chat.lastMessage.unread && (
-                          <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
+                        {group.isAdmin && (
+                          <Star className="h-3 w-3 text-yellow-500" />
                         )}
                         <span className="text-xs text-gray-500">
-                          {formatRelativeTime(chat.lastMessage.time)}
+                          {formatRelativeTime(group.lastActivity)}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 mb-2">
-                    
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 truncate">
-                      {chat.lastMessage.sender === 'driver' ? 'You: ' : ''}
-                      {chat.lastMessage.text}
+                    <p className="text-sm text-gray-600 truncate mb-1">
+                      {group.description}
                     </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        {group.memberCount} member{group.memberCount !== 1 ? 's' : ''}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        group.groupType === 'PRIVATE' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {group.groupType}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
+
+            {/* No Groups State */}
+            {!loading && filteredGroups.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No groups found</h3>
+                <p className="text-gray-600">
+                  {searchQuery 
+                    ? "No groups match your search" 
+                    : "You haven't joined any groups yet"
+                  }
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -286,70 +386,90 @@ const DriverChat = () => {
         <div className="flex-1 flex flex-col">
           {selectedChat ? (
             <>
-              {/* Chat Header */}
+              {/* Group Header */}
               <div className="bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center space-x-3">
-                    <img
-                      src={selectedChat.passenger.avatar}
-                      alt={selectedChat.passenger.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary-600" />
+                    </div>
                     <div>
-                      <h2 className="font-semibold text-gray-900">{selectedChat.passenger.name}</h2>
+                      <h2 className="font-semibold text-gray-900">{selectedChat.groupName}</h2>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Car className="h-3 w-3" />
-                        <span>Trip #{selectedChat.trip.id}</span>
+                        <Users className="h-3 w-3" />
+                        <span>{selectedChat.memberCount} members</span>
                         <span>•</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedChat.trip.status)}`}>
-                          {selectedChat.trip.status}
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          selectedChat.groupType === 'PRIVATE' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedChat.groupType}
                         </span>
+                        {selectedChat.isAdmin && (
+                          <>
+                            <span>•</span>
+                            <span className="text-yellow-600 text-xs font-medium">Admin</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-4">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-green-500 mr-1" />
-                        <span className="text-sm text-gray-600">From: {selectedChat.trip.from}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-red-500 mr-1" />
-                        <span className="text-sm text-gray-600">To: {selectedChat.trip.to}</span>
-                      </div>
+                      <span className="text-sm text-gray-600">{selectedChat.description}</span>
                     </div>
-                    {selectedChat.trip.status === 'active' && (
-                      <div className="flex items-center text-green-600">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span className="text-sm">Started at {selectedChat.trip.startTime}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
+              {/* Messages Loading */}
+              {messagesLoading && (
+                <div className="flex items-center justify-center p-8">
+                  <Loader className="h-6 w-6 animate-spin text-primary-600 mr-2" />
+                  <span className="text-gray-600">Loading messages...</span>
+                </div>
+              )}
+
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {selectedChat.messages.map(msg => (
+                {!messagesLoading && selectedGroupMessages.map(msg => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.sender === 'driver' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.senderId === currentUserUID ? 'justify-end' : 'justify-start'}`}
                   >
                     <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      msg.sender === 'driver'
+                      msg.senderId === currentUserUID
                         ? 'bg-primary-600 text-white'
                         : 'bg-white border border-gray-200 text-gray-900'
                     }`}>
-                      <p className="text-sm">{msg.text}</p>
+                      {msg.senderId !== currentUserUID && (
+                        <p className="text-xs font-medium mb-1 opacity-75">
+                          {msg.senderName}
+                        </p>
+                      )}
+                      <p className="text-sm">{msg.content}</p>
                       <p className={`text-xs mt-1 ${
-                        msg.sender === 'driver' ? 'text-primary-100' : 'text-gray-500'
+                        msg.senderId === currentUserUID ? 'text-primary-100' : 'text-gray-500'
                       }`}>
-                        {formatTime(msg.time)}
+                        {formatTime(msg.timestamp)}
                       </p>
                     </div>
                   </div>
                 ))}
+
+                {/* No Messages State */}
+                {!messagesLoading && selectedGroupMessages.length === 0 && (
+                  <div className="text-center py-12">
+                    <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
+                    <p className="text-gray-600">Be the first to start the conversation!</p>
+                  </div>
+                )}
+                
+                {/* Scroll anchor */}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}
@@ -366,21 +486,24 @@ const DriverChat = () => {
                       type="text"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      onKeyPress={(e) => e.key === 'Enter' && !sendingMessage && handleSendMessage()}
                       placeholder="Type your message..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      disabled={sendingMessage}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50"
                     />
                   </div>
                   <button
                     onClick={handleSendMessage}
-                    disabled={!message.trim()}
-                    className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={!message.trim() || sendingMessage}
+                    className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
                   >
-                    <Send className="h-5 w-5" />
+                    {sendingMessage ? (
+                      <Loader className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
-                
-              
               </div>
             </>
           ) : (

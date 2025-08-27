@@ -591,6 +591,7 @@ const TripBookingPage = () => {
                     submitting={submitting}
                     setSubmitting={setSubmitting}
                     tripId={tripId} // Pass the tripId prop
+                    tripData={trip} // Pass trip data for group creation
                   />
                 </div>
               )}
