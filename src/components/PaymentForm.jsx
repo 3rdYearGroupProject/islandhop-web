@@ -78,7 +78,7 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
 
       console.log('Creating chat group for successful payment:', groupData);
 
-      const groupResponse = await axios.post('http://localhost:8090/api/v1/chat/group/create', groupData, {
+      const groupResponse = await axios.post('http://localhost:8090/api/v1/chat/group/create-with-trip', groupData, {
         headers: {
           'Content-Type': 'application/json'
         },
