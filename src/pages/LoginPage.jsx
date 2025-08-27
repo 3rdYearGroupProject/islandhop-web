@@ -80,6 +80,7 @@ const LoginPage = () => {
       
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const idToken = await userCredential.user.getIdToken();
+      console.log(idToken);
 
       console.log('🔑 Got Firebase token, sending to backend...');
       // Send ID token to backend for session login
