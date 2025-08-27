@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ArchiveBoxXMarkIcon,
   PhoneIcon,
@@ -15,78 +15,82 @@ import {
 } from "@heroicons/react/24/outline";
 
 const LostItemTracker = () => {
-  const [reports, setReports] = useState([
-    {
-      id: "LI-20250621-001",
-      date: "2025-06-21",
-      time: "14:30",
-      item: "Black Backpack",
-      desc: "Left in the back seat of the vehicle after trip from Colombo to Kandy.",
-      priority: "High",
-      location: "Colombo to Kandy Route",
-      tourist: {
-        name: "Ayesha Fernando",
-        avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-        email: "ayesha.fernando@email.com",
-        phone: "+94 77 123 4567",
-      },
-      driver: {
-        name: "Nuwan Perera",
-        avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-        email: "nuwan.perera@email.com",
-        phone: "+94 76 987 6543",
-      },
-      status: "Ongoing",
-      update: "",
-    },
-    {
-      id: "LI-20250620-002",
-      date: "2025-06-20",
-      time: "16:45",
-      item: "iPhone 13",
-      desc: "Tourist lost phone during city tour. Suspected left in the van.",
-      priority: "High",
-      location: "Colombo City Tour",
-      tourist: {
-        name: "Ruwan Silva",
-        avatar: "https://randomuser.me/api/portraits/men/23.jpg",
-        email: "ruwan.silva@email.com",
-        phone: "+94 76 987 6543",
-      },
-      driver: {
-        name: "Saman Jayasuriya",
-        avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-        email: "saman.j@email.com",
-        phone: "+94 77 555 1234",
-      },
-      status: "Unresolved",
-      update: "",
-    },
-    {
-      id: "LI-20250619-003",
-      date: "2025-06-19",
-      time: "12:15",
-      item: "Blue Suitcase",
-      desc: "Forgotten in hotel lobby, guide last seen with item.",
-      priority: "Medium",
-      location: "Grand Hotel Colombo",
-      tourist: {
-        name: "Ishara Perera",
-        avatar: "https://randomuser.me/api/portraits/women/12.jpg",
-        email: "ishara.p@email.com",
-        phone: "+94 71 222 3344",
-      },
-      driver: null,
-      guide: {
-        name: "Dilani Fernando",
-        avatar: "https://randomuser.me/api/portraits/women/45.jpg",
-        email: "dilani.f@email.com",
-        phone: "+94 77 888 9999",
-      },
-      status: "Resolved",
-      update: "Suitcase returned to tourist on 2025-06-20.",
-    },
-  ]);
+  const [reports, setReports] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // useEffect hook to fetch lost items from database
+  useEffect(() => {
+    const fetchLostItems = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        console.log('🔄 Fetching lost items from database...');
+        
+        const response = await fetch('http://localhost:8062/lost-items/getLostItems', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ Lost items fetched successfully:', data);
+
+        // Check if data has the expected structure
+        if (data && data.success && data.data) {
+          setReports(data.data);
+        } else if (Array.isArray(data)) {
+          // If data is directly an array
+          setReports(data);
+        } else {
+          console.warn('⚠️ Unexpected data structure:', data);
+          setReports([]);
+        }
+
+      } catch (err) {
+        console.error('❌ Error fetching lost items:', err);
+        setError(err.message);
+        
+        // Keep mock data for development/fallback
+        setReports([
+          {
+            id: "LI-20250621-001",
+            date: "2025-06-21",
+            time: "14:30",
+            item: "Black Backpack",
+            desc: "Left in the back seat of the vehicle after trip from Colombo to Kandy.",
+            priority: "High",
+            location: "Colombo to Kandy Route",
+            tourist: {
+              name: "Ayesha Fernando",
+              avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+              email: "ayesha.fernando@email.com",
+              phone: "+94 77 123 4567",
+            },
+            driver: {
+              name: "Nuwan Perera",
+              avatar: "https://randomuser.me/api/portraits/men/45.jpg",
+              email: "nuwan.perera@email.com",
+              phone: "+94 76 987 6543",
+            },
+            status: "Ongoing",
+            update: "",
+          },
+          // Add other mock items as fallback...
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLostItems();
+  }, []); // Empty dependency array means it runs once on mount
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -94,12 +98,12 @@ const LostItemTracker = () => {
   const statusOptions = ["Ongoing", "Resolved", "Unresolved"];
   const filterOptions = ["All", "Ongoing", "Resolved", "Unresolved"];
 
-  // Filter reports based on search and status
+  //Filter reports based on search and status
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
-      report.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.tourist.name.toLowerCase().includes(searchTerm.toLowerCase());
+      report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.tripId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "All" || report.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -182,24 +186,54 @@ const LostItemTracker = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Lost Item Tracker
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Comprehensive tracking and management of lost item reports
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-              <DocumentTextIcon className="h-4 w-4" />
-              <span>Generate Report</span>
-            </button>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center min-h-96">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading lost items...</p>
           </div>
         </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center space-x-3">
+            <XCircleIcon className="h-5 w-5 text-red-500" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                Error loading lost items
+              </h3>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                {error}. Showing sample data instead.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Only show when not loading */}
+      {!isLoading && (
+        <>
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  Lost Item Tracker
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Comprehensive tracking and management of lost item reports
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                  <DocumentTextIcon className="h-4 w-4" />
+                  <span>Generate Report</span>
+                </button>
+              </div>
+            </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -322,7 +356,7 @@ const LostItemTracker = () => {
                     <div className="flex items-center space-x-2">
                       <ArchiveBoxXMarkIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {report.id}
+                        ITEM-{String(idx + 1).padStart(3, '0')}
                       </h3>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -355,15 +389,16 @@ const LostItemTracker = () => {
                 </div>
               </div>
 
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Item Details */}
-                  <div className="lg:col-span-2 space-y-4">
+              <div className="p-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left Column - Item Details and Management */}
+                  <div className="space-y-3">
+                    {/* Item Details */}
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                         {report.item}
                       </h4>
-                      <p className="text-gray-700 dark:text-gray-300 mb-3">
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
                         {report.desc}
                       </p>
                       {report.location && (
@@ -374,9 +409,41 @@ const LostItemTracker = () => {
                       )}
                     </div>
 
+                    {/* Report Details */}
+                    <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <DocumentTextIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">
+                          Report Details
+                        </h5>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Message:</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-secondary-700 rounded-md p-2">
+                            {report.description || "No message provided"}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Lost:</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {report.lostDate ? new Date(report.lostDate).toLocaleDateString() : "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Reported:</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "Not available"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Status Management */}
-                    <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-4">
-                      <div className="flex items-center space-x-4 mb-3">
+                    <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-3">
+                      <div className="flex items-center space-x-4 mb-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           Update Status:
                         </label>
@@ -385,7 +452,7 @@ const LostItemTracker = () => {
                           onChange={(e) =>
                             handleStatusChange(idx, e.target.value)
                           }
-                          className="px-3 py-1 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          className="px-2 py-1 border border-gray-300 dark:border-secondary-600 rounded-md bg-white dark:bg-secondary-800 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         >
                           {statusOptions.map((option) => (
                             <option key={option} value={option}>
@@ -397,28 +464,27 @@ const LostItemTracker = () => {
 
                       {/* Update Section */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Progress Notes
                         </label>
-                        <div className="flex space-x-3">
+                        <div className="flex space-x-2">
                           <textarea
                             value={report.update}
                             onChange={(e) => handleUpdate(idx, e.target.value)}
                             placeholder="Add update about the lost item status..."
-                            rows={3}
-                            className="flex-1 rounded-lg border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500"
+                            rows={2}
+                            className="flex-1 rounded-md border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-xs text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500"
                           />
                           <button
                             onClick={() => handleSaveUpdate(idx)}
-                            disabled={!report.update.trim()}
-                            className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                            className="px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
                           >
-                            Save Update
+                            Save
                           </button>
                         </div>
                         {report.status === "Resolved" && report.update && (
-                          <div className="mt-3 p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
-                            <p className="text-sm text-success-800 dark:text-success-300">
+                          <div className="mt-2 p-2 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-md">
+                            <p className="text-xs text-success-800 dark:text-success-300">
                               <strong>Resolution:</strong> {report.update}
                             </p>
                           </div>
@@ -427,45 +493,38 @@ const LostItemTracker = () => {
                     </div>
                   </div>
 
-                  {/* Contact Information */}
-                  <div className="space-y-4">
+                  {/* Right Column - Contact Information */}
+                  <div className="space-y-3">
                     {/* Tourist Contact */}
-                    <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <UserIcon className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                        <h5 className="font-medium text-gray-900 dark:text-white">
+                    <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <UserIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                        <h5 className="font-medium text-gray-900 dark:text-white text-xs">
                           Tourist
                         </h5>
                       </div>
-                      <div className="flex items-center space-x-3 mb-3">
-                        <img
-                          src={report.tourist.avatar}
-                          alt={report.tourist.name}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-secondary-600"
-                        />
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                            {report.tourist.name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {report.tourist.email}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {report.tourist.phone}
-                          </p>
+                      <div className="flex items-center justify-between space-x-2">
+                        <div className="flex items-center space-x-2 flex-1">
+                          <img
+                            src={report.touristDetails?.avatar || "https://via.placeholder.com/24x24?text=T"}
+                            alt={`${report.touristDetails?.first_name || ''} ${report.touristDetails?.last_name || ''}`.trim() || "Unknown Tourist"}
+                            className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-secondary-600"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                              {report.touristDetails?.first_name && report.touristDetails?.last_name 
+                                ? `${report.touristDetails.first_name} ${report.touristDetails.last_name}`
+                                : "Unknown Tourist"}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                              {report.touristDetails?.email || report.email || "No email provided"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex space-x-2">
                         <button
-                          onClick={() => handleContact("phone", report.tourist)}
-                          className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors"
-                        >
-                          <PhoneIcon className="h-3 w-3 mr-1" />
-                          Call
-                        </button>
-                        <button
-                          onClick={() => handleContact("email", report.tourist)}
-                          className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                          onClick={() => handleContact("email", report.touristDetails || {})}
+                          disabled={!report.touristDetails?.email && !report.email}
+                          className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                         >
                           <EnvelopeIcon className="h-3 w-3 mr-1" />
                           Email
@@ -473,61 +532,87 @@ const LostItemTracker = () => {
                       </div>
                     </div>
 
-                    {/* Driver/Guide Contact */}
-                    {(report.driver || report.guide) && (
-                      <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <TruckIcon className="h-4 w-4 text-warning-600 dark:text-warning-400" />
-                          <h5 className="font-medium text-gray-900 dark:text-white">
-                            {report.driver ? "Driver" : "Guide"}
-                          </h5>
-                        </div>
-                        <div className="flex items-center space-x-3 mb-3">
+                   
+
+                    {/* Driver Contact */}
+                    <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <TruckIcon className="h-3 w-3 text-warning-600 dark:text-warning-400" />
+                        <h5 className="font-medium text-gray-900 dark:text-white text-xs">
+                          Driver
+                        </h5>
+                      </div>
+                      <div className="flex items-center justify-between space-x-2">
+                        <div className="flex items-center space-x-2 flex-1">
                           <img
-                            src={(report.driver || report.guide).avatar}
-                            alt={(report.driver || report.guide).name}
-                            className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-secondary-600"
+                            src={report.tripDetails?.driver?.avatar || "https://via.placeholder.com/24x24?text=D"}
+                            alt={`${report.tripDetails?.driver?.first_name || ''} ${report.tripDetails?.driver?.last_name || ''}`.trim() || "No Driver Assigned"}
+                            className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-secondary-600"
                           />
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                              {(report.driver || report.guide).name}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                              {report.tripDetails?.driver?.first_name && report.tripDetails?.driver?.last_name 
+                                ? `${report.tripDetails.driver.first_name} ${report.tripDetails.driver.last_name}`
+                                : "No Driver Assigned"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {(report.driver || report.guide).email}
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                              {report.tripDetails?.driver?.email || "No email provided"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {(report.driver || report.guide).phone}
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                              {report.tripDetails?.driver?.emergency_contact_number || "No phone provided"}
                             </p>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() =>
-                              handleContact(
-                                "phone",
-                                report.driver || report.guide
-                              )
-                            }
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg text-white bg-warning-600 hover:bg-warning-700 transition-colors"
-                          >
-                            <PhoneIcon className="h-3 w-3 mr-1" />
-                            Call
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleContact(
-                                "email",
-                                report.driver || report.guide
-                              )
-                            }
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border border-warning-600 text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-900/20 transition-colors"
-                          >
-                            <EnvelopeIcon className="h-3 w-3 mr-1" />
-                            Email
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleContact("email", report.tripDetails?.driver || {})}
+                          disabled={!report.tripDetails?.driver?.email}
+                          className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                        >
+                          <EnvelopeIcon className="h-3 w-3 mr-1" />
+                          Email
+                        </button>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Guide Contact */}
+                    <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <UserIcon className="h-3 w-3 text-primary-600 dark:text-primary-400" />
+                        <h5 className="font-medium text-gray-900 dark:text-white text-xs">
+                          Guide
+                        </h5>
+                      </div>
+                      <div className="flex items-center justify-between space-x-2">
+                        <div className="flex items-center space-x-2 flex-1">
+                          <img
+                            src={report.tripDetails?.guide?.avatar || "https://via.placeholder.com/24x24?text=G"}
+                            alt={`${report.tripDetails?.guide?.first_name || ''} ${report.tripDetails?.guide?.last_name || ''}`.trim() || "No Guide Assigned"}
+                            className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-secondary-600"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                              {report.tripDetails?.guide?.first_name && report.tripDetails?.guide?.last_name 
+                                ? `${report.tripDetails.guide.first_name} ${report.tripDetails.guide.last_name}`
+                                : "No Guide Assigned"}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                              {report.tripDetails?.guide?.email || "No email provided"}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                              {report.tripDetails?.guide?.emergency_contact_number || "No phone provided"}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleContact("email", report.tripDetails?.guide || {})}
+                          disabled={!report.tripDetails?.guide?.email}
+                          className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                        >
+                          <EnvelopeIcon className="h-3 w-3 mr-1" />
+                          Email
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -535,6 +620,8 @@ const LostItemTracker = () => {
           ))
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

@@ -17,6 +17,7 @@ import Footer from '../../components/Footer';
 import PoolCard from '../../components/PoolCard';
 import PoolsApi from '../../api/poolsApi';
 import { getUserUID } from '../../utils/userStorage';
+import { useAuth } from '../../hooks/useAuth';
 
 // Utility function to remove duplicates and sort by compatibility
 const deduplicateAndSortGroups = (groups) => {
@@ -98,6 +99,7 @@ const formatDate = (dateString) => {
 
 const CompatibleGroupsPage = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   // Get preferences from previous page
@@ -216,6 +218,7 @@ const CompatibleGroupsPage = () => {
       const groupData = {
         // Required fields
         userId: userId,
+        userEmail: user?.email || 'user@example.com', // Add userEmail field
         tripName: poolName || 'My Adventure Trip',
         startDate: preferences.startDate,
         endDate: preferences.endDate,
@@ -223,6 +226,7 @@ const CompatibleGroupsPage = () => {
         groupName: poolName || 'My Adventure Group',
         
         // Optional fields with defaults
+        arrivalTime: "14:30", // Default arrival time
         multiCityAllowed: preferences.multiCityAllowed !== undefined ? preferences.multiCityAllowed : true,
         activityPacing: preferences.activityPacing || 'Normal',
         budgetLevel: preferences.budgetLevel || 'Medium',
@@ -230,20 +234,43 @@ const CompatibleGroupsPage = () => {
         preferredActivities: preferences.preferredActivities || [],
         visibility: poolPrivacy || 'public',
         maxMembers: poolSize || 6,
-        requiresApproval: false,
-        additionalPreferences: {}
+        requiresApproval: false
       };
 
       console.log('🌟 Creating new group with data:', groupData);
       
       const result = await PoolsApi.createGroupWithTrip(groupData);
       
+      console.log('✅ API Success response:', result);
+      console.log('🔍 Checking response structure:', {
+        hasGroupId: !!result.groupId,
+        hasTrippId: !!result.tripId,
+        groupIdValue: result.groupId,
+        tripIdValue: result.tripId,
+        status: result.status,
+        draft: result.draft,
+        fullResponse: result
+      });
+      
+      // Extract IDs from the exact API response structure
+      const extractedGroupId = result.groupId;
+      const extractedTripId = result.tripId;
+      const responseStatus = result.status;
+      const isDraft = result.draft; // API uses "draft" not "isDraft"
+      
+      console.log('🔧 Extracted values:', {
+        extractedGroupId,
+        extractedTripId,
+        responseStatus,
+        isDraft
+      });
+      
       // Check response status and handle success
-      if (result.status === 'success' && result.groupId && result.tripId) {
+      if (responseStatus === 'success' && extractedGroupId && extractedTripId) {
         console.log('🎉 Group created successfully:', {
-          groupId: result.groupId,
-          tripId: result.tripId,
-          isDraft: result.isDraft
+          groupId: extractedGroupId,
+          tripId: extractedTripId,
+          isDraft: isDraft
         });
         
         alert(`Group created successfully! You can now plan your trip.`);
@@ -251,8 +278,8 @@ const CompatibleGroupsPage = () => {
         // Navigate to pool itinerary page
         navigate('/pool-itinerary', {
           state: {
-            tripId: result.tripId,
-            groupId: result.groupId,
+            tripId: extractedTripId,
+            groupId: extractedGroupId,
             tripName: poolName || 'My Adventure Trip',
             poolName: poolName || 'My Adventure Group',
             startDate: preferences.startDate,
@@ -260,11 +287,35 @@ const CompatibleGroupsPage = () => {
             selectedTerrains: preferences.preferredTerrains || [],
             selectedActivities: preferences.preferredActivities || [],
             userUid: userId,
-            isDraft: result.isDraft
+            isDraft: isDraft
+          }
+        });
+      } else if (extractedGroupId && extractedTripId) {
+        // IDs found but status might be different
+        console.log('🔧 Found IDs but status unclear, proceeding anyway...');
+        navigate('/pool-itinerary', {
+          state: {
+            tripId: extractedTripId,
+            groupId: extractedGroupId,
+            tripName: poolName || 'My Adventure Trip',
+            poolName: poolName || 'My Adventure Group',
+            startDate: preferences.startDate,
+            endDate: preferences.endDate,
+            selectedTerrains: preferences.preferredTerrains || [],
+            selectedActivities: preferences.preferredActivities || [],
+            userUid: userId,
+            isDraft: isDraft || true
           }
         });
       } else {
-        throw new Error(result.message || 'Unexpected response format');
+        console.error('❌ Could not extract required IDs from API response:', result);
+        console.error('🔍 Missing required fields:', {
+          missingGroupId: !extractedGroupId,
+          missingTripId: !extractedTripId,
+          responseStatus: responseStatus
+        });
+        
+        throw new Error(result.message || 'Missing required group or trip ID from server response');
       }
 
     } catch (error) {

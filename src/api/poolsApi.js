@@ -31,11 +31,13 @@ export class PoolsApi {
         requestParams.preferredActivities = params.preferredActivities;
       }
       
-      const response = await poolingServicesApi.get('/api/v1/groups/public/enhanced', {
+      const response = await poolingServicesApi.get('/groups/public/enhanced', {
         params: requestParams
       });
 
-      console.log('🏊‍♂️ Enhanced pools fetched successfully:', response.data);
+      console.log('🟡 [PUBLIC POOLS] Enhanced PUBLIC pools fetched successfully:', response.data);
+      console.log('🟡 [PUBLIC POOLS] WARNING: This should NOT be called from MyPools page!');
+      console.trace('🟡 [PUBLIC POOLS] Call stack to find where this was called from:');
       return response.data;
     } catch (error) {
       console.error('🏊‍♂️❌ Error fetching enhanced pools:', error);
@@ -63,8 +65,8 @@ export class PoolsApi {
       
       // Use the exact path from your API specification: /v1/public-pooling/pre-check
       // Since base URL is http://localhost:8086/api/v1, we need to construct the full URL manually
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/public-pooling/pre-check`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/public-pooling/pre-check`;
       
       console.log('🌐 Making request to:', fullUrl);
       
@@ -116,9 +118,16 @@ export class PoolsApi {
     try {
       console.log('🏊‍♂️ Creating group with trip:', groupData);
       
-      const response = await poolingServicesApi.post('/api/v1/groups/with-trip', groupData);
+      const response = await poolingServicesApi.post('/groups/with-trip', groupData);
 
       console.log('🏊‍♂️ Group created successfully:', response.data);
+      console.log('🏊‍♂️ Response before navigation - Full response:', response);
+      console.log('🏊‍♂️ Response before navigation - Status:', response.status);
+      console.log('🏊‍♂️ Response before navigation - Data keys:', Object.keys(response.data || {}));
+      console.log('🏊‍♂️ Response before navigation - Data:', response.data);
+      console.log('🏊‍♂️ Response before navigation:', response.data);
+      // Also store in localStorage for debugging
+      localStorage.setItem('lastApiResponse', JSON.stringify(response.data));
       return response.data;
     } catch (error) {
       console.error('🏊‍♂️❌ Error creating group with trip:', error);
@@ -132,6 +141,10 @@ export class PoolsApi {
    * @returns {Object} Pool object in frontend format
    */
   static convertToPoolFormat(group) {
+    // Debug log to check group structure
+    console.log('🔍 convertToPoolFormat - Raw group data:', group);
+    console.log('🔍 convertToPoolFormat - Group visibility:', group.visibility);
+    
     // Create a comprehensive pool object that matches the existing frontend format
     return {
       id: group.groupId,
@@ -151,7 +164,9 @@ export class PoolsApi {
       date: group.formattedDateRange || this.formatDateRange(group.startDate, group.endDate),
       duration: group.tripDurationDays ? `${group.tripDurationDays} days` : 'Multi-day',
       status: group.status || 'open',
+      visibility: group.visibility || 'private', // Add visibility property
       highlights: group.topAttractions || [],
+      members: group.members || [], // Add member data if available
       
       // Additional data from backend
       baseCity: group.baseCity,
@@ -285,8 +300,8 @@ export class PoolsApi {
       console.log('🏊‍♂️ Requesting to join pool:', { groupId, joinData });
       
       // Use the new API endpoint for joining groups
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/join`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/${groupId}/join`;
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -326,8 +341,8 @@ export class PoolsApi {
     try {
       console.log('🗳️ Voting on join request:', { groupId, voteData });
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/join-requests/vote`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/${groupId}/join-requests/vote`;
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -363,8 +378,8 @@ export class PoolsApi {
     try {
       console.log('📋 Getting pending join requests for group:', groupId);
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/join-requests/pending?userId=${userId}`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/${groupId}/join-requests/pending?userId=${userId}`;
       
       const response = await fetch(fullUrl, {
         method: 'GET',
@@ -398,8 +413,8 @@ export class PoolsApi {
     try {
       console.log('📨 Starting getUserInvitations for userId:', userId);
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/groups/invitations/${userId}`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/invitations/${userId}`;
       
       console.log('📨 Making request to URL:', fullUrl);
       console.log('📨 Base URL from env:', process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE);
@@ -450,8 +465,8 @@ export class PoolsApi {
     try {
       console.log('📮 Starting respondToInvitation with data:', responseData);
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/groups/invitations/respond`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1/';
+      const fullUrl = `${baseUrl}groups/invitations/respond`;
       
       console.log('📮 Making request to URL:', fullUrl);
       console.log('📮 Request body:', JSON.stringify(responseData, null, 2));
@@ -505,8 +520,8 @@ export class PoolsApi {
     try {
       console.log('📤 Inviting user to group:', { groupId, inviteData });
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/groups/${groupId}/invite`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/${groupId}/invite`;
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -536,46 +551,136 @@ export class PoolsApi {
   }
 
   /**
-   * Get user's pools (groups they are part of)
+   * Get user's created pools (both public and private)
    * @param {string} userId - User ID
-   * @param {Array} [allPools] - Optional pre-fetched pools data to filter from
+   * @returns {Promise<Array>} Array of user's created pools
+   */
+  static async getUserCreatedPools(userId) {
+    try {
+      console.log('🔴 [ONLY USER CREATED] Fetching user created pools for:', userId);
+      console.log('🔴 [ONLY USER CREATED] This should NOT call any public pools endpoints!');
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/created-by/${userId}`;
+      
+      console.log('🔴 [ONLY USER CREATED] Making fetch call to:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🔴 [ONLY USER CREATED] Raw API response received:', result);
+      console.log('� [ONLY USER CREATED] Number of pools from user-created endpoint:', result.length);
+      
+      // Log visibility details for each pool
+      result.forEach((pool, index) => {
+        console.log(`� [ONLY USER CREATED] Pool ${index + 1}:`, {
+          name: pool.tripName || pool.groupName,
+          visibility: pool.visibility,
+          groupId: pool.groupId,
+          status: pool.status
+        });
+      });
+      
+      console.log('🔴 [ONLY USER CREATED] Returning ONLY user created pools - no public pools mixed in!');
+      return result;
+    } catch (error) {
+      console.error('🏊‍♂️❌ Error fetching user created pools:', error);
+      throw new Error(`Failed to fetch user created pools: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user's pools from the API (ONLY user's created pools - both public and private)
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} Object containing ongoing, upcoming, and past pools
    */
-  static async getUserPools(userId, allPools = null) {
+  static async getUserPools(userId) {
     try {
-      console.log('🏊‍♂️ Fetching user pools for:', userId);
+      console.log('🏊‍♂️ [MyPools] Fetching ONLY user created pools for:', userId);
+      console.log('🏊‍♂️ [MyPools] API URL: http://localhost:8086/api/v1/groups/created-by/' + userId);
       
-      let pools = allPools;
+      // ONLY get user's created pools (both public and private) from dedicated endpoint
+      // DO NOT use any cached data or public pools data
+      const createdPoolsResponse = await this.getUserCreatedPools(userId);
+      console.log('🔍 [MyPools] Raw API response from /groups/created-by/', createdPoolsResponse);
+      console.log('🔍 [MyPools] Number of pools returned by API:', createdPoolsResponse.length);
+
+      // ✅ Backend already filters by creator via /groups/created-by/ endpoint
+      // No additional filtering needed - trust the backend response completely
+      const userCreatedPools = createdPoolsResponse;
+      console.log('🔍 [MyPools] Using all pools from backend (already filtered):', userCreatedPools.length);
       
-      // If no pre-fetched data, fetch all pools
-      if (!pools) {
-        const response = await this.getEnhancedPools();
-        pools = response.map(group => this.convertToPoolFormat(group));
-      } else {
-        // Convert if needed
-        pools = pools.map(group => 
-          group.id ? group : this.convertToPoolFormat(group)
-        );
-      }
+      // Convert all the user's created pools to pool format
+      const createdPools = userCreatedPools.map(group => {
+        console.log('🔍 [MyPools] Converting pool:', {
+          name: group.tripName || group.groupName,
+          visibility: group.visibility,
+          status: group.status,
+          groupId: group.groupId
+        });
+        return this.convertToPoolFormat(group);
+      });
+      console.log('🔍 [MyPools] Converted user created pools:', createdPools);
       
-      // Filter pools where the user is the creator or member
-      const userPools = pools.filter(pool => 
-        pool.creatorUserId === userId
-        // TODO: Add member check when we have member data
-      );
+      // Use all the user's created pools from backend - no additional filtering
+      const allUserPools = createdPools;
       
-      console.log('🏊‍♂️ User pools filtered successfully:', userPools.length);
+      console.log('🏊‍♂️ [MyPools] Final user pools (should match API exactly):', allUserPools);
       
-      // Organize pools by status
+      // Organize pools by actual dates (not status)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+      
       const result = {
-        ongoing: userPools.filter(pool => pool.status === 'active'),
-        upcoming: userPools.filter(pool => pool.status === 'draft' || pool.status === 'open'),
-        past: userPools.filter(pool => pool.status === 'closed' || pool.status === 'completed')
+        upcoming: allUserPools.filter(pool => {
+          const startDate = new Date(pool.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          return startDate > today;
+        }),
+        ongoing: allUserPools.filter(pool => {
+          const startDate = new Date(pool.startDate);
+          const endDate = new Date(pool.endDate);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          return startDate <= today && endDate >= today;
+        }),
+        past: allUserPools.filter(pool => {
+          const endDate = new Date(pool.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          return endDate < today;
+        })
       };
+      
+      console.log('🔍 [MyPools] Organized pools by dates:', result);
+      console.log('🔍 [MyPools] Date comparison reference - Today:', today.toISOString().split('T')[0]);
+      console.log('🔍 [MyPools] Pool date analysis:');
+      allUserPools.forEach(pool => {
+        const startDate = new Date(pool.startDate);
+        const endDate = new Date(pool.endDate);
+        console.log(`  📅 ${pool.name}: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} (${pool.startDate > today ? 'upcoming' : pool.endDate >= today ? 'ongoing' : 'past'})`);
+      });
+      console.log('🔍 [MyPools] Total pools shown:', {
+        ongoing: result.ongoing.length,
+        upcoming: result.upcoming.length,
+        past: result.past.length,
+        total: result.ongoing.length + result.upcoming.length + result.past.length
+      });
       
       return result;
     } catch (error) {
-      console.error('🏊‍♂️❌ Error fetching user pools:', error);
+      console.error('🏊‍♂️❌ [MyPools] Error fetching user pools:', error);
       throw new Error(`Failed to fetch user pools: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -785,8 +890,8 @@ export class PoolsApi {
         }
       }
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/public-pooling/groups/${groupId}/save-trip`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/public-pooling/groups/${groupId}/save-trip`;
       
       console.log('💾 Full API URL:', fullUrl);
       console.log('💾 Request body (stringified):', JSON.stringify(tripData, null, 2));
@@ -873,8 +978,8 @@ export class PoolsApi {
         console.log('🏁 finalizeData.reason:', finalizeData.reason, '(type:', typeof finalizeData.reason, ')');
       }
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086';
-      const fullUrl = `${baseUrl}/api/v1/public-pooling/groups/${groupId}/finalize`;
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/public-pooling/groups/${groupId}/finalize`;
       
       console.log('🏁 ===== FINALIZE GROUP HTTP REQUEST =====');
       console.log('🏁 Full API URL:', fullUrl);
@@ -996,7 +1101,7 @@ export class PoolsApi {
       console.log('🔍📋 API Base URL:', poolingServicesApi.defaults.baseURL);
       
       // Construct the API endpoint
-      const endpoint = `/api/v1/public-pooling/trips/${tripId}/comprehensive`;
+      const endpoint = `/public-pooling/trips/${tripId}/comprehensive`;
       console.log('🔍📋 Endpoint:', endpoint);
       
       // Prepare query parameters
