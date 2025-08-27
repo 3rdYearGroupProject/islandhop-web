@@ -453,6 +453,101 @@ export class PoolsApi {
   }
 
   /**
+   * Get all pending requests that the user needs to vote on
+   * GET /api/v1/groups/my-pending-requests?userId={userId}
+   * @param {string} userId - Current user ID
+   * @returns {Promise<Object>} All pending requests across groups where user is a member
+   */
+  static async getMyPendingRequests(userId) {
+    try {
+      console.log('🗳️ Starting getMyPendingRequests for userId:', userId);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/my-pending-requests?userId=${userId}`;
+      
+      console.log('🗳️ Making request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('🗳️ Response status:', response.status);
+      console.log('🗳️ Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('🗳️ Error response data:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🗳️ My pending requests fetched successfully:', result);
+      console.log('🗳️ Total groups with pending requests:', result.totalGroups || 0);
+      console.log('🗳️ Total pending requests:', result.totalPendingRequests || 0);
+      return result;
+    } catch (error) {
+      console.error('🗳️❌ Error fetching my pending requests:', error);
+      throw new Error(`Failed to fetch my pending requests: ${error.message}`);
+    }
+  }
+
+  /**
+   * Vote on a join request - Updated endpoint format
+   * POST /api/v1/groups/{groupId}/join-requests/{requestUserId}/vote
+   * @param {string} groupId - Group ID
+   * @param {string} requestUserId - ID of user who requested to join
+   * @param {Object} voteData - Vote data
+   * @param {string} voteData.userId - Current user ID (voter)
+   * @param {boolean} voteData.approved - true for approve, false for reject
+   * @param {string} [voteData.comment] - Optional comment
+   * @returns {Promise<Object>} Vote result
+   */
+  static async voteOnJoinRequestNew(groupId, requestUserId, voteData) {
+    try {
+      console.log('🗳️ Starting voteOnJoinRequestNew:', { groupId, requestUserId, voteData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/${groupId}/join-requests/${requestUserId}/vote`;
+      
+      console.log('🗳️ Making vote request to URL:', fullUrl);
+      console.log('🗳️ Request payload:', voteData);
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(voteData)
+      });
+
+      console.log('🗳️ Vote response status:', response.status);
+      console.log('🗳️ Vote response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('🗳️ Vote error response data:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🗳️ Vote submitted successfully:', result);
+      console.log('🗳️ Final request status:', result.requestStatus);
+      console.log('🗳️ Votes received:', result.totalVotesReceived, '/', result.totalMembersRequired);
+      return result;
+    } catch (error) {
+      console.error('🗳️❌ Error voting on join request:', error);
+      throw new Error(`Failed to vote on join request: ${error.message}`);
+    }
+  }
+
+  /**
    * Respond to an invitation
    * @param {Object} responseData - Response data
    * @param {string} responseData.userId - Current user ID
