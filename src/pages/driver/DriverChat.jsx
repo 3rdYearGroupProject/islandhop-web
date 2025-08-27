@@ -30,7 +30,14 @@ const DriverChat = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [selectedGroupMessages, setSelectedGroupMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = React.useRef(null);
+  const typingTimeoutRef = React.useRef(null);
+
+  // Generate unique ID helper
+  const generateUniqueId = (prefix = 'item') => {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
 
   // Get current user's Firebase UID and data
   const currentUserUID = getUserUID();
@@ -46,10 +53,30 @@ const DriverChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Scroll to bottom when messages change
+  // Smart scroll: only scroll if user is near bottom or if it's their own message
+  const smartScroll = (isOwnMessage = false) => {
+    if (!messagesEndRef.current) return;
+    
+    const container = messagesEndRef.current.parentElement;
+    if (!container) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100; // Within 100px of bottom
+    
+    // Always scroll for own messages or if user is near bottom
+    if (isOwnMessage || isNearBottom) {
+      scrollToBottom();
+    }
+  };
+
+  // Scroll to bottom when messages change, but smartly
   React.useEffect(() => {
-    scrollToBottom();
-  }, [selectedGroupMessages]);
+    // Check if the last message is from current user
+    const lastMessage = selectedGroupMessages[selectedGroupMessages.length - 1];
+    const isOwnMessage = lastMessage?.senderId === currentUserUID;
+    
+    smartScroll(isOwnMessage);
+  }, [selectedGroupMessages, currentUserUID]);
 
   // Fetch user's groups
   useEffect(() => {
@@ -66,23 +93,42 @@ const DriverChat = () => {
         
         console.log('Fetching groups for user:', currentUserUID);
         const response = await axios.get(`${CHAT_API_BASE}/chat/group/user/${currentUserUID}`);
+        console.log('Groups response:', response);
+        console.log('Groups data:', response.data);
         
         if (response.data && Array.isArray(response.data)) {
-          const transformedGroups = response.data.map(group => ({
-            id: group.groupId,
-            groupName: group.groupName,
-            description: group.description,
-            groupType: group.groupType,
-            memberCount: group.memberIds ? group.memberIds.length : 0,
-            adminId: group.adminId,
-            createdAt: new Date(group.createdAt),
-            lastActivity: group.lastActivity ? new Date(group.lastActivity) : new Date(group.createdAt),
-            unreadCount: 0, // This would need to be calculated from messages
-            isAdmin: group.adminId === currentUserUID
+          console.log('Raw groups data:', response.data);
+          const transformedGroups = response.data.map((group, index) => {
+            console.log('Processing group:', group);
+            // Helper function to safely create dates
+            const safeDate = (dateValue) => {
+              if (!dateValue) return new Date();
+              const date = new Date(dateValue);
+              return isNaN(date.getTime()) ? new Date() : date;
+            };
+
+            return {
+              id: group.id || generateUniqueId(`group_${index}`),
+              groupName: group.groupName || 'Unnamed Group',
+              description: group.description || 'No description',
+              groupType: group.groupType || 'PRIVATE',
+              memberCount: group.memberIds ? group.memberIds.length : 0,
+              adminId: group.adminId,
+              createdAt: safeDate(group.createdAt),
+              lastActivity: safeDate(group.lastActivity || group.createdAt),
+              unreadCount: 0, // This would need to be calculated from messages
+              isAdmin: group.adminId === currentUserUID
+            };
+          });
+          
+          // Ensure unique IDs to prevent React key warnings
+          const uniqueGroups = transformedGroups.map((group, index) => ({
+            ...group,
+            id: group.id || generateUniqueId(`final_group_${index}`)
           }));
           
-          setGroups(transformedGroups);
-          console.log('Fetched groups:', transformedGroups);
+          setGroups(uniqueGroups);
+          console.log('Fetched groups:', uniqueGroups);
         } else {
           setGroups([]);
         }
@@ -105,22 +151,42 @@ const DriverChat = () => {
       console.log('Fetching messages for group:', groupId);
       
       const response = await axios.get(`${CHAT_API_BASE}/chat/group/${groupId}/messages?page=0&size=50`);
+      console.log('Messages response:', response);
+      console.log('Messages data:', response.data);
       
       if (response.data && response.data.content && Array.isArray(response.data.content)) {
-        const messages = response.data.content.map(msg => ({
-          id: msg.messageId,
-          content: msg.content,
-          senderId: msg.senderId,
-          senderName: msg.senderName || `User ${msg.senderId.substring(0, 8)}`,
-          timestamp: new Date(msg.timestamp),
-          messageType: msg.messageType,
-          isRead: msg.isRead || false
-        }));
+        console.log('Raw messages data:', response.data.content);
+        const messages = response.data.content.map((msg, index) => {
+          console.log('Processing message:', msg);
+          // Helper function to safely create dates
+          const safeDate = (dateValue) => {
+            if (!dateValue) return new Date();
+            const date = new Date(dateValue);
+            return isNaN(date.getTime()) ? new Date() : date;
+          };
+
+          return {
+            id: msg.messageId || generateUniqueId(`msg_${index}`),
+            content: msg.content || '',
+            senderId: msg.senderId || '',
+            senderName: msg.senderName || `User ${(msg.senderId || '').substring(0, 8)}`,
+            timestamp: safeDate(msg.timestamp),
+            messageType: msg.messageType || 'TEXT',
+            isRead: msg.isRead || false
+          };
+        });
         
         // Sort messages by timestamp
         messages.sort((a, b) => a.timestamp - b.timestamp);
-        setSelectedGroupMessages(messages);
-        console.log('Fetched messages:', messages);
+        
+        // Ensure unique IDs to prevent React key warnings
+        const uniqueMessages = messages.map((msg, index) => ({
+          ...msg,
+          id: msg.id || generateUniqueId(`sorted_msg_${index}`)
+        }));
+        
+        setSelectedGroupMessages(uniqueMessages);
+        console.log('Fetched messages:', uniqueMessages);
       } else {
         setSelectedGroupMessages([]);
       }
@@ -140,13 +206,72 @@ const DriverChat = () => {
   // Auto-refresh messages for selected group
   useEffect(() => {
     if (selectedChat && selectedChat.id) {
-      const interval = setInterval(() => {
-        fetchGroupMessages(selectedChat.id);
-      }, 10000); // Refresh every 10 seconds
+      // Initial fetch when selecting a group
+      fetchGroupMessages(selectedChat.id);
+      
+      // Set up periodic refresh with smart update logic
+      const interval = setInterval(async () => {
+        // Skip refresh if user is actively typing
+        if (isTyping) {
+          console.log('Auto-refresh: Skipping refresh while user is typing');
+          return;
+        }
+
+        try {
+          const response = await axios.get(`${CHAT_API_BASE}/chat/group/${selectedChat.id}/messages?page=0&size=50`);
+          
+          if (response.data && response.data.content && Array.isArray(response.data.content)) {
+            const newMessages = response.data.content.map((msg, index) => {
+              const safeDate = (dateValue) => {
+                if (!dateValue) return new Date();
+                const date = new Date(dateValue);
+                return isNaN(date.getTime()) ? new Date() : date;
+              };
+
+              return {
+                id: msg.messageId || generateUniqueId(`msg_${index}`),
+                content: msg.content || '',
+                senderId: msg.senderId || '',
+                senderName: msg.senderName || `User ${(msg.senderId || '').substring(0, 8)}`,
+                timestamp: safeDate(msg.timestamp),
+                messageType: msg.messageType || 'TEXT',
+                isRead: msg.isRead || false
+              };
+            });
+
+            // Sort messages by timestamp
+            newMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+            // Only update if there are actually new messages
+            setSelectedGroupMessages(prev => {
+              // Check if there are any new messages by comparing IDs
+              const existingIds = new Set(prev.map(msg => msg.id));
+              const hasNewMessages = newMessages.some(msg => !existingIds.has(msg.id));
+              
+              // If no new messages, don't update to prevent unnecessary re-renders
+              if (!hasNewMessages && prev.length === newMessages.length) {
+                return prev;
+              }
+
+              // Ensure unique IDs for new messages
+              const uniqueMessages = newMessages.map((msg, index) => ({
+                ...msg,
+                id: msg.id || generateUniqueId(`refresh_msg_${index}`)
+              }));
+
+              console.log('Auto-refresh: Found new messages, updating...');
+              return uniqueMessages;
+            });
+          }
+        } catch (err) {
+          // Silently handle errors in background refresh to avoid disrupting user
+          console.warn('Background message refresh failed:', err);
+        }
+      }, 15000); // Increased to 15 seconds to be less disruptive
 
       return () => clearInterval(interval);
     }
-  }, [selectedChat]);
+  }, [selectedChat?.id]); // Only depend on selectedChat.id to avoid unnecessary re-runs
 
   // Clear error after 5 seconds
   useEffect(() => {
@@ -157,6 +282,15 @@ const DriverChat = () => {
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Send message to group
   const sendGroupMessage = async (groupId, content) => {
@@ -186,7 +320,7 @@ const DriverChat = () => {
         
         // Add the new message to the current messages
         const newMessage = {
-          id: response.data.messageId || Date.now().toString(),
+          id: response.data.messageId || generateUniqueId('new_msg'),
           content: content.trim(),
           senderId: currentUserUID,
           senderName: currentUserName,
@@ -195,7 +329,22 @@ const DriverChat = () => {
           isRead: true
         };
 
-        setSelectedGroupMessages(prev => [...prev, newMessage]);
+        setSelectedGroupMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          const messageExists = prev.some(existingMsg => 
+            existingMsg.id === newMessage.id || 
+            (existingMsg.content === newMessage.content && 
+             existingMsg.senderId === newMessage.senderId &&
+             Math.abs(existingMsg.timestamp.getTime() - newMessage.timestamp.getTime()) < 1000)
+          );
+          
+          if (messageExists) {
+            console.warn('Message already exists, not adding duplicate');
+            return prev;
+          }
+          
+          return [...prev, newMessage];
+        });
         setMessage('');
       }
     } catch (err) {
@@ -208,14 +357,43 @@ const DriverChat = () => {
 
   // Handle group selection
   const handleGroupSelect = (group) => {
+    // Clear typing state when switching groups
+    setIsTyping(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
     setSelectedChat(group);
     setSelectedGroupMessages([]);
     fetchGroupMessages(group.id);
   };
 
+  // Handle message input change with typing detection
+  const handleMessageChange = (e) => {
+    setMessage(e.target.value);
+    
+    // Set typing state
+    setIsTyping(true);
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout to clear typing state after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
+  };
+
   // Handle sending message
   const handleSendMessage = () => {
     if (message.trim() && selectedChat && !sendingMessage) {
+      // Clear typing state when sending
+      setIsTyping(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       sendGroupMessage(selectedChat.id, message);
     }
   };
@@ -227,15 +405,51 @@ const DriverChat = () => {
   );
 
   const formatTime = (date) => {
+    // Validate date input
+    if (!date) return '';
+    
+    let validDate;
+    if (typeof date === 'string' || typeof date === 'number') {
+      validDate = new Date(date);
+    } else if (date instanceof Date) {
+      validDate = date;
+    } else {
+      return '';
+    }
+    
+    // Check if the date is valid
+    if (isNaN(validDate.getTime())) {
+      console.warn('Invalid date provided to formatTime:', date);
+      return '';
+    }
+    
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(validDate);
   };
 
   const formatRelativeTime = (date) => {
+    // Validate date input
+    if (!date) return '';
+    
+    let validDate;
+    if (typeof date === 'string' || typeof date === 'number') {
+      validDate = new Date(date);
+    } else if (date instanceof Date) {
+      validDate = date;
+    } else {
+      return '';
+    }
+    
+    // Check if the date is valid
+    if (isNaN(validDate.getTime())) {
+      console.warn('Invalid date provided to formatRelativeTime:', date);
+      return '';
+    }
+    
     const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    const diffInMinutes = Math.floor((now - validDate) / (1000 * 60));
     
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
@@ -485,7 +699,7 @@ const DriverChat = () => {
                     <input
                       type="text"
                       value={message}
-                      onChange={(e) => setMessage(e.target.value)}
+                      onChange={handleMessageChange}
                       onKeyPress={(e) => e.key === 'Enter' && !sendingMessage && handleSendMessage()}
                       placeholder="Type your message..."
                       disabled={sendingMessage}

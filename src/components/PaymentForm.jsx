@@ -72,7 +72,8 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
         description: description,
         groupType: 'PRIVATE',
         memberIds: [userUID],
-        adminId: userUID
+        adminId: userUID,
+        tripId: tripId
       };
 
       console.log('Creating chat group for successful payment:', groupData);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DriverTripModal from '../../components/driver/DriverTripModal';
 import axios from 'axios';
-import { getUserData } from '../../utils/userStorage';
+import { getUserData, getUserUID } from '../../utils/userStorage';
 import { 
   Car, 
   MapPin, 
@@ -31,6 +31,7 @@ const DriverTrips = () => {
   // Get user data from storage
   const userData = getUserData();
   const driverEmail = userData?.email;
+  const driverUID = getUserUID();
 
   const [stats, setStats] = useState({
     totalTrips: 0,
@@ -71,9 +72,11 @@ const DriverTrips = () => {
             // Get first and last cities for pickup and destination
             const firstDay = trip.dailyPlans?.[0];
             const lastDay = trip.dailyPlans?.[trip.dailyPlans.length - 1];
+
             
             return {
               id: trip._id,
+              userId: trip.userId, // Preserve the original userId
               tripName: trip.tripName,
               passenger: `User ${trip.userId.substring(0, 8)}...`, // Display partial user ID
               passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
@@ -129,12 +132,17 @@ const DriverTrips = () => {
       setLoading(true);
       
       if (action === 'accept') {
+        // Find the trip to get the userId
+        const currentTrip = trips.find(trip => trip.id === tripId);
+        const adminID = currentTrip?.userId;
 
-        console.log('Accepting trip:', tripId, 'for driver:', driverEmail);
+        console.log('Accepting trip:', tripId, 'for driver:', driverEmail, 'UID:', driverUID, 'AdminID:', adminID);
         // Make API call to accept driver assignment
         const acceptResponse = await axios.post('http://localhost:5006/api/accept_driver', {
           tripId: tripId,
-          email: driverEmail
+          email: driverEmail,
+          driverUID: driverUID,
+          adminID: adminID
         }, {
           headers: {
             'Content-Type': 'application/json'
