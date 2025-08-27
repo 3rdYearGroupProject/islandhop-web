@@ -839,8 +839,8 @@ const ViewTripPage = () => {
   // Google Maps styles and settings
   const mapContainerStyle = {
     width: '100%',
-    height: '100%', // Changed from 400px to 100% to fill parent
-    minHeight: '400px', // Ensures minimum height for usability
+    height: '100%',
+    minHeight: '300px', // Reduced minimum height for better mobile experience
   };
   
   // Get map icon based on place type
@@ -950,7 +950,16 @@ const ViewTripPage = () => {
       {/* Trip Header - blue background behind navbar, pulled up to be visible behind floating navbar */}
       <div className="relative">
         <div className="absolute inset-0 w-full h-[300px] bg-gradient-to-r from-primary-600 to-primary-700 pointer-events-none" style={{ zIndex: 0 }}></div>
-        <div className="relative max-w-7xl mx-auto px-4 pt-40 pb-12" style={{ zIndex: 1 }}>
+        <div className="relative max-w-7xl mx-auto px-4 pt-28 md:pt-32 pb-12" style={{ zIndex: 1 }}>
+          {/* Back button - white, in the blue banner */}
+          <div className="mb-4">
+            <button
+              onClick={handleBack}
+              className="text-white hover:text-white/80 font-medium transition-colors"
+            >
+              ← Back to Trips
+            </button>
+          </div>
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
@@ -974,10 +983,83 @@ const ViewTripPage = () => {
       {/* Main Content: Itinerary + Map (sticky/fixed) */}
       <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          {/* Left: Itinerary, scrollable - narrower on mobile, 50% width on desktop */}
-          <div className="w-11/12 md:w-1/2 min-w-0 flex flex-col mx-auto md:mx-0">
-          {/* Back button - mobile only, above Trip Itinerary */}
-          <div className="block md:hidden mb-4">
+          {/* Mobile: Map first, then itinerary */}
+          {/* Desktop: Itinerary left, Map right (sticky) */}
+          
+          {/* Back button - mobile only, above map - REMOVED since moved to blue banner */}
+          
+          {/* Map - Mobile: First (order-1), Desktop: Second (order-2) */}
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[600px] md:h-[calc(100vh-160px)] md:sticky top-32 order-1 md:order-2">
+            <div className="bg-white rounded-xl w-full h-full shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              {isLoaded ? (
+                <div className="flex-1 flex flex-col h-full">
+                  <div className="p-4 border-b border-gray-100 shrink-0">
+                    <h2 className="font-bold text-lg">Trip Map</h2>
+                    <p className="text-sm text-gray-500">Explore your trip destinations</p>
+                  </div>
+                  <div className="flex-1 relative overflow-hidden">
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={mapCenter}
+                      zoom={12}
+                      onLoad={handleMapLoad}
+                      options={{
+                        fullscreenControl: true,
+                        streetViewControl: false,
+                        mapTypeControl: true,
+                        zoomControl: true,
+                      }}
+                    >
+                      {places.map((place, index) => (
+                        <Marker
+                          key={`${place.name}-${index}`}
+                          position={{
+                            lat: place.location.lat,
+                            lng: place.location.lng
+                          }}
+                          onClick={() => handleMarkerClick(place)}
+                          icon={getMarkerIcon(place.placeType)}
+                          title={place.name}
+                        />
+                      ))}
+                      <MapInfoWindow 
+                        selectedMarker={selectedMarker}
+                        onClose={handleInfoWindowClose}
+                      />
+                    </GoogleMap>
+                  </div>
+                  <div className="p-3 border-t border-gray-100 shrink-0">
+                    <div className="flex gap-4 flex-wrap">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                        <span className="text-xs">Attractions</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-xs">Hotels</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                        <span className="text-xs">Restaurants</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="font-medium">Loading Map...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Itinerary - Mobile: Second (order-2), Desktop: First (order-1) */}
+          <div className="w-11/12 md:w-1/2 min-w-0 flex flex-col mx-auto md:mx-0 order-2 md:order-1">
+          {/* Back button - mobile only, above Trip Itinerary - HIDDEN since we moved it above map */}
+          <div className="hidden mb-4">
             <button
               onClick={handleBack}
               className="text-primary-600 hover:text-primary-700 font-medium"
@@ -987,13 +1069,7 @@ const ViewTripPage = () => {
           </div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
-            {/* Back button - desktop only, to the right of Trip Itinerary */}
-            <button
-              onClick={handleBack}
-              className="hidden md:block text-primary-600 hover:text-primary-700 font-medium"
-            >
-              ← Back to Trips
-            </button>
+            {/* Back button - REMOVED since moved to blue banner */}
           </div>
           {/* Day Timeline */}
           <div className="space-y-0">
@@ -1130,73 +1206,6 @@ const ViewTripPage = () => {
           </div>
           {/* Trip Summary moved below both columns */}
         </div>
-          {/* Right: Interactive Map showing all places from the itinerary */}
-          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
-            <div className="bg-white rounded-xl w-full h-full shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              {isLoaded ? (
-                <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-gray-100 shrink-0">
-                    <h2 className="font-bold text-lg">Trip Map</h2>
-                    <p className="text-sm text-gray-500">Explore your trip destinations</p>
-                  </div>
-                  <div className="flex-1 min-h-[400px]">
-                    <GoogleMap
-                      mapContainerStyle={mapContainerStyle}
-                      center={mapCenter}
-                      zoom={12}
-                      onLoad={handleMapLoad}
-                      options={{
-                        fullscreenControl: true,
-                        streetViewControl: true,
-                        mapTypeControl: true,
-                        zoomControl: true,
-                      }}
-                    >
-                      {places.map((place, index) => (
-                        <Marker
-                          key={`${place.name}-${index}`}
-                          position={{
-                            lat: place.location.lat,
-                            lng: place.location.lng
-                          }}
-                          onClick={() => handleMarkerClick(place)}
-                          icon={getMarkerIcon(place.placeType)}
-                          title={place.name}
-                        />
-                      ))}
-                      <MapInfoWindow 
-                        selectedMarker={selectedMarker}
-                        onClose={handleInfoWindowClose}
-                      />
-                    </GoogleMap>
-                  </div>
-                  <div className="p-3 border-t border-gray-100 shrink-0">
-                    <div className="flex gap-4 flex-wrap">
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-                        <span className="text-xs">Attractions</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
-                        <span className="text-xs">Hotels</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
-                        <span className="text-xs">Restaurants</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                    <p className="font-medium">Loading Map...</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
         {/* Trip Summary (below itinerary, left column only) */}
         <div className="flex flex-col md:flex-row gap-8 w-full">

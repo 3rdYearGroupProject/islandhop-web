@@ -477,7 +477,7 @@ const PoolPreferencesPage = () => {
                     Select the types of landscapes you'd like to visit in Sri Lanka
                   </p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-3">
                   {terrainPreferences.map(preference => {
                     const IconComponent = preference.icon;
                     const isSelected = selectedTerrainPreferences.includes(preference.id);
@@ -485,25 +485,25 @@ const PoolPreferencesPage = () => {
                       <button
                         key={preference.id}
                         onClick={() => handleTerrainToggle(preference.id)}
-                        className={`relative p-8 rounded-2xl border-2 text-center transition-all duration-200 group hover:scale-105 ${
+                        className={`relative p-4 md:p-8 rounded-xl md:rounded-2xl border-2 text-center transition-all duration-200 group hover:scale-105 aspect-square flex flex-col items-center justify-center ${
                           isSelected
                             ? 'border-primary-600 bg-primary-600 text-white shadow-lg'
                             : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-md'
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-24 h-24 rounded-full mx-auto mb-4 transition-all duration-200 ${
+                        <div className={`flex items-center justify-center w-12 h-12 md:w-24 md:h-24 rounded-full mx-auto mb-1 md:mb-4 transition-all duration-200 ${
                           isSelected 
                             ? 'bg-white bg-opacity-20' 
                             : 'bg-gray-100 group-hover:bg-primary-50'
                         }`}>
                           <IconComponent 
-                            size={48} 
-                            className={`transition-colors duration-200 ${
+                            size={24} 
+                            className={`md:w-12 md:h-12 transition-colors duration-200 ${
                               isSelected ? 'text-white' : 'text-primary-600'
                             }`}
                           />
                         </div>
-                        <span className={`font-semibold text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                        <span className={`font-semibold text-xs md:text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
                           {preference.name}
                         </span>
                         {isSelected && (
@@ -531,7 +531,7 @@ const PoolPreferencesPage = () => {
                     Select the activities you'd like to enjoy during your trip
                   </p>
                 </div>
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-6">
                   {activityPreferences.map(activity => {
                     const IconComponent = activity.icon;
                     const isSelected = selectedActivityPreferences.includes(activity.id);
@@ -539,25 +539,25 @@ const PoolPreferencesPage = () => {
                       <button
                         key={activity.id}
                         onClick={() => handleActivityToggle(activity.id)}
-                        className={`relative px-6 py-8 rounded-2xl border-2 text-center transition-all duration-200 group hover:scale-105 ${
+                        className={`relative p-4 md:px-6 md:py-8 rounded-xl md:rounded-2xl border-2 text-center transition-all duration-200 group hover:scale-105 aspect-square flex flex-col items-center justify-center ${
                           isSelected
                             ? 'border-primary-600 bg-primary-600 text-white shadow-lg'
                             : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-md'
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-4 transition-all duration-200 ${
+                        <div className={`flex items-center justify-center w-12 h-12 md:w-20 md:h-20 rounded-full mx-auto mb-1 md:mb-4 transition-all duration-200 ${
                           isSelected 
                             ? 'bg-white bg-opacity-20' 
                             : 'bg-gray-100 group-hover:bg-primary-50'
                         }`}>
                           <IconComponent 
-                            size={40} 
-                            className={`transition-colors duration-200 ${
+                            size={24} 
+                            className={`md:w-10 md:h-10 transition-colors duration-200 ${
                               isSelected ? 'text-white' : 'text-primary-600'
                             }`}
                           />
                         </div>
-                        <span className={`font-semibold text-sm ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                        <span className={`font-semibold text-xs md:text-sm ${isSelected ? 'text-white' : 'text-gray-900'}`}>
                           {activity.name}
                         </span>
                         {isSelected && (
