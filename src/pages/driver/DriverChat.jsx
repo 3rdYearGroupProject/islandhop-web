@@ -34,6 +34,7 @@ const DriverChat = () => {
 
   // Get current user's Firebase UID and data
   const currentUserUID = getUserUID();
+  console.log('Current User UID:', currentUserUID);
   const userData = getUserData();
   const currentUserName = userData?.firstName ? `${userData.firstName} ${userData.lastName || ''}`.trim() : `Driver ${currentUserUID?.substring(0, 8) || 'User'}`;
 
