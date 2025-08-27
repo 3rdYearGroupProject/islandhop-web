@@ -309,6 +309,8 @@ const mockPlaces = [
     dayNumber: 1,
     placeType: 'attraction',
     rating: 4.8,
+    image: '/src/assets/destinations/kandy-temple.jpg',
+    description: 'Sacred Buddhist temple with beautiful architecture and cultural significance.'
   },
   {
     name: 'Nuwara Eliya',
@@ -317,8 +319,184 @@ const mockPlaces = [
     dayNumber: 2,
     placeType: 'attraction',
     rating: 4.7,
+    image: '/src/assets/destinations/nuwara-eliya.jpg',
+    description: 'Cool hill station known as "Little England" with tea plantations and colonial architecture.'
   },
 ];
+
+// Mock data for other travelers at destinations
+const mockTravelersData = {
+  'Kandy Temple': [
+    {
+      id: 1,
+      name: 'Sarah Johnson',
+      avatar: 'https://via.placeholder.com/40/FF6B6B/FFFFFF?text=SJ',
+      arrivalTime: '2:30 PM',
+      groupSize: 2,
+      tripType: 'Cultural Tour',
+      isPublic: true
+    },
+    {
+      id: 2,
+      name: 'Mike Chen',
+      avatar: 'https://via.placeholder.com/40/4ECDC4/FFFFFF?text=MC',
+      arrivalTime: '3:15 PM',
+      groupSize: 1,
+      tripType: 'Solo Adventure',
+      isPublic: true
+    },
+    {
+      id: 3,
+      name: 'Emma & David',
+      avatar: 'https://via.placeholder.com/40/45B7D1/FFFFFF?text=ED',
+      arrivalTime: '4:00 PM',
+      groupSize: 2,
+      tripType: 'Honeymoon',
+      isPublic: true
+    }
+  ],
+  'Nuwara Eliya': [
+    {
+      id: 4,
+      name: 'Alex Rivera',
+      avatar: 'https://via.placeholder.com/40/96CEB4/FFFFFF?text=AR',
+      arrivalTime: '11:00 AM',
+      groupSize: 3,
+      tripType: 'Family Trip',
+      isPublic: true
+    },
+    {
+      id: 5,
+      name: 'Lisa Park',
+      avatar: 'https://via.placeholder.com/40/FFEAA7/000000?text=LP',
+      arrivalTime: '1:30 PM',
+      groupSize: 1,
+      tripType: 'Photography Tour',
+      isPublic: true
+    }
+  ]
+};
+
+// Travelers Modal Component
+const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic }) => {
+  // Prevent body scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save current body overflow style
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      // Prevent scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Cleanup function to restore scrolling when modal closes
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const travelers = mockTravelersData[destination] || [];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Who's Going to {destination}?</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+          {!isPublic ? (
+            /* Initial state - Make arrival public */
+            <div className="text-center py-8">
+              <div className="mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect with Fellow Travelers</h3>
+                <p className="text-gray-600 text-sm mb-6">
+                  Make your arrival time public to see other travelers visiting {destination} and potentially meet up!
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPublic(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Make My Arrival Public
+              </button>
+              <p className="text-xs text-gray-500 mt-3">
+                You can change this anytime in your privacy settings
+              </p>
+            </div>
+          ) : (
+            /* Show other travelers */
+            <div>
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center text-green-800">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium">Your arrival is now public!</span>
+                </div>
+              </div>
+
+              {travelers.length > 0 ? (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    Other travelers visiting today ({travelers.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {travelers.map((traveler) => (
+                      <div key={traveler.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={traveler.avatar}
+                            alt={traveler.name}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{traveler.name}</p>
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <span>Arriving at {traveler.arrivalTime}</span>
+                              <span>•</span>
+                              <span>{traveler.groupSize} {traveler.groupSize === 1 ? 'person' : 'people'}</span>
+                            </div>
+                            <p className="text-xs text-blue-600">{traveler.tripType}</p>
+                          </div>
+                        </div>
+                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors">
+                          Connect
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600">No other public travelers at this destination today.</p>
+                  <p className="text-sm text-gray-500 mt-1">Check back later or explore other destinations!</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const OngoingTripBanner = ({ trip }) => (
   <div className="relative">
@@ -388,6 +566,12 @@ const OngoingTripPage = () => {
   const [itineraryCollapsed, setItineraryCollapsed] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [mapCenter, setMapCenter] = useState(mockPlaces[0]?.location || { lat: 7.8731, lng: 80.7718 });
+  
+  // Modal states for "See who else is coming"
+  const [showTravelersModal, setShowTravelersModal] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [isPublic, setIsPublic] = useState(false);
+  
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
@@ -905,17 +1089,88 @@ const OngoingTripPage = () => {
                           position={selectedMarker.location}
                           onCloseClick={() => setSelectedMarker(null)}
                         >
-                          <div className="p-2">
-                            <h3 className="font-bold">{selectedMarker.name}</h3>
-                            <p className="text-sm">{selectedMarker.type}</p>
-                            {selectedMarker.rating && (
-                              <div className="flex items-center mt-1">
-                                <span className="text-yellow-500">★</span>
-                                <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                          <div className="p-0 min-w-[280px] max-w-[320px]">
+                            {/* Image Section */}
+                            {selectedMarker.image && (
+                              <div className="w-full h-32 mb-3 rounded-t-lg overflow-hidden">
+                                <img
+                                  src={selectedMarker.image}
+                                  alt={selectedMarker.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    // Fallback to a placeholder if image fails to load
+                                    e.target.src = 'https://via.placeholder.com/320x128/3B82F6/FFFFFF?text=No+Image';
+                                  }}
+                                />
                               </div>
                             )}
-                            <div className="mt-2 text-sm">
-                              <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
+                            
+                            <div className="px-3 pb-3">
+                              <h3 className="font-bold text-lg mb-1">{selectedMarker.name}</h3>
+                              <p className="text-sm text-gray-600 mb-2">{selectedMarker.type}</p>
+                              
+                              {selectedMarker.description && (
+                                <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                                  {selectedMarker.description}
+                                </p>
+                              )}
+                              
+                              <div className="flex items-center justify-between mb-3">
+                                {selectedMarker.rating && (
+                                  <div className="flex items-center">
+                                    <span className="text-yellow-500 text-base">★</span>
+                                    <span className="ml-1 text-sm font-medium">{selectedMarker.rating}</span>
+                                    <span className="ml-1 text-xs text-gray-500">/5</span>
+                                  </div>
+                                )}
+                                <div className="text-sm">
+                                  <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                                    Day {selectedMarker.dayNumber}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      // Open in Google Maps for navigation
+                                      const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.location.lat},${selectedMarker.location.lng}`;
+                                      window.open(url, '_blank');
+                                    }}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3" />
+                                    </svg>
+                                    Navigate
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      // Mark as visited or current location
+                                      console.log(`Marking ${selectedMarker.name} as current location`);
+                                      // You can implement actual logic here
+                                    }}
+                                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    I'm Here
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setSelectedDestination(selectedMarker.name);
+                                    setShowTravelersModal(true);
+                                  }}
+                                  className="w-full bg-blue-800 hover:bg-blue-900 text-white text-sm px-3 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <Users className="w-4 h-4" />
+                                  See who else is coming
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </InfoWindow>
@@ -951,6 +1206,16 @@ const OngoingTripPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Travelers Modal */}
+      <TravelersModal
+        isOpen={showTravelersModal}
+        onClose={() => setShowTravelersModal(false)}
+        destination={selectedDestination}
+        isPublic={isPublic}
+        setIsPublic={setIsPublic}
+      />
+      
       <Footer />
     </div>
   );
