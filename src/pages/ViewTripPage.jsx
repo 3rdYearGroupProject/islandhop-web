@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 // ...existing imports...
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart } from 'lucide-react';
-import { GoogleMap, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star } from 'lucide-react';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import { auth } from '../firebase';
@@ -11,10 +11,9 @@ import { getCityImageUrl, placeholderImage, logImageError } from '../utils/image
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import MapInfoWindow from '../components/MapInfoWindow';
 
 const ViewTripPage = () => {
-
-  console.log('🔍 ViewTripPage loaded with tripId:', useParams().tripId);
   const location = useRouterLocation();
   const navigate = useNavigate();
   const { tripId } = useParams();
@@ -32,7 +31,6 @@ const ViewTripPage = () => {
   const [places, setPlaces] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [mapInstance, setMapInstance] = useState(null);
-  const [advancedMarkers, setAdvancedMarkers] = useState([]);
 
   // --- Expandable Cost Breakdown State ---
   const [costExpanded, setCostExpanded] = useState({
@@ -113,7 +111,7 @@ const ViewTripPage = () => {
             description: 'Historic luxury hotel facing the Indian Ocean',
             checkIn: '15:00',
             checkOut: '12:00',
-            coordinates: { lat: 6.9196, lng: 79.8448 }
+            coordinates: { lat: 6.9278, lng: 79.8414 }
           }
         ],
         food: [
@@ -155,7 +153,7 @@ const ViewTripPage = () => {
             description: 'Visit the most sacred Buddhist temple in Sri Lanka',
             price: '$15',
             time: '10:00',
-            coordinates: { lat: 7.2906, lng: 80.6337 }
+            coordinates: { lat: 7.2936, lng: 80.6414 }
           },
           {
             id: 4,
@@ -180,7 +178,7 @@ const ViewTripPage = () => {
             description: 'Charming hotel with lake views',
             checkIn: '15:00',
             checkOut: '12:00',
-            coordinates: { lat: 7.2955, lng: 80.6350 }
+            coordinates: { lat: 7.2906, lng: 80.6337 }
           }
         ],
         food: [
@@ -194,7 +192,7 @@ const ViewTripPage = () => {
             description: 'Cozy cafe with mountain views',
             priceRange: '$10-20',
             time: '12:30',
-            coordinates: { lat: 7.2931, lng: 80.6350 }
+            coordinates: { lat: 7.2935, lng: 80.6414 }
           }
         ],
         transportation: [
@@ -222,7 +220,7 @@ const ViewTripPage = () => {
             description: 'Iconic railway bridge with stunning views',
             price: 'Free',
             time: '09:00',
-            coordinates: { lat: 6.8868, lng: 81.0465 }
+            coordinates: { lat: 6.8667, lng: 81.0500 }
           },
           {
             id: 6,
@@ -233,7 +231,7 @@ const ViewTripPage = () => {
             description: 'Moderate hike with panoramic views',
             price: 'Free',
             time: '14:00',
-            coordinates: { lat: 6.8721, lng: 81.0449 }
+            coordinates: { lat: 6.8708, lng: 81.0456 }
           }
         ],
         places: [
@@ -247,7 +245,7 @@ const ViewTripPage = () => {
             description: 'Beautiful resort surrounded by nature',
             checkIn: '14:00',
             checkOut: '11:00',
-            coordinates: { lat: 6.8721, lng: 81.0449 }
+            coordinates: { lat: 6.8667, lng: 81.0500 }
           }
         ],
         food: [
@@ -261,7 +259,7 @@ const ViewTripPage = () => {
             description: 'Popular local spot with amazing views',
             priceRange: '$8-15',
             time: '12:00',
-            coordinates: { lat: 6.8721, lng: 81.0449 }
+            coordinates: { lat: 6.8667, lng: 81.0500 }
           }
         ],
         transportation: [
@@ -288,8 +286,7 @@ const ViewTripPage = () => {
             rating: 4.6,
             description: 'Explore the historic Dutch colonial fort',
             price: '$10',
-            time: '10:00',
-            coordinates: { lat: 6.0329, lng: 80.2168 }
+            time: '10:00'
           },
           {
             id: 8,
@@ -299,8 +296,7 @@ const ViewTripPage = () => {
             rating: 4.4,
             description: 'Relax on one of Sri Lanka\'s most beautiful beaches',
             price: 'Free',
-            time: '14:00',
-            coordinates: { lat: 6.0100, lng: 80.2496 }
+            time: '14:00'
           }
         ],
         places: [
@@ -313,8 +309,7 @@ const ViewTripPage = () => {
             reviews: 1234,
             description: 'Clifftop hotel designed by Geoffrey Bawa',
             checkIn: '15:00',
-            checkOut: '12:00',
-            coordinates: { lat: 6.0329, lng: 80.2168 }
+            checkOut: '12:00'
           }
         ],
         food: [
@@ -327,8 +322,7 @@ const ViewTripPage = () => {
             reviews: 876,
             description: 'Historic cafe within the fort walls',
             priceRange: '$12-25',
-            time: '13:00',
-            coordinates: { lat: 6.0329, lng: 80.2168 }
+            time: '13:00'
           }
         ],
         transportation: [
@@ -355,8 +349,7 @@ const ViewTripPage = () => {
             rating: 4.6,
             description: 'Spot blue whales and dolphins in their natural habitat',
             price: '$45',
-            time: '06:30',
-            coordinates: { lat: 5.9487, lng: 80.4675 }
+            time: '06:30'
           },
           {
             id: 10,
@@ -366,8 +359,7 @@ const ViewTripPage = () => {
             rating: 4.0,
             description: 'Transfer to airport for departure',
             price: '$30',
-            time: '15:00',
-            coordinates: { lat: 7.1808, lng: 79.8841 }
+            time: '15:00'
           }
         ],
         places: [],
@@ -381,8 +373,7 @@ const ViewTripPage = () => {
             reviews: 567,
             description: 'Beachfront dining with fresh seafood',
             priceRange: '$15-30',
-            time: '12:00',
-            coordinates: { lat: 5.9487, lng: 80.4675 }
+            time: '12:00'
           }
         ],
         transportation: [
@@ -434,11 +425,14 @@ const ViewTripPage = () => {
         // If we have both tripId and userId, fetch from API
         if (tripId && currentUserId) {
           console.log('🔍 Fetching trip details from API for tripId:', tripId, 'userId:', currentUserId);
+          console.log('🌐 API endpoint:', `/itinerary/${tripId}?userId=${currentUserId}`);
           
           const response = await tripPlanningApi.get(`/itinerary/${tripId}?userId=${currentUserId}`);
+          console.log('📥 Raw API response:', response);
           
           if (response.data && response.data.status === 'success') {
-            console.log('✅ API Response:', response.data);
+            console.log('✅ API Response Data:', response.data);
+            console.log('📋 Daily Plans:', response.data.dailyPlans);
             
             // Extract all places from the daily plans for the map
             const allPlaces = [];
@@ -512,6 +506,9 @@ const ViewTripPage = () => {
             
             setTrip(tripData);
             
+            console.log('🎯 Using API trip data:', tripData);
+            console.log('🗺️ Places for map:', allPlaces);
+            
             // Initialize expanded days - expand first few days by default
             const initialExpanded = {};
             for (let i = 0; i < tripData.totalDays; i++) {
@@ -525,27 +522,32 @@ const ViewTripPage = () => {
           }
         } else {
           // If no tripId or userId, fall back to local data
+          console.log('⚠️ No tripId or userId available - tripId:', tripId, 'currentUserId:', currentUserId);
+          console.log('📦 Falling back to local/mock data');
           fallbackToLocalData();
         }        } catch (error) {
           console.error('❌ Error fetching trip details:', error);
+          setApiError(`Failed to load trip: ${error.message}`);
           
-          // In development mode with mock data enabled, don't set API error - just fallback
+          // Only fall back to local data if explicitly in development mode with mock enabled
           if (process.env.REACT_APP_ENVIRONMENT === 'development' && 
               process.env.REACT_APP_USE_MOCK_DATA === 'true') {
             console.log('🔄 Development mode: Falling back to mock data due to API error');
-          } else {
-            setApiError(`Failed to load trip: ${error.message}`);
+            fallbackToLocalData();
           }
-          
-          fallbackToLocalData();
         } finally {
         setLoading(false);
       }
     };
     
     const fallbackToLocalData = () => {
+      console.log('📁 fallbackToLocalData called');
+      console.log('🎫 tripFromState:', tripFromState);
+      console.log('🔧 mockSavedTrip available:', !!mockSavedTrip);
+      
       // Use trip from state if available, otherwise use mock data
       let tripData = tripFromState || mockSavedTrip;
+      console.log('📋 Using trip data source:', tripFromState ? 'route state' : 'mock data');
       
       // If tripData comes from MyTripsPage, transform it to match expected structure
       if (tripFromState && !tripFromState.destinations) {
@@ -570,6 +572,66 @@ const ViewTripPage = () => {
       }
       
       setTrip(tripData);
+      
+      // Extract places with coordinates for the map from mock/local data
+      const allPlaces = [];
+      if (tripData.itinerary) {
+        Object.entries(tripData.itinerary).forEach(([dayIndex, dayData]) => {
+          const dayNumber = parseInt(dayIndex) + 1;
+          
+          // Add activities with coordinates
+          if (dayData.activities) {
+            dayData.activities.forEach(activity => {
+              if (activity.coordinates) {
+                allPlaces.push({
+                  ...activity,
+                  location: activity.coordinates,
+                  dayNumber: dayNumber,
+                  placeType: 'attraction'
+                });
+              }
+            });
+          }
+          
+          // Add hotels with coordinates
+          if (dayData.places) {
+            dayData.places.forEach(place => {
+              if (place.coordinates) {
+                allPlaces.push({
+                  ...place,
+                  location: place.coordinates,
+                  dayNumber: dayNumber,
+                  placeType: 'hotel'
+                });
+              }
+            });
+          }
+          
+          // Add restaurants with coordinates
+          if (dayData.food) {
+            dayData.food.forEach(restaurant => {
+              if (restaurant.coordinates) {
+                allPlaces.push({
+                  ...restaurant,
+                  location: restaurant.coordinates,
+                  dayNumber: dayNumber,
+                  placeType: 'restaurant'
+                });
+              }
+            });
+          }
+        });
+      }
+      
+      setPlaces(allPlaces);
+      
+      // If there are places with coordinates, set the map center to the first one
+      if (allPlaces.length > 0 && allPlaces[0].location) {
+        setMapCenter({
+          lat: allPlaces[0].location.lat,
+          lng: allPlaces[0].location.lng
+        });
+      }
       
       // Initialize expanded days - expand first few days by default
       const totalDays = tripData.totalDays || 5;
@@ -767,204 +829,18 @@ const ViewTripPage = () => {
   };
 
   // Google Maps API loading
-  const { isLoaded, loadError } = useJsApiLoader({
+  const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'marker'], // Add marker library for AdvancedMarkerElement
-    preventGoogleFontsLoading: true // Prevent font loading issues
+    libraries: ['places', 'marker'],
+    version: 'weekly'
   });
 
-  // Enhanced debugging
-  console.log('Google Maps API isLoaded:', isLoaded);
-  console.log('Google Maps API loadError:', loadError);
-  console.log('Google Maps API Key:', process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
-  console.log('Map Center:', mapCenter);
-  console.log('Places:', places);
-  console.log('Places with valid coordinates:', places.filter(p => p.location && p.location.lat && p.location.lng));
-  
-  useEffect(() => {
-    if (isLoaded && places.length > 0) {
-      console.log('Map is loaded and places are ready:', places.length, 'places');
-      places.forEach((place, index) => {
-        console.log(`Place ${index}:`, {
-          name: place.name,
-          hasLocation: !!place.location,
-          lat: place.location?.lat,
-          lng: place.location?.lng,
-          placeType: place.placeType
-        });
-      });
-    }
-  }, [isLoaded, places]);
-
-  // Create AdvancedMarkerElement instances when map and places are ready
-  useEffect(() => {
-    if (isLoaded && mapInstance && places.length > 0 && window.google) {
-      console.log('Creating markers for', places.length, 'places');
-      
-      // Clear existing markers
-      advancedMarkers.forEach(marker => {
-        if (marker.map) {
-          marker.map = null;
-        }
-      });
-
-      // Create new markers - try AdvancedMarkerElement first, fallback to standard Marker
-      const newMarkers = places
-        .filter(place => place.location && place.location.lat && place.location.lng)
-        .map((place, index) => {
-          try {
-            // Try to use AdvancedMarkerElement if available
-            if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
-              const markerElement = new window.google.maps.marker.AdvancedMarkerElement({
-                map: mapInstance,
-                position: {
-                  lat: place.location.lat,
-                  lng: place.location.lng
-                },
-                title: place.name,
-                gmpClickable: true
-              });
-
-              // Add click event listener
-              markerElement.addListener('click', () => {
-                handleMarkerClick(place);
-              });
-
-              console.log('Created AdvancedMarkerElement for:', place.name);
-              return markerElement;
-            } else {
-              // Fallback to standard Marker
-              const marker = new window.google.maps.Marker({
-                map: mapInstance,
-                position: {
-                  lat: place.location.lat,
-                  lng: place.location.lng
-                },
-                title: place.name,
-                icon: getMarkerIcon(place.placeType)
-              });
-
-              // Add click event listener
-              marker.addListener('click', () => {
-                handleMarkerClick(place);
-              });
-
-              console.log('Created standard Marker for:', place.name);
-              return marker;
-            }
-          } catch (error) {
-            console.error('Error creating marker for', place.name, ':', error);
-            return null;
-          }
-        })
-        .filter(marker => marker !== null);
-
-      setAdvancedMarkers(newMarkers);
-      console.log('Created', newMarkers.length, 'marker instances');
-    }
-  }, [isLoaded, mapInstance, places]);
-
-  // Cleanup markers on unmount
-  useEffect(() => {
-    return () => {
-      advancedMarkers.forEach(marker => {
-        if (marker.map) {
-          marker.map = null;
-        }
-      });
-    };
-  }, [advancedMarkers]);
-
-  // Extract places from trip itinerary for map display
-  useEffect(() => {
-    if (trip && trip.itinerary) {
-      console.log('Extracting places from trip itinerary...');
-      const extractedPlaces = [];
-      
-      // Extract places from each day
-      Object.entries(trip.itinerary).forEach(([dayIndex, dayData]) => {
-        const dayNumber = parseInt(dayIndex) + 1;
-        
-        // Add activities with coordinates
-        if (dayData.activities) {
-          dayData.activities.forEach(activity => {
-            if (activity.coordinates && activity.coordinates.lat && activity.coordinates.lng) {
-              extractedPlaces.push({
-                ...activity,
-                location: activity.coordinates,
-                dayNumber: dayNumber,
-                placeType: 'attraction',
-                type: 'Activity'
-              });
-            }
-          });
-        }
-        
-        // Add hotels/places with coordinates
-        if (dayData.places) {
-          dayData.places.forEach(place => {
-            if (place.coordinates && place.coordinates.lat && place.coordinates.lng) {
-              extractedPlaces.push({
-                ...place,
-                location: place.coordinates,
-                dayNumber: dayNumber,
-                placeType: 'hotel',
-                type: 'Hotel'
-              });
-            }
-          });
-        }
-        
-        // Add restaurants with coordinates
-        if (dayData.food) {
-          dayData.food.forEach(restaurant => {
-            if (restaurant.coordinates && restaurant.coordinates.lat && restaurant.coordinates.lng) {
-              extractedPlaces.push({
-                ...restaurant,
-                location: restaurant.coordinates,
-                dayNumber: dayNumber,
-                placeType: 'restaurant',
-                type: 'Restaurant'
-              });
-            }
-          });
-        }
-      });
-      
-      console.log('Extracted', extractedPlaces.length, 'places with coordinates:', extractedPlaces);
-      setPlaces(extractedPlaces);
-      
-      // Set map center to first place if available
-      if (extractedPlaces.length > 0 && extractedPlaces[0].location) {
-        setMapCenter({
-          lat: extractedPlaces[0].location.lat,
-          lng: extractedPlaces[0].location.lng
-        });
-      }
-    }
-  }, [trip]);
-
-  // Handle window resize to ensure map fits properly
-  useEffect(() => {
-    const handleResize = () => {
-      if (mapInstance && window.google && window.google.maps) {
-        setTimeout(() => {
-          window.google.maps.event.trigger(mapInstance, 'resize');
-          mapInstance.setCenter(mapCenter);
-        }, 100);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [mapInstance, mapCenter]);
-
-  // Google Maps styles and settings - improved for full container fit
+  // Google Maps styles and settings
   const mapContainerStyle = {
     width: '100%',
-    height: '100%',
-    minHeight: '400px'
+    height: '100%', // Changed from 400px to 100% to fill parent
+    minHeight: '400px', // Ensures minimum height for usability
   };
   
   // Get map icon based on place type
@@ -985,9 +861,9 @@ const ViewTripPage = () => {
   const handleMarkerClick = (place) => {
     setSelectedMarker(place);
     
-    // Center the map on the selected place
-    if (place.location) {
-      setMapCenter({
+    // Smoothly pan to the selected place
+    if (place.location && mapInstance) {
+      mapInstance.panTo({
         lat: place.location.lat,
         lng: place.location.lng
       });
@@ -997,6 +873,11 @@ const ViewTripPage = () => {
   // Close info window
   const handleInfoWindowClose = () => {
     setSelectedMarker(null);
+  };
+
+  // Handle map load
+  const handleMapLoad = (map) => {
+    setMapInstance(map);
   };
 
   if (loading) {
@@ -1010,11 +891,11 @@ const ViewTripPage = () => {
     );
   }
 
-  // Only show error in production or when not using mock data
-  const shouldShowError = process.env.REACT_APP_ENVIRONMENT !== 'development' && 
-                          process.env.REACT_APP_USE_MOCK_DATA !== 'true';
+  // Show error when API fails (unless specifically suppressed in development)
+  const shouldShowError = apiError && !(process.env.REACT_APP_ENVIRONMENT === 'development' && 
+                          process.env.REACT_APP_USE_MOCK_DATA === 'true');
   
-  if (apiError && shouldShowError) {
+  if (shouldShowError) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -1093,13 +974,23 @@ const ViewTripPage = () => {
       {/* Main Content: Itinerary + Map (sticky/fixed) */}
       <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          {/* Left: Itinerary, scrollable - 50% width on desktop */}
-          <div className="w-full md:w-1/2 min-w-0 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
+          {/* Left: Itinerary, scrollable - narrower on mobile, 50% width on desktop */}
+          <div className="w-11/12 md:w-1/2 min-w-0 flex flex-col mx-auto md:mx-0">
+          {/* Back button - mobile only, above Trip Itinerary */}
+          <div className="block md:hidden mb-4">
             <button
               onClick={handleBack}
               className="text-primary-600 hover:text-primary-700 font-medium"
+            >
+              ← Back to Trips
+            </button>
+          </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
+            {/* Back button - desktop only, to the right of Trip Itinerary */}
+            <button
+              onClick={handleBack}
+              className="hidden md:block text-primary-600 hover:text-primary-700 font-medium"
             >
               ← Back to Trips
             </button>
@@ -1172,14 +1063,21 @@ const ViewTripPage = () => {
                               };
                               return (
                                 <div key={`${item.category}-${itemIndex}`} className={`p-4 rounded-lg border ${getCategoryColor(item.category)}`}>
+                                  {/* Time display - mobile only, at the top */}
+                                  {item.time && (
+                                    <div className="block md:hidden text-sm text-gray-500 mb-3 font-medium">
+                                      {item.time}
+                                    </div>
+                                  )}
                                   <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-3 flex-1">
                                       {getCategoryIcon(item.category)}
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between">
                                           <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
+                                          {/* Time display - desktop only, to the right */}
                                           {item.time && (
-                                            <span className="text-sm text-gray-500 ml-2">{item.time}</span>
+                                            <span className="hidden md:block text-sm text-gray-500 ml-2">{item.time}</span>
                                           )}
                                         </div>
                                         {item.location && (
@@ -1201,21 +1099,15 @@ const ViewTripPage = () => {
                                             )}
                                             {item.rating && (
                                               <span className="flex items-center text-yellow-600">
-                                                ⭐ {item.rating}
+                                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                                {item.rating}
                                               </span>
                                             )}
                                             {item.reviews && (
                                               <span className="text-gray-500">({item.reviews} reviews)</span>
                                             )}
                                           </div>
-                                          <div className="text-right">
-                                            {item.price && (
-                                              <span className="font-semibold text-gray-900">{item.price}</span>
-                                            )}
-                                            {item.priceRange && (
-                                              <span className="font-semibold text-gray-900">{item.priceRange}</span>
-                                            )}
-                                          </div>
+                                          {/* Price and priceRange removed as per request */}
                                         </div>
                                       </div>
                                     </div>
@@ -1241,85 +1133,43 @@ const ViewTripPage = () => {
           {/* Right: Interactive Map showing all places from the itinerary */}
           <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
             <div className="bg-white rounded-xl w-full h-full shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              {loadError ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center text-red-500">
-                    <p className="font-medium">Map loading failed</p>
-                    <p className="text-sm">{loadError.message}</p>
-                  </div>
-                </div>
-              ) : !isLoaded ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                    <p className="font-medium">Loading Map...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col min-h-0">
+              {isLoaded ? (
+                <div className="flex-1 flex flex-col">
                   <div className="p-4 border-b border-gray-100 shrink-0">
                     <h2 className="font-bold text-lg">Trip Map</h2>
                     <p className="text-sm text-gray-500">Explore your trip destinations</p>
                   </div>
-                  <div className="flex-1 bg-gray-100">
-                    {console.log('Rendering GoogleMap with center:', mapCenter, 'places:', places.length)}
+                  <div className="flex-1 min-h-[400px]">
                     <GoogleMap
                       mapContainerStyle={mapContainerStyle}
                       center={mapCenter}
-                      zoom={8}
+                      zoom={12}
+                      onLoad={handleMapLoad}
                       options={{
+                        fullscreenControl: true,
+                        streetViewControl: true,
+                        mapTypeControl: true,
                         zoomControl: true,
-                        streetViewControl: false,
-                        mapTypeControl: false,
-                        fullscreenControl: false,
-                        mapId: 'islandhop-trip-map' // Add map ID for advanced features
                       }}
-                      onLoad={(map) => {
-                        console.log('GoogleMap loaded successfully');
-                        setMapInstance(map);
-                        // Enhanced resize handling
-                        setTimeout(() => {
-                          if (window.google && window.google.maps) {
-                            window.google.maps.event.trigger(map, 'resize');
-                            console.log('Map resize triggered');
-                            // Additional resize after a short delay
-                            setTimeout(() => {
-                              window.google.maps.event.trigger(map, 'resize');
-                              map.setCenter(mapCenter);
-                            }, 500);
-                          }
-                        }, 100);
-                      }}
-                      onError={(error) => console.error('GoogleMap error:', error)}
                     >
-                      {/* Markers are now handled by AdvancedMarkerElement in useEffect */}
-                      
-                      {selectedMarker && (
-                        <InfoWindow
+                      {places.map((place, index) => (
+                        <Marker
+                          key={`${place.name}-${index}`}
                           position={{
-                            lat: selectedMarker.location.lat,
-                            lng: selectedMarker.location.lng
+                            lat: place.location.lat,
+                            lng: place.location.lng
                           }}
-                          onCloseClick={handleInfoWindowClose}
-                        >
-                          <div className="p-2">
-                            <h3 className="font-bold">{selectedMarker.name}</h3>
-                            <p className="text-sm">{selectedMarker.type}</p>
-                            {selectedMarker.rating && (
-                              <div className="flex items-center mt-1">
-                                <span className="text-yellow-500">★</span>
-                                <span className="ml-1 text-sm">{selectedMarker.rating}</span>
-                              </div>
-                            )}
-                            <div className="mt-2 text-sm">
-                              <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
-                            </div>
-                          </div>
-                        </InfoWindow>
-                      )}
+                          onClick={() => handleMarkerClick(place)}
+                          icon={getMarkerIcon(place.placeType)}
+                          title={place.name}
+                        />
+                      ))}
+                      <MapInfoWindow 
+                        selectedMarker={selectedMarker}
+                        onClose={handleInfoWindowClose}
+                      />
                     </GoogleMap>
                   </div>
-                  
                   <div className="p-3 border-t border-gray-100 shrink-0">
                     <div className="flex gap-4 flex-wrap">
                       <div className="flex items-center">
@@ -1337,16 +1187,23 @@ const ViewTripPage = () => {
                     </div>
                   </div>
                 </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="font-medium">Loading Map...</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
         {/* Trip Summary (below itinerary, left column only) */}
-        <div className="flex gap-8 w-full">
-          {/* Left: Empty (was Trip Summary Card) */}
-          <div className="w-1/2 min-w-0 flex flex-col"></div>
-          {/* Right: Actions Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
+        <div className="flex flex-col md:flex-row gap-8 w-full">
+          {/* Left: Empty on desktop, hidden on mobile */}
+          <div className="hidden md:block md:w-1/2 min-w-0 flex-col"></div>
+          {/* Right: Actions Card - full width on mobile, half width on desktop */}
+          <div className="w-full md:w-1/2 min-w-0 flex flex-col">
             <div className="w-full mt-10">
               <div
                 className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200 flex flex-col justify-center"

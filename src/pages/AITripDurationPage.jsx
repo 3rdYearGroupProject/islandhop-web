@@ -274,8 +274,8 @@ const TripDurationPage = () => {
             <div className="flex flex-row gap-4 justify-end mt-6">
               <button
                 onClick={handleBack}
-                className="px-6 py-2 rounded-full border border-primary-600 text-primary-600 bg-white hover:bg-primary-50 hover:border-primary-700 transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 text-base"
-                style={{ minWidth: '120px' }}
+                className="px-4 md:px-6 py-2 rounded-full border border-primary-600 text-primary-600 bg-white hover:bg-primary-50 hover:border-primary-700 transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 text-sm md:text-base"
+                style={{ minWidth: '100px' }}
               >
                 Back
               </button>

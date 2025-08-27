@@ -390,9 +390,7 @@ const OngoingTripPage = () => {
   const [mapCenter, setMapCenter] = useState(mockPlaces[0]?.location || { lat: 7.8731, lng: 80.7718 });
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'marker'], // Use consistent libraries
-    preventGoogleFontsLoading: true
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
   });
 
   // Animation for itinerary collapse/expand

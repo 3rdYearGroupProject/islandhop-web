@@ -289,7 +289,7 @@ const TripBookingPage = () => {
     return calculateTotal() * 0.5;
   };
 
-  const handlePaymentSuccess = (orderId) => {
+  const handlePaymentSuccess = async (orderId) => {
     setPaymentOrderId(orderId);
     setPaymentCompleted(true);
     setShowPayment(false);
@@ -327,14 +327,40 @@ const TripBookingPage = () => {
       setGuide: needGuide ? 1 : 0,
       setDriver: needDriver ? 1 : 0,
       paymentOrderId,
+      advancePaymentAmount: paymentCompleted ? calculateAdvancePayment() : 0,
+      totalAmount: calculateTotal(),
+      paymentStatus: paymentCompleted ? 'advance_paid' : 'pending'
     };
 
     try {
       const response = await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
       console.log('Trip initiated successfully:', response);
-      navigate('/trips', { state: { bookingSuccess: true } });
+      
+      // Show success message with payment details
+      const successMessage = paymentCompleted 
+        ? `Trip booked successfully! Advance payment of LKR ${calculateAdvancePayment().toLocaleString()} confirmed.`
+        : 'Trip booked successfully!';
+        
+      navigate('/trips', { 
+        state: { 
+          bookingSuccess: true, 
+          message: successMessage,
+          paymentDetails: paymentCompleted ? {
+            orderId: paymentOrderId,
+            amount: calculateAdvancePayment()
+          } : null
+        } 
+      });
     } catch (err) {
       console.error('Error initiating trip:', err);
+      
+      // Show specific error message
+      let errorMessage = 'Failed to complete booking. Please try again.';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -541,9 +567,11 @@ const TripBookingPage = () => {
                     <span className="font-bold text-primary-600 text-lg">LKR {calculateAdvancePayment().toLocaleString()}.00</span>
                   </div>
                   {paymentCompleted && (
-                    <div className="flex justify-between mt-2 text-green-600">
+                    <div className="flex justify-between mt-2">
                       <span className="font-bold">Payment Status</span>
-                      <span className="font-bold">✓ Paid</span>
+                      <div className="flex items-center">
+                        <span className="font-bold text-green-600">✓ Paid</span>
+                      </div>
                     </div>
                   )}
                   <div className="text-xs text-gray-500 mt-2">
@@ -562,6 +590,7 @@ const TripBookingPage = () => {
                     onPaymentError={handlePaymentError}
                     submitting={submitting}
                     setSubmitting={setSubmitting}
+                    tripId={tripId} // Pass the tripId prop
                   />
                 </div>
               )}
@@ -625,7 +654,7 @@ const TripBookingPage = () => {
           </div>
 
           {/* Right Side - Map */}
-          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-160px)]">
+          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
             {isLoaded ? (
               <div className="h-full flex flex-col">
                 <div className="p-4 border-b border-gray-100">

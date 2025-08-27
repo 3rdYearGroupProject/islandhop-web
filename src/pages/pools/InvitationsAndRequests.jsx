@@ -30,14 +30,30 @@ const InvitationsAndRequests = () => {
 
   const fetchCounts = async () => {
     try {
+      console.log('🔄 Starting fetchCounts for user:', user.uid);
       setLoading(true);
       
       // Fetch invitations count
+      console.log('📨 Calling PoolsApi.getUserInvitations with userId:', user.uid);
       const invitationsResponse = await PoolsApi.getUserInvitations(user.uid);
+      console.log('📨 Invitations response received:', invitationsResponse);
+      console.log('📨 Raw invitations data:', invitationsResponse.invitations);
+      console.log('📨 Invitations count:', invitationsResponse.invitations?.length || 0);
+      
       setInvitationsCount(invitationsResponse.invitations?.length || 0);
+      console.log('✅ fetchCounts completed successfully');
       
     } catch (error) {
-      console.error('Error fetching counts:', error);
+      console.error('❌ Error fetching counts:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        userId: user.uid
+      });
+      
+      // Set counts to 0 on error to prevent UI issues
+      setInvitationsCount(0);
+      setJoinRequestsCount(0);
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { getProfileCompletionStatus } from '../utils/profileStorage';
 import LoginRequiredPopup from '../components/LoginRequiredPopup';
 import CompleteProfilePopup from '../components/CompleteProfilePopup';
+import CustomDropdown from '../components/CustomDropdown';
 import { 
   Plus, 
   Calendar, 
@@ -44,6 +45,21 @@ const MyTripsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  
+  // Dropdown options
+  const filterOptions = [
+    { value: 'all', label: 'All Trips' },
+    { value: 'active', label: 'Active' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'draft', label: 'Drafts' }
+  ];
+  
+  const sortOptions = [
+    { value: 'recent', label: 'Recent' },
+    { value: 'name', label: 'Name' },
+    { value: 'date', label: 'Date' }
+  ];
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingTrips, setIsLoadingTrips] = useState(false);
   const [apiError, setApiError] = useState(null);
@@ -605,6 +621,31 @@ const MyTripsPage = () => {
     }
   }, [location.state, navigate]);
 
+  // Handle body scroll when mobile filters popup is open
+  useEffect(() => {
+    if (isMobileFiltersOpen) {
+      // Prevent scrolling on mobile when popup is open
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    } else {
+      // Restore scrolling
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+    
+    // Cleanup function to restore scroll when component unmounts
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, [isMobileFiltersOpen]);
+
   // List all trips for authenticated user
   const getUserTrips = async () => {
     const response = await fetch('/api/trip/my-trips', {
@@ -733,9 +774,9 @@ const MyTripsPage = () => {
       <Navbar />
 
       {/* Enhanced Hero Video Section */}
-      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
+      <section className="relative w-full h-[75vh] md:h-[45vh] overflow-hidden">
         <video 
-          className="absolute top-0 left-0 w-full h-full object-cover scale-105"
+          className="absolute top-0 left-0 w-full h-full object-cover scale-105 z-0"
           autoPlay 
           muted 
           loop
@@ -744,30 +785,32 @@ const MyTripsPage = () => {
           <source src={myTripsVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
-        
+        <div className="absolute inset-0 bg-black/30 z-10" />
         {/* Hero Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <div className="max-w-4xl mx-auto mt-16 md:mt-24">
-            <h1 className="text-4xl md:text-6xl font-normal mb-6 leading-tight text-white">
+        <div className="relative z-20 flex flex-col items-center justify-center h-full text-center text-white px-4">
+          <div className="max-w-4xl mx-auto mt-24 sm:mt-16 md:mt-20 lg:mt-24">
+            <h1 className="text-4xl md:text-6xl font-normal mb-8 leading-tight text-white">
               Your Travel Dreams Come to Life
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto text-blue-100">
               Plan, organize, and experience unforgettable journeys with our intelligent trip planner
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-row gap-3 sm:gap-4 justify-center mb-8">
               <button
                 onClick={handlePlanNewAdventure}
-                className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl flex-1 sm:flex-none"
               >
-                <Plus className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
-                Plan New Adventure
+                <Plus className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-90 transition-transform duration-300" />
+                <span className="hidden sm:inline">Plan New Adventure</span>
+                <span className="sm:hidden">Plan Adventure</span>
               </button>
               <button 
                 onClick={handleAITripSuggestions}
-                className="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 border-2 border-white text-white rounded-full font-bold text-sm sm:text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm flex-1 sm:flex-none"
               >
-                <Sparkles className="mr-3 h-6 w-6" />
-                AI Trip Suggestions
+                <Sparkles className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6" />
+                <span className="hidden sm:inline">AI Trip Suggestions</span>
+                <span className="sm:hidden">AI Suggestions</span>
               </button>
             </div>
           </div>
@@ -775,14 +818,14 @@ const MyTripsPage = () => {
       </section>
 
       {/* Enhanced Main Content */}
-      <main className="relative z-10 -mt-10 pb-20">
+      <main className="relative z-10 -mt-8 sm:-mt-2 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Enhanced Control Panel */}
-          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-5 mb-20 w-fit mx-auto relative z-20">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end space-y-4 lg:space-y-0">
-              <div className="flex flex-col sm:flex-row gap-4 w-full justify-end">
+          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-4 sm:p-5 mb-6 sm:mb-20 w-full sm:w-fit mx-auto relative z-20">
+            <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-end">
+              <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:gap-4 w-full sm:justify-end">
                 {/* Search */}
-                <div className="relative flex-[3_3_0%] min-w-[500px] md:min-w-[600px] lg:min-w-[700px]">
+                <div className="relative w-full sm:flex-[3_3_0%] sm:min-w-[400px] md:min-w-[500px] lg:min-w-[600px] xl:min-w-[700px]">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
                   <form onSubmit={e => { e.preventDefault(); }} className="w-full">
                     <div className="relative w-full">
@@ -791,43 +834,43 @@ const MyTripsPage = () => {
                         placeholder="Search trips..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-12 pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base bg-white"
+                        className="pl-12 pr-16 sm:pr-28 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full text-base bg-white"
                       />
+                      {/* Mobile Filter Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsMobileFiltersOpen(true)}
+                        className="sm:hidden absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        <Filter className="h-5 w-5" />
+                      </button>
+                      {/* Desktop Search Button */}
                       <button
                         type="submit"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-colors text-sm"
+                        className="hidden sm:block absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-colors text-sm"
                       >
                         Search
                       </button>
                     </div>
                   </form>
                 </div>
-                {/* Filter */}
-                <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
-                  <select
+                
+                {/* Filter and Sort - Hidden on mobile, shown on larger screens */}
+                <div className="hidden sm:flex gap-4">
+                  {/* Filter */}
+                  <CustomDropdown
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none pr-10"
-                  >
-                    <option value="all">All Trips</option>
-                    <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                    <option value="draft">Drafts</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                </div>
-                {/* Sort */}
-                <div className="relative flex-[0_1_160px] min-w-[120px] max-w-[160px]">
-                  <select
+                    onChange={setFilterStatus}
+                    options={filterOptions}
+                    className="flex-1 sm:flex-[0_1_160px] sm:min-w-[120px] sm:max-w-[160px]"
+                  />
+                  {/* Sort */}
+                  <CustomDropdown
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white appearance-none pr-10"
-                  >
-                    <option value="recent">Recent</option>
-                    <option value="name">Name</option>
-                    <option value="date">Date</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    onChange={setSortBy}
+                    options={sortOptions}
+                    className="flex-1 sm:flex-[0_1_160px] sm:min-w-[120px] sm:max-w-[160px]"
+                  />
                 </div>
               </div>
             </div>
@@ -879,48 +922,48 @@ const MyTripsPage = () => {
             return (
               <>
                 {ongoingTrip && (
-                  <div className="flex justify-center mb-16">
+                  <div className="flex justify-center mb-12 sm:mb-16">
                     <div
-                      className="relative bg-blue-50 rounded-3xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-4xl overflow-hidden cursor-pointer hover:shadow-lg transition"
+                      className="relative bg-blue-50 rounded-2xl sm:rounded-3xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-sm sm:max-w-4xl overflow-hidden cursor-pointer hover:shadow-lg transition"
                       onClick={() => navigate('/ongoing-trip')}
                       role="button"
                       tabIndex={0}
                       onKeyPress={e => { if (e.key === 'Enter' || e.key === ' ') navigate('/ongoing-trip'); }}
                     >
                       {/* Image */}
-                      <div className="md:w-2/5 w-full min-h-[260px] relative">
+                      <div className="md:w-2/5 w-full min-h-[180px] sm:min-h-[260px] relative">
                         <img
                           src={ongoingTrip.image}
                           alt={ongoingTrip.destination}
                           className="absolute inset-0 w-full h-full object-cover object-center md:rounded-none"
-                          style={{ borderTopLeftRadius: '1.5rem', borderBottomLeftRadius: '1.5rem' }}
+                          style={{ borderTopLeftRadius: '1rem', borderBottomLeftRadius: '1rem' }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                        <span className="absolute top-4 left-4 px-3 py-1 bg-blue-500 text-white text-xs rounded-full font-semibold uppercase tracking-wide">Ongoing Trip</span>
+                        <span className="absolute top-3 left-3 sm:top-4 sm:left-4 px-2 py-1 sm:px-3 sm:py-1 bg-blue-500 text-white text-xs rounded-full font-semibold uppercase tracking-wide">Ongoing Trip</span>
                       </div>
                       {/* Details */}
-                      <div className="flex-1 flex flex-col justify-center px-8 py-8">
-                        <div className="flex items-center gap-3 mb-2">
+                      <div className="flex-1 flex flex-col justify-center px-4 py-4 sm:px-8 sm:py-8">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
                           <span className="text-gray-500 text-xs">{ongoingTrip.dates}</span>
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-blue-900 mb-2">{ongoingTrip.name}</h2>
-                        <div className="flex items-center text-gray-700 mb-2">
-                          <MapPin className="h-5 w-5 mr-2 text-blue-500" />
-                          <span className="text-base font-medium">{ongoingTrip.destination}</span>
+                        <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-900 mb-1 sm:mb-2">{ongoingTrip.name}</h2>
+                        <div className="flex items-center text-gray-700 mb-1 sm:mb-2">
+                          <MapPin className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-500" />
+                          <span className="text-sm sm:text-base font-medium">{ongoingTrip.destination}</span>
                         </div>
-                        <div className="flex items-center gap-4 mb-4">
+                        <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
                           <div className="flex items-center text-gray-600">
-                            <Users className="h-4 w-4 mr-1 text-blue-400" />
-                            <span className="text-sm">{ongoingTrip.travelers} traveler{ongoingTrip.travelers !== 1 ? 's' : ''}</span>
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-blue-400" />
+                            <span className="text-xs sm:text-sm">{ongoingTrip.travelers} traveler{ongoingTrip.travelers !== 1 ? 's' : ''}</span>
                           </div>
                           {ongoingTrip.daysLeft && (
-                            <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-semibold">{ongoingTrip.daysLeft} days left</span>
+                            <span className="px-2 py-1 sm:px-3 sm:py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-semibold">{ongoingTrip.daysLeft} days left</span>
                           )}
                         </div>
-                        <div className="w-full bg-blue-200/40 rounded-full h-3 mb-2">
-                          <div className="bg-blue-500 h-3 rounded-full transition-all duration-500" style={{ width: `${ongoingTrip.progress}%` }}></div>
+                        <div className="w-full bg-blue-200/40 rounded-full h-2 sm:h-3 mb-1 sm:mb-2">
+                          <div className="bg-blue-500 h-2 sm:h-3 rounded-full transition-all duration-500" style={{ width: `${ongoingTrip.progress}%` }}></div>
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500 mb-4">
+                        <div className="flex justify-between text-xs text-gray-500 mb-2 sm:mb-4">
                           <span>Progress</span>
                           <span>{ongoingTrip.progress}%</span>
                         </div>
@@ -936,21 +979,21 @@ const MyTripsPage = () => {
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-6 mt-4">
+                        <div className="flex items-center gap-3 sm:gap-6 mt-2 sm:mt-4">
                           {ongoingTrip.rating && (
                             <div className="flex items-center">
-                              <Star className="h-5 w-5 text-yellow-400 fill-current mr-1" />
-                              <span className="font-semibold text-lg text-gray-700">{ongoingTrip.rating}</span>
+                              <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current mr-1" />
+                              <span className="font-semibold text-sm sm:text-lg text-gray-700">{ongoingTrip.rating}</span>
                             </div>
                           )}
                           {ongoingTrip.memories > 0 && (
                             <div className="flex items-center">
-                              <Camera className="h-5 w-5 mr-1 text-blue-400" />
-                              <span className="font-semibold text-lg text-gray-700">{ongoingTrip.memories} memories</span>
+                              <Camera className="h-4 w-4 sm:h-5 sm:w-5 mr-1 text-blue-400" />
+                              <span className="font-semibold text-sm sm:text-lg text-gray-700">{ongoingTrip.memories} memories</span>
                             </div>
                           )}
                           <div className="flex items-center">
-                            <span className="font-semibold text-lg text-gray-700">Budget: ${ongoingTrip.budget}</span>
+                            <span className="font-semibold text-sm sm:text-lg text-gray-700">Budget: ${ongoingTrip.budget}</span>
                           </div>
                         </div>
                       </div>
@@ -966,9 +1009,9 @@ const MyTripsPage = () => {
                       {upcoming.length > 0 && (
                         <div className="mb-12">
                           <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Upcoming Trips</h2>
-                          <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
+                          <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                             {upcoming.map((trip) => (
-                              <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
+                              <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
                                 <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                               </div>
                             ))}
@@ -978,9 +1021,9 @@ const MyTripsPage = () => {
                       {history.length > 0 && (
                         <div className="mb-12">
                           <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-6">Trip History</h2>
-                          <div className="flex gap-6 overflow-x-auto pb-2 hide-scrollbar">
+                          <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                             {history.map((trip) => (
-                              <div key={trip.id} className="min-w-[320px] max-w-xs flex-shrink-0">
+                              <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
                                 <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                               </div>
                             ))}
@@ -1044,6 +1087,94 @@ const MyTripsPage = () => {
         onClose={() => setShowCompleteProfilePopup(false)}
         actionName={currentActionName}
       />
+
+      {/* Mobile Filter Popup */}
+      {isMobileFiltersOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 sm:hidden"
+          style={{ zIndex: 99999 }}
+          onClick={() => setIsMobileFiltersOpen(false)}
+        >
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 shadow-2xl transform transition-transform duration-300 ease-out"
+            style={{ zIndex: 100000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Filter & Sort</h3>
+              <button
+                onClick={() => setIsMobileFiltersOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <svg className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Filter Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Filter by Status</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {filterOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setFilterStatus(option.value)}
+                      className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200 ${
+                        filterStatus === option.value
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Sort by</label>
+                <div className="space-y-2">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setSortBy(option.value)}
+                      className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200 text-left ${
+                        sortBy === option.value
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setSortBy('recent');
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

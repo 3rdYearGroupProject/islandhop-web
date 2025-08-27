@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Star } from 'lucide-react';
 
 console.log('AddPlacesToStayModal loaded');
 
@@ -25,6 +25,35 @@ const AddPlacesToStayModal = ({
     days,
     currentDay
   });
+
+  // Effect to prevent body scroll when modal is open
+  useEffect(() => {
+    if (show) {
+      // Prevent body scroll - more robust for mobile
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      // Restore body scroll
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
+      }
+    }
+
+    // Cleanup function to restore scroll when component unmounts
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [show]);
 
   // Effect to fetch suggestions when modal opens
   useEffect(() => {
@@ -131,9 +160,9 @@ const AddPlacesToStayModal = ({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                 {suggestions.map((place) => (
-                  <div key={place.id} className={`border rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group ${place.isRecommended ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}`}>
+                  <div key={place.id} className={`border rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer group flex flex-col ${place.isRecommended ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}`}>
                     {place.isRecommended && (
                       <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 text-center">
                         ⭐ RECOMMENDED
@@ -153,25 +182,25 @@ const AddPlacesToStayModal = ({
                           {place.distanceKm.toFixed(1)} km away
                         </div>
                       )}
+                      <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white rounded-lg px-3 py-2">
+                        <p className="text-xs font-medium">from</p>
+                        <p className="text-sm font-bold">{place.price || place.priceRange || 'Contact'}</p>
+                      </div>
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 flex flex-col flex-grow">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="font-bold text-lg text-gray-900">{place.name || place.title}</h4>
-                          <p className="text-sm text-gray-500">{place.location || place.address}</p>
+                          <p className="text-sm text-gray-500 hidden md:block">{place.location || place.address}</p>
                           {place.isOpenNow !== undefined && (
                             <p className={`text-xs font-medium mt-1 ${place.isOpenNow ? 'text-green-600' : 'text-red-600'}`}>
                               {place.isOpenNow ? '🟢 Open Now' : '🔴 Closed'}
                             </p>
                           )}
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">from</p>
-                          <p className="text-lg font-bold text-primary-600">{place.price || place.priceRange || 'Contact'}</p>
-                        </div>
                       </div>
                       <p className="text-sm text-gray-600 mb-3 line-clamp-2">{place.description}</p>
-                      <div className="mb-4">
+                      <div className="mb-4 flex-grow">
                         <p className="text-xs font-medium text-gray-500 mb-2">AMENITIES</p>
                         <div className="flex flex-wrap gap-1">
                           {place.priceRange && (
@@ -180,18 +209,17 @@ const AddPlacesToStayModal = ({
                             </span>
                           )}
                           {place.rating && (
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                              ⭐ {place.rating}
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              {place.rating}
                             </span>
                           )}
-                          {place.reviews && (
-                            <span className="text-xs text-gray-500">({place.reviews} reviews)</span>
-                          )}
+                          <span className="text-xs text-gray-500">({place.reviews || 0} reviews)</span>
                         </div>
                       </div>
                       <button
                         onClick={() => addItemToItinerary(place, [currentDay])}
-                        className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                        className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium mt-auto"
                       >
                         Add to Day {currentDay + 1}
                       </button>

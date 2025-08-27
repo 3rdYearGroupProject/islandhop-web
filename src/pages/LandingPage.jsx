@@ -241,8 +241,8 @@ const PlaceModal = ({ place, isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[10000]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[61]">
         <div className="relative">
           {/* Main image */}
           <img 
@@ -402,19 +402,19 @@ const inspirationDestinations = [
 
 // Why Choose IslandHop section (imported from AboutPage)
 const WhyChooseIslandHop = () => (
-  <section className="w-full py-12 sm:py-16">
+  <section className="w-full py-8 sm:py-12 md:py-16">
     <div className="content-container">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white text-center mb-8 sm:mb-12 px-4">
+      <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-gray-900 dark:text-white text-center mb-6 sm:mb-8 md:mb-12 px-4">
         Why Choose IslandHop?
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 px-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-4">
         <Card hover className="text-center">
           <CardBody>
-            <ShieldCheckIcon className="h-12 w-12 sm:h-16 sm:w-16 text-success-600 mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+            <ShieldCheckIcon className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 text-success-600 mx-auto mb-3 sm:mb-4 md:mb-6" />
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
               Verified Professionals
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               All our drivers and guides undergo strict verification processes including background checks, 
               license verification, and continuous performance monitoring.
             </p>
@@ -422,11 +422,11 @@ const WhyChooseIslandHop = () => (
         </Card>
         <Card hover className="text-center">
           <CardBody>
-            <UserGroupIcon className="h-12 w-12 sm:h-16 sm:w-16 text-primary-600 mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+            <UserGroupIcon className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 text-primary-600 mx-auto mb-3 sm:mb-4 md:mb-6" />
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
               Travel Pools
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               Join travel pools to meet like-minded travelers, share costs, and create unforgettable 
               group experiences while exploring Sri Lanka together.
             </p>
@@ -434,11 +434,11 @@ const WhyChooseIslandHop = () => (
         </Card>
         <Card hover className="text-center">
           <CardBody>
-            <HeartIcon className="h-12 w-12 sm:h-16 sm:w-16 text-danger-600 mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+            <HeartIcon className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 text-danger-600 mx-auto mb-3 sm:mb-4 md:mb-6" />
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
               Authentic Experiences
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               Our local professionals provide insider knowledge and authentic cultural experiences 
               that you won't find in typical tourist guides.
             </p>
@@ -526,7 +526,7 @@ const LandingPage = () => {
           {/* Main Heading */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-light mb-4 sm:mb-6 tracking-tight leading-tight">
             Your Sri Lankan<br />
-            <span className="font-semibold text-primary-400">
+            <span className="font-semibold text-primary-600">
               Adventure
             </span> Awaits
           </h1>
@@ -643,7 +643,7 @@ const LandingPage = () => {
       <section className="w-full py-8 sm:py-12">
         <div className="content-container">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 px-4">Discover Sri Lanka's Best</h2>
-          <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide px-4">
+          <div className="flex gap-2 sm:gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide px-4">
             {inspirationDestinations.map((inspiration, i) => {
               // Map card name to filter value
               const nameToFilter = {
@@ -657,7 +657,7 @@ const LandingPage = () => {
               return (
                 <div
                   key={i}
-                  className="flex-shrink-0 w-64 md:w-72 cursor-pointer"
+                  className="flex-shrink-0 w-48 sm:w-56 md:w-64 lg:w-72 cursor-pointer"
                   onClick={filter ? () => navigate(`/discover?filter=${filter}`) : undefined}
                   tabIndex={filter ? 0 : undefined}
                   role={filter ? 'button' : undefined}
@@ -671,7 +671,7 @@ const LandingPage = () => {
                   <DestinationCard
                     destination={inspiration}
                     imageUrl={inspiration.image}
-                    className="h-48 md:h-56"
+                    className="h-40 sm:h-44 md:h-48 lg:h-56"
                   />
                 </div>
               );
@@ -709,8 +709,8 @@ const LandingPage = () => {
       {/* Themed collections */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Browse themed collections</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 px-4">Browse themed collections</h2>
+          <div className="flex gap-2 sm:gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide px-4">
             {[
               {
                 name: 'Tea Plantation Tours',
@@ -773,12 +773,12 @@ const LandingPage = () => {
                 bestTime: 'Year-round, especially hot months'
               }
             ].map((collection, i) => (
-              <div key={i} className="flex-shrink-0 w-64 md:w-72">
+              <div key={i} className="flex-shrink-0 w-48 sm:w-56 md:w-64 lg:w-72">
                 <DestinationCard
                   destination={collection}
                   imageUrl={collection.image}
                   onClick={() => openModal(collection)}
-                  className="h-48 md:h-56"
+                  className="h-40 sm:h-44 md:h-48 lg:h-56"
                 />
               </div>
             ))}

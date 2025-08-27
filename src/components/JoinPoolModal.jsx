@@ -6,11 +6,12 @@ import { useAuth } from '../hooks/useAuth';
 const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
   const [message, setMessage] = useState('');
   const [userProfile, setUserProfile] = useState({
-    age: '',
-    interests: [],
+    preferredActivities: [],
+    preferredTerrains: [],
     experience: 'beginner'
   });
-  const [newInterest, setNewInterest] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [newTerrain, setNewTerrain] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -20,27 +21,49 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
     if (!open) {
       // Reset form when modal closes
       setMessage('');
-      setUserProfile({ age: '', interests: [], experience: 'beginner' });
-      setNewInterest('');
+      setUserProfile({ 
+        preferredActivities: [],
+        preferredTerrains: [],
+        experience: 'beginner' 
+      });
+      setNewActivity('');
+      setNewTerrain('');
       setError(null);
       setSuccess(false);
     }
   }, [open]);
 
-  const handleAddInterest = () => {
-    if (newInterest.trim() && !userProfile.interests.includes(newInterest.trim())) {
+  const handleAddActivity = () => {
+    if (newActivity.trim() && !userProfile.preferredActivities.includes(newActivity.trim())) {
       setUserProfile(prev => ({
         ...prev,
-        interests: [...prev.interests, newInterest.trim()]
+        preferredActivities: [...prev.preferredActivities, newActivity.trim()]
       }));
-      setNewInterest('');
+      setNewActivity('');
     }
   };
 
-  const handleRemoveInterest = (interest) => {
+  const handleRemoveActivity = (activity) => {
     setUserProfile(prev => ({
       ...prev,
-      interests: prev.interests.filter(i => i !== interest)
+      preferredActivities: prev.preferredActivities.filter(a => a !== activity)
+    }));
+  };
+
+  const handleAddTerrain = () => {
+    if (newTerrain.trim() && !userProfile.preferredTerrains.includes(newTerrain.trim())) {
+      setUserProfile(prev => ({
+        ...prev,
+        preferredTerrains: [...prev.preferredTerrains, newTerrain.trim()]
+      }));
+      setNewTerrain('');
+    }
+  };
+
+  const handleRemoveTerrain = (terrain) => {
+    setUserProfile(prev => ({
+      ...prev,
+      preferredTerrains: prev.preferredTerrains.filter(t => t !== terrain)
     }));
   };
 
@@ -65,13 +88,20 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
         userName: user.displayName || user.email,
         message: message.trim(),
         userProfile: {
-          age: userProfile.age ? parseInt(userProfile.age) : null,
-          interests: userProfile.interests,
-          experience: userProfile.experience
+          nationality: user.nationality || null,
+          preferredActivities: userProfile.preferredActivities,
+          preferredTerrains: userProfile.preferredTerrains,
+          travelExperience: userProfile.experience
         }
       };
 
-      const result = await PoolsApi.joinPool(poolData.id, joinData);
+      // Use the correct groupId from poolData structure
+      const groupId = poolData?.groupInfo?.groupId || poolData?.id;
+      if (!groupId) {
+        throw new Error('Group ID not found in pool data');
+      }
+
+      const result = await PoolsApi.joinPool(groupId, joinData);
       
       setSuccess(true);
       if (onSuccess) {
@@ -93,7 +123,7 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center space-x-3">
@@ -131,13 +161,24 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
               {/* Pool Info */}
               <div className="bg-blue-50 rounded-lg p-4 mb-6">
                 <h4 className="font-semibold text-gray-900 mb-2">
-                  {poolData?.title || poolData?.name || 'Pool Details'}
+                  {poolData?.groupInfo?.groupName || poolData?.name || 'Pool Details'}
                 </h4>
                 <div className="text-sm text-gray-600 space-y-1">
-                  <p><strong>Destination:</strong> {poolData?.destination || 'N/A'}</p>
-                  <p><strong>Duration:</strong> {poolData?.duration || 'N/A'}</p>
-                  <p><strong>Budget:</strong> {poolData?.budget || 'N/A'}</p>
-                  <p><strong>Members:</strong> {poolData?.members?.length || 0}/{poolData?.maxMembers || 'N/A'}</p>
+                  <p><strong>Destinations:</strong> {
+                    poolData?.tripDetails?.dailyPlans?.map(day => day.city).join(', ') || 
+                    poolData?.destination || 
+                    'Sri Lanka'
+                  }</p>
+                  <p><strong>Duration:</strong> {
+                    poolData?.tripDetails?.dailyPlans?.length ? 
+                    `${poolData.tripDetails.dailyPlans.length} days` : 
+                    poolData?.duration || 'N/A'
+                  }</p>
+                  <p><strong>Members:</strong> {
+                    poolData?.groupInfo?.currentMembers || poolData?.members?.length || 0
+                  }/{
+                    poolData?.groupInfo?.maxMembers || poolData?.maxMembers || 'N/A'
+                  }</p>
                 </div>
               </div>
 
@@ -161,25 +202,9 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
 
               {/* User Profile */}
               <div className="space-y-4 mb-6">
-                <h5 className="font-medium text-gray-900">Your Profile (Optional)</h5>
+                <h5 className="font-medium text-gray-900">Your Travel Preferences (Optional)</h5>
                 
-                {/* Age */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age
-                  </label>
-                  <input
-                    type="number"
-                    value={userProfile.age}
-                    onChange={(e) => setUserProfile(prev => ({ ...prev, age: e.target.value }))}
-                    placeholder="Your age"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    min="18"
-                    max="100"
-                  />
-                </div>
-
-                {/* Experience Level */}
+                {/* Travel Experience */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Travel Experience
@@ -195,40 +220,134 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
                   </select>
                 </div>
 
-                {/* Interests */}
+                {/* Preferred Activities */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Interests
+                    Preferred Activities
                   </label>
+                  
+                  {/* Quick select common activities */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {['Hiking', 'Cultural Tours', 'Photography', 'Wildlife Watching', 'Beach Activities', 'Adventure Sports'].map(activity => (
+                      <button
+                        key={activity}
+                        type="button"
+                        onClick={() => {
+                          if (!userProfile.preferredActivities.includes(activity)) {
+                            setUserProfile(prev => ({
+                              ...prev,
+                              preferredActivities: [...prev.preferredActivities, activity]
+                            }));
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          userProfile.preferredActivities.includes(activity)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {activity}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="flex space-x-2 mb-2">
                     <input
                       type="text"
-                      value={newInterest}
-                      onChange={(e) => setNewInterest(e.target.value)}
-                      placeholder="Add an interest (e.g., hiking, photography)"
+                      value={newActivity}
+                      onChange={(e) => setNewActivity(e.target.value)}
+                      placeholder="Add a custom activity"
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddInterest()}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddActivity()}
                     />
                     <button
                       type="button"
-                      onClick={handleAddInterest}
+                      onClick={handleAddActivity}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Add
                     </button>
                   </div>
                   
-                  {/* Interest Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {userProfile.interests.map((interest, index) => (
+                  {/* Activity Tags */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {userProfile.preferredActivities.map((activity, index) => (
                       <span
                         key={index}
                         className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center space-x-1"
                       >
-                        <span>{interest}</span>
+                        <span>{activity}</span>
                         <button
-                          onClick={() => handleRemoveInterest(interest)}
+                          onClick={() => handleRemoveActivity(activity)}
                           className="text-blue-600 hover:text-blue-800"
+                        >
+                          <FiX size={14} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preferred Terrains */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Preferred Terrains
+                  </label>
+                  
+                  {/* Quick select common terrains */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {['Mountains', 'Beaches', 'Forests', 'Cities', 'Countryside', 'Islands'].map(terrain => (
+                      <button
+                        key={terrain}
+                        type="button"
+                        onClick={() => {
+                          if (!userProfile.preferredTerrains.includes(terrain)) {
+                            setUserProfile(prev => ({
+                              ...prev,
+                              preferredTerrains: [...prev.preferredTerrains, terrain]
+                            }));
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          userProfile.preferredTerrains.includes(terrain)
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {terrain}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      value={newTerrain}
+                      onChange={(e) => setNewTerrain(e.target.value)}
+                      placeholder="Add a custom terrain"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddTerrain()}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTerrain}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  
+                  {/* Terrain Tags */}
+                  <div className="flex flex-wrap gap-2">
+                    {userProfile.preferredTerrains.map((terrain, index) => (
+                      <span
+                        key={index}
+                        className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm flex items-center space-x-1"
+                      >
+                        <span>{terrain}</span>
+                        <button
+                          onClick={() => handleRemoveTerrain(terrain)}
+                          className="text-green-600 hover:text-green-800"
                         >
                           <FiX size={14} />
                         </button>

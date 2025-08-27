@@ -5,10 +5,13 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
 import { getUserUID, getUserData } from '../../utils/userStorage';
+import { useAuth } from '../../hooks/useAuth';
+import PoolsApi from '../../api/poolsApi';
 
 const PoolPreferencesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { poolName, selectedDates, poolSize, poolPrivacy, poolId, pool, userUid } = location.state || {};
 
   console.log('📍 PoolPreferencesPage received:', { poolName, selectedDates, poolSize, poolPrivacy, poolId, userUid });
@@ -136,8 +139,8 @@ const PoolPreferencesPage = () => {
       }
       
       // Get user information (in a real app, this would come from user profile)
-      const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
-      const userName = localStorage.getItem('userName') || 'Anonymous User';
+      const userEmail = user?.email || 'user@example.com';
+      const userName = user?.displayName || 'Anonymous User';
       
       // Create a personalized message based on user preferences
       const activityText = selectedActivityPreferences.length > 0 
@@ -293,14 +296,15 @@ const PoolPreferencesPage = () => {
       const requestData = {
         // Required fields
         userId: userId,
+        userEmail: user?.email || 'user@example.com', // Add userEmail field
         tripName: poolName, // Trip name from the modal
         startDate: startDate,
         endDate: endDate,
         baseCity: "Colombo", // Always hardcoded as requested
         groupName: poolName || 'My Pool', // Use pool name from state or default
-
         
         // Optional fields with defaults
+        arrivalTime: "14:30", // Default arrival time
         multiCityAllowed: true,
         activityPacing: "Normal",
         budgetLevel: "Medium",
@@ -308,52 +312,45 @@ const PoolPreferencesPage = () => {
         preferredActivities: selectedActivityPreferences,
         visibility: poolPrivacy, // Use privacy setting from modal
         maxMembers: poolSize || 6,
-        requiresApproval: false,
-        additionalPreferences: {}
+        requiresApproval: false
       };
       
       console.log('📦 API Request data:', requestData);
       
-      // Make API call to create group with trip
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086'}/api/v1/groups/with-trip`;
+      // Use PoolsApi instead of direct fetch call
+      console.log('📡 Making API request via PoolsApi...');
       
-      console.log('📡 Making POST request to:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestData)
+      const result = await PoolsApi.createGroupWithTrip(requestData);
+      console.log('✅ API Success response:', result);
+      console.log('🔍 Checking response structure:', {
+        hasGroupId: !!result.groupId,
+        hasTrippId: !!result.tripId,
+        groupIdValue: result.groupId,
+        tripIdValue: result.tripId,
+        status: result.status,
+        draft: result.draft,
+        fullResponse: result
       });
       
-      console.log('📨 API Response status:', response.status);
+      // Extract IDs from the exact API response structure
+      const extractedGroupId = result.groupId;
+      const extractedTripId = result.tripId;
+      const responseStatus = result.status;
+      const isDraft = result.draft; // API uses "draft" not "isDraft"
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ API Error response:', errorData);
-        
-        if (response.status === 400) {
-          alert(`Invalid request: ${errorData.message || 'Please check your input data'}`);
-        } else if (response.status === 500) {
-          alert(`Server error: ${errorData.message || 'Please try again later'}`);
-        } else {
-          alert(`Failed to create group: ${errorData.message || 'Unknown error'}`);
-        }
-        return;
-      }
-      
-      const result = await response.json();
-      console.log('✅ API Success response:', result);
+      console.log('🔧 Extracted values:', {
+        extractedGroupId,
+        extractedTripId,
+        responseStatus,
+        isDraft
+      });
       
       // Check response status and handle success
-      if (result.status === 'success' && result.groupId && result.tripId) {
+      if (responseStatus === 'success' && extractedGroupId && extractedTripId) {
         console.log('🎉 Group created successfully:', {
-          groupId: result.groupId,
-          tripId: result.tripId,
-          isDraft: result.isDraft
+          groupId: extractedGroupId,
+          tripId: extractedTripId,
+          isDraft: isDraft
         });
         
         // Show success notification
@@ -362,8 +359,8 @@ const PoolPreferencesPage = () => {
         // Redirect to pool itinerary page
         navigate('/pool-itinerary', {
           state: {
-            tripId: result.tripId,
-            groupId: result.groupId,
+            tripId: extractedTripId,
+            groupId: extractedGroupId,
             tripName: poolName,
             poolName: poolName,
             startDate,
@@ -371,12 +368,35 @@ const PoolPreferencesPage = () => {
             selectedTerrains: selectedTerrainPreferences,
             selectedActivities: selectedActivityPreferences,
             userUid: userId,
-            isDraft: result.isDraft
+            isDraft: isDraft
+          }
+        });
+      } else if (extractedGroupId && extractedTripId) {
+        // IDs found but status might be different
+        console.log('🔧 Found IDs but status unclear, proceeding anyway...');
+        navigate('/pool-itinerary', {
+          state: {
+            tripId: extractedTripId,
+            groupId: extractedGroupId,
+            tripName: poolName,
+            poolName: poolName,
+            startDate,
+            endDate,
+            selectedTerrains: selectedTerrainPreferences,
+            selectedActivities: selectedActivityPreferences,
+            userUid: userId,
+            isDraft: isDraft || true
           }
         });
       } else {
-        console.error('❌ Unexpected API response format:', result);
-        alert(`Failed to create group: ${result.message || 'Unexpected response format'}`);
+        console.error('❌ Could not extract required IDs from API response:', result);
+        console.error('🔍 Missing required fields:', {
+          missingGroupId: !extractedGroupId,
+          missingTripId: !extractedTripId,
+          responseStatus: responseStatus
+        });
+        
+        alert(`Failed to create group: ${result.message || 'Missing required group or trip ID from server response'}`);
       }
       
     } catch (error) {

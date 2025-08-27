@@ -58,6 +58,7 @@ const PoolPage = () => {
   };
 
   const renderTabContent = () => {
+    // Only render the active tab component to prevent unwanted API calls
     switch (activeTab) {
       case 'find':
         return <FindPools />;
@@ -79,9 +80,9 @@ const PoolPage = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
+      <section className="relative w-full h-[75vh] md:h-[45vh] overflow-hidden">
         <video 
-          className="absolute top-0 left-0 w-full h-full object-cover scale-105"
+          className="absolute top-0 left-0 w-full h-full object-cover scale-105 z-0"
           autoPlay 
           muted 
           loop
@@ -92,24 +93,25 @@ const PoolPage = () => {
         </video>
         
         {/* Video Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        <div className="absolute inset-0 bg-black/30 z-10"></div>
         
         {/* Hero Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
-          <div className="mt-16 md:mt-24">
-            <h1 className="text-4xl md:text-6xl font-normal mb-6">
+        <div className="relative z-20 flex flex-col items-center justify-center h-full text-center text-white px-4">
+          <div className="max-w-4xl mx-auto mt-16 sm:mt-20 md:mt-24">
+            <h1 className="text-4xl md:text-6xl font-normal mb-6 leading-tight text-white">
               Travel Pools
             </h1>
-            <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto text-blue-100">
               Meet new friends and explore together, find your perfect travel pool!
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <button
                 onClick={() => setIsCreatePoolModalOpen(true)}
-                className="group inline-flex items-center px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
-                <svg className="mr-3 h-6 w-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                Create New Pool
+                <svg className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                <span className="hidden sm:inline">Create New Pool</span>
+                <span className="sm:hidden">Create Pool</span>
               </button>
             </div>
           </div>
@@ -117,26 +119,70 @@ const PoolPage = () => {
       </section>
 
       {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-center mb-8 gap-4 flex-wrap">
-          {tabList.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-8 py-3 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-base ${
-                activeTab === tab.key
-                  ? 'bg-primary-600 text-white border-primary-600 scale-105'
-                  : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="relative z-10 -mt-10 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Enhanced Control Panel */}
+          <div className="bg-white rounded-full shadow-xl border border-gray-100 p-3 sm:p-5 mb-6 sm:mb-8 w-full sm:w-fit mx-auto relative z-20">
+            <div className="flex justify-center">
+              {/* Mobile Layout - Two Rows */}
+              <div className="flex flex-col gap-3 sm:hidden">
+                {/* First Row - First 3 buttons */}
+                <div className="flex gap-2 justify-center">
+                  {tabList.slice(0, 3).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-3 py-2 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-xs flex-shrink-0 ${
+                        activeTab === tab.key
+                          ? 'bg-primary-600 text-white border-primary-600 scale-105'
+                          : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Second Row - Remaining 2 buttons */}
+                <div className="flex gap-2 justify-center">
+                  {tabList.slice(3).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-3 py-2 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-xs flex-shrink-0 ${
+                        activeTab === tab.key
+                          ? 'bg-primary-600 text-white border-primary-600 scale-105'
+                          : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Desktop Layout - Single Row */}
+              <div className="hidden sm:flex gap-4 justify-center max-w-full">
+                {tabList.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-6 py-3 rounded-full font-medium transition-all duration-200 border-2 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 text-base flex-shrink-0 ${
+                      activeTab === tab.key
+                        ? 'bg-primary-600 text-white border-primary-600 scale-105'
+                        : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-secondary-700 hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-secondary-700 dark:hover:border-primary-400'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* Tab Content */}
-        <div className="min-h-[400px]">
-          {renderTabContent()}
+          {/* Tab Content */}
+          <div className="min-h-[400px]" key={activeTab}>
+            {renderTabContent()}
+          </div>
         </div>
       </div>
 
