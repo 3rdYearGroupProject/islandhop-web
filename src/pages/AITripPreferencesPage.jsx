@@ -278,7 +278,7 @@ const TripPreferencesPage = () => {
                     Select the types of landscapes you'd like to visit in Sri Lanka
                   </p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-6">
                   {terrainPreferences.filter(pref => ['beaches', 'mountains', 'forests', 'historical', 'city', 'parks', 'islands', 'wetland', 'countryside'].includes(pref.id)).map(preference => {
                     const IconComponent = preference.icon;
                     const isSelected = selectedTerrainPreferences.includes(preference.id);
@@ -485,7 +485,8 @@ const TripPreferencesPage = () => {
           <div className="lg:col-span-2 flex flex-row gap-4 justify-end mt-6">
             <button
               onClick={handleBack}
-              className="px-6 py-2 rounded-full border border-primary-600 text-primary-600 bg-white hover:bg-primary-50 hover:border-primary-700 transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 text-base"
+              className="px-4 md:px-6 py-2 rounded-full border border-primary-600 text-primary-600 bg-white hover:bg-primary-50 hover:border-primary-700 transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-200 text-sm md:text-base"
+              style={{ minWidth: '100px' }}
             >
               Back
             </button>

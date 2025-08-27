@@ -60,93 +60,93 @@ const ConfirmedPools = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Trip Summary - MyPools Style Card */}
-      <div className="mb-12">
-        <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-400 hover:border-green-600 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-4xl mx-auto">
+      <div className="mb-8 sm:mb-12">
+        <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl sm:rounded-2xl border border-green-400 hover:border-green-600 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-full sm:max-w-4xl mx-auto">
           {/* Image on the left */}
-          <div className="relative w-full lg:w-1/3 h-56 lg:h-auto flex-shrink-0">
+          <div className="relative w-full lg:w-1/3 h-40 sm:h-56 lg:h-auto flex-shrink-0">
             <img
               src={confirmedPool.image}
               alt={confirmedPool.name}
               className="absolute top-0 left-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 rounded-none lg:rounded-l-2xl"
               style={{ borderTopLeftRadius: 'inherit', borderBottomLeftRadius: 'inherit' }}
             />
-            <div className="absolute top-4 left-4">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
+            <div className="absolute top-2 left-2 sm:top-4 sm:left-4">
+              <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
                 {confirmedPool.status}
               </span>
             </div>
           </div>
           {/* Details on the right */}
-          <div className="flex-1 flex flex-col p-8">
-            <div className="flex flex-col items-start justify-between mb-3">
+          <div className="flex-1 flex flex-col p-4 sm:p-8">
+            <div className="flex flex-col items-start justify-between mb-2 sm:mb-3">
               <span className="uppercase tracking-wide text-gray-400 text-xs font-semibold mb-1">Confirmed Pool</span>
-              <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                 {confirmedPool.name}
               </h3>
             </div>
-            <div className="space-y-3 mb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+            <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-1 sm:gap-y-2">
                 <div className="flex items-center text-gray-600">
-                  <MapPinIcon className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-sm">{confirmedPool.destinations}</span>
+                  <MapPinIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-500" />
+                  <span className="text-xs sm:text-sm">{confirmedPool.destinations}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
-                  <CalendarIcon className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-sm">{confirmedPool.date}</span>
+                  <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-500" />
+                  <span className="text-xs sm:text-sm">{confirmedPool.date}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
-                  <UserGroupIcon className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-sm">{confirmedPool.participants} participants</span>
+                  <UserGroupIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-500" />
+                  <span className="text-xs sm:text-sm">{confirmedPool.participants} participants</span>
                 </div>
                 <div className="flex items-center text-gray-600">
-                  <CheckCircleIcon className="h-4 w-4 mr-2 text-green-600" />
-                  <span className="text-sm text-green-700 font-bold">Status: {confirmedPool.status}</span>
+                  <CheckCircleIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-green-600" />
+                  <span className="text-xs sm:text-sm text-green-700 font-bold">Status: {confirmedPool.status}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
-                  <PhoneIcon className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-sm">Guide: {confirmedPool.guide}</span>
+                  <PhoneIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-500" />
+                  <span className="text-xs sm:text-sm">Guide: {confirmedPool.guide}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
-                  <PhoneIcon className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-sm">Driver: {confirmedPool.driver}</span>
+                  <PhoneIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-blue-500" />
+                  <span className="text-xs sm:text-sm">Driver: {confirmedPool.driver}</span>
                 </div>
               </div>
             </div>
             {/* Itinerary Timeline */}
-            <div className="mb-4">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+            <div className="mb-3 sm:mb-4">
+              <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-2 sm:mb-3">
                 Itinerary Progress
               </h4>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto pb-2">
                 {confirmedPool.itinerary.map((item, index) => (
-                  <div key={item.destination} className="flex items-center">
+                  <div key={item.destination} className="flex items-center flex-shrink-0">
                     <div className="flex flex-col items-center">
-                      <div className="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-md"></div>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-600 rounded-full border-2 border-white shadow-md"></div>
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mt-1 text-center">
                         {item.destination}
                       </span>
                     </div>
                     {index < confirmedPool.itinerary.length - 1 && (
-                      <div className="flex-1 h-1 bg-gradient-to-r from-blue-600 to-gray-300 mx-2 rounded-full min-w-[40px]"></div>
+                      <div className="flex-1 h-1 bg-gradient-to-r from-blue-600 to-gray-300 mx-1 sm:mx-2 rounded-full min-w-[30px] sm:min-w-[40px]"></div>
                     )}
                   </div>
                 ))}
               </div>
             </div>
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+            <p className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-3 sm:mt-4">
               {confirmedPool.itinerary.length} destinations over {confirmedPool.itinerary.length} days
             </p>
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 sm:pt-4 border-t border-gray-100 mt-auto gap-3 sm:gap-0">
+              <div className="flex items-center space-x-4 text-xs sm:text-sm text-gray-500">
                 {/* You can add a rating or other info here if needed */}
               </div>
-              <div className="flex items-center space-x-2">
-                <button className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <button className="flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-blue-700 transition-colors flex-1 sm:flex-none justify-center">
                   View Details
                 </button>
-                <button className="flex items-center px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors">
+                <button className="flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex-1 sm:flex-none justify-center">
                   Contact Group
                 </button>
               </div>
@@ -188,45 +188,46 @@ const ConfirmedPools = () => {
       </Card>
 
       {/* Payment Status & Participants Side by Side */}
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
         {/* Payment Status Section */}
-        <Card className="rounded-xl flex-1">
-          <CardBody>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <CreditCardIcon className="h-6 w-6 mr-2" />
+        <Card className="rounded-lg sm:rounded-xl flex-1">
+          <CardBody className="px-3 sm:px-4">
+            <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <CreditCardIcon className="h-4 w-4 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
               Payment Status
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {paymentStatus.map((payment) => {
                 const percent = Math.round((payment.paid / payment.amount) * 100);
                 return (
-                  <div key={payment.name} className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-600">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3">
-                      <span className="font-bold text-gray-900 dark:text-white min-w-[120px]">
+                  <div key={payment.name} className="bg-white dark:bg-secondary-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-secondary-600 relative">
+                    {/* Status Badge - Top Right Corner */}
+                    <span className={`absolute top-4 right-4 sm:top-5 sm:right-5 inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap w-fit ${
+                      payment.status === 'Paid' 
+                        ? 'bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300' 
+                        : 'bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300'
+                    }`}>
+                      {payment.status}
+                    </span>
+                    <div className="flex flex-col md:flex-row md:items-center gap-3 sm:gap-6 mb-3 sm:mb-4 pr-16 sm:pr-20">
+                      <span className="font-bold text-gray-900 dark:text-white min-w-[120px] sm:min-w-[140px] text-sm sm:text-base">
                         {payment.name}
                       </span>
-                      <span className="text-gray-700 dark:text-gray-300">
+                      <span className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
                         <strong>Amount:</strong> Rs. {payment.amount.toLocaleString()}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                        payment.status === 'Paid' 
-                          ? 'bg-success-100 text-success-800 dark:bg-success-900/30 dark:text-success-300' 
-                          : 'bg-warning-100 text-warning-800 dark:bg-warning-900/30 dark:text-warning-300'
-                      }`}>
-                        {payment.status}
-                      </span>
-                      <span className="text-gray-700 dark:text-gray-300">
+                      <span className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
                         <strong>Method:</strong> {payment.method}
                       </span>
                     </div>
                     <div className="relative">
-                    <div className="w-full rounded-full h-3" style={{ backgroundColor: '#e6effc' }}>
+                    <div className="w-full rounded-full h-2 sm:h-3" style={{ backgroundColor: '#e6effc' }}>
                       <div 
-                        className="h-3 rounded-full transition-all duration-500"
+                        className="h-2 sm:h-3 rounded-full transition-all duration-500"
                         style={{ width: `${percent}%`, backgroundColor: '#1C4ED8' }}
                       ></div>
                     </div>
-                      <span className="absolute right-0 -top-6 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      <span className="absolute right-0 -top-4 sm:-top-6 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
                         {percent}%
                       </span>
                     </div>
@@ -237,48 +238,48 @@ const ConfirmedPools = () => {
           </CardBody>
         </Card>
         {/* Participants Section */}
-        <Card className="rounded-xl flex-1">
-          <CardBody>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+        <Card className="rounded-lg sm:rounded-xl flex-1">
+          <CardBody className="px-3 sm:px-4">
+            <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
               Participants
             </h3>
             {/* Highlight Guide and Driver at the top */}
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-3 sm:mb-4">
               {participants.filter(p => p.role === 'Guide' || p.role === 'Driver').map((participant) => (
                 <div
                   key={participant.name}
-                  className={`relative flex flex-col md:flex-row items-center gap-4 p-5 rounded-2xl max-w-xl mx-auto ${
+                  className={`relative flex flex-row items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-lg sm:rounded-2xl max-w-xl mx-auto ${
                     participant.role === 'Guide'
                       ? 'border-green-200 dark:border-green-300 bg-green-50 dark:bg-green-900/20'
                       : 'border-blue-200 dark:border-blue-300 bg-blue-50 dark:bg-blue-900/20'
                   }`}
                   style={{ minWidth: 0, borderWidth: 2 }}
                 >
-                  <div className="flex flex-col items-center md:items-start w-32 flex-shrink-0">
+                  <div className="flex flex-col items-start w-20 sm:w-32 flex-shrink-0">
                     <div className="relative">
                       <img
                         src={participant.img}
                         alt={participant.name}
-                        className={`w-24 h-24 rounded-full object-cover border-4 ${
+                        className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover border-2 sm:border-4 ${
                           participant.role === 'Guide'
                             ? 'border-green-400'
                             : 'border-blue-400'
                         }`}
                       />
-                      <span className={`absolute -bottom-2 -right-2 p-1 rounded-full bg-white dark:bg-secondary-900 border ${
+                      <span className={`absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 p-0.5 sm:p-1 rounded-full bg-white dark:bg-secondary-900 border ${
                         participant.role === 'Guide' ? 'border-green-400' : 'border-blue-400'
                       }`}>{participant.role === 'Guide' ? (
-                        <IdentificationIcon className="h-6 w-6 text-green-500" />
+                        <IdentificationIcon className="h-3 w-3 sm:h-6 sm:w-6 text-green-500" />
                       ) : (
-                        <UserIcon className="h-6 w-6 text-blue-500" />
+                        <UserIcon className="h-3 w-3 sm:h-6 sm:w-6 text-blue-500" />
                       )}</span>
                     </div>
                     {/* No details for Guide below image, only in details section */}
                   </div>
                   <div className="flex-1 w-full min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl font-bold text-gray-900 dark:text-white truncate">{participant.name}</span>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      <span className="text-sm sm:text-xl font-bold text-gray-900 dark:text-white truncate">{participant.name}</span>
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full ${
                         participant.role === 'Guide'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
                           : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
@@ -286,7 +287,7 @@ const ConfirmedPools = () => {
                     </div>
                     {/* Extra info for Guide and Driver */}
                     {participant.role === 'Driver' && (
-                      <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300 space-y-0.5 sm:space-y-1">
                         <div><span className="font-semibold">Car:</span> {participant.car}</div>
                         <div><span className="font-semibold">From:</span> {participant.from}</div>
                         <div><span className="font-semibold">Contact:</span> {participant.contact}</div>
@@ -294,7 +295,7 @@ const ConfirmedPools = () => {
                       </div>
                     )}
                     {participant.role === 'Guide' && (
-                      <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300 space-y-0.5 sm:space-y-1">
                         <div><span className="font-semibold">Contact:</span> {participant.contact ? participant.contact : 'N/A'}</div>
                         <div><span className="font-semibold">From:</span> {participant.from ? participant.from : ''}</div>
                         <div className="flex items-center"><span className="font-semibold mr-1">Rating:</span> <span>4.9</span> <span className="ml-1 text-yellow-400">★</span></div>
@@ -305,19 +306,19 @@ const ConfirmedPools = () => {
               ))}
             </div>
             {/* Other participants */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
               {participants.filter(p => p.role !== 'Guide' && p.role !== 'Driver').map((participant) => (
-                <div key={participant.name} className="flex items-center gap-3 bg-white dark:bg-secondary-800 rounded-lg p-3 border border-gray-200 dark:border-secondary-600">
+                <div key={participant.name} className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-secondary-800 rounded-lg p-2 sm:p-3 border border-gray-200 dark:border-secondary-600">
                   <img
                     src={participant.img}
                     alt={participant.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-info-500"
+                    className="w-8 h-8 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-info-500"
                   />
                   <div>
-                    <div className="font-bold text-gray-900 dark:text-white">
+                    <div className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm">
                       {participant.name}
                     </div>
-                    <div className="text-sm font-medium text-info-600">
+                    <div className="text-xs sm:text-sm font-medium text-info-600">
                       {participant.role}
                     </div>
                   </div>
@@ -329,27 +330,27 @@ const ConfirmedPools = () => {
       </div>
 
       {/* Action Buttons */}
-      <Card className="rounded-xl">
+      <Card className="rounded-lg sm:rounded-xl">
         <CardBody>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <button className="flex-1 bg-green-200 text-green-900 py-3 px-6 rounded-full font-medium hover:bg-green-300 transition-colors border border-green-400 flex items-center justify-center gap-2">
-              <UserIcon className="h-5 w-5" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-3 sm:mb-4">
+            <button className="flex-1 bg-green-200 text-green-900 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-300 transition-colors border border-green-400 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base">
+              <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               Contact Guide
             </button>
-            <button className="flex-1 bg-blue-100 text-blue-800 py-3 px-6 rounded-full font-medium hover:bg-blue-200 transition-colors border border-blue-300 flex items-center justify-center gap-2">
-              <PhoneIcon className="h-5 w-5" />
+            <button className="flex-1 bg-blue-100 text-blue-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-blue-200 transition-colors border border-blue-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base">
+              <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               Contact Driver
             </button>
-            <button className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex items-center justify-center gap-2 border border-gray-400 dark:border-secondary-500">
-              <IdentificationIcon className="h-5 w-5" />
-              Download Itinerary
+            <button className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 border border-gray-400 dark:border-secondary-500 text-sm sm:text-base">
+              <IdentificationIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              Download
             </button>
           </div>
           
           {/* Important Notes */}
           <div className="p-0 mt-2">
-            <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Important Notes</h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2 text-sm sm:text-base">Important Notes</h4>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               {confirmedPool.notes}
             </p>
           </div>
