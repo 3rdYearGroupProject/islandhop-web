@@ -25,6 +25,7 @@ export const useAuth = () => {
           setUser(userData);
           setRole(userRole);
           setIsAuthenticated(true);
+          console.log('🔄 User data and role set:', userData, userRole);
         } else {
           console.log('❌ No valid session, clearing auth');
           clearUserData();
@@ -78,6 +79,7 @@ export const useAuth = () => {
   };
 
   return {
+    loading,
     user,
     role,
     loading,
