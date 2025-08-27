@@ -617,23 +617,13 @@ export class PoolsApi {
       console.log('🔍 [MyPools] Raw API response from /groups/created-by/', createdPoolsResponse);
       console.log('🔍 [MyPools] Number of pools returned by API:', createdPoolsResponse.length);
 
-      // SAFETY FILTER: Ensure we only keep pools whose creatorUserId matches current user
-      const strictlyUserCreated = createdPoolsResponse.filter(g => {
-        const match = g.creatorUserId === userId;
-        if (!match) {
-          console.warn('⚠️ [MyPools] Dropping non-owned pool that leaked in response:', {
-            groupId: g.groupId,
-            creatorUserId: g.creatorUserId,
-            expectedUserId: userId,
-            name: g.tripName || g.groupName
-          });
-        }
-        return match;
-      });
-      console.log('🔍 [MyPools] After strict ownership filter count:', strictlyUserCreated.length);
+      // ✅ Backend already filters by creator via /groups/created-by/ endpoint
+      // No additional filtering needed - trust the backend response completely
+      const userCreatedPools = createdPoolsResponse;
+      console.log('🔍 [MyPools] Using all pools from backend (already filtered):', userCreatedPools.length);
       
-      // Convert ONLY the user's created pools to pool format
-      const createdPools = strictlyUserCreated.map(group => {
+      // Convert all the user's created pools to pool format
+      const createdPools = userCreatedPools.map(group => {
         console.log('🔍 [MyPools] Converting pool:', {
           name: group.tripName || group.groupName,
           visibility: group.visibility,
@@ -644,19 +634,43 @@ export class PoolsApi {
       });
       console.log('🔍 [MyPools] Converted user created pools:', createdPools);
       
-      // Use ONLY the user's created pools - no other data sources
+      // Use all the user's created pools from backend - no additional filtering
       const allUserPools = createdPools;
       
       console.log('🏊‍♂️ [MyPools] Final user pools (should match API exactly):', allUserPools);
       
-      // Organize pools by status
+      // Organize pools by actual dates (not status)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+      
       const result = {
-        ongoing: allUserPools.filter(pool => pool.status === 'active'),
-        upcoming: allUserPools.filter(pool => pool.status === 'draft' || pool.status === 'open'),
-        past: allUserPools.filter(pool => pool.status === 'closed' || pool.status === 'completed')
+        upcoming: allUserPools.filter(pool => {
+          const startDate = new Date(pool.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          return startDate > today;
+        }),
+        ongoing: allUserPools.filter(pool => {
+          const startDate = new Date(pool.startDate);
+          const endDate = new Date(pool.endDate);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          return startDate <= today && endDate >= today;
+        }),
+        past: allUserPools.filter(pool => {
+          const endDate = new Date(pool.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          return endDate < today;
+        })
       };
       
-      console.log('🔍 [MyPools] Organized pools by status:', result);
+      console.log('🔍 [MyPools] Organized pools by dates:', result);
+      console.log('🔍 [MyPools] Date comparison reference - Today:', today.toISOString().split('T')[0]);
+      console.log('🔍 [MyPools] Pool date analysis:');
+      allUserPools.forEach(pool => {
+        const startDate = new Date(pool.startDate);
+        const endDate = new Date(pool.endDate);
+        console.log(`  📅 ${pool.name}: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} (${pool.startDate > today ? 'upcoming' : pool.endDate >= today ? 'ongoing' : 'past'})`);
+      });
       console.log('🔍 [MyPools] Total pools shown:', {
         ongoing: result.ongoing.length,
         upcoming: result.upcoming.length,
