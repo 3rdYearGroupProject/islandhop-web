@@ -21,6 +21,7 @@ const InvitationsAndRequests = () => {
   const [invitationsCount, setInvitationsCount] = useState(0);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [useMockData, setUseMockData] = useState(true); // Toggle for mock data
 
@@ -102,6 +103,64 @@ const InvitationsAndRequests = () => {
     totalPendingRequests: 3
   };
 
+  // Mock invitations data for demonstration
+  const mockInvitations = {
+    invitations: [
+      {
+        invitationId: "inv_001",
+        groupId: "group-001",
+        groupName: "Colombo City Explorers",
+        inviterName: "David Wilson",
+        inviterEmail: "david.wilson@gmail.com",
+        invitedAt: "2025-08-27T16:45:00Z",
+        tripStartDate: "2025-09-15T00:00:00Z",
+        tripEndDate: "2025-09-20T00:00:00Z",
+        memberCount: 4,
+        maxMembers: 6,
+        message: "Hey! We're planning an amazing cultural tour of Colombo and the surrounding areas. Your travel experience would be a great addition to our group!",
+        groupDescription: "A group focused on exploring Sri Lanka's vibrant capital city, ancient temples, and local cuisine.",
+        preferredActivities: ["Cultural Tours", "Food Experiences", "Historical Sites"],
+        baseCity: "Colombo",
+        status: "pending"
+      },
+      {
+        invitationId: "inv_002", 
+        groupId: "group-002",
+        groupName: "Wildlife Safari Adventure",
+        inviterName: "Priya Sharma",
+        inviterEmail: "priya.sharma@yahoo.com",
+        invitedAt: "2025-08-28T09:30:00Z",
+        tripStartDate: "2025-09-25T00:00:00Z",
+        tripEndDate: "2025-10-02T00:00:00Z",
+        memberCount: 3,
+        maxMembers: 8,
+        message: "Hi there! We're organizing an incredible wildlife safari covering Yala, Udawalawe, and Minneriya National Parks. Would you like to join us for this amazing wildlife experience?",
+        groupDescription: "Wildlife enthusiasts planning to explore Sri Lanka's best national parks and see elephants, leopards, and exotic birds.",
+        preferredActivities: ["Safari", "Wildlife Photography", "Nature Walks"],
+        baseCity: "Colombo",
+        status: "pending"
+      },
+      {
+        invitationId: "inv_003",
+        groupId: "group-003", 
+        groupName: "Hill Country Trekkers",
+        inviterName: "James Mitchell",
+        inviterEmail: "james.mitchell@outlook.com",
+        invitedAt: "2025-08-28T14:20:00Z",
+        tripStartDate: "2025-10-10T00:00:00Z",
+        tripEndDate: "2025-10-17T00:00:00Z",
+        memberCount: 2,
+        maxMembers: 5,
+        message: "We're planning an adventurous trekking expedition through Sri Lanka's hill country including Ella, Nuwara Eliya, and Adam's Peak. Perfect for adventure lovers!",
+        groupDescription: "Adventure seekers planning hiking trails, tea plantation visits, and mountain climbing in Sri Lanka's beautiful hill country.",
+        preferredActivities: ["Hiking", "Mountain Climbing", "Tea Plantation Tours"],
+        baseCity: "Kandy",
+        status: "pending"
+      }
+    ],
+    totalInvitations: 3
+  };
+
   useEffect(() => {
     if (user) {
       fetchCounts();
@@ -120,11 +179,14 @@ const InvitationsAndRequests = () => {
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        setInvitationsCount(2); // Mock invitations count
+        setInvitationsCount(mockInvitations.totalInvitations); // Mock invitations count
+        setInvitations(mockInvitations.invitations);
         setPendingRequests(mockPendingRequests.groups);
         setJoinRequestsCount(mockPendingRequests.totalPendingRequests);
         
         console.log('✅ Mock data loaded successfully');
+        console.log('📨 Mock invitations loaded:', mockInvitations.totalInvitations);
+        console.log('🗳️ Mock pending requests loaded:', mockPendingRequests.totalPendingRequests);
         return;
       }
       
@@ -137,6 +199,7 @@ const InvitationsAndRequests = () => {
       console.log('📨 Invitations count:', invitationsResponse.invitations?.length || 0);
       
       setInvitationsCount(invitationsResponse.invitations?.length || 0);
+      setInvitations(invitationsResponse.invitations || []);
       
       // Fetch pending requests that user needs to vote on
       console.log('🗳️ Calling PoolsApi.getMyPendingRequests with userId:', user.uid);
@@ -161,8 +224,53 @@ const InvitationsAndRequests = () => {
       setInvitationsCount(0);
       setJoinRequestsCount(0);
       setPendingRequests([]);
+      setInvitations([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInvitationResponse = async (invitationId, groupId, action, message = '') => {
+    try {
+      console.log('📮 Responding to invitation:', { invitationId, groupId, action, message });
+      
+      if (useMockData) {
+        // Simulate API call for mock data
+        console.log('🎭 Simulating invitation response with mock data');
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Show mock success message
+        alert(`✅ Mock: Invitation ${action}ed successfully!\n\nThis is a demo using mock data. In real usage, this would call the API.`);
+        
+        // Remove the responded invitation from mock data
+        setInvitations(prev => prev.filter(inv => inv.invitationId !== invitationId));
+        setInvitationsCount(prev => Math.max(0, prev - 1));
+        
+        return;
+      }
+      
+      // Real API call - you'll need to implement the respondToInvitation endpoint
+      const responseData = {
+        userId: user.uid,
+        invitationId: invitationId,
+        action: action, // 'accept' or 'reject'
+        message: message
+      };
+      
+      const result = await PoolsApi.respondToInvitation(responseData);
+      console.log('📮 Invitation response result:', result);
+      
+      // Show success message
+      alert(`✅ Invitation ${action}ed successfully!`);
+      
+      // Refresh the data
+      fetchCounts();
+      
+    } catch (error) {
+      console.error('❌ Error responding to invitation:', error);
+      alert(`❌ Failed to respond to invitation: ${error.message}`);
     }
   };
 
@@ -408,6 +516,85 @@ const InvitationsAndRequests = () => {
             </button>
           </div>
         </div>
+
+        {/* Invitations Display */}
+        {invitationsCount > 0 && (
+          <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">
+              Pool Invitations ({invitationsCount})
+            </h3>
+            <div className="space-y-6">
+              {invitations.map((invitation) => (
+                <div key={invitation.invitationId} className="border border-gray-200 rounded-lg p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-lg font-medium text-blue-600">
+                            {invitation.inviterName?.charAt(0) || 'U'}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">
+                            {invitation.groupName}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            Invited by {invitation.inviterName} • {invitation.memberCount}/{invitation.maxMembers} members
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-700 mb-3">
+                          "{invitation.message}"
+                        </p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {invitation.groupDescription}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">📅 Trip Dates:</span>
+                          <p className="text-gray-600">
+                            {new Date(invitation.tripStartDate).toLocaleDateString()} - {new Date(invitation.tripEndDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">📍 Base City:</span>
+                          <p className="text-gray-600">{invitation.baseCity}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">🎯 Activities:</span>
+                          <p className="text-gray-600">{invitation.preferredActivities?.join(', ')}</p>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-gray-500 mb-4">
+                        Invited: {new Date(invitation.invitedAt).toLocaleDateString()} at {new Date(invitation.invitedAt).toLocaleTimeString()}
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-2 ml-6">
+                      <button
+                        onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'accept', '')}
+                        className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        ✅ Accept
+                      </button>
+                      <button
+                        onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'reject', 'Thank you for the invitation, but I cannot join this trip.')}
+                        className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        ❌ Decline
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Pending Requests Display */}
         {joinRequestsCount > 0 && (
