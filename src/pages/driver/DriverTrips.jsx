@@ -17,7 +17,8 @@ import {
   Filter,
   Calendar,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  Play
 } from 'lucide-react';
 
 const DriverTrips = () => {
@@ -227,6 +228,39 @@ const DriverTrips = () => {
     } catch (err) {
       console.error('Error updating trip:', err);
       setError(`Failed to ${action} trip: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartTrip = async (tripId) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Starting trip:', tripId);
+      
+      const startTripResponse = await axios.post('http://localhost:5007/api/trips/start-trip', {
+        tripId: tripId
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (startTripResponse.data.success) {
+        console.log('Trip started successfully:', startTripResponse.data);
+        
+        // You might want to update local state or show a success message
+        // For now, we'll just log the success
+        
+      } else {
+        throw new Error(startTripResponse.data.message || 'Failed to start trip');
+      }
+
+    } catch (err) {
+      console.error('Error starting trip:', err);
+      setError(`Failed to start trip: ${err.response?.data?.message || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -548,13 +582,25 @@ const DriverTrips = () => {
                       )}
                       
                       {trip.status === 'active' && (
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
-                        >
-                          <Navigation className="h-4 w-4 mr-1" />
-                          Navigate
-                        </button>
+                        <>
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
+                          >
+                            <Navigation className="h-4 w-4 mr-1" />
+                            Navigate
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartTrip(trip.id);
+                            }}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center"
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Start Trip
+                          </button>
+                        </>
                       )}
                       
                       {trip.status === 'completed' && (
