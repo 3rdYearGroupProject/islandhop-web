@@ -222,24 +222,6 @@ const DriverTrips = () => {
           throw new Error(removeResponse.data.message || 'Failed to decline trip');
         }
 
-      } else if (action === 'complete') {
-        // For complete, we might need a separate API endpoint in the future
-        // For now, just update local state
-        setTrips(prevTrips => {
-          return prevTrips.map(trip => {
-            if (trip.id === tripId) {
-              return { ...trip, status: 'completed', completedTime: new Date() };
-            }
-            return trip;
-          });
-        });
-
-        // Update stats
-        setStats(prevStats => ({
-          ...prevStats,
-          activeTrips: prevStats.activeTrips - 1,
-          completedTrips: prevStats.completedTrips + 1
-        }));
       }
 
     } catch (err) {
@@ -566,25 +548,13 @@ const DriverTrips = () => {
                       )}
                       
                       {trip.status === 'active' && (
-                        <>
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
-                          >
-                            <Navigation className="h-4 w-4 mr-1" />
-                            Navigate
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTripAction(trip.id, 'complete');
-                            }}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Complete Trip
-                          </button>
-                        </>
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
+                        >
+                          <Navigation className="h-4 w-4 mr-1" />
+                          Navigate
+                        </button>
                       )}
                       
                       {trip.status === 'completed' && (
