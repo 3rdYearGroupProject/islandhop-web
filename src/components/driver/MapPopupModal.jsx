@@ -28,6 +28,10 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
   const [endMeterReading, setEndMeterReading] = useState('');
   const [deductValue, setDeductValue] = useState('');
   const [dayNote, setDayNote] = useState('');
+  
+  // New state for ending entire trip
+  const [endingTrip, setEndingTrip] = useState(false);
+  const [showEndTripModal, setShowEndTripModal] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -87,6 +91,15 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     if (!tripData?.dailyPlans) return false;
     const day = tripData.dailyPlans.find(d => d.day === dayNumber);
     return day && day.end_confirmed === 1;
+  };
+
+  const areAllDaysCompleted = () => {
+    if (!tripData?.dailyPlans || tripData.dailyPlans.length === 0) return false;
+    return tripData.dailyPlans.every(day => day.end_confirmed === 1);
+  };
+
+  const canEndTrip = () => {
+    return areAllDaysCompleted() && !tripData?.ended;
   };
 
   // Start day functionality
@@ -160,6 +173,12 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       return;
     }
 
+    // Double-check that the day has been started before allowing completion
+    if (!canEndDay(selectedDay)) {
+      setError('Cannot complete day: Day must be started first');
+      return;
+    }
+
     try {
       setEndingDay(selectedDay);
       const response = await fetch(`http://localhost:5007/api/trips/end-day-${selectedDay}`, {
@@ -205,6 +224,56 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       console.error('Error ending day:', err);
     } finally {
       setEndingDay(null);
+    }
+  };
+
+  // End trip functionality
+  const handleEndTrip = () => {
+    setShowEndTripModal(true);
+  };
+
+  const confirmEndTrip = async () => {
+    if (!canEndTrip()) {
+      setError('Cannot end trip: All days must be completed first');
+      return;
+    }
+
+    try {
+      setEndingTrip(true);
+      const response = await fetch(`http://localhost:5007/api/trips/end-trip`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tripId: tripId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to end trip: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Trip ended successfully:', result);
+      
+      // Close modal and refresh
+      setShowEndTripModal(false);
+      
+      // Update local state if possible
+      if (tripData) {
+        tripData.ended = 1;
+        tripData.endconfirmed = 1;
+      }
+      
+      // Show success message and potentially close the entire modal
+      alert('Trip completed successfully!');
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error ending trip:', err);
+    } finally {
+      setEndingTrip(false);
     }
   };
 
@@ -460,6 +529,40 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
           <div className="flex-[0.25] bg-gray-50 rounded-lg p-4 h-full overflow-y-auto">
             <h3 className="font-semibold text-gray-900 mb-3 text-lg">Upcoming Destinations</h3>
             
+            {/* End Trip Button - Shows when all days are completed */}
+            {canEndTrip() && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-center">
+                  <p className="text-sm text-green-800 mb-2 font-medium">🎉 All days completed!</p>
+                  <button
+                    onClick={handleEndTrip}
+                    disabled={endingTrip}
+                    className="w-full px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {endingTrip ? (
+                      <>
+                        <Loader className="h-4 w-4 animate-spin" />
+                        Ending Trip...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4" />
+                        End Trip
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Trip Status when completed */}
+            {tripData?.ended === 1 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                <p className="text-sm text-blue-800 font-medium">✅ Trip Completed</p>
+                <p className="text-xs text-blue-600 mt-1">This trip has been successfully completed</p>
+              </div>
+            )}
+            
             {routeData?.optimizedRoute?.map((day) => (
               <div key={day.day} className="mb-6 border border-gray-200 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-3">
@@ -517,6 +620,17 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                       Mark Complete
                     </button>
                   )}
+
+                  {isDayStarted(day.day) && !isDayEnded(day.day) && !canEndDay(day.day) && (
+                    <button
+                      disabled
+                      className="px-3 py-1 bg-gray-300 text-gray-500 text-xs rounded cursor-not-allowed flex items-center gap-1"
+                      title="Day must be started first before it can be completed"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                      Mark Complete
+                    </button>
+                  )}
                 </div>
 
                 {/* Attractions/Destinations for this day */}
@@ -564,13 +678,18 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
             
             {!tripData?.dailyPlans || tripData.dailyPlans.length === 0 ? (
               <div className="text-center text-gray-500 text-sm">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                 No trip data available
               </div>
-            ) : tripData.dailyPlans.every(day => isDayEnded(day.day)) ? (
-              <div className="text-center text-gray-500 text-sm">
+            ) : tripData.ended === 1 ? (
+              <div className="text-center text-blue-600 text-sm">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                Trip completed successfully!
+              </div>
+            ) : areAllDaysCompleted() ? (
+              <div className="text-center text-green-600 text-sm">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                All days completed!
+                All days completed! Ready to end trip.
               </div>
             ) : null}
           </div>
@@ -756,6 +875,43 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                     </>
                   ) : (
                     'Complete Day'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* End Trip Modal */}
+        {showEndTripModal && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-96 mx-4">
+              <h3 className="text-lg font-semibold mb-4">🎉 Complete Trip</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Congratulations! All days have been completed. Are you sure you want to end this trip?
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowEndTripModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmEndTrip}
+                  disabled={endingTrip}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {endingTrip ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Completing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Yes, Complete Trip
+                    </>
                   )}
                 </button>
               </div>
