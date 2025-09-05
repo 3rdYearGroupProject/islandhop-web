@@ -976,11 +976,23 @@ const MyTripsPage = () => {
 
   const handleTripClick = (trip) => {
     console.log('🔍 Viewing trip:', trip.name);
-    navigate(`/trip/${trip.id}`, { 
-      state: { 
-        trip: trip
-      } 
-    });
+    
+    // If it's an active trip, navigate to ongoing-trip page
+    if (trip.status === 'active') {
+      console.log('🚀 Navigating to ongoing trip page with data:', trip._originalData || trip);
+      navigate('/ongoing-trip', { 
+        state: { 
+          tripData: trip._originalData || trip
+        } 
+      });
+    } else {
+      // For non-active trips, use the regular trip view
+      navigate(`/trip/${trip.id}`, { 
+        state: { 
+          trip: trip
+        } 
+      });
+    }
   };
 
   return (
