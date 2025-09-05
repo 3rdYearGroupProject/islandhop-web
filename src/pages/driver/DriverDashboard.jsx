@@ -29,6 +29,8 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [trips, setTrips] = useState([]);
   const [error, setError] = useState(null);
+  const [activeTrip, setActiveTrip] = useState(null);
+  const [activeTripsLoading, setActiveTripsLoading] = useState(false);
   const toast = useToast();
 
   // Get user data from storage
@@ -47,10 +49,8 @@ const DriverDashboard = () => {
     pendingRequests: 0
   });
 
-  // Calculate active and pending trips from real data
-  const activeTrips = trips.filter(trip => trip.status === 'active');
+  // Calculate pending trips from real data (for the pending requests section)
   const pendingRequests = trips.filter(trip => trip.status === 'pending');
-  const activeTrip = activeTrips.length > 0 ? activeTrips[0] : null;
 
   useEffect(() => {
     const user = getUserData();
@@ -160,6 +160,84 @@ const DriverDashboard = () => {
     fetchTrips();
   }, [driverEmail]);
 
+  // Fetch active trips from the new endpoint
+  useEffect(() => {
+    const fetchActiveTrips = async () => {
+      if (!driverEmail) {
+        setActiveTrip(null);
+        return;
+      }
+
+      try {
+        setActiveTripsLoading(true);
+        console.log('Fetching active trips for driver dashboard:', driverEmail);
+        const response = await axios.get(`http://localhost:5007/api/trips/driver/${driverEmail}`);
+        console.log('Active trips API Response:', response);
+        
+        if (response.data.success && response.data.data.trips.length > 0) {
+          const apiTrip = response.data.data.trips[0]; // There should be only 1 active trip
+          
+          // Transform API data to match component structure
+          const firstDay = apiTrip.dailyPlans?.[0];
+          const lastDay = apiTrip.dailyPlans?.[apiTrip.dailyPlans.length - 1];
+
+          const transformedTrip = {
+            id: apiTrip._id,
+            userId: apiTrip.userId,
+            tripName: apiTrip.tripName,
+            passenger: apiTrip.userId ? `User ${apiTrip.userId.substring(0, 8)}...` : 'Unknown User',
+            passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+            pickupLocation: firstDay?.city || apiTrip.baseCity || 'Not specified',
+            destination: lastDay?.city || 'Multiple destinations',
+            distance: `${Math.round(apiTrip.averageTripDistance || 0)} km`,
+            estimatedTime: `${Math.ceil((apiTrip.averageTripDistance || 0) / 60)} hours`,
+            fare: apiTrip.payedAmount || 0,
+            passengerRating: 4.9,
+            startDate: apiTrip.startDate,
+            endDate: apiTrip.endDate,
+            arrivalTime: apiTrip.arrivalTime,
+            baseCity: apiTrip.baseCity,
+            dailyPlans: apiTrip.dailyPlans,
+            vehicleType: apiTrip.vehicleType,
+            driverNeeded: apiTrip.driverNeeded,
+            guideNeeded: apiTrip.guideNeeded,
+            guideEmail: apiTrip.guide_email,
+            // Important fields from the new API
+            started: apiTrip.started,
+            startconfirmed: apiTrip.startconfirmed,
+            ended: apiTrip.ended,
+            endconfirmed: apiTrip.endconfirmed
+          };
+
+          setActiveTrip(transformedTrip);
+          
+          // Update stats to reflect active trip
+          setDriverStats(prevStats => ({
+            ...prevStats,
+            activeTrips: 1
+          }));
+        } else {
+          setActiveTrip(null);
+          setDriverStats(prevStats => ({
+            ...prevStats,
+            activeTrips: 0
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching active trips:', err);
+        setActiveTrip(null);
+        setDriverStats(prevStats => ({
+          ...prevStats,
+          activeTrips: 0
+        }));
+      } finally {
+        setActiveTripsLoading(false);
+      }
+    };
+
+    fetchActiveTrips();
+  }, [driverEmail]);
+
   const handleTripAction = async (tripId, action) => {
     try {
       setLoading(true);
@@ -264,7 +342,7 @@ const DriverDashboard = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto relative">
       {/* Loading Screen */}
-      {loading && (
+      {(loading || activeTripsLoading) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
         </div>
@@ -389,10 +467,28 @@ const DriverDashboard = () => {
                 <p className="font-semibold">LKR{activeTrip.fare}</p>
               </div>
             </div>
+            
+            {/* Conditional message based on startconfirmed */}
+            {activeTrip.startconfirmed === 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <div className="flex items-center">
+                  <AlertCircle className="h-4 w-4 text-yellow-500 mr-2" />
+                  <span className="text-sm text-yellow-700">
+                    Waiting for the tourist to start the trip
+                  </span>
+                </div>
+              </div>
+            )}
+            
             <div className="flex space-x-3">
               <button 
-                className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                onClick={() => setMapModalOpen(true)}
+                className={`flex-1 py-2 px-4 rounded-lg transition-colors font-medium ${
+                  activeTrip.startconfirmed === 0 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+                onClick={() => activeTrip.startconfirmed === 1 && setMapModalOpen(true)}
+                disabled={activeTrip.startconfirmed === 0}
               >
                 <Navigation className="h-4 w-4 inline mr-2" />
                 Navigate
@@ -404,6 +500,19 @@ const DriverDashboard = () => {
                 Trip Details
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Active Trip Message */}
+      {!activeTrip && !activeTripsLoading && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="text-center py-8">
+            <Navigation className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Trip</h3>
+            <p className="text-gray-600">
+              You don't have any active trips at the moment. Accept a trip request to get started!
+            </p>
           </div>
         </div>
       )}
