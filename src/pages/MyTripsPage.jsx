@@ -101,7 +101,7 @@ const MyTripsPage = () => {
         
         try {
           console.log('📡 Calling fetchUserTrips...');
-          const userTrips = await fetchUserTrips(user.uid);
+          const userTrips = await fetchUserTrips(user.uid, filterStatus);
           console.log('✅ API CALL SUCCESS! Received trips:', userTrips.length);
           console.log('📊 First trip data sample:', userTrips[0]);
           setTrips(userTrips);
@@ -132,6 +132,53 @@ const MyTripsPage = () => {
 
     return () => unsubscribe();
   }, []);
+
+  // Watch for filter changes and refetch trips
+  useEffect(() => {
+    const refetchTripsForFilter = async () => {
+      if (!currentUser) {
+        console.log('🚫 No current user - skipping trip fetch');
+        setTrips([]);
+        return;
+      }
+      
+      // Check if we should use mock data (only when explicitly set)
+      const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
+      
+      if (useMockData) {
+        console.log('🔧 Using mock data - REACT_APP_USE_MOCK_DATA is set to true');
+        setTrips(mockTrips);
+        setApiError(null);
+        return;
+      }
+      
+      console.log('🔄 Filter changed to:', filterStatus);
+      console.log('🚀 Refetching trips with new filter...');
+      
+      try {
+        const userTrips = await fetchUserTrips(currentUser.uid, filterStatus);
+        console.log('✅ FILTER REFETCH SUCCESS! Received trips:', userTrips.length);
+        setTrips(userTrips);
+        setApiError(null);
+      } catch (error) {
+        console.error('❌ FILTER REFETCH FAILED!');
+        console.error('❌ Error:', error.message);
+        
+        // Only use mock data for specific network errors, not all errors
+        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+          console.warn('⚠️ Network error detected - using mock data as fallback');
+          setTrips(mockTrips);
+          setApiError('Unable to connect to server. Showing sample data.');
+        } else {
+          console.error('❌ API Error - NOT using mock data. Showing error state.');
+          setTrips([]);
+          setApiError(error.message);
+        }
+      }
+    };
+
+    refetchTripsForFilter();
+  }, [filterStatus, currentUser]);
 
   // Check authentication and profile completion
   const checkUserAccessAndProfile = (actionName) => {
@@ -382,12 +429,19 @@ const MyTripsPage = () => {
   ];
 
   // API function to fetch user trips
-  const fetchUserTrips = async (userId) => {
+  const fetchUserTrips = async (userId, filter = 'all') => {
     console.log('📥 ===== FETCH USER TRIPS START =====');
     console.log('👤 Fetching trips for userId:', userId);
+    console.log('🔍 Filter selected:', filter);
     console.log('🌍 Full API URL will be constructed as:');
     
-    const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary?userId=${userId}`;
+    let apiUrl;
+    if (filter === 'active') {
+      apiUrl = `http://localhost:5006/api/trips/user/${userId}`;
+    } else {
+      // For 'all', 'completed', 'draft' use the existing endpoint
+      apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary?userId=${userId}`;
+    }
     console.log('🔗 Complete API URL:', apiUrl);
     
     try {
@@ -426,8 +480,14 @@ const MyTripsPage = () => {
           throw new Error(`Invalid userId: ${errorData.message}`);
         } else if (response.status === 404) {
           console.log('📝 404 - No trips found for user');
-          alert('No trips found. Start planning your first adventure!');
-          return []; // Return empty array for no trips
+          if (filter === 'active') {
+            // For active trips, don't show alert - just return empty array
+            console.log('📝 No active trips found for user');
+            return [];
+          } else {
+            alert('No trips found. Start planning your first adventure!');
+            return []; // Return empty array for no trips
+          }
         } else if (response.status === 500) {
           const msg = `Server error: ${errorData.message || 'Please try again later'}`;
           console.error('❌ 500 Error:', msg);
@@ -449,13 +509,74 @@ const MyTripsPage = () => {
       console.log('📦 Raw data:', data);
       console.log('📦 First item sample:', Array.isArray(data) && data.length > 0 ? data[0] : 'No items');
       
-      // Transform backend trip summaries to match frontend expected format
-      const backendTrips = Array.isArray(data) ? data : [];
+      // Validate active trips API response (different structure than the all trips API)
+      if (filter === 'active') {
+        // Active trips API can have two possible structures:
+        // 1. Direct: { userId: string, trips: array, totalTrips: number }
+        // 2. Wrapped: { success: true, data: { userId: string, trips: array, totalTrips: number } }
+        
+        let actualData = data;
+        if (data.success && data.data) {
+          actualData = data.data;
+          console.log('✅ Active trips API wrapped structure detected, using data field');
+        }
+        
+        if (!actualData.userId || !Array.isArray(actualData.trips)) {
+          console.error('❌ Active trips API unexpected response structure');
+          console.error('Expected data to have: { userId: string, trips: array, totalTrips: number }');
+          console.error('Received actualData:', actualData);
+          // Don't throw error, just log and continue with empty array
+        } else {
+          console.log('✅ Active trips API structure validation passed');
+        }
+      }
+      
+      // Handle different API response formats
+      let backendTrips = [];
+      
+      if (filter === 'active') {
+        // Active trips API response format (from localhost:5006)
+        // Priority order for parsing:
+        // 1. Wrapped: { success: true, data: { userId: string, trips: array, totalTrips: number } }
+        // 2. Direct: { userId: string, trips: array, totalTrips: number }
+        // 3. Fallback: direct array
+        
+        if (data.success && data.data && Array.isArray(data.data.trips)) {
+          // Wrapped structure (most common)
+          backendTrips = data.data.trips;
+          console.log('📊 Active trips API (wrapped) - userId:', data.data.userId);
+          console.log('📊 Active trips API (wrapped) - totalTrips:', data.data.totalTrips);
+        } else if (data.trips && Array.isArray(data.trips)) {
+          // Direct structure
+          backendTrips = data.trips;
+          console.log('📊 Active trips API (direct) - userId:', data.userId);
+          console.log('📊 Active trips API (direct) - totalTrips:', data.totalTrips);
+        } else if (Array.isArray(data)) {
+          // Fallback: direct array response
+          backendTrips = data;
+          console.log('📊 Active trips API (array) - length:', data.length);
+        } else {
+          console.warn('⚠️ Unexpected active trips API response structure:', data);
+          backendTrips = [];
+        }
+      } else {
+        // All trips API response format (from localhost:8085)
+        backendTrips = Array.isArray(data) ? data : [];
+      }
+      
       console.log('🔄 Processing', backendTrips.length, 'trips for transformation...');
       
       const transformedTrips = backendTrips.map((trip, index) => {
         console.log(`🔄 Transforming trip ${index + 1}:`, trip);
-        const transformed = transformBackendTripSummary(trip);
+        
+        // Use different transformation based on the API source
+        let transformed;
+        if (filter === 'active') {
+          transformed = transformActiveTrip(trip);
+        } else {
+          transformed = transformBackendTripSummary(trip);
+        }
+        
         console.log(`✅ Transformed trip ${index + 1}:`, transformed);
         return transformed;
       });
@@ -596,6 +717,107 @@ const MyTripsPage = () => {
     };
   };
 
+  // Transform active trip data from active trips API to frontend format
+  const transformActiveTrip = (activeTrip) => {
+    console.log('🔄 Transforming active trip data:', activeTrip);
+    
+    const formatTripDates = (startDate, endDate) => {
+      if (!startDate || !endDate) return 'Dates not set';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
+    };
+
+    const calculateDaysLeft = (trip) => {
+      const endDate = trip.endDate || trip.end_date || trip.endTime;
+      if (!endDate) return null;
+      
+      const now = new Date();
+      const end = new Date(endDate);
+      
+      if (now <= end) {
+        return Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+      }
+      return 0;
+    };
+
+    // Extract trip data based on the actual API response structure
+    // The API response has: tripName, startDate, endDate, baseCity, etc.
+    const tripId = activeTrip._id || activeTrip.id || `trip_${Date.now()}_${Math.random()}`;
+    const tripName = activeTrip.tripName || activeTrip.name || activeTrip.title || 'Untitled Trip';
+    const startDate = activeTrip.startDate;
+    const endDate = activeTrip.endDate;
+    const destination = activeTrip.baseCity || activeTrip.destination || activeTrip.location || 'Sri Lanka';
+    
+    // Calculate budget from the cost fields
+    const driverCost = activeTrip.averageDriverCost || 0;
+    const guideCost = activeTrip.averageGuideCost || 0;
+    const totalBudget = driverCost + guideCost;
+    const spent = parseFloat(activeTrip.payedAmount) || 0;
+
+    // Get city image for the destination
+    const cityImage = getCityImageUrl(destination);
+    
+    // Build highlights array from dailyPlans, preferredTerrains, and preferredActivities
+    let highlights = [];
+    
+    // Add destination
+    if (destination) {
+      highlights.push(destination);
+    }
+    
+    // Add preferred terrains
+    if (activeTrip.preferredTerrains && Array.isArray(activeTrip.preferredTerrains)) {
+      highlights = [...highlights, ...activeTrip.preferredTerrains.slice(0, 2)];
+    }
+    
+    // Add preferred activities
+    if (activeTrip.preferredActivities && Array.isArray(activeTrip.preferredActivities)) {
+      highlights = [...highlights, ...activeTrip.preferredActivities.slice(0, 2)];
+    }
+    
+    // Add cities from daily plans
+    if (activeTrip.dailyPlans && Array.isArray(activeTrip.dailyPlans)) {
+      const cities = activeTrip.dailyPlans
+        .map(plan => plan.city)
+        .filter(city => city && city !== destination)
+        .slice(0, 2);
+      highlights = [...highlights, ...cities];
+    }
+    
+    // Remove duplicates and limit to 5 highlights
+    highlights = [...new Set(highlights)].slice(0, 5);
+    
+    // Calculate number of days
+    const numberOfDays = activeTrip.dailyPlans ? activeTrip.dailyPlans.length : 
+                        (startDate && endDate ? Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1 : 1);
+    
+    return {
+      id: tripId,
+      name: tripName,
+      dates: formatTripDates(startDate, endDate),
+      destination: destination,
+      image: cityImage,
+      status: 'active', // All trips from this API are active
+      progress: 50, // Default progress for active trips
+      daysLeft: calculateDaysLeft(activeTrip),
+      travelers: 1, // Default as the API doesn't seem to have group size info
+      rating: null,
+      memories: 0,
+      highlights: highlights,
+      budget: totalBudget,
+      spent: spent,
+      numberOfDays: numberOfDays,
+      message: `${activeTrip.activityPacing} paced trip with ${activeTrip.budgetLevel} budget`,
+      createdAt: activeTrip.lastUpdated,
+      _originalData: activeTrip,
+      _source: 'active_trips_api'
+    };
+  };
+
   // Handle new trip data from the complete trip flow
   useEffect(() => {
     if (location.state?.newTrip) {
@@ -664,44 +886,36 @@ const MyTripsPage = () => {
     };
   };
 
-  // Fetch backend trips and merge with hardcoded trips
-  useEffect(() => {
-    let isMounted = true;
-    const fetchTrips = async () => {
-      try {
-        const backend = await getUserTrips();
-        if (backend && backend.trips) {
-          setTrips(prev => {
-            const prevIds = new Set(prev.map(t => t.id));
-            const prevNames = new Set(prev.map(t => t.name));
-            const backendFormatted = backend.trips.map(trip => {
-              const destination = trip.destination || 'Sri Lanka';
-              return {
-                ...trip,
-                id: trip.id || trip._id || Date.now() + Math.random(),
-                image: trip.image || getCityImageUrl(destination),
-                status: trip.status || 'active',
-                dates: trip.dates || 'Not set',
-                destination: destination,
-              };
-            }).filter(trip => !prevNames.has(trip.name));
-            return [...backendFormatted, ...prev];
-          });
-        }
-      } catch (err) {
-        console.error('Failed to fetch user trips:', err);
-      }
-    };
-    fetchTrips();
-    return () => { isMounted = false; };
-  }, []);
-
   // Filter and sort trips
   const filteredTrips = trips.filter(trip => {
     const matchesSearch = trip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          trip.destination.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || trip.status === filterStatus;
+    
+    // If filter is 'active', we already fetched only active trips from the active trips API
+    // If filter is 'all', we show all trips from the main API
+    // If filter is 'completed' or 'draft', we filter from the 'all' trips
+    let matchesFilter = true;
+    if (filterStatus === 'active') {
+      // Already filtered by API, no need to filter again
+      matchesFilter = true;
+    } else if (filterStatus === 'all') {
+      // Show all trips
+      matchesFilter = true;
+    } else {
+      // For 'completed', 'draft', filter from the fetched trips
+      matchesFilter = trip.status === filterStatus;
+    }
+    
     return matchesSearch && matchesFilter;
+  });
+
+  // Debug logging
+  console.log('🔍 FILTERING DEBUG:', {
+    totalTrips: trips.length,
+    filteredTrips: filteredTrips.length,
+    filterStatus: filterStatus,
+    searchTerm: searchTerm,
+    tripsFirstFew: trips.slice(0, 3).map(t => ({ id: t.id, name: t.name, status: t.status }))
   });
 
   const sortedTrips = [...filteredTrips].sort((a, b) => {
@@ -917,8 +1131,24 @@ const MyTripsPage = () => {
 
           {/* Highlight Ongoing Trip and Other Trips */}
           {(() => {
-            const ongoingTrip = sortedTrips.find(trip => trip.status === 'active');
-            const otherTrips = sortedTrips.filter(trip => trip.status !== 'active');
+            // When viewing active trips, we want to show the first active trip as "ongoing"
+            // and the rest as "other active trips" instead of filtering them out
+            let ongoingTrip, otherTrips;
+            
+            if (filterStatus === 'active' && sortedTrips.length > 0) {
+              // For active filter: show first trip as ongoing, rest as other active trips
+              ongoingTrip = sortedTrips[0];
+              otherTrips = sortedTrips.slice(1); // All remaining active trips
+              console.log('🔄 Active filter UI logic - ongoing trip:', ongoingTrip?.name);
+              console.log('🔄 Active filter UI logic - other active trips:', otherTrips.length);
+            } else {
+              // For other filters: use original logic
+              ongoingTrip = sortedTrips.find(trip => trip.status === 'active');
+              otherTrips = sortedTrips.filter(trip => trip.status !== 'active');
+              console.log('🔄 Regular filter UI logic - ongoing trip:', ongoingTrip?.name);
+              console.log('🔄 Regular filter UI logic - other trips:', otherTrips.length);
+            }
+            
             return (
               <>
                 {ongoingTrip && (
@@ -1002,59 +1232,84 @@ const MyTripsPage = () => {
                 )}
                 {/* Categorized Other Trips */}
                 {(() => {
-                  const upcoming = otherTrips.filter(trip => trip.status === 'draft' || trip.status === 'upcoming' || trip.status === 'active');
-                  const history = otherTrips.filter(trip => trip.status === 'completed' || trip.status === 'expired');
-                  return (
-                    <>
-                      {upcoming.length > 0 && (
-                        <div className="mb-12">
-                          <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Upcoming Trips</h2>
-                          <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
-                            {upcoming.map((trip) => (
-                              <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
-                                <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {history.length > 0 && (
-                        <div className="mb-12">
-                          <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-6">Trip History</h2>
-                          <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
-                            {history.map((trip) => (
-                              <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
-                                <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {upcoming.length === 0 && history.length === 0 && (
-                        <div className="text-center py-20">
-                          <div className="max-w-md mx-auto">
-                            <div className="w-24 h-24 mx-auto mb-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <Globe className="h-12 w-12 text-blue-600" />
+                  if (filterStatus === 'active') {
+                    // When viewing active trips, all "otherTrips" are active trips
+                    return (
+                      <>
+                        {otherTrips.length > 0 && (
+                          <div className="mb-12">
+                            <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Other Active Trips</h2>
+                            <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
+                              {otherTrips.map((trip) => (
+                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                  <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
+                                </div>
+                              ))}
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-4">No trips found</h3>
-                            <p className="text-gray-600 mb-8">
-                              {searchTerm || filterStatus !== 'all' 
-                                ? "Try adjusting your search or filter criteria"
-                                : "Your travel adventure starts with a single step. Create your first trip!"}
-                            </p>
-                            <button
-                              onClick={handlePlanNewAdventure}
-                              className="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full font-semibold text-base hover:bg-blue-700 transition-colors shadow"
-                            >
-                              <Plus className="mr-2 h-5 w-5" />
-                              Create Your First Trip
-                            </button>
                           </div>
-                        </div>
-                      )}
-                    </>
-                  );
+                        )}
+                      </>
+                    );
+                  } else {
+                    // Regular categorization for other filters
+                    const upcoming = otherTrips.filter(trip => trip.status === 'draft' || trip.status === 'upcoming' || trip.status === 'active');
+                    const history = otherTrips.filter(trip => trip.status === 'completed' || trip.status === 'expired');
+                    return (
+                      <>
+                        {upcoming.length > 0 && (
+                          <div className="mb-12">
+                            <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Upcoming Trips</h2>
+                            <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
+                              {upcoming.map((trip) => (
+                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                  <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {history.length > 0 && (
+                          <div className="mb-12">
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-6">Trip History</h2>
+                            <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
+                              {history.map((trip) => (
+                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                  <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  }
                 })()}
+
+                {/* Empty State */}
+                {(filterStatus === 'active' ? otherTrips.length === 0 : 
+                  otherTrips.filter(trip => trip.status === 'draft' || trip.status === 'upcoming' || trip.status === 'active').length === 0 &&
+                  otherTrips.filter(trip => trip.status === 'completed' || trip.status === 'expired').length === 0) && (
+                  <div className="text-center py-20">
+                    <div className="max-w-md mx-auto">
+                      <div className="w-24 h-24 mx-auto mb-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Globe className="h-12 w-12 text-blue-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">No trips found</h3>
+                      <p className="text-gray-600 mb-8">
+                        {searchTerm || filterStatus !== 'all' 
+                          ? "Try adjusting your search or filter criteria"
+                          : "Your travel adventure starts with a single step. Create your first trip!"}
+                      </p>
+                      <button
+                        onClick={handlePlanNewAdventure}
+                        className="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full font-semibold text-base hover:bg-blue-700 transition-colors shadow"
+                      >
+                        <Plus className="mr-2 h-5 w-5" />
+                        Create Your First Trip
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             );
           })()}
