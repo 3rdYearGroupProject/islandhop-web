@@ -16,8 +16,18 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [completingDestination, setCompletingDestination] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  
+  // New state for day management
+  const [startingDay, setStartingDay] = useState(null);
+  const [endingDay, setEndingDay] = useState(null);
+  const [showStartDayModal, setShowStartDayModal] = useState(false);
+  const [showEndDayModal, setShowEndDayModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [startMeterReading, setStartMeterReading] = useState('');
+  const [endMeterReading, setEndMeterReading] = useState('');
+  const [deductValue, setDeductValue] = useState('');
+  const [dayNote, setDayNote] = useState('');
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -47,6 +57,156 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       calculateRoute();
     }
   }, [routeData, isLoaded]);
+
+  // Helper functions for day management
+  const canStartDay = (dayNumber) => {
+    if (!tripData?.dailyPlans) return false;
+    
+    // First day can always be started
+    if (dayNumber === 1) return true;
+    
+    // For subsequent days, previous day must be end_confirmed
+    const previousDay = tripData.dailyPlans.find(day => day.day === dayNumber - 1);
+    return previousDay && previousDay.end_confirmed === 1;
+  };
+
+  const canEndDay = (dayNumber) => {
+    if (!tripData?.dailyPlans) return false;
+    
+    const currentDay = tripData.dailyPlans.find(day => day.day === dayNumber);
+    return currentDay && currentDay.start_confirmed === 1;
+  };
+
+  const isDayStarted = (dayNumber) => {
+    if (!tripData?.dailyPlans) return false;
+    const day = tripData.dailyPlans.find(d => d.day === dayNumber);
+    return day && day.start_confirmed === 1;
+  };
+
+  const isDayEnded = (dayNumber) => {
+    if (!tripData?.dailyPlans) return false;
+    const day = tripData.dailyPlans.find(d => d.day === dayNumber);
+    return day && day.end_confirmed === 1;
+  };
+
+  // Start day functionality
+  const handleStartDay = (dayNumber) => {
+    setSelectedDay(dayNumber);
+    setStartMeterReading('');
+    setShowStartDayModal(true);
+  };
+
+  const confirmStartDay = async () => {
+    if (!startMeterReading || !selectedDay) {
+      setError('Please enter meter reading');
+      return;
+    }
+
+    try {
+      setStartingDay(selectedDay);
+      const response = await fetch(`http://localhost:5007/api/trips/start-day-${selectedDay}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tripId: tripId,
+          metervalue: parseInt(startMeterReading)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to start day ${selectedDay}: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Day started successfully:', result);
+      
+      // Refresh trip data by calling parent component or refetch
+      setShowStartDayModal(false);
+      setStartMeterReading('');
+      setSelectedDay(null);
+      
+      // You might want to call a callback to refresh trip data
+      if (tripData) {
+        // Update local state if possible
+        const updatedDay = tripData.dailyPlans.find(d => d.day === selectedDay);
+        if (updatedDay) {
+          updatedDay.start_confirmed = 1;
+          updatedDay.start_meter_read = parseInt(startMeterReading);
+        }
+      }
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error starting day:', err);
+    } finally {
+      setStartingDay(null);
+    }
+  };
+
+  // End day functionality
+  const handleEndDay = (dayNumber) => {
+    setSelectedDay(dayNumber);
+    setEndMeterReading('');
+    setDeductValue('');
+    setDayNote('');
+    setShowEndDayModal(true);
+  };
+
+  const confirmEndDay = async () => {
+    if (!endMeterReading || !selectedDay) {
+      setError('Please enter meter reading');
+      return;
+    }
+
+    try {
+      setEndingDay(selectedDay);
+      const response = await fetch(`http://localhost:5007/api/trips/end-day-${selectedDay}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tripId: tripId,
+          metervalue: parseInt(endMeterReading),
+          deductvalue: parseInt(deductValue) || 0,
+          note: dayNote || ''
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to end day ${selectedDay}: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Day ended successfully:', result);
+      
+      // Refresh trip data
+      setShowEndDayModal(false);
+      setEndMeterReading('');
+      setDeductValue('');
+      setDayNote('');
+      setSelectedDay(null);
+      
+      // Update local state if possible
+      if (tripData) {
+        const updatedDay = tripData.dailyPlans.find(d => d.day === selectedDay);
+        if (updatedDay) {
+          updatedDay.end_confirmed = 1;
+          updatedDay.end_meter_read = parseInt(endMeterReading);
+          updatedDay.deduct_amount = parseInt(deductValue) || 0;
+          updatedDay.additional_note = dayNote || '';
+        }
+      }
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error ending day:', err);
+    } finally {
+      setEndingDay(null);
+    }
+  };
 
   const calculateRoute = useCallback(async () => {
     if (!isLoaded) return;
@@ -96,69 +256,34 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       return null;
     }
 
-    const optimizedRoute = tripData.dailyPlans.map((day, index) => {
+    const optimizedRoute = tripData.dailyPlans.map((dayPlan) => {
       const destinations = [];
       
-      // Add activities as destinations
-      if (day.activities) {
-        day.activities.forEach(activity => {
+      // Add attractions as destinations
+      if (dayPlan.attractions && Array.isArray(dayPlan.attractions)) {
+        dayPlan.attractions.forEach((attraction, index) => {
           destinations.push({
-            id: activity.id || `activity-${index}-${destinations.length}`,
-            name: activity.name || activity.title || 'Activity',
+            id: `attraction-${dayPlan.day}-${index}`,
+            name: attraction.name || 'Attraction',
             category: 'activities',
             completed: false,
-            estimatedArrival: activity.time || null,
-            coordinates: activity.coordinates || null
-          });
-        });
-      }
-
-      // Add places to stay as destinations
-      if (day.places) {
-        day.places.forEach(place => {
-          destinations.push({
-            id: place.id || `place-${index}-${destinations.length}`,
-            name: place.name || 'Place to Stay',
-            category: 'places',
-            completed: false,
-            estimatedArrival: place.checkIn || null,
-            coordinates: place.coordinates || null
-          });
-        });
-      }
-
-      // Add food places as destinations
-      if (day.food) {
-        day.food.forEach(food => {
-          destinations.push({
-            id: food.id || `food-${index}-${destinations.length}`,
-            name: food.name || 'Restaurant',
-            category: 'food',
-            completed: false,
-            estimatedArrival: food.time || null,
-            coordinates: food.coordinates || null
-          });
-        });
-      }
-
-      // Add transportation as destinations
-      if (day.transportation) {
-        day.transportation.forEach(transport => {
-          destinations.push({
-            id: transport.id || `transport-${index}-${destinations.length}`,
-            name: transport.name || 'Transportation',
-            category: 'transportation',
-            completed: false,
-            estimatedArrival: transport.time || null,
-            coordinates: transport.coordinates || null
+            estimatedArrival: null,
+            coordinates: attraction.location || null
           });
         });
       }
 
       return {
-        day: index + 1,
-        city: day.city || day.destination || `Day ${index + 1}`,
-        destinations: destinations
+        day: dayPlan.day,
+        city: dayPlan.city || `Day ${dayPlan.day}`,
+        destinations: destinations,
+        // Include day status from API
+        start_confirmed: dayPlan.start_confirmed,
+        end_confirmed: dayPlan.end_confirmed,
+        start_meter_read: dayPlan.start_meter_read,
+        end_meter_read: dayPlan.end_meter_read,
+        deduct_amount: dayPlan.deduct_amount,
+        additional_note: dayPlan.additional_note
       };
     });
 
@@ -201,36 +326,6 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     }
   };
 
-  const handleDestinationComplete = async (day, destinationType, destinationId) => {
-    try {
-      setCompletingDestination(destinationId);
-      
-      const response = await fetch(`${BASE_URL}/trips/${tripId}/completeDestination`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          day,
-          destinationType,
-          destinationId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to complete destination: ${response.status}`);
-      }
-
-      // Refresh route data after completion
-      await fetchRouteData();
-    } catch (err) {
-      setError(err.message);
-      console.error('Error completing destination:', err);
-    } finally {
-      setCompletingDestination(null);
-    }
-  };
-
   const getRouteStatistics = () => {
     if (directionsResponse) {
       const route = directionsResponse.routes[0];
@@ -261,36 +356,6 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       default:
         return '#6B7280'; // Gray
     }
-  };
-
-  const renderDestinationMarkers = () => {
-    if (!routeData?.optimizedRoute) return null;
-
-    const markers = [];
-    routeData.optimizedRoute.forEach((day) => {
-      day.destinations.forEach((destination) => {
-        if (!destination.completed) {
-          markers.push(
-            <Marker
-              key={destination.id}
-              position={destination.coordinates}
-              title={destination.name}
-              icon={{
-                path: window.google?.maps?.SymbolPath?.CIRCLE || 0,
-                fillColor: getMarkerColor(destination.category),
-                fillOpacity: 1,
-                strokeColor: '#FFFFFF',
-                strokeWeight: 2,
-                scale: 8,
-              }}
-              onClick={() => handleDestinationComplete(day.day, destination.category, destination.id)}
-            />
-          );
-        }
-      });
-    });
-
-    return markers;
   };
 
   if (!open) return null;
@@ -396,17 +461,70 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
             <h3 className="font-semibold text-gray-900 mb-3 text-lg">Upcoming Destinations</h3>
             
             {routeData?.optimizedRoute?.map((day) => (
-              <div key={day.day} className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Day {day.day} - {day.city}
-                </h4>
-                
-                {day.destinations
-                  .filter(dest => !dest.completed)
-                  .map((destination) => (
+              <div key={day.day} className="mb-6 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900">
+                    Day {day.day} - {day.city}
+                  </h4>
+                  <div className="flex items-center gap-1">
+                    {isDayStarted(day.day) && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Started</span>
+                    )}
+                    {isDayEnded(day.day) && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">Completed</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Day Management Buttons */}
+                <div className="flex gap-2 mb-3">
+                  {!isDayStarted(day.day) && canStartDay(day.day) && (
+                    <button
+                      onClick={() => handleStartDay(day.day)}
+                      disabled={startingDay === day.day}
+                      className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {startingDay === day.day ? (
+                        <Loader className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <span>▶️</span>
+                      )}
+                      Start Day
+                    </button>
+                  )}
+                  
+                  {!isDayStarted(day.day) && !canStartDay(day.day) && day.day > 1 && (
+                    <button
+                      disabled
+                      className="px-3 py-1 bg-gray-300 text-gray-500 text-xs rounded cursor-not-allowed"
+                      title="Previous day must be completed first"
+                    >
+                      ⏸️ Waiting
+                    </button>
+                  )}
+
+                  {isDayStarted(day.day) && !isDayEnded(day.day) && canEndDay(day.day) && (
+                    <button
+                      onClick={() => handleEndDay(day.day)}
+                      disabled={endingDay === day.day}
+                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {endingDay === day.day ? (
+                        <Loader className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-3 w-3" />
+                      )}
+                      Mark Complete
+                    </button>
+                  )}
+                </div>
+
+                {/* Attractions/Destinations for this day */}
+                {day.destinations && day.destinations.length > 0 ? (
+                  day.destinations.map((destination) => (
                     <div
                       key={destination.id}
-                      className="bg-white rounded-lg p-3 mb-2 border border-gray-200"
+                      className="bg-white rounded-lg p-3 mb-2 border border-gray-100"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -420,7 +538,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                             </span>
                           </div>
                           
-                          <div className="text-xs text-gray-600 mb-2">
+                          <div className="text-xs text-gray-600">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               <span className="capitalize">{destination.category}</span>
@@ -434,36 +552,27 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                           </div>
                         </div>
                       </div>
-                      
-                      <button
-                        onClick={() => handleDestinationComplete(
-                          day.day,
-                          destination.category,
-                          destination.id
-                        )}
-                        disabled={completingDestination === destination.id}
-                        className="w-full px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-                      >
-                        {completingDestination === destination.id ? (
-                          <Loader className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-3 w-3" />
-                        )}
-                        Mark Complete
-                      </button>
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 text-xs py-2">
+                    No attractions planned for this day
+                  </div>
+                )}
               </div>
             ))}
             
-            {routeData?.optimizedRoute?.every(day => 
-              day.destinations.every(dest => dest.completed)
-            ) && (
+            {!tripData?.dailyPlans || tripData.dailyPlans.length === 0 ? (
               <div className="text-center text-gray-500 text-sm">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                All destinations completed!
+                No trip data available
               </div>
-            )}
+            ) : tripData.dailyPlans.every(day => isDayEnded(day.day)) ? (
+              <div className="text-center text-gray-500 text-sm">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                All days completed!
+              </div>
+            ) : null}
           </div>
 
           {/* Map Section - 75% - RIGHT SIDE */}
@@ -514,9 +623,6 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                     }}
                   />
                 )}
-                
-                {/* Destination Markers (for additional functionality) */}
-                {renderDestinationMarkers()}
               </GoogleMap>
             ) : (
               <div className="flex items-center justify-center h-full bg-gray-100 rounded-lg">
@@ -532,6 +638,130 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
             )}
           </div>
         </div>
+
+        {/* Start Day Modal */}
+        {showStartDayModal && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-96 mx-4">
+              <h3 className="text-lg font-semibold mb-4">Start Day {selectedDay}</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Meter Reading
+                </label>
+                <input
+                  type="number"
+                  value={startMeterReading}
+                  onChange={(e) => setStartMeterReading(e.target.value)}
+                  placeholder="Enter current meter reading"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowStartDayModal(false);
+                    setStartMeterReading('');
+                    setSelectedDay(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmStartDay}
+                  disabled={!startMeterReading || startingDay}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {startingDay ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    'Start Day'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* End Day Modal */}
+        {showEndDayModal && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-96 mx-4">
+              <h3 className="text-lg font-semibold mb-4">Complete Day {selectedDay}</h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Meter Reading *
+                </label>
+                <input
+                  type="number"
+                  value={endMeterReading}
+                  onChange={(e) => setEndMeterReading(e.target.value)}
+                  placeholder="Enter end meter reading"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deduct Value (optional)
+                </label>
+                <input
+                  type="number"
+                  value={deductValue}
+                  onChange={(e) => setDeductValue(e.target.value)}
+                  placeholder="Enter deduction amount"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Note (optional)
+                </label>
+                <textarea
+                  value={dayNote}
+                  onChange={(e) => setDayNote(e.target.value)}
+                  placeholder="Enter any notes for this day"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowEndDayModal(false);
+                    setEndMeterReading('');
+                    setDeductValue('');
+                    setDayNote('');
+                    setSelectedDay(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmEndDay}
+                  disabled={!endMeterReading || endingDay}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {endingDay ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Completing...
+                    </>
+                  ) : (
+                    'Complete Day'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
