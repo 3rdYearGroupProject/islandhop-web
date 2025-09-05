@@ -7,47 +7,94 @@ const DriverTripModal = ({ open, onClose, trip }) => {
   if (!open || !trip) return null;
 
   // Use actual trip data from dailyPlans if available, otherwise use mock data
-  const itineraryData = trip.dailyPlans ? 
+  const itineraryData = trip.dailyPlans && Array.isArray(trip.dailyPlans) && trip.dailyPlans.length > 0 ? 
     trip.dailyPlans.reduce((acc, day, index) => {
+      
+      // Transform attractions array into categorized arrays
+      const activities = [];
+      const places = [];
+      const food = [];
+      const transportation = [];
+      
+      if (day.attractions && Array.isArray(day.attractions)) {
+        day.attractions.forEach(attraction => {
+          const item = {
+            id: attraction.id || Math.random(),
+            name: attraction.name,
+            location: typeof attraction.location === 'object' 
+              ? `${attraction.location.lat}, ${attraction.location.lng}`
+              : attraction.location || 'Location not specified',
+            rating: attraction.rating,
+            type: attraction.type,
+            description: attraction.description || `Visit ${attraction.name}`
+          };
+          
+          // Categorize based on type
+          switch (attraction.type?.toLowerCase()) {
+            case 'activity':
+            case 'attraction':
+              activities.push(item);
+              break;
+            case 'place':
+            case 'accommodation':
+              places.push(item);
+              break;
+            case 'food':
+            case 'restaurant':
+              food.push(item);
+              break;
+            case 'transport':
+            case 'transportation':
+              transportation.push(item);
+              break;
+            default:
+              // Default to activities if type is unclear
+              activities.push(item);
+          }
+        });
+      }
+      
       acc[index] = {
-        date: new Date(trip.startDate),
-        activities: day.activities || [],
-        places: day.places || [],
-        food: day.food || [],
-        transportation: day.transportation || [],
-        city: day.city || day.destination || `Day ${index + 1}`
+        date: new Date(day.date || trip.startDate),
+        city: day.city || day.destination || `Day ${index + 1}`,
+        activities: activities,
+        places: places,
+        food: food,
+        transportation: transportation
       };
+      
       return acc;
     }, {}) :
-    // Fallback mock data for trips without detailed daily plans
+    // Fallback: Create a basic itinerary structure from available trip data
     {
       0: {
         date: new Date(trip.startDate || Date.now()),
+        city: trip.destination || trip.pickupLocation || 'Trip Location',
         activities: [
           {
             id: 1,
-            name: 'Explore ' + (trip.destination || 'destination'),
+            name: 'Trip to ' + (trip.destination || 'destination'),
             location: trip.destination || 'Various locations',
-            duration: '2-3 hours',
+            duration: trip.estimatedTime || '2-3 hours',
             rating: 4.5,
-            description: 'Guided tour of main attractions',
-            price: 'Included',
+            description: 'Driver service for your planned trip',
+            price: `LKR ${trip.fare || 0}`,
             time: '09:00'
           }
         ],
-        places: [
+        places: trip.destination ? [
           {
             id: 1,
-            name: 'Accommodation in ' + (trip.pickupLocation || 'city'),
-            location: trip.pickupLocation || 'City center',
+            name: 'Destination Area',
+            location: trip.destination,
             price: `LKR ${trip.fare || 0}/trip`,
             rating: 4.0,
             reviews: 50,
-            description: 'Comfortable stay during the trip',
+            description: 'Your planned destination',
             checkIn: '15:00',
             checkOut: '11:00'
           }
-        ],
+        ] : [],
         food: [
           {
             id: 1,
@@ -192,7 +239,8 @@ const DriverTripModal = ({ open, onClose, trip }) => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Tourist's Planned Activities</h2>
               
               <div className="space-y-4">
-                {Object.entries(itineraryData).map(([dayIndex, dayData]) => (
+                {Object.entries(itineraryData).length > 0 ? (
+                  Object.entries(itineraryData).map(([dayIndex, dayData]) => (
                   <div key={dayIndex} className="bg-white border border-gray-200 rounded-lg shadow-sm">
                     <button
                       onClick={() => toggleDay(dayIndex)}
@@ -235,7 +283,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                     </div>
                                     <p className="text-sm text-gray-600 mb-1">{activity.description}</p>
                                     <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {activity.location}</span>
+                                      <span>📍 {typeof activity.location === 'object' ? `${activity.location.lat}, ${activity.location.lng}` : activity.location}</span>
                                       <span>⏱️ {activity.duration}</span>
                                       <span>🕐 {activity.time}</span>
                                       <span>⭐ {activity.rating}/5</span>
@@ -262,7 +310,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                     </div>
                                     <p className="text-sm text-gray-600 mb-1">{restaurant.description}</p>
                                     <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {restaurant.location}</span>
+                                      <span>📍 {typeof restaurant.location === 'object' ? `${restaurant.location.lat}, ${restaurant.location.lng}` : restaurant.location}</span>
                                       <span>🍽️ {restaurant.cuisine}</span>
                                       <span>🕐 {restaurant.time}</span>
                                       <span>⭐ {restaurant.rating}/5 ({restaurant.reviews} reviews)</span>
@@ -289,7 +337,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                     </div>
                                     <p className="text-sm text-gray-600 mb-1">{place.description}</p>
                                     <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {place.location}</span>
+                                      <span>📍 {typeof place.location === 'object' ? `${place.location.lat}, ${place.location.lng}` : place.location}</span>
                                       <span>🏨 Check-in: {place.checkIn}</span>
                                       <span>🚪 Check-out: {place.checkOut}</span>
                                       <span>⭐ {place.rating}/5 ({place.reviews} reviews)</span>
@@ -326,11 +374,37 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                               </div>
                             </div>
                           )}
+                          
+                          {/* Show message if no itinerary data is available */}
+                          {(!dayData.activities || dayData.activities.length === 0) &&
+                           (!dayData.food || dayData.food.length === 0) &&
+                           (!dayData.places || dayData.places.length === 0) &&
+                           (!dayData.transportation || dayData.transportation.length === 0) && (
+                            <div className="text-center py-6">
+                              <div className="text-gray-400 mb-2">📋</div>
+                              <p className="text-gray-500 text-sm">
+                                No detailed itinerary available for this day.
+                              </p>
+                              <p className="text-gray-400 text-xs mt-1">
+                                The tourist hasn't added specific activities yet.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">🗺️</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Itinerary Available</h3>
+                    <p className="text-gray-600 max-w-md mx-auto">
+                      The tourist hasn't created a detailed itinerary for this trip yet. 
+                      You can still provide transportation services based on the pickup and destination locations.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

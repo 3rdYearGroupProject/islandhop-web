@@ -33,6 +33,11 @@ const DriverDashboard = () => {
   const [activeTripsLoading, setActiveTripsLoading] = useState(false);
   const toast = useToast();
 
+  // Debug: Log when modalOpen state changes
+  useEffect(() => {
+    console.log('DriverTripModal state changed - modalOpen:', modalOpen, 'activeTrip:', !!activeTrip);
+  }, [modalOpen, activeTrip]);
+
   // Get user data from storage - memoize to prevent repeated calls
   const userData = useMemo(() => getUserData(), []);
   const driverEmail = userData?.email;
