@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 import { 
   useChatMessages, 
   useSendMessage, 
@@ -911,7 +912,7 @@ const OngoingTripPage = () => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'marker']  // Use same libraries as other components to avoid conflicts
+    libraries: GOOGLE_MAPS_LIBRARIES  // Use shared constant to prevent repeated API loading
   });
 
   // Animation for itinerary collapse/expand

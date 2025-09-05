@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
 import { MapPin, Clock, Navigation, CheckCircle, Loader } from 'lucide-react';
+import { GOOGLE_MAPS_LIBRARIES } from '../../utils/googleMapsConfig';
 
 const containerStyle = {
   width: '100%',
@@ -10,7 +11,7 @@ const containerStyle = {
 
 const BASE_URL = 'http://localhost:3001';
 
-const MapPopupModal = ({ open, onClose, tripId }) => {
+const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
   const [routeData, setRouteData] = useState(null);
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,16 +22,24 @@ const MapPopupModal = ({ open, onClose, tripId }) => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'MOCK_KEY',
-    libraries: ['places', 'marker'],
+    libraries: GOOGLE_MAPS_LIBRARIES,
     preventGoogleFontsLoading: true
   });
 
-  // Fetch route data when modal opens
+  // Fetch route data when modal opens or use passed tripData
   useEffect(() => {
-    if (open && tripId) {
-      fetchRouteData();
+    if (open && (tripData || tripId)) {
+      if (tripData && tripData.dailyPlans) {
+        // Use the passed trip data directly to create route data
+        const transformedRouteData = transformTripDataToRouteData(tripData);
+        setRouteData(transformedRouteData);
+        setLastUpdated(new Date().toLocaleTimeString());
+      } else if (tripId) {
+        // Fallback to fetching from API
+        fetchRouteData();
+      }
     }
-  }, [open, tripId]);
+  }, [open, tripId, tripData]);
 
   // Calculate route when data is available
   useEffect(() => {
@@ -80,6 +89,93 @@ const MapPopupModal = ({ open, onClose, tripId }) => {
       setLoading(false);
     }
   }, [isLoaded, tripId]);
+
+  // Transform trip data from active trip API to route data format
+  const transformTripDataToRouteData = (tripData) => {
+    if (!tripData || !tripData.dailyPlans) {
+      return null;
+    }
+
+    const optimizedRoute = tripData.dailyPlans.map((day, index) => {
+      const destinations = [];
+      
+      // Add activities as destinations
+      if (day.activities) {
+        day.activities.forEach(activity => {
+          destinations.push({
+            id: activity.id || `activity-${index}-${destinations.length}`,
+            name: activity.name || activity.title || 'Activity',
+            category: 'activities',
+            completed: false,
+            estimatedArrival: activity.time || null,
+            coordinates: activity.coordinates || null
+          });
+        });
+      }
+
+      // Add places to stay as destinations
+      if (day.places) {
+        day.places.forEach(place => {
+          destinations.push({
+            id: place.id || `place-${index}-${destinations.length}`,
+            name: place.name || 'Place to Stay',
+            category: 'places',
+            completed: false,
+            estimatedArrival: place.checkIn || null,
+            coordinates: place.coordinates || null
+          });
+        });
+      }
+
+      // Add food places as destinations
+      if (day.food) {
+        day.food.forEach(food => {
+          destinations.push({
+            id: food.id || `food-${index}-${destinations.length}`,
+            name: food.name || 'Restaurant',
+            category: 'food',
+            completed: false,
+            estimatedArrival: food.time || null,
+            coordinates: food.coordinates || null
+          });
+        });
+      }
+
+      // Add transportation as destinations
+      if (day.transportation) {
+        day.transportation.forEach(transport => {
+          destinations.push({
+            id: transport.id || `transport-${index}-${destinations.length}`,
+            name: transport.name || 'Transportation',
+            category: 'transportation',
+            completed: false,
+            estimatedArrival: transport.time || null,
+            coordinates: transport.coordinates || null
+          });
+        });
+      }
+
+      return {
+        day: index + 1,
+        city: day.city || day.destination || `Day ${index + 1}`,
+        destinations: destinations
+      };
+    });
+
+    // Calculate approximate total distance and duration
+    const totalDistance = Math.round(tripData.averageTripDistance || 0);
+    const totalDuration = Math.ceil(totalDistance / 60); // Assume 60 km/h average
+
+    return {
+      optimizedRoute: optimizedRoute,
+      totalDistance: `${totalDistance} km`,
+      totalDuration: `${totalDuration} hours`,
+      currentPosition: {
+        lat: 6.9271, // Default to Colombo, Sri Lanka
+        lng: 79.8612
+      }
+    };
+  };
 
   const fetchRouteData = async () => {
     try {

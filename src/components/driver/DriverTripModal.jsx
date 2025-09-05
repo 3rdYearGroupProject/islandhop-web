@@ -6,72 +6,75 @@ const DriverTripModal = ({ open, onClose, trip }) => {
   
   if (!open || !trip) return null;
 
-  // Mock itinerary data for the trip
-  const mockItinerary = {
-    0: {
-      date: new Date(),
-      activities: [
-        {
-          id: 1,
-          name: 'Visit Kandy Temple',
-          location: 'Temple of the Tooth',
-          duration: '2 hours',
-          rating: 4.7,
-          description: 'Explore the sacred Buddhist temple',
-          price: 'LKR 500',
-          time: '09:00'
-        },
-        {
-          id: 2,
-          name: 'Royal Botanical Gardens',
-          location: 'Peradeniya',
-          duration: '3 hours',
-          rating: 4.5,
-          description: 'Walk through beautiful botanical gardens',
-          price: 'LKR 300',
-          time: '14:00'
-        }
-      ],
-      places: [
-        {
-          id: 1,
-          name: 'Hotel Suisse',
-          location: 'Kandy',
-          price: 'LKR 12,000/night',
-          rating: 4.3,
-          reviews: 120,
-          description: 'Luxury hotel in the heart of Kandy',
-          checkIn: '15:00',
-          checkOut: '11:00'
-        }
-      ],
-      food: [
-        {
-          id: 1,
-          name: 'White House Restaurant',
-          location: 'Kandy',
-          cuisine: 'Sri Lankan',
-          rating: 4.6,
-          reviews: 200,
-          description: 'Authentic local cuisine',
-          priceRange: 'LKR 800-1500',
-          time: '19:00'
-        }
-      ],
-      transportation: [
-        {
-          id: 1,
-          name: 'Airport Transfer',
-          type: 'Private Car',
-          price: 'LKR 3500',
-          rating: 4.5,
-          description: 'Pickup from Colombo Airport',
-          time: '08:00',
-          duration: '2.5 hours'
-        }
-      ]
-    }
-  };
+  // Use actual trip data from dailyPlans if available, otherwise use mock data
+  const itineraryData = trip.dailyPlans ? 
+    trip.dailyPlans.reduce((acc, day, index) => {
+      acc[index] = {
+        date: new Date(trip.startDate),
+        activities: day.activities || [],
+        places: day.places || [],
+        food: day.food || [],
+        transportation: day.transportation || [],
+        city: day.city || day.destination || `Day ${index + 1}`
+      };
+      return acc;
+    }, {}) :
+    // Fallback mock data for trips without detailed daily plans
+    {
+      0: {
+        date: new Date(trip.startDate || Date.now()),
+        activities: [
+          {
+            id: 1,
+            name: 'Explore ' + (trip.destination || 'destination'),
+            location: trip.destination || 'Various locations',
+            duration: '2-3 hours',
+            rating: 4.5,
+            description: 'Guided tour of main attractions',
+            price: 'Included',
+            time: '09:00'
+          }
+        ],
+        places: [
+          {
+            id: 1,
+            name: 'Accommodation in ' + (trip.pickupLocation || 'city'),
+            location: trip.pickupLocation || 'City center',
+            price: `LKR ${trip.fare || 0}/trip`,
+            rating: 4.0,
+            reviews: 50,
+            description: 'Comfortable stay during the trip',
+            checkIn: '15:00',
+            checkOut: '11:00'
+          }
+        ],
+        food: [
+          {
+            id: 1,
+            name: 'Local Restaurant',
+            location: trip.destination || 'Destination',
+            cuisine: 'Sri Lankan',
+            rating: 4.3,
+            reviews: 75,
+            description: 'Authentic local cuisine',
+            priceRange: 'LKR 500-1000',
+            time: '12:00'
+          }
+        ],
+        transportation: [
+          {
+            id: 1,
+            name: trip.vehicleType || 'Private Vehicle',
+            type: trip.vehicleType || 'Car',
+            price: `LKR ${trip.fare || 0}`,
+            rating: 4.5,
+            description: `${trip.distance || 'Full'} trip transportation`,
+            time: '08:00',
+            duration: trip.estimatedTime || '1 day'
+          }
+        ]
+      }
+    };
 
   const toggleDay = (dayIndex) => {
     setExpandedDays(prev => ({
@@ -116,7 +119,9 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                 <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Active Trip</span>
                 <span className="text-white/80 text-sm">#{trip.id}</span>
               </div>
-              <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">Trip to {trip.destination}</h1>
+              <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">
+                {trip.tripName || `Trip to ${trip.destination}`}
+              </h1>
               <div className="flex items-center text-white/90 mb-2">
                 <MapPin className="h-5 w-5 mr-2 text-blue-200" />
                 <span className="text-lg font-medium">{trip.pickupLocation} → {trip.destination}</span>
@@ -187,7 +192,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Tourist's Planned Activities</h2>
               
               <div className="space-y-4">
-                {Object.entries(mockItinerary).map(([dayIndex, dayData]) => (
+                {Object.entries(itineraryData).map(([dayIndex, dayData]) => (
                   <div key={dayIndex} className="bg-white border border-gray-200 rounded-lg shadow-sm">
                     <button
                       onClick={() => toggleDay(dayIndex)}

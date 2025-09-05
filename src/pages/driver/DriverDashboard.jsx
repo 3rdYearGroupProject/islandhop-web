@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Car, 
   MapPin, 
@@ -33,10 +33,10 @@ const DriverDashboard = () => {
   const [activeTripsLoading, setActiveTripsLoading] = useState(false);
   const toast = useToast();
 
-  // Get user data from storage
-  const userData = getUserData();
+  // Get user data from storage - memoize to prevent repeated calls
+  const userData = useMemo(() => getUserData(), []);
   const driverEmail = userData?.email;
-  const driverUID = getUserUID();
+  const driverUID = useMemo(() => getUserUID(), []);
 
   const [driverStats, setDriverStats] = useState({
     todayEarnings: 245.50,
@@ -63,7 +63,7 @@ const DriverDashboard = () => {
         { duration: 6000 }
       );
     }
-  }, [toast]);
+  }, []); // Remove toast dependency to prevent re-renders
 
   // Fetch trips from API (same logic as DriverTrips page)
   useEffect(() => {
@@ -616,14 +616,21 @@ const DriverDashboard = () => {
 
       {/* Earnings Overview */}
       <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      {/* Trip Details Modal for Active Trip */}
-      <DriverTripModal open={modalOpen} onClose={() => setModalOpen(false)} trip={activeTrip} />
-      {/* Map Popup Modal for Navigate */}
+      {/* Trip Details Modal for Active Trip - Pass full active trip data */}
+      <DriverTripModal 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        trip={activeTrip} 
+      />
+      
+      {/* Map Popup Modal for Navigate - Pass trip ID and full trip data */}
       <MapPopupModal 
         open={mapModalOpen} 
         onClose={() => setMapModalOpen(false)} 
-        tripId={activeTrip?.id} 
+        tripId={activeTrip?.id}
+        tripData={activeTrip} // Pass the full active trip data
       />
+      
       {/* Trip Details Modal for Pending Requests */}
       <TripDetailsModal
         isOpen={isModalOpen}

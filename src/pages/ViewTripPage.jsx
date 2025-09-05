@@ -8,6 +8,7 @@ import { getUserUID } from '../utils/userStorage';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -832,7 +833,7 @@ const ViewTripPage = () => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'marker'],
+    libraries: GOOGLE_MAPS_LIBRARIES, // Use shared constant to prevent repeated API loading
     version: 'weekly'
   });
 
