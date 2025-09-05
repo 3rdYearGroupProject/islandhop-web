@@ -61,6 +61,12 @@ const DriverTrips = () => {
           
           // Transform API data to match component structure
           const transformedTrips = apiTrips.map(trip => {
+            // Add null checking for critical fields
+            if (!trip) {
+              console.warn('Received null/undefined trip in API response');
+              return null;
+            }
+
             // Determine status based on driver_status
             let status = 'pending';
             if (trip.driver_status === 1) {
@@ -78,7 +84,7 @@ const DriverTrips = () => {
               id: trip._id,
               userId: trip.userId, // Preserve the original userId
               tripName: trip.tripName,
-              passenger: `User ${trip.userId.substring(0, 8)}...`, // Display partial user ID
+              passenger: trip.userId ? `User ${trip.userId.substring(0, 8)}...` : 'Unknown User', // Safe substring with fallback
               passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
               pickupLocation: firstDay?.city || trip.baseCity || 'Not specified',
               destination: lastDay?.city || 'Multiple destinations',
@@ -101,7 +107,7 @@ const DriverTrips = () => {
               guideEmail: trip.guide_email,
               guideStatus: trip.guide_status
             };
-          });
+          }).filter(trip => trip !== null); // Remove any null entries from failed transformations
 
           setTrips(transformedTrips);
 
@@ -136,13 +142,22 @@ const DriverTrips = () => {
         const currentTrip = trips.find(trip => trip.id === tripId);
         const adminID = currentTrip?.userId;
 
+        if (!currentTrip) {
+          throw new Error('Trip not found');
+        }
+
+        if (!adminID) {
+          console.warn('No adminID (userId) found for trip:', tripId);
+          // Still proceed but log the warning
+        }
+
         console.log('Accepting trip:', tripId, 'for driver:', driverEmail, 'UID:', driverUID, 'AdminID:', adminID);
         // Make API call to accept driver assignment
         const acceptResponse = await axios.post('http://localhost:5006/api/accept_driver', {
           tripId: tripId,
           email: driverEmail,
           driverUID: driverUID,
-          adminID: adminID
+          adminID: adminID || null // Send null if adminID is not available
         }, {
           headers: {
             'Content-Type': 'application/json'
@@ -400,7 +415,7 @@ const DriverTrips = () => {
                         <Star className="h-3 w-3 text-yellow-400" />
                         <span>{trip.passengerRating}</span>
                         <span>•</span>
-                        <span>Trip #{trip.id.substring(0, 8)}...</span>
+                        <span>Trip #{trip.id ? trip.id.substring(0, 8) : 'N/A'}...</span>
                         {trip.vehicleType && (
                           <>
                             <span>•</span>
