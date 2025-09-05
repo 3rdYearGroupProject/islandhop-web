@@ -1,25 +1,139 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Users, Star, Camera, Bed, Utensils, Car, Calendar, ChevronDown, Clock } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { 
+  useChatMessages, 
+  useSendMessage, 
+  useTypingIndicator, 
+  formatMessageTime,
+  groupMessagesByDate,
+  shouldShowChat 
+} from '../utils/chatService';
+import { getCityImageUrl } from '../utils/imageUtils';
 
+// Chat Component using our chat service
+const ChatComponent = ({ tripId }) => {
+  const { messages, loading, error } = useChatMessages(tripId);
+  const { sendMessage, sending } = useSendMessage(tripId);
+  const { isTyping } = useTypingIndicator(tripId);
+  const [messageText, setMessageText] = useState('');
 
-// For demo, use mock data. Replace with real data as needed.
-const ongoingTrip = {
-  name: 'Cultural Heritage Tour',
-  dates: 'Aug 15 → Aug 25, 2025',
-  destination: 'Central Province',
-  travelers: 4,
-  rating: null,
-  memories: 0,
-  highlights: ['Kandy Temple', 'Nuwara Eliya'],
-  daysLeft: 12,
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (messageText.trim() && !sending) {
+      await sendMessage(messageText.trim());
+      setMessageText('');
+    }
+  };
+
+  const groupedMessages = groupMessagesByDate(messages);
+
+  if (loading) {
+    return (
+      <div className="border rounded-lg bg-gray-50 h-64 mb-4 p-4 flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p>Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="border rounded-lg bg-red-50 h-64 mb-4 p-4 flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <p className="mb-2">Error loading chat</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Chat Messages Area */}
+      <div className="border rounded-lg bg-gray-50 h-64 mb-4 p-4 overflow-y-auto">
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">
+            <p className="mb-2">No messages yet</p>
+            <p className="text-sm">Start the conversation!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(groupedMessages).map(([date, dayMessages]) => (
+              <div key={date}>
+                <div className="text-center text-xs text-gray-400 mb-2">{date}</div>
+                {dayMessages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`flex ${message.isCurrentUser ? 'justify-end' : 'justify-start'} mb-2`}
+                  >
+                    <div 
+                      className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                        message.isCurrentUser 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-white border border-gray-200'
+                      }`}
+                    >
+                      {!message.isCurrentUser && (
+                        <div className="text-xs font-medium mb-1 text-gray-600">
+                          {message.sender}
+                        </div>
+                      )}
+                      <div className="text-sm">{message.text}</div>
+                      <div className={`text-xs mt-1 ${
+                        message.isCurrentUser ? 'text-blue-200' : 'text-gray-400'
+                      }`}>
+                        {formatMessageTime(message.timestamp)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-gray-200 rounded-lg px-3 py-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Chat Input */}
+      <form onSubmit={handleSendMessage} className="flex gap-2">
+        <input
+          type="text"
+          value={messageText}
+          onChange={(e) => setMessageText(e.target.value)}
+          placeholder="Type your message..."
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={sending}
+        />
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          disabled={sending || !messageText.trim()}
+        >
+          {sending ? 'Sending...' : 'Send'}
+        </button>
+      </form>
+    </>
+  );
 };
 
-// Demo places for the map
 
-// Mock itinerary data (structure matches ViewTripPage)
+// Component for displaying ongoing trip banner
 const mockItinerary = {
   0: {
     date: new Date('2025-08-15'),
@@ -552,20 +666,96 @@ const OngoingTripBanner = ({ trip }) => (
   </div>
 );
 
-
-
-const days = Object.values(mockItinerary).map(day => day.date);
-
 const OngoingTripPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get trip data from navigation state (passed from MyTripsPage)
+  const tripData = location.state?.tripData;
+  
+  // If no trip data provided, redirect back to trips page
+  useEffect(() => {
+    if (!tripData) {
+      navigate('/trips');
+    }
+  }, [tripData, navigate]);
+  
+  // If trip data is not available, show loading or return null
+  if (!tripData) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-lg">Loading trip details...</div>
+    </div>;
+  }
+
+  // Determine if chat should be shown based on trip data
+  const showChat = shouldShowChat(tripData);
+  console.log('OngoingTripPage - Trip data:', tripData);
+  console.log('OngoingTripPage - Show chat:', showChat);
+
+  // Extract trip information from the real data
+  const {
+    tripName = 'Untitled Trip',
+    baseCity: destination = 'Unknown Destination',
+    startDate,
+    endDate,
+    driverNeeded = 0,
+    guideNeeded = 0,
+    userId,
+    dailyPlans = [],
+    travelers = 1
+  } = tripData;
+
+  // Format dates
+  const formatTripDates = () => {
+    if (!startDate || !endDate) return 'Dates not available';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const formatDate = (date) => {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    };
+    
+    const startFormatted = formatDate(start);
+    const endFormatted = formatDate(end);
+    const year = start.getFullYear();
+    
+    return `${startFormatted} → ${endFormatted}, ${year}`;
+  };
+
+  // Calculate days left
+  const calculateDaysLeft = () => {
+    if (!endDate) return 0;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+
+  const formattedDates = formatTripDates();
+  const daysLeft = calculateDaysLeft();
+  
   // Expand all days by default
   const [expandedDays, setExpandedDays] = useState(() => {
     const expanded = {};
-    Object.keys(mockItinerary).forEach((k) => { expanded[k] = true; });
+    dailyPlans.forEach((_, index) => { expanded[index] = true; });
     return expanded;
   });
   const [itineraryCollapsed, setItineraryCollapsed] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [mapCenter, setMapCenter] = useState(mockPlaces[0]?.location || { lat: 7.8731, lng: 80.7718 });
+  
+  // Create map center from first attraction if available
+  const getMapCenter = () => {
+    if (dailyPlans.length > 0 && dailyPlans[0].attractions && dailyPlans[0].attractions.length > 0) {
+      return dailyPlans[0].attractions[0].location;
+    }
+    return { lat: 7.8731, lng: 80.7718 }; // Default Sri Lanka center
+  };
+  const [mapCenter, setMapCenter] = useState(getMapCenter());
   
   // Modal states for "See who else is coming"
   const [showTravelersModal, setShowTravelersModal] = useState(false);
@@ -642,10 +832,32 @@ const OngoingTripPage = () => {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Ongoing Trip</span>
-                <span className="text-white/80 text-sm">{ongoingTrip.dates}</span>
+                <span className="text-white/80 text-sm">{formattedDates}</span>
               </div>
-              <h1 className="text-4xl font-bold mb-2 text-white drop-shadow">{ongoingTrip.name}</h1>
-              <p className="text-white/90 text-lg">{ongoingTrip.destination}</p>
+              <h1 className="text-4xl font-bold mb-2 text-white drop-shadow">{tripName}</h1>
+              <div className="flex items-center text-white/90 mb-2">
+                <MapPin className="h-5 w-5 mr-2 text-blue-200" />
+                <span className="text-lg font-medium">{destination}</span>
+              </div>
+              <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center text-blue-100">
+                  <Users className="h-4 w-4 mr-1" />
+                  <span className="text-sm">1 traveler</span>
+                </div>
+                {daysLeft > 0 && (
+                  <span className="px-3 py-1 bg-orange-100/80 text-orange-900 text-xs rounded-full font-semibold">{daysLeft} days left</span>
+                )}
+              </div>
+              {tripData.preferredActivities && tripData.preferredActivities.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {tripData.preferredActivities.slice(0, 3).map((activity, idx) => (
+                    <span key={idx} className="inline-block px-2 py-1 bg-white/20 text-blue-100 text-xs rounded-md capitalize">{activity}</span>
+                  ))}
+                  {tripData.preferredActivities.length > 3 && (
+                    <span className="inline-block px-2 py-1 bg-white/10 text-white text-xs rounded-md">+{tripData.preferredActivities.length - 3} more</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -662,17 +874,17 @@ const OngoingTripPage = () => {
                 <div className="w-full">
                   <h3 className="text-lg font-semibold text-primary-700 mb-1">Trip Progress</h3>
                   <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
-                    <span className="font-medium">{ongoingTrip.name}</span>
+                    <span className="font-medium">{tripName}</span>
                     <span className="text-gray-400">|</span>
-                    <span>Day <span className="font-bold">{tripProgress.currentDay}</span> of <span className="font-bold">{tripProgress.totalDays}</span></span>
+                    <span>Day <span className="font-bold">{1}</span> of <span className="font-bold">{dailyPlans.length || Math.max(1, daysLeft)}</span></span>
                     <span className="text-gray-400">|</span>
-                    <span>{ongoingTrip.daysLeft} days left</span>
+                    <span>{daysLeft} days left</span>
                   </div>
                   {/* Progress Bar */}
                   <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
                     <div
                       className="h-full bg-primary-500 transition-all"
-                      style={{ width: `${Math.round((tripProgress.currentDay-1) / tripProgress.totalDays * 100)}%` }}
+                      style={{ width: `${Math.round((1) / Math.max(1, dailyPlans.length || daysLeft) * 100)}%` }}
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-400">
@@ -688,75 +900,66 @@ const OngoingTripPage = () => {
 
             {/* Today's Details Card */}
             {(() => {
-              const todayIdx = tripProgress.currentDay - 1;
-              const today = mockItinerary[todayIdx];
+              const todayIdx = 0; // Currently showing first day as today
+              const today = dailyPlans[todayIdx];
               if (!today) return null;
-              // Gather all stops in order: transportation, activities, food, places
+              
+              // Gather all activities and attractions for today
               const stops = [
-                ...(today.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
-                ...(today.activities?.map(a => ({ ...a, category: 'activities' })) || []),
-                ...(today.food?.map(a => ({ ...a, category: 'food' })) || []),
-                ...(today.places?.map(a => ({ ...a, category: 'places' })) || []),
-              ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+                ...(today.attractions?.map(a => ({ ...a, category: 'attractions' })) || []),
+                ...(today.restaurants?.map(a => ({ ...a, category: 'restaurants' })) || []),
+                ...(today.hotels?.map(a => ({ ...a, category: 'hotels' })) || []),
+              ];
+              
+              const formatDateFromDay = (dayPlan) => {
+                const startDate = new Date(tripData.startDate);
+                const dayDate = new Date(startDate);
+                dayDate.setDate(startDate.getDate() + (dayPlan.day - 1));
+                return dayDate;
+              };
+              
               return (
                 <div className="mb-6">
                   <div className="bg-white border border-blue-200 rounded-lg shadow p-4">
                     <h3 className="text-base font-bold text-blue-800 mb-3 flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-blue-500" />
-                      Today's Plan: <span className="font-medium text-blue-700 ml-1">{today.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                      Today's Plan: <span className="font-medium text-blue-700 ml-1">Day {today.day} - {today.city}</span>
                     </h3>
                     <ol className="space-y-2">
                       {stops.length === 0 && (
                         <li className="text-gray-400 italic">No destinations or stops planned for today.</li>
                       )}
-                      {(() => {
-                        // Highlight previous, current, and next stops
-                        const currentIdx = 1; // For demo, highlight the second stop as current
-                        return stops.map((stop, idx) => {
-                          let highlight = '';
-                          if (idx === currentIdx - 1) highlight = 'before';
-                          else if (idx === currentIdx) highlight = 'current';
-                          else if (idx === currentIdx + 1) highlight = 'next';
-                          return (
-                            <li
-                              key={idx}
-                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all border border-transparent ${
-                                highlight === 'current' ? 'bg-blue-100 border-blue-400 shadow font-bold text-blue-900' :
-                                highlight === 'before' ? 'bg-gray-50 text-gray-500' :
-                                highlight === 'next' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
-                                'hover:bg-blue-50 text-gray-800'
-                              }`}
-                            >
-                              <span className="flex-shrink-0">
-                                {stop.category === 'transportation' && <Car className="w-4 h-4 text-blue-600" />}
-                                {stop.category === 'activities' && <Camera className="w-4 h-4 text-primary-600" />}
-                                {stop.category === 'food' && <Utensils className="w-4 h-4 text-orange-600" />}
-                                {stop.category === 'places' && <Bed className="w-4 h-4 text-green-600" />}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="truncate text-base">{stop.name}</span>
-                                  {stop.location && <span className="text-gray-500 text-xs">({stop.location})</span>}
-                                </div>
-                                <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 flex-wrap">
-                                  {stop.time && <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{stop.time}</span>}
-                                  {stop.duration && <span className="flex items-center"><span className="ml-1">[{stop.duration}]</span></span>}
-                                </div>
-                              </div>
+                      {stops.map((stop, idx) => {
+                        const getCategoryIcon = (category) => {
+                          switch(category) {
+                            case 'attractions': return <Camera className="w-5 h-5 text-primary-600" />;
+                            case 'hotels': return <Bed className="w-5 h-5 text-green-600" />;
+                            case 'restaurants': return <Utensils className="w-5 h-5 text-orange-600" />;
+                            default: return <MapPin className="w-5 h-5 text-gray-600" />;
+                          }
+                        };
+                        
+                        return (
+                          <li key={idx} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-100">
+                            {getCategoryIcon(stop.category)}
+                            <div className="flex-1">
+                              <span className="font-medium text-gray-900">{stop.name}</span>
                               {stop.rating && (
-                                <span className="flex items-center text-yellow-500 text-xs font-medium ml-2"><Star className="w-4 h-4 mr-1 fill-yellow-400" />{stop.rating}</span>
+                                <div className="flex items-center mt-1">
+                                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                                  <span className="text-sm text-gray-600 ml-1">{stop.rating}</span>
+                                </div>
                               )}
-                              {highlight === 'current' && <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">Current</span>}
-                              {highlight === 'next' && <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-white text-xs rounded-full">Next</span>}
-                            </li>
-                          );
-                        });
-                      })()}
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ol>
                   </div>
                 </div>
               );
             })()}
+
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
               <button
@@ -780,41 +983,39 @@ const OngoingTripPage = () => {
                 <div>
                   {/* Show only the first day and first item as a preview, faded and compact */}
                   {(() => {
-                    const [dayIndex, dayData] = Object.entries(mockItinerary)[0];
-                    const hasItems = (dayData.activities?.length || 0) > 0 ||
-                      (dayData.places?.length || 0) > 0 ||
-                      (dayData.food?.length || 0) > 0 ||
-                      (dayData.transportation?.length || 0) > 0;
+                    const dayData = dailyPlans[0];
+                    if (!dayData) return <div className="text-gray-500 text-sm">No itinerary data available</div>;
+                    
+                    const hasItems = (dayData.attractions?.length || 0) > 0 ||
+                      (dayData.restaurants?.length || 0) > 0 ||
+                      (dayData.hotels?.length || 0) > 0;
                     const allItems = [
-                      ...(dayData.activities?.map(a => ({ ...a, category: 'activities' })) || []),
-                      ...(dayData.places?.map(a => ({ ...a, category: 'places' })) || []),
-                      ...(dayData.food?.map(a => ({ ...a, category: 'food' })) || []),
-                      ...(dayData.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
-                    ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+                      ...(dayData.attractions?.map(a => ({ ...a, category: 'attractions' })) || []),
+                      ...(dayData.restaurants?.map(a => ({ ...a, category: 'restaurants' })) || []),
+                      ...(dayData.hotels?.map(a => ({ ...a, category: 'hotels' })) || []),
+                    ];
                     const previewItem = allItems[0];
                     const getCategoryIcon = (category) => {
                       switch(category) {
-                        case 'activities': return <Camera className="w-5 h-5 text-primary-600" />;
-                        case 'places': return <Bed className="w-5 h-5 text-green-600" />;
-                        case 'food': return <Utensils className="w-5 h-5 text-orange-600" />;
-                        case 'transportation': return <Car className="w-5 h-5 text-blue-600" />;
+                        case 'attractions': return <Camera className="w-5 h-5 text-primary-600" />;
+                        case 'restaurants': return <Utensils className="w-5 h-5 text-orange-600" />;
+                        case 'hotels': return <Bed className="w-5 h-5 text-green-600" />;
                         default: return <MapPin className="w-5 h-5 text-gray-600" />;
                       }
                     };
                     const getCategoryColor = (category) => {
                       switch(category) {
-                        case 'activities': return 'bg-primary-50 border-primary-200';
-                        case 'places': return 'bg-green-50 border-green-200';
-                        case 'food': return 'bg-orange-50 border-orange-200';
-                        case 'transportation': return 'bg-blue-50 border-blue-200';
+                        case 'attractions': return 'bg-primary-50 border-primary-200';
+                        case 'restaurants': return 'bg-orange-50 border-orange-200';
+                        case 'hotels': return 'bg-green-50 border-green-200';
                         default: return 'bg-gray-50 border-gray-200';
                       }
                     };
                     return (
-                      <div key={dayIndex} className="border-l-2 border-gray-200 relative opacity-60 pointer-events-none select-none">
+                      <div key={0} className="border-l-2 border-gray-200 relative opacity-60 pointer-events-none select-none">
                         <div className="flex items-center mb-2 -ml-3">
                           <div className="bg-white border-4 border-primary-600 w-5 h-5 rounded-full"></div>
-                          <span className="ml-3 flex items-center text-base font-semibold text-gray-900">Day {parseInt(dayIndex, 10) + 1} - {formatDate(dayData.date)}</span>
+                          <span className="ml-3 flex items-center text-base font-semibold text-gray-900">Day {dayData.day} - {dayData.city}</span>
                           {hasItems && (
                             <span className="ml-2 text-xs text-gray-500">
                               ({allItems.length} items)
@@ -835,7 +1036,8 @@ const OngoingTripPage = () => {
                                 {previewItem.location && (
                                   <div className="flex items-center text-xs text-gray-600 mt-1">
                                     <MapPin className="w-3 h-3 mr-1" />
-                                    {previewItem.location}
+                                    {typeof previewItem.location === 'string' ? previewItem.location : 
+                                     `${previewItem.location.lat?.toFixed(4) || 'N/A'}, ${previewItem.location.lng?.toFixed(4) || 'N/A'}`}
                                   </div>
                                 )}
                                 {previewItem.rating && (
@@ -864,42 +1066,41 @@ const OngoingTripPage = () => {
                 </div>
               ) : (
                 <div className="space-y-0">
-                  {Object.entries(mockItinerary).map(([dayIndex, dayData]) => {
+                  {dailyPlans.map((dayData, dayIndex) => {
                     const isExpanded = expandedDays[dayIndex];
-                    const hasItems = (dayData.activities?.length || 0) > 0 ||
-                      (dayData.places?.length || 0) > 0 ||
-                      (dayData.food?.length || 0) > 0 ||
-                      (dayData.transportation?.length || 0) > 0;
-                    // Gather all items, add category, and sort by time
+                    const hasItems = (dayData.attractions?.length || 0) > 0 ||
+                      (dayData.restaurants?.length || 0) > 0 ||
+                      (dayData.hotels?.length || 0) > 0;
+                    
+                    // Gather all items from the real trip data
                     const allItems = [
-                      ...(dayData.activities?.map(a => ({ ...a, category: 'activities' })) || []),
-                      ...(dayData.places?.map(a => ({ ...a, category: 'places' })) || []),
-                      ...(dayData.food?.map(a => ({ ...a, category: 'food' })) || []),
-                      ...(dayData.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
-                    ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+                      ...(dayData.attractions?.map(a => ({ ...a, category: 'attractions' })) || []),
+                      ...(dayData.restaurants?.map(a => ({ ...a, category: 'restaurants' })) || []),
+                      ...(dayData.hotels?.map(a => ({ ...a, category: 'hotels' })) || []),
+                    ];
+                    
                     // Icon and color helpers
                     const getCategoryIcon = (category) => {
                       switch(category) {
-                        case 'activities': return <Camera className="w-5 h-5 text-primary-600" />;
-                        case 'places': return <Bed className="w-5 h-5 text-green-600" />;
-                        case 'food': return <Utensils className="w-5 h-5 text-orange-600" />;
-                        case 'transportation': return <Car className="w-5 h-5 text-blue-600" />;
+                        case 'attractions': return <Camera className="w-5 h-5 text-primary-600" />;
+                        case 'restaurants': return <Utensils className="w-5 h-5 text-orange-600" />;
+                        case 'hotels': return <Bed className="w-5 h-5 text-green-600" />;
                         default: return <MapPin className="w-5 h-5 text-gray-600" />;
                       }
                     };
                     const getCategoryColor = (category) => {
                       switch(category) {
-                        case 'activities': return 'bg-primary-50 border-primary-200';
-                        case 'places': return 'bg-green-50 border-green-200';
-                        case 'food': return 'bg-orange-50 border-orange-200';
-                        case 'transportation': return 'bg-blue-50 border-blue-200';
+                        case 'attractions': return 'bg-primary-50 border-primary-200';
+                        case 'restaurants': return 'bg-orange-50 border-orange-200';
+                        case 'hotels': return 'bg-green-50 border-green-200';
                         default: return 'bg-gray-50 border-gray-200';
                       }
                     };
-                    // Highlight logic: highlight middle item of current day
-                    const dayNum = parseInt(dayIndex, 10) + 1;
-                    const isCurrentDay = dayNum === tripProgress.currentDay;
-                    const isUpcomingDay = dayNum > tripProgress.currentDay;
+                    
+                    // Highlight logic: highlight first day as current
+                    const dayNum = dayData.day;
+                    const isCurrentDay = dayNum === 1; // For demo, first day is current
+                    const isUpcomingDay = dayNum > 1;
                     return (
                       <div key={dayIndex} className="border-l-2 border-gray-200 relative">
                         {/* Day Header */}
@@ -909,7 +1110,7 @@ const OngoingTripPage = () => {
                             onClick={() => setExpandedDays(prev => ({ ...prev, [dayIndex]: !prev[dayIndex] }))}
                             className="ml-4 flex items-center text-lg font-semibold text-gray-900 hover:text-primary-600"
                           >
-                            Day {parseInt(dayIndex, 10) + 1} - {formatDate(dayData.date)}
+                            Day {dayNum} - {dayData.city}
                             <ChevronDown className={`w-4 h-4 ml-2 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </button>
                           {hasItems && (
@@ -950,7 +1151,8 @@ const OngoingTripPage = () => {
                                             {item.location && (
                                               <div className="flex items-center text-sm text-gray-600 mt-1">
                                                 <MapPin className="w-3 h-3 mr-1" />
-                                                {item.location}
+                                                {typeof item.location === 'string' ? item.location : 
+                                                 `${item.location.lat?.toFixed(4) || 'N/A'}, ${item.location.lng?.toFixed(4) || 'N/A'}`}
                                               </div>
                                             )}
                                             {item.description && (
@@ -1016,40 +1218,42 @@ const OngoingTripPage = () => {
               )}
             </div>
 
-            {/* Chat Interface Card below the whole itinerary */}
-            <div className="mt-8">
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-                <h3 className="text-lg font-semibold text-primary-700 mb-2">Chat with Driver &amp; Guide</h3>
-                <div className="h-56 overflow-y-auto bg-gray-50 rounded p-3 mb-3 flex flex-col gap-2" style={{ minHeight: '180px' }}>
-                  {/* Example chat bubbles, replace with real chat logic */}
-                  <div className="self-end max-w-[70%]">
-                    <div className="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1 text-sm">Hi, when will we reach the next stop?</div>
-                    <div className="text-xs text-gray-400 text-right mr-1">You (Tourist)</div>
+            {/* Chat Interface Card below the whole itinerary - Only show if driver or guide is needed */}
+            {(driverNeeded === 1 || guideNeeded === 1) && (
+              <div className="mt-8">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                  <h3 className="text-lg font-semibold text-primary-700 mb-2">Chat with Driver &amp; Guide</h3>
+                  <div className="h-56 overflow-y-auto bg-gray-50 rounded p-3 mb-3 flex flex-col gap-2" style={{ minHeight: '180px' }}>
+                    {/* Example chat bubbles, replace with real chat logic */}
+                    <div className="self-end max-w-[70%]">
+                      <div className="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1 text-sm">Hi, when will we reach the next stop?</div>
+                      <div className="text-xs text-gray-400 text-right mr-1">You (Tourist)</div>
+                    </div>
+                    <div className="self-start max-w-[70%]">
+                      <div className="bg-green-100 text-green-900 px-3 py-2 rounded-lg mb-1 text-sm">We will reach in about 30 minutes.</div>
+                      <div className="text-xs text-gray-400 ml-1">Driver</div>
+                    </div>
+                    <div className="self-start max-w-[70%]">
+                      <div className="bg-yellow-100 text-yellow-900 px-3 py-2 rounded-lg mb-1 text-sm">Let me know if you want to stop for food!</div>
+                      <div className="text-xs text-gray-400 ml-1">Guide</div>
+                    </div>
                   </div>
-                  <div className="self-start max-w-[70%]">
-                    <div className="bg-green-100 text-green-900 px-3 py-2 rounded-lg mb-1 text-sm">We will reach in about 30 minutes.</div>
-                    <div className="text-xs text-gray-400 ml-1">Driver</div>
-                  </div>
-                  <div className="self-start max-w-[70%]">
-                    <div className="bg-yellow-100 text-yellow-900 px-3 py-2 rounded-lg mb-1 text-sm">Let me know if you want to stop for food!</div>
-                    <div className="text-xs text-gray-400 ml-1">Guide</div>
-                  </div>
+                  <form className="flex gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      placeholder="Type your message..."
+                    />
+                    <button
+                      type="submit"
+                      className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
+                    >
+                      Send
+                    </button>
+                  </form>
                 </div>
-                <form className="flex gap-2">
-                  <input
-                    type="text"
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                    placeholder="Type your message..."
-                  />
-                  <button
-                    type="submit"
-                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
-                  >
-                    Send
-                  </button>
-                </form>
               </div>
-            </div>
+            )}
           </div>
           {/* Right: Map */}
           <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
@@ -1072,18 +1276,20 @@ const OngoingTripPage = () => {
                         zoomControl: true,
                       }}
                     >
-                      {mockPlaces.map((place, index) => (
-                        <Marker
-                          key={`${place.name}-${index}`}
-                          position={place.location}
-                          onClick={() => {
-                            setSelectedMarker(place);
-                            setMapCenter(place.location);
-                          }}
-                          icon={getMarkerIcon(place.placeType)}
-                          title={place.name}
-                        />
-                      ))}
+                      {dailyPlans.flatMap(dayPlan => 
+                        dayPlan.attractions?.map((attraction, index) => (
+                          <Marker
+                            key={`${attraction.name}-${index}`}
+                            position={attraction.location}
+                            onClick={() => {
+                              setSelectedMarker(attraction);
+                              setMapCenter(attraction.location);
+                            }}
+                            icon={getMarkerIcon('attraction')}
+                            title={attraction.name}
+                          />
+                        )) || []
+                      )}
                       {selectedMarker && (
                         <InfoWindow
                           position={selectedMarker.location}

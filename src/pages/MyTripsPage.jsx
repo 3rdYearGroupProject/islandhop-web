@@ -1155,10 +1155,22 @@ const MyTripsPage = () => {
                   <div className="flex justify-center mb-12 sm:mb-16">
                     <div
                       className="relative bg-blue-50 rounded-2xl sm:rounded-3xl border-2 border-blue-200 flex flex-col md:flex-row w-full max-w-sm sm:max-w-4xl overflow-hidden cursor-pointer hover:shadow-lg transition"
-                      onClick={() => navigate('/ongoing-trip')}
+                      onClick={() => navigate('/ongoing-trip', { 
+                        state: { 
+                          tripData: ongoingTrip._originalData || ongoingTrip
+                        } 
+                      })}
                       role="button"
                       tabIndex={0}
-                      onKeyPress={e => { if (e.key === 'Enter' || e.key === ' ') navigate('/ongoing-trip'); }}
+                      onKeyPress={e => { 
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          navigate('/ongoing-trip', { 
+                            state: { 
+                              tripData: ongoingTrip._originalData || ongoingTrip
+                            } 
+                          });
+                        }
+                      }}
                     >
                       {/* Image */}
                       <div className="md:w-2/5 w-full min-h-[180px] sm:min-h-[260px] relative">
