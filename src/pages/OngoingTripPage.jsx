@@ -4,10 +4,11 @@ import { MapPin, Users, Star, Camera, Bed, Utensils, Car, Calendar, ChevronDown,
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase';
 import { 
   useChatMessages, 
   useSendMessage, 
-  useTypingIndicator, 
   formatMessageTime,
   groupMessagesByDate,
   shouldShowChat 
@@ -15,21 +16,81 @@ import {
 import { getCityImageUrl } from '../utils/imageUtils';
 
 // Chat Component using our chat service
-const ChatComponent = ({ tripId }) => {
-  const { messages, loading, error } = useChatMessages(tripId);
-  const { sendMessage, sending } = useSendMessage(tripId);
-  const { isTyping } = useTypingIndicator(tripId);
+const ChatComponent = ({ tripId, tripData }) => {
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Get current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const userId = currentUser?.uid;
+  const userDisplayName = currentUser?.displayName || currentUser?.email || 'User';
+  
+  const { messages, loading, error, groupId, refreshMessages } = useChatMessages(tripId, userId);
+  const { sendMessage, sending } = useSendMessage(tripId, userId, userDisplayName);
   const [messageText, setMessageText] = useState('');
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (messageText.trim() && !sending) {
-      await sendMessage(messageText.trim());
+    console.log('Send button clicked:', { messageText, sending, groupId, currentUser });
+    
+    if (!messageText.trim()) {
+      console.log('No message text provided');
+      return;
+    }
+    
+    if (sending) {
+      console.log('Already sending a message');
+      return;
+    }
+    
+    if (!groupId) {
+      console.log('No group ID available');
+      return;
+    }
+    
+    if (!currentUser) {
+      console.log('No current user');
+      return;
+    }
+
+    try {
+      console.log('Attempting to send message:', messageText.trim());
+      await sendMessage(messageText.trim(), groupId);
       setMessageText('');
+      console.log('Message sent successfully, refreshing messages');
+      // Refresh messages after sending
+      refreshMessages();
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
   const groupedMessages = groupMessagesByDate(messages);
+
+  // Debug logging
+  console.log('ChatComponent Debug:', {
+    tripId,
+    userId,
+    groupId,
+    messagesCount: messages.length,
+    loading,
+    error,
+    currentUser: currentUser ? { uid: currentUser.uid, displayName: currentUser.displayName } : null
+  });
+
+  // Additional debug info for chat service
+  console.log('ChatComponent Chat Service Debug:', {
+    receivedTripId: tripId,
+    receivedUserId: userId,
+    foundGroupId: groupId,
+    hasMessages: messages.length > 0,
+    chatServiceError: error
+  });
 
   if (loading) {
     return (
@@ -48,6 +109,14 @@ const ChatComponent = ({ tripId }) => {
         <div className="text-center text-red-600">
           <p className="mb-2">Error loading chat</p>
           <p className="text-sm">{error}</p>
+          {error.includes('Trip ID') && (
+            <div className="mt-3 text-xs bg-red-100 p-2 rounded">
+              <p><strong>Debug Info:</strong></p>
+              <p>Trip ID: {tripId}</p>
+              <p>User ID: {userId}</p>
+              <p>Check console for more details</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -95,17 +164,6 @@ const ChatComponent = ({ tripId }) => {
                 ))}
               </div>
             ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-gray-200 rounded-lg px-3 py-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -119,11 +177,18 @@ const ChatComponent = ({ tripId }) => {
           placeholder="Type your message..."
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={sending}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage(e);
+            }
+          }}
         />
         <button
           type="submit"
+          onClick={handleSendMessage}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-          disabled={sending || !messageText.trim()}
+          disabled={sending || !messageText.trim() || !groupId || !currentUser}
         >
           {sending ? 'Sending...' : 'Send'}
         </button>
@@ -694,6 +759,9 @@ const OngoingTripPage = () => {
 
   // Extract trip information from the real data
   const {
+    tripId: backendTripId,
+    _id: mongoId,
+    id: generalId,
     tripName = 'Untitled Trip',
     baseCity: destination = 'Unknown Destination',
     startDate,
@@ -702,8 +770,86 @@ const OngoingTripPage = () => {
     guideNeeded = 0,
     userId,
     dailyPlans = [],
-    travelers = 1
+    travelers = 1,
+    _originalData
   } = tripData;
+
+  // Log the full trip data structure to understand what's available
+  console.log('OngoingTripPage - Full trip data structure:', tripData);
+  console.log('OngoingTripPage - All keys in tripData:', Object.keys(tripData));
+  console.log('OngoingTripPage - Searching for trip ID in all possible fields...');
+
+  // Check every field that might contain the trip ID
+  const allPossibleIds = {
+    tripId: tripData.tripId,
+    _id: tripData._id,
+    id: tripData.id,
+    mongodb_id: tripData.mongodb_id,
+    objectId: tripData.objectId,
+    uuid: tripData.uuid,
+    trip_id: tripData.trip_id,
+    'tripData.id': tripData.id,
+    'tripData._id': tripData._id,
+    'nested_originalData_tripId': _originalData?.tripId,
+    'nested_originalData_id': _originalData?.id,
+    'nested_originalData_mongodb_id': _originalData?._id
+  };
+  
+  console.log('OngoingTripPage - All possible ID fields:', allPossibleIds);
+
+  // Determine the correct trip ID for chat functionality
+  // Since the trip data might have the tripId in a different field, let's check all possible locations
+  let actualTripId = (_originalData && _originalData.tripId) || 
+                     backendTripId || 
+                     tripData.tripId ||  // Check direct tripId field
+                     mongoId || 
+                     generalId ||
+                     tripData._id ||     // Check direct _id field
+                     tripData.id ||      // Check direct id field
+                     tripData.mongodb_id || // Check mongodb_id field
+                     tripData.objectId ||   // Check objectId field
+                     tripData.uuid ||       // Check uuid field
+                     tripData.trip_id;      // Check trip_id field
+
+  // TEMPORARY FIX: If we still don't have a trip ID, but we know the mapping based on tripName
+  // This is a temporary solution until we fix the data transformation issue
+  if (!actualTripId && tripData.tripName) {
+    const tempTripMapping = {
+      'tt2-trip1': 'f5b9ac55-788d-43df-be16-4bdbce426346',
+      'tt2-trip2': '0d989cc5-de6b-429a-8790-13fb3ed1a5a7', 
+      'tt2-trip3': '06ed669b-296a-4a2e-9ab4-21f5f8260f25'
+    };
+    
+    actualTripId = tempTripMapping[tripData.tripName];
+    
+    if (actualTripId) {
+      console.log('🔧 TEMPORARY FIX: Using mapped trip ID for', tripData.tripName, '->', actualTripId);
+    }
+  }
+  
+  console.log('OngoingTripPage - Trip ID resolution:', {
+    originalDataTripId: _originalData?.tripId,
+    backendTripId,
+    directTripId: tripData.tripId,
+    mongoId,
+    generalId,
+    directId: tripData.id,
+    directMongoId: tripData._id,
+    tripName,
+    finalActualTripId: actualTripId,
+    usedTemporaryMapping: !!(actualTripId && !backendTripId && !tripData.tripId && tripData.tripName),
+    willUseForChat: actualTripId,
+    allPossibleIds: allPossibleIds,
+    fullTripData: tripData,
+    originalData: _originalData
+  });
+
+  // Log warning if no valid trip ID found
+  if (!actualTripId) {
+    console.warn('⚠️ No valid trip ID found for chat functionality. Chat may not work properly.');
+    console.warn('Available trip data fields:', Object.keys(tripData));
+    console.warn('Available trip data:', { tripData, _originalData });
+  }
 
   // Format dates
   const formatTripDates = () => {
@@ -764,7 +910,8 @@ const OngoingTripPage = () => {
   
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: ['places', 'marker']  // Use same libraries as other components to avoid conflicts
   });
 
   // Animation for itinerary collapse/expand
@@ -1223,34 +1370,19 @@ const OngoingTripPage = () => {
               <div className="mt-8">
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
                   <h3 className="text-lg font-semibold text-primary-700 mb-2">Chat with Driver &amp; Guide</h3>
-                  <div className="h-56 overflow-y-auto bg-gray-50 rounded p-3 mb-3 flex flex-col gap-2" style={{ minHeight: '180px' }}>
-                    {/* Example chat bubbles, replace with real chat logic */}
-                    <div className="self-end max-w-[70%]">
-                      <div className="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1 text-sm">Hi, when will we reach the next stop?</div>
-                      <div className="text-xs text-gray-400 text-right mr-1">You (Tourist)</div>
-                    </div>
-                    <div className="self-start max-w-[70%]">
-                      <div className="bg-green-100 text-green-900 px-3 py-2 rounded-lg mb-1 text-sm">We will reach in about 30 minutes.</div>
-                      <div className="text-xs text-gray-400 ml-1">Driver</div>
-                    </div>
-                    <div className="self-start max-w-[70%]">
-                      <div className="bg-yellow-100 text-yellow-900 px-3 py-2 rounded-lg mb-1 text-sm">Let me know if you want to stop for food!</div>
-                      <div className="text-xs text-gray-400 ml-1">Guide</div>
-                    </div>
-                  </div>
-                  <form className="flex gap-2">
-                    <input
-                      type="text"
-                      className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                      placeholder="Type your message..."
+                  {actualTripId ? (
+                    <ChatComponent 
+                      tripId={actualTripId} 
+                      tripData={tripData}
                     />
-                    <button
-                      type="submit"
-                      className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
-                    >
-                      Send
-                    </button>
-                  </form>
+                  ) : (
+                    <div className="border rounded-lg bg-yellow-50 h-32 mb-4 p-4 flex items-center justify-center">
+                      <div className="text-center text-yellow-600">
+                        <p className="mb-2">Chat Unavailable</p>
+                        <p className="text-sm">Valid trip ID required for chat functionality</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

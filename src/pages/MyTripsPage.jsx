@@ -636,6 +636,8 @@ const MyTripsPage = () => {
   // Transform backend trip summary data to frontend format
   const transformBackendTripSummary = (tripSummary) => {
     console.log('🔄 Transforming trip summary data:', tripSummary);
+    console.log('🔍 Trip summary fields:', Object.keys(tripSummary || {}));
+    console.log('🔍 Trip summary tripId:', tripSummary?.tripId);
     
     const calculateTripStatus = (trip) => {
       if (!trip.startDate || !trip.endDate) return 'draft';
@@ -697,6 +699,7 @@ const MyTripsPage = () => {
     
     return {
       id: tripSummary.tripId,
+      tripId: tripSummary.tripId, // Explicitly preserve the backend trip ID
       name: tripSummary.tripName || 'Untitled Trip',
       dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
       destination: tripSummary.destination || 'Sri Lanka',
@@ -720,6 +723,12 @@ const MyTripsPage = () => {
   // Transform active trip data from active trips API to frontend format
   const transformActiveTrip = (activeTrip) => {
     console.log('🔄 Transforming active trip data:', activeTrip);
+    console.log('🔍 Active trip fields:', Object.keys(activeTrip || {}));
+    console.log('🔍 Active trip potential IDs:', {
+      tripId: activeTrip?.tripId,
+      _id: activeTrip?._id,
+      id: activeTrip?.id
+    });
     
     const formatTripDates = (startDate, endDate) => {
       if (!startDate || !endDate) return 'Dates not set';
@@ -746,7 +755,16 @@ const MyTripsPage = () => {
 
     // Extract trip data based on the actual API response structure
     // The API response has: tripName, startDate, endDate, baseCity, etc.
-    const tripId = activeTrip._id || activeTrip.id || `trip_${Date.now()}_${Math.random()}`;
+    // Based on the backend data structure, tripId should be in activeTrip.tripId field
+    const tripId = activeTrip.tripId || activeTrip._id || activeTrip.id || `trip_${Date.now()}_${Math.random()}`;
+    
+    console.log('🔍 Active trip ID extraction:', {
+      tripId: activeTrip.tripId,
+      _id: activeTrip._id,
+      id: activeTrip.id,
+      selectedTripId: tripId,
+      fullActiveTrip: activeTrip
+    });
     const tripName = activeTrip.tripName || activeTrip.name || activeTrip.title || 'Untitled Trip';
     const startDate = activeTrip.startDate;
     const endDate = activeTrip.endDate;
@@ -797,6 +815,7 @@ const MyTripsPage = () => {
     
     return {
       id: tripId,
+      tripId: tripId, // Explicitly preserve the backend trip ID
       name: tripName,
       dates: formatTripDates(startDate, endDate),
       destination: destination,
