@@ -67,35 +67,35 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     if (!tripData?.dailyPlans) return false;
     
     // First day can always be started
-    if (dayNumber === 1) return true;
+    if (dayNumber == 1) return true;
     
     // For subsequent days, previous day must be end_confirmed
-    const previousDay = tripData.dailyPlans.find(day => day.day === dayNumber - 1);
-    return previousDay && previousDay.end_confirmed === 1;
+    const previousDay = tripData.dailyPlans.find(day => day.day == dayNumber - 1);
+    return previousDay && previousDay.end_confirmed == 1;
   };
 
   const canEndDay = (dayNumber) => {
     if (!tripData?.dailyPlans) return false;
     
-    const currentDay = tripData.dailyPlans.find(day => day.day === dayNumber);
-    return currentDay && currentDay.start_confirmed === 1;
+    const currentDay = tripData.dailyPlans.find(day => day.day == dayNumber);
+    return currentDay && currentDay.start_confirmed == 1;
   };
 
   const isDayStarted = (dayNumber) => {
     if (!tripData?.dailyPlans) return false;
-    const day = tripData.dailyPlans.find(d => d.day === dayNumber);
-    return day && day.start_confirmed === 1;
+    const day = tripData.dailyPlans.find(d => d.day == dayNumber);
+    return day && day.start_confirmed == 1;
   };
 
   const isDayEnded = (dayNumber) => {
     if (!tripData?.dailyPlans) return false;
-    const day = tripData.dailyPlans.find(d => d.day === dayNumber);
-    return day && day.end_confirmed === 1;
+    const day = tripData.dailyPlans.find(d => d.day == dayNumber);
+    return day && day.end_confirmed == 1;
   };
 
   const areAllDaysCompleted = () => {
-    if (!tripData?.dailyPlans || tripData.dailyPlans.length === 0) return false;
-    return tripData.dailyPlans.every(day => day.end_confirmed === 1);
+    if (!tripData?.dailyPlans || tripData.dailyPlans.length == 0) return false;
+    return tripData.dailyPlans.every(day => day.end_confirmed == 1);
   };
 
   const canEndTrip = () => {
@@ -143,7 +143,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       // You might want to call a callback to refresh trip data
       if (tripData) {
         // Update local state if possible
-        const updatedDay = tripData.dailyPlans.find(d => d.day === selectedDay);
+        const updatedDay = tripData.dailyPlans.find(d => d.day == selectedDay);
         if (updatedDay) {
           updatedDay.start_confirmed = 1;
           updatedDay.start_meter_read = parseInt(startMeterReading);
@@ -210,7 +210,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       
       // Update local state if possible
       if (tripData) {
-        const updatedDay = tripData.dailyPlans.find(d => d.day === selectedDay);
+        const updatedDay = tripData.dailyPlans.find(d => d.day == selectedDay);
         if (updatedDay) {
           updatedDay.end_confirmed = 1;
           updatedDay.end_meter_read = parseInt(endMeterReading);
@@ -296,7 +296,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       
       const result = await new Promise((resolve, reject) => {
         directionsService.route(directionsRequest, (result, status) => {
-          if (status === 'OK') {
+          if (status == 'OK') {
             resolve(result);
           } else {
             reject(new Error(`Directions request failed: ${status}`));
@@ -556,7 +556,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
             )}
             
             {/* Trip Status when completed */}
-            {tripData?.ended === 1 && (
+            {tripData?.ended == 1 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
                 <p className="text-sm text-blue-800 font-medium">✅ Trip Completed</p>
                 <p className="text-xs text-blue-600 mt-1">This trip has been successfully completed</p>
@@ -584,10 +584,10 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                   {!isDayStarted(day.day) && canStartDay(day.day) && (
                     <button
                       onClick={() => handleStartDay(day.day)}
-                      disabled={startingDay === day.day}
+                      disabled={startingDay == day.day}
                       className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
-                      {startingDay === day.day ? (
+                      {startingDay == day.day ? (
                         <Loader className="h-3 w-3 animate-spin" />
                       ) : (
                         <span>▶️</span>
@@ -609,10 +609,10 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                   {isDayStarted(day.day) && !isDayEnded(day.day) && canEndDay(day.day) && (
                     <button
                       onClick={() => handleEndDay(day.day)}
-                      disabled={endingDay === day.day}
+                      disabled={endingDay == day.day}
                       className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
-                      {endingDay === day.day ? (
+                      {endingDay == day.day ? (
                         <Loader className="h-3 w-3 animate-spin" />
                       ) : (
                         <CheckCircle className="h-3 w-3" />
@@ -676,12 +676,12 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
               </div>
             ))}
             
-            {!tripData?.dailyPlans || tripData.dailyPlans.length === 0 ? (
+            {!tripData?.dailyPlans || tripData.dailyPlans.length == 0 ? (
               <div className="text-center text-gray-500 text-sm">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                 No trip data available
               </div>
-            ) : tripData.ended === 1 ? (
+            ) : tripData.ended == 1 ? (
               <div className="text-center text-blue-600 text-sm">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-500" />
                 Trip completed successfully!
