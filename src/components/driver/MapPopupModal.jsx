@@ -102,7 +102,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     return areAllDaysCompleted() && !tripData?.ended;
   };
 
-  // Start day functionality
+  // Start day function
   const handleStartDay = (dayNumber) => {
     setSelectedDay(dayNumber);
     setStartMeterReading('');
