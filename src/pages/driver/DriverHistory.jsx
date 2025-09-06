@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { getUserData } from '../../utils/userStorage';
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -8,115 +10,79 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   DocumentArrowDownIcon,
-
   EyeIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 const DriverHistory = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [tripHistory, setTripHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const tripHistory = [
-    {
-      id: 'TR001',
-      passenger: 'Sarah Johnson',
-      pickupLocation: 'Colombo Airport',
-      destination: 'Galle Fort',
-      date: '2024-07-03',
-      startTime: '14:30',
-      endTime: '17:00',
-      duration: '2h 30m',
-      distance: '120 km',
-      fare: 89.50,
-      rating: 5,
-      status: 'completed',
-      paymentMethod: 'card',
-      notes: 'Tourist pickup, requested scenic route'
-    },
-    {
-      id: 'TR002',
-      passenger: 'Michael Chen',
-      pickupLocation: 'Kandy Central',
-      destination: 'Nuwara Eliya',
-      date: '2024-07-02',
-      startTime: '09:00',
-      endTime: '12:30',
-      duration: '3h 30m',
-      distance: '78 km',
-      fare: 125.00,
-      rating: 5,
-      status: 'completed',
-      paymentMethod: 'cash',
-      notes: 'Multiple photo stops requested'
-    },
-    {
-      id: 'TR003',
-      passenger: 'Emily Davis',
-      pickupLocation: 'Mount Lavinia',
-      destination: 'Colombo City',
-      date: '2024-07-01',
-      startTime: '16:15',
-      endTime: '17:45',
-      duration: '1h 30m',
-      distance: '25 km',
-      fare: 45.00,
-      rating: 4,
-      status: 'completed',
-      paymentMethod: 'digital',
-      notes: 'Business trip, needed WiFi'
-    },
-    {
-      id: 'TR004',
-      passenger: 'James Wilson',
-      pickupLocation: 'Negombo',
-      destination: 'Sigiriya',
-      date: '2024-06-30',
-      startTime: '07:00',
-      endTime: '11:30',
-      duration: '4h 30m',
-      distance: '145 km',
-      fare: 180.00,
-      rating: 5,
-      status: 'completed',
-      paymentMethod: 'card',
-      notes: 'Early morning start, cultural tour'
-    },
-    {
-      id: 'TR005',
-      passenger: 'Lisa Thompson',
-      pickupLocation: 'Ella',
-      destination: 'Colombo',
-      date: '2024-06-29',
-      startTime: '13:00',
-      endTime: '19:30',
-      duration: '6h 30m',
-      distance: '200 km',
-      fare: 250.00,
-      rating: 4,
-      status: 'completed',
-      paymentMethod: 'card',
-      notes: 'Long distance, train station pickup'
-    },
-    {
-      id: 'TR006',
-      passenger: 'David Kumar',
-      pickupLocation: 'Colombo Fort',
-      destination: 'Bentota',
-      date: '2024-06-28',
-      startTime: '10:30',
-      endTime: '12:00',
-      duration: '1h 30m',
-      distance: '65 km',
-      fare: 75.00,
-      rating: null,
-      status: 'cancelled',
-      paymentMethod: 'none',
-      notes: 'Passenger cancelled last minute'
-    }
-  ];
+  // Get user data from storage
+  const userData = getUserData();
+  const driverEmail = userData?.email;
+
+  // Fetch trip history from API
+  useEffect(() => {
+    const fetchTripHistory = async () => {
+      if (!driverEmail) {
+        setError('Driver email not found in storage');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Fetching trip history for driver:', driverEmail);
+        
+        const response = await axios.get(`http://localhost:5001/api/drivers/${driverEmail}/trips`);
+        console.log('Trip History API Response:', response);
+        
+        if (response.data.success) {
+          const apiTrips = response.data.data;
+          
+          // Transform API data to match history component structure
+          const transformedTrips = apiTrips.map(trip => ({
+            id: trip._id || trip.id,
+            passenger: trip.passenger || `User ${trip.userId?.substring(0, 8)}...`,
+            pickupLocation: trip.pickupLocation || 'Not specified',
+            destination: trip.destination || 'Multiple destinations',
+            date: trip.date || trip.startDate || new Date(trip.createdAt || Date.now()).toISOString().split('T')[0],
+            startTime: trip.startTime || '00:00',
+            endTime: trip.endTime || '00:00',
+            duration: trip.duration || trip.estimatedTime || 'N/A',
+            distance: trip.distance || `${Math.round(trip.totalDistance || 0)} km`,
+            fare: trip.fare || trip.totalCost || 0,
+            rating: trip.rating || trip.passengerRating || 5,
+            status: trip.status || 'completed',
+            paymentMethod: trip.paymentMethod || 'card',
+            notes: trip.notes || 'No additional notes',
+            tip: trip.tip || 0
+          }));
+
+          setTripHistory(transformedTrips);
+        } else {
+          setError('Failed to fetch trip history');
+          setTripHistory([]);
+        }
+      } catch (err) {
+        console.error('Error fetching trip history:', err);
+        setError('Failed to fetch trip history. Please try again.');
+        setTripHistory([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTripHistory();
+  }, [driverEmail]);
 
   const statusOptions = [
     { value: 'all', label: 'All Trips' },
@@ -188,7 +154,29 @@ const DriverHistory = () => {
   const stats = calculateStats();
 
   return (
-    
+    <div className="max-w-7xl mx-auto p-6 relative">
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center">
+            <span className="text-red-700">{error}</span>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="ml-auto text-red-600 hover:text-red-800 underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
@@ -198,6 +186,9 @@ const DriverHistory = () => {
           <p className="text-gray-600 dark:text-gray-400">
             View your complete trip history and performance metrics
           </p>
+          {driverEmail && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Driver: {driverEmail}</p>
+          )}
         </div>
 
         {/* Stats Overview */}
@@ -399,7 +390,7 @@ const DriverHistory = () => {
           </div>
         </div>
       </div>
-    
+    </div>
   );
 };
 
