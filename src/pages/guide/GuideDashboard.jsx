@@ -606,12 +606,12 @@ const GuideDashboard = () => {
                     >
                       Decline
                     </button>
-                    <button
-                      onClick={() => handleTourAction(request.id, 'accept')}
-                      className="px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                    <Link
+                      to="/guide/trips"
+                      className="px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium inline-block text-center"
                     >
-                      Accept
-                    </button>
+                      View Requests
+                    </Link>
                   </div>
                 </div>
               </div>
