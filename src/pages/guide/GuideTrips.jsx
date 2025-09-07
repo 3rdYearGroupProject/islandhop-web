@@ -13,7 +13,8 @@ import {
   Check,
   X,
   Filter,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 
 const GuideTrips = () => {
@@ -126,6 +127,27 @@ const GuideTrips = () => {
     fetchTrips();
   }, [guideEmail]);
 
+  // Helper function to generate date range for trip duration
+  const generateDateRange = (startDate, endDate) => {
+    const dates = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Ensure we have valid dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      console.warn('Invalid date range provided:', startDate, endDate);
+      return [];
+    }
+    
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      dates.push(currentDate.toISOString().split('T')[0]); // Format as YYYY-MM-DD
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
   const handleTripAction = async (tripId, action) => {
     try {
       setLoading(true);
@@ -159,6 +181,36 @@ const GuideTrips = () => {
 
         if (acceptResponse.data.success) {
           console.log('Guide accepted successfully:', acceptResponse.data);
+          
+          // Update guide schedule to mark dates as unavailable
+          try {
+            const tripDates = generateDateRange(currentTrip.startDate, currentTrip.endDate);
+            
+            if (tripDates.length > 0) {
+              console.log('Updating guide schedule for dates:', tripDates, 'Guide email:', guideEmail);
+              
+              const scheduleResponse = await axios.post('http://localhost:5005/schedule/guide/mark-unavailable', {
+                email: guideEmail,
+                dates: tripDates
+              }, {
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              if (scheduleResponse.data.success) {
+                console.log('Guide schedule updated successfully for dates:', tripDates);
+              } else {
+                console.warn('Failed to update guide schedule:', scheduleResponse.data.message || 'Unknown error');
+                // Don't fail the whole operation, just log the warning
+              }
+            } else {
+              console.warn('No valid dates found for trip. Start date:', currentTrip.startDate, 'End date:', currentTrip.endDate);
+            }
+          } catch (scheduleError) {
+            console.error('Error updating guide schedule:', scheduleError.response?.data || scheduleError.message);
+            // Don't fail the whole operation, just log the error
+          }
           
           // Update local state to reflect the acceptance
           setTrips(prevTrips => {
@@ -411,7 +463,7 @@ const GuideTrips = () => {
                   {trip.status?.charAt(0).toUpperCase() + trip.status?.slice(1) || 'Unknown'}
                 </span>
                 <p className="text-lg font-bold text-gray-900">
-                  LKR {(trip.averageGuideCost || 0).toLocaleString()}
+                  LKR {(trip.fare || 0).toLocaleString()}
                 </p>
               </div>
             </div>
