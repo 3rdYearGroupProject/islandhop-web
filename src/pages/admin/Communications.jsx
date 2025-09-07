@@ -14,6 +14,7 @@ import {
 import { CheckIcon as CheckIconSolid } from "@heroicons/react/24/solid";
 import { getAuth } from "firebase/auth";
 import userServicesApi from "../../api/axios";
+import axios from "axios"; // Import axios for HTTP requests
 
 const Communications = () => {
   const [selectedChat, setSelectedChat] = useState("system");
@@ -54,46 +55,41 @@ const Communications = () => {
   const fetchSupportAgents = async () => {
     setLoadingSupportAgents(true);
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) throw new Error("Not authenticated");
-      const token = await user.getIdToken();
-
-      const response = await userServicesApi.get("/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
+      console.log("Fetching support agents from backend");
+      const response = await axios.get("http://localhost:4011/users/support");
       console.log('Fetched users:', response.data);
 
-      if (response.status === 200 && response.data.status === "success") {
+      if (response.data.success) {
         // Filter only support agents
-        const supportUsers = response.data.users.filter(user => 
-          user.accountType && user.accountType.toLowerCase() === 'support'
-        );
+        const supportUsers = response.data.data.map(user => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          contactNo: user.contact_no,
+          address: user.address,
+          profilePicture: user.profile_picture,
+          permission: user.permission,
+          type: 'support',
+          avatar: user.profile_picture || null,
+          lastMessage: '',
+          lastTime: '',
+          unreadCount: 0,
+          isOnline: user.status === 'ACTIVE',
+          role: 'Support Agent'
+        }));
 
         console.log('Support agents found:', supportUsers);
         setSupportAgents(supportUsers);
 
         // Add support agents to chats
-        const supportChats = supportUsers.map(agent => ({
-          id: `support_${agent.email}`, // Use email as unique identifier
-          name: `${agent.firstName} ${agent.lastName}`,
-          email: agent.email,
-          type: 'support',
-          avatar: agent.profilePicUrl || null,
-          lastMessage: '',
-          lastTime: '',
-          unreadCount: 0,
-          isOnline: agent.status === 'ACTIVE',
-          role: 'Support Agent'
-        }));
-
-        // Update chats to include system and support agents
         setChats(prev => [
           prev[0], // Keep system group
-          ...supportChats
+          ...supportUsers.map(agent => ({
+            id: `support_${agent.email}`,
+            name: `${agent.firstName} ${agent.lastName}`.trim() || agent.email, // Use full name if available, fallback to email
+            ...agent
+          }))
         ]);
       }
     } catch (error) {
@@ -918,9 +914,16 @@ else {
                               </div>
 
                               {chat.type === "personal" && (
-                                <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
-                                  {chat.role}
-                                </p>
+                                <div className="mb-1">
+                                  <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+                                    {chat.role}
+                                  </p>
+                                  {chat.type === "support" && chat.address && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      📍 {chat.address}
+                                    </p>
+                                  )}
+                                </div>
                               )}
 
                               <div className="flex items-center justify-between">
@@ -1066,12 +1069,27 @@ else {
                                     : "bg-gray-400"
                                 }`}
                               ></div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {currentChat.isOnline
-                                  ? "Online"
-                                  : "Last seen recently"}{" "}
-                                • {currentChat.role}
-                              </p>
+                              <div className="flex flex-col">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {currentChat.isOnline
+                                    ? "Online"
+                                    : "Last seen recently"}{" "}
+                                  • {currentChat.role}
+                                </p>
+                                {currentChat.type === "support" && (
+                                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                                    {currentChat.contactNo && (
+                                      <span>📞 {currentChat.contactNo}</span>
+                                    )}
+                                    {currentChat.address && (
+                                      <span>📍 {currentChat.address}</span>
+                                    )}
+                                    {currentChat.email && (
+                                      <span>✉️ {currentChat.email}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
