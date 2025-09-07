@@ -1,169 +1,261 @@
 import React, { useState, useEffect } from 'react';
-import GuideTripModal from '../../components/guide/GuideTripModal';
+import axios from 'axios';
+import { getUserData, getUserUID } from '../../utils/userStorage';
 import { 
+  Globe, 
   MapPin, 
   Clock, 
-  Calendar, 
+  Star, 
   Users, 
-  DollarSign, 
-  Phone, 
-  MessageCircle, 
-  Check, 
-  X, 
   Navigation,
-  Star,
+  Phone,
+  MessageCircle,
+  Check,
+  X,
   Filter,
-  ChevronRight,
-  AlertTriangle
+  Calendar
 } from 'lucide-react';
 
 const GuideTrips = () => {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTrip, setSelectedTrip] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, active, completed, cancelled
-  const [trips, setTrips] = useState([
-    {
-      id: 'TR001',
-      tourist: {
-        name: 'Emily Johnson',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
-        phone: '+1 555 123 4567',
-        rating: 4.8,
-        joinedDate: '2023-01-15'
-      },
-      tourPackage: 'Kandy Cultural Heritage Tour',
-      pickupLocation: 'Kandy City Center',
-      destination: 'Temple of the Tooth, Peradeniya Gardens',
-      distance: '25 km',
-      estimatedTime: '6 hours',
-      groupSize: 4,
-      fare: 6000.00,
-      status: 'pending',
-      startTime: '09:00 AM',
-      requestTime: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      note: 'Vegetarian lunch required for all participants',
-      tripType: 'cultural_tour',
-      tourDate: '2024-12-15'
-    },
-    {
-      id: 'TR002',
-      tourist: {
-        name: 'Marco Rodriguez',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-        phone: '+34 600 123 456',
-        rating: 4.6,
-        joinedDate: '2023-05-20'
-      },
-      tourPackage: 'Ella Adventure Trek',
-      pickupLocation: 'Ella Train Station',
-      destination: 'Ella Rock, Little Adam\'s Peak',
-      distance: '15 km',
-      estimatedTime: '8 hours',
-      groupSize: 2,
-      fare: 3600.00,
-      status: 'active',
-      startTime: '07:00 AM',
-      requestTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      note: 'Early morning start preferred, photography focused',
-      tripType: 'adventure_tour',
-      tourDate: '2024-12-18',
-      progress: 45
-    },
-    {
-      id: 'TR003',
-      tourist: {
-        name: 'Sarah Chen',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-        phone: '+86 138 0013 8000',
-        rating: 4.9,
-        joinedDate: '2023-08-10'
-      },
-      tourPackage: 'Colombo Food Discovery',
-      pickupLocation: 'Galle Face Green',
-      destination: 'Pettah Market, Local Restaurants',
-      distance: '12 km',
-      estimatedTime: '4 hours',
-      groupSize: 3,
-      fare: 28500.00,
-      status: 'pending',
-      startTime: '04:00 PM',
-      requestTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-      note: 'No spicy food, dietary restrictions included',
-      tripType: 'food_tour',
-      tourDate: '2024-12-20'
-    },
-    {
-      id: 'TR004',
-      tourist: {
-        name: 'James Wilson',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        phone: '+44 20 7946 0958',
-        rating: 4.7,
-        joinedDate: '2023-03-12'
-      },
-      tourPackage: 'Sigiriya Historical Tour',
-      pickupLocation: 'Dambulla Cave Temple',
-      destination: 'Sigiriya Rock Fortress',
-      distance: '22 km',
-      estimatedTime: '5 hours',
-      groupSize: 6,
-      fare: 9000.00,
-      status: 'completed',
-      startTime: '08:00 AM',
-      completedTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      tripType: 'historical_tour',
-      tourDate: '2024-12-12',
-      guideRating: 5,
-      tip: 5000.00
-    },
-    {
-      id: 'TR005',
-      tourist: {
-        name: 'Lisa Anderson',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-        phone: '+1 555 987 6543',
-        rating: 4.6,
-        joinedDate: '2023-07-22'
-      },
-      tourPackage: 'Galle Fort Walking Tour',
-      pickupLocation: 'Galle Railway Station',
-      destination: 'Dutch Fort, Lighthouse',
-      distance: '8 km',
-      estimatedTime: '3 hours',
-      groupSize: 2,
-      fare: 18000.00,
-      status: 'completed',
-      startTime: '10:00 AM',
-      completedTime: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-      tripType: 'walking_tour',
-      tourDate: '2024-12-11',
-      guideRating: 4,
-      tip: 2000.00
-    }
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [trips, setTrips] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Get user data from storage
+  const userData = getUserData();
+  const guideEmail = userData?.email;
+  const guideUID = getUserUID();
 
   const [stats, setStats] = useState({
-    totalTours: trips.length,
-    activeTours: trips.filter(t => t.status === 'active').length,
-    pendingTours: trips.filter(t => t.status === 'pending').length,
-    completedTours: trips.filter(t => t.status === 'completed').length
+    totalTrips: 0,
+    activeTrips: 0,
+    pendingTrips: 0,
+    completedTrips: 0
   });
 
-  const handleTripAction = (tripId, action) => {
-    setTrips(prevTrips => {
-      return prevTrips.map(trip => {
-        if (trip.id === tripId) {
-          if (action === 'accept') {
-            return { ...trip, status: 'active', acceptedTime: new Date() };
-          } else if (action === 'decline') {
-            return { ...trip, status: 'declined' };
-          } else if (action === 'complete') {
-            return { ...trip, status: 'completed', completedTime: new Date() };
-          }
+  // Fetch trips from API
+  useEffect(() => {
+    const fetchTrips = async () => {
+      if (!guideEmail) {
+        setError('Guide email not found in storage');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Fetching trips for guide:', guideEmail);
+        const response = await axios.get(`http://localhost:5006/api/trips/guide/${guideEmail}`);
+        console.log('API Response:', response);
+        
+        if (response.data.success) {
+          const apiTrips = response.data.data.trips;
+          
+          // Transform API data to match component structure
+          const transformedTrips = apiTrips.map(trip => {
+            // Add null checking for critical fields
+            if (!trip) {
+              console.warn('Received null/undefined trip in API response');
+              return null;
+            }
+
+            // Determine status based on guide_status
+            let status = 'pending';
+            if (trip.guide_status === 1) {
+              status = 'active';
+            } else if (trip.guide_status === '' || trip.guide_status === 0 || trip.guide_status === null) {
+              status = 'pending';
+            }
+
+            // Get first and last cities for pickup and destination
+            const firstDay = trip.dailyPlans?.[0];
+            const lastDay = trip.dailyPlans?.[trip.dailyPlans.length - 1];
+
+            return {
+              id: trip._id,
+              userId: trip.userId, // Preserve the original userId
+              tripName: trip.tripName,
+              tourist: trip.userId ? `Tourist ${trip.userId.substring(0, 8)}...` : 'Unknown Tourist', // Safe substring with fallback
+              touristAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+              pickupLocation: firstDay?.city || trip.baseCity || 'Not specified',
+              destination: lastDay?.city || 'Multiple destinations',
+              distance: `${Math.round(trip.averageTripDistance || 0)} km`,
+              estimatedTime: `${Math.ceil((trip.averageTripDistance || 0) / 60)} hours`, // Rough estimate
+              fare: trip.averageGuideCost || 0,
+              status: status,
+              touristRating: 4.5, // Default rating
+              tripType: 'full_tour',
+              requestTime: new Date(trip.lastUpdated),
+              startDate: trip.startDate,
+              endDate: trip.endDate,
+              arrivalTime: trip.arrivalTime,
+              baseCity: trip.baseCity,
+              dailyPlans: trip.dailyPlans,
+              vehicleType: trip.vehicleType,
+              paidAmount: trip.payedAmount,
+              guideNeeded: trip.guideNeeded,
+              driverNeeded: trip.driverNeeded,
+              driverEmail: trip.driver_email,
+              driverStatus: trip.driver_status
+            };
+          }).filter(trip => trip !== null); // Remove any null entries from failed transformations
+
+          setTrips(transformedTrips);
+
+          // Update stats
+          const newStats = {
+            totalTrips: transformedTrips.length,
+            activeTrips: transformedTrips.filter(t => t.status === 'active').length,
+            pendingTrips: transformedTrips.filter(t => t.status === 'pending').length,
+            completedTrips: transformedTrips.filter(t => t.status === 'completed').length
+          };
+          setStats(newStats);
+        } else {
+          setError('Failed to fetch trips');
         }
-        return trip;
+      } catch (err) {
+        console.error('Error fetching trips:', err);
+        setError('Failed to fetch trips. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, [guideEmail]);
+
+  const handleTripAction = async (tripId, action) => {
+    try {
+      setLoading(true);
+      
+      if (action === 'accept') {
+        // Find the trip to get the userId
+        const currentTrip = trips.find(trip => trip.id === tripId);
+        const adminID = currentTrip?.userId;
+
+        if (!currentTrip) {
+          throw new Error('Trip not found');
+        }
+
+        if (!adminID) {
+          console.warn('No adminID (userId) found for trip:', tripId);
+          // Still proceed but log the warning
+        }
+
+        console.log('Accepting trip:', tripId, 'for guide:', guideEmail, 'UID:', guideUID, 'AdminID:', adminID);
+        // Make API call to accept guide assignment
+        const acceptResponse = await axios.post('http://localhost:5006/api/accept_guide', {
+          tripId: tripId,
+          email: guideEmail,
+          guideUID: guideUID,
+          adminID: adminID || null // Send null if adminID is not available
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (acceptResponse.data.success) {
+          console.log('Guide accepted successfully:', acceptResponse.data);
+          
+          // Update local state to reflect the acceptance
+          setTrips(prevTrips => {
+            return prevTrips.map(trip => {
+              if (trip.id === tripId) {
+                return { ...trip, status: 'active', acceptedTime: new Date() };
+              }
+              return trip;
+            });
+          });
+
+          // Update stats
+          setStats(prevStats => ({
+            ...prevStats,
+            activeTrips: prevStats.activeTrips + 1,
+            pendingTrips: prevStats.pendingTrips - 1
+          }));
+
+        } else {
+          throw new Error(acceptResponse.data.message || 'Failed to accept trip');
+        }
+      } else if (action === 'decline') {
+        console.log('Declining trip:', tripId, 'for guide:', guideEmail);
+        // Make API call to remove guide from trip
+        const removeResponse = await axios.post('http://localhost:5006/api/remove_guide', {
+          tripId: tripId,
+          email: guideEmail
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (removeResponse.data.success) {
+          console.log('Guide removed successfully:', removeResponse.data);
+          
+          // Update local state to reflect the decline
+          setTrips(prevTrips => {
+            return prevTrips.map(trip => {
+              if (trip.id === tripId) {
+                return { ...trip, status: 'declined' };
+              }
+              return trip;
+            });
+          });
+
+          // Update stats
+          setStats(prevStats => ({
+            ...prevStats,
+            pendingTrips: prevStats.pendingTrips - 1
+          }));
+
+        } else {
+          throw new Error(removeResponse.data.message || 'Failed to decline trip');
+        }
+
+      }
+
+    } catch (err) {
+      console.error('Error updating trip:', err);
+      setError(`Failed to ${action} trip: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartTrip = async (tripId) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Starting trip:', tripId);
+      
+      const startTripResponse = await axios.post('http://localhost:5007/api/trips/start-trip', {
+        tripId: tripId
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
-    });
+
+      if (startTripResponse.data.success) {
+        console.log('Trip started successfully:', startTripResponse.data);
+        
+        // You might want to update local state or show a success message
+        // For now, we'll just log the success
+        
+      } else {
+        throw new Error(startTripResponse.data.message || 'Failed to start trip');
+      }
+
+    } catch (err) {
+      console.error('Error starting trip:', err);
+      setError(`Failed to start trip: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredTrips = trips.filter(trip => {
@@ -171,34 +263,38 @@ const GuideTrips = () => {
     return trip.status === filter;
   });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatTime = (date) => {
-    return new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-      Math.round((date - new Date()) / (1000 * 60)),
-      'minute'
-    );
-  };
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
+      {/* Loading Screen */}
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">{error}</span>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="ml-auto text-red-600 hover:text-red-800 underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Tours</h1>
         <p className="text-gray-600">Manage your tour requests and active bookings</p>
+        {guideEmail && (
+          <p className="text-sm text-gray-500">Guide: {guideEmail}</p>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -206,11 +302,11 @@ const GuideTrips = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
+              <Globe className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Tours</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalTours}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalTrips}</p>
             </div>
           </div>
         </div>
@@ -222,7 +318,7 @@ const GuideTrips = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeTours}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.activeTrips}</p>
             </div>
           </div>
         </div>
@@ -234,7 +330,7 @@ const GuideTrips = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingTours}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.pendingTrips}</p>
             </div>
           </div>
         </div>
@@ -246,7 +342,7 @@ const GuideTrips = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.completedTours}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.completedTrips}</p>
             </div>
           </div>
         </div>
@@ -281,211 +377,133 @@ const GuideTrips = () => {
         </div>
       </div>
 
-      {/* Tours List */}
-      <div className="space-y-4">
-        {filteredTrips.map(trip => (
-          <div 
-            key={trip.id} 
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all duration-200"
-            onClick={() => { setSelectedTrip(trip); setModalOpen(true); }}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4 flex-1">
-                <img
-                  src={trip.tourist.avatar}
-                  alt={trip.tourist.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{trip.tourist.name}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Star className="h-3 w-3 text-yellow-400" />
-                        <span>{trip.tourist.rating}</span>
-                        <span>•</span>
-                        <span>Tour #{trip.id}</span>
-                        <span>•</span>
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                          {trip.tripType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(trip.status)}`}>
-                        {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
-                      </span>
-                      {trip.status === 'pending' && (
-                        <span className="text-sm text-gray-500">
-                          {formatTime(trip.requestTime)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="font-medium text-gray-900 mb-2">{trip.tourPackage}</h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-green-500 mr-2" />
-                        <span className="text-sm text-gray-600">From: {trip.pickupLocation}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-red-500 mr-2" />
-                        <span className="text-sm text-gray-600">To: {trip.destination}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-blue-500 mr-2" />
-                        <span className="text-sm text-gray-600">Date: {trip.tourDate} at {trip.startTime}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <p className="text-xs text-gray-500">Duration</p>
-                        <p className="font-semibold text-sm">{trip.estimatedTime}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Group Size</p>
-                        <p className="font-semibold text-sm">{trip.groupSize} people</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Fee</p>
-                        <p className="font-semibold text-sm">LKR{trip.fare}</p>
-                        {trip.tip && trip.tip > 0 && (
-                          <p className="text-xs text-green-600">+LKR{trip.tip} tip</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* {trip.note && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                      <div className="flex items-start">
-                        <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
-                        <span className="text-sm text-blue-700">{trip.note}</span>
-                      </div>
-                    </div>
-                  )} */}
-
-                  {trip.status === 'active' && trip.progress && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700">Tour Progress</span>
-                        <span className="text-sm text-gray-500">{trip.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${trip.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex space-x-2">
-                      {trip.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTripAction(trip.id, 'decline');
-                            }}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Decline
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTripAction(trip.id, 'accept');
-                            }}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Accept
-                          </button>
-                        </>
-                      )}
-                      
-                      {trip.status === 'active' && (
-                        <>
-                          <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center">
-                            <Navigation className="h-4 w-4 mr-1" />
-                            Navigate
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTripAction(trip.id, 'complete');
-                            }}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Complete Tour
-                          </button>
-                        </>
-                      )}
-                      
-                      {trip.status === 'completed' && (
-                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center">
-                          View Details
-                          <ChevronRight className="h-4 w-4 ml-1" />
-                        </button>
-                      )}
-                    </div>
-
-                    {(trip.status === 'active' || trip.status === 'completed') && (
-                      <div className="flex space-x-2">
-                        <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                          <Phone className="h-4 w-4" />
-                        </button>
-                        <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                          <MessageCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {trip.status === 'completed' && trip.guideRating && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Tourist rated you:</span>
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                          <span className="font-medium">{trip.guideRating}/5</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+      {/* Trips List */}
+      <div className="space-y-6">
+        {filteredTrips.map((trip) => (
+          <div key={trip.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-white font-semibold text-lg">
+                    {trip.userName?.charAt(0) || 'T'}
+                  </span>
                 </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {trip.destination || 'Tour Destination'}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Tourist: {trip.userName || 'Tourist Name'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Guide: {guideEmail}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  trip.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  trip.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                  trip.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                  trip.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {trip.status?.charAt(0).toUpperCase() + trip.status?.slice(1) || 'Unknown'}
+                </span>
+                <p className="text-lg font-bold text-gray-900">
+                  LKR {(trip.averageGuideCost || 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'Date TBD'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  Duration: {trip.duration || 'TBD'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  {trip.numberOfPeople || 1} Tourist{(trip.numberOfPeople || 1) > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+
+            {trip.description && (
+              <p className="text-gray-600 text-sm mb-4">{trip.description}</p>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              <div className="flex space-x-3">
+                {trip.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleTripAction(trip.id, 'accept')}
+                      disabled={loading}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                    >
+                      Accept Tour
+                    </button>
+                    <button
+                      onClick={() => handleTripAction(trip.id, 'decline')}
+                      disabled={loading}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                  </>
+                )}
+                
+                {trip.status === 'accepted' && (
+                  <button
+                    onClick={() => handleStartTrip(trip.id)}
+                    disabled={loading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    Start Tour
+                  </button>
+                )}
+                
+                {trip.status === 'active' && (
+                  <button
+                    onClick={() => handleTripAction(trip.id, 'complete')}
+                    disabled={loading}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  >
+                    Complete Tour
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex space-x-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <MessageCircle className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Phone className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </div>
         ))}
-      </div>
 
-      {filteredTrips.length === 0 && (
-        <div className="text-center py-12">
-          <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No tours found</h3>
-          <p className="text-gray-600">
-            {filter === 'all' 
-              ? "You don't have any tour requests yet. When tourists book tours, they'll appear here."
-              : `No ${filter} tours found. Try changing the filter.`
-            }
-          </p>
-        </div>
-      )}
-      <GuideTripModal open={modalOpen} onClose={() => setModalOpen(false)} trip={selectedTrip} />
+        {filteredTrips.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <Globe className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No tours found</p>
+            <p className="text-gray-400">Tours matching your filter will appear here</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
