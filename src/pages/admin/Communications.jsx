@@ -28,6 +28,10 @@ const Communications = () => {
   const [supportAgents, setSupportAgents] = useState([]);
   const [loadingSupportAgents, setLoadingSupportAgents] = useState(false);
   const [loadingChats, setLoadingChats] = useState(true); // New state for loading chats
+  const [loadingPersonalConversations, setLoadingPersonalConversations] = useState(false);
+  const [loadingPersonalMessages, setLoadingPersonalMessages] = useState(false);
+  const [loadingDisplayNames, setLoadingDisplayNames] = useState(false);
+  const [startingConversation, setStartingConversation] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Chats state: system group and personal conversations from backend
@@ -125,6 +129,7 @@ const Communications = () => {
 
   // Function to start a conversation with a support agent
   const startConversationWithAgent = async (agentEmail) => {
+    setStartingConversation(true);
     try {
       const userId = await getUserIdByEmail(agentEmail);
       if (!userId) {
@@ -174,6 +179,8 @@ const Communications = () => {
       }
     } catch (error) {
       console.error("Error starting conversation with agent:", error);
+    } finally {
+      setStartingConversation(false);
     }
   };
   const fetchDisplayNameFromBackend = async (userId) => {
@@ -185,6 +192,7 @@ const Communications = () => {
       return userDisplayNames[userId];
     }
 
+    setLoadingDisplayNames(true);
     try {
       const response = await fetch(`http://localhost:8091/api/v1/firebase/user/display-name/${userId}`, {
         method: 'GET',
@@ -208,12 +216,15 @@ const Communications = () => {
     } catch (error) {
       console.error(`Error fetching display name for ${userId}:`, error);
       return userId;
+    } finally {
+      setLoadingDisplayNames(false);
     }
   };
 
   // Fetch personal conversations for current user
   const fetchPersonalConversations = async () => {
     if (authToken && auth.currentUser) {
+      setLoadingPersonalConversations(true);
       console.log(
         `Fetching personal conversations for user: ${auth.currentUser.uid}`
       );
@@ -343,6 +354,8 @@ const Communications = () => {
         */
       } catch (error) {
         console.error("Error fetching personal conversations:", error);
+      } finally {
+        setLoadingPersonalConversations(false);
       }
     }
   };
@@ -355,6 +368,7 @@ const Communications = () => {
 // Fetch personal messages for selected chat
 useEffect(() => {
   if (selectedChat !== "system" && authToken && auth.currentUser) {
+    setLoadingPersonalMessages(true);
     console.log("Selected chat:", selectedChat);
     
     // Handle support agent chats
@@ -398,9 +412,11 @@ useEffect(() => {
               ...prev,
               [selectedChat]: messagesWithNames
             }));
+            setLoadingPersonalMessages(false);
           })
           .catch(error => {
             console.error("Error fetching support agent messages:", error);
+            setLoadingPersonalMessages(false);
           });
       };
       
@@ -439,8 +455,15 @@ useEffect(() => {
             ...prev,
             [selectedChat]: messagesWithNames
           }));
+          setLoadingPersonalMessages(false);
+        })
+        .catch(error => {
+          console.error("Error fetching personal messages:", error);
+          setLoadingPersonalMessages(false);
         });
     }
+  } else {
+    setLoadingPersonalMessages(false);
   }
 }, [selectedChat, authToken, chats, auth.currentUser, userDisplayNames]);
 
@@ -829,7 +852,16 @@ else {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-secondary-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <ChatBubbleLeftRightIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+          </div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Loading Communications
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Setting up your chat environment...
+          </p>
         </div>
       </div>
     );
@@ -842,8 +874,14 @@ else {
         <div className="mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
                 Communications
+                {loadingDisplayNames && (
+                  <span className="ml-3 inline-flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Updating names...</span>
+                  </span>
+                )}
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
                 Manage your conversations and messages.
@@ -871,9 +909,31 @@ else {
                     Recent Conversations
                   </h3>
                   <div className="space-y-3">
-                    {chats
-                      .filter((chat) => chat.type !== "support")
-                      .map((chat) => (
+                    {loadingPersonalConversations ? (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-600 border-t-transparent mx-auto mb-2"></div>
+                          <p className="text-xs text-primary-600 dark:text-primary-400">
+                            Loading conversations...
+                          </p>
+                        </div>
+                      </div>
+                    ) : chats.filter((chat) => chat.type !== "support").length === 0 ? (
+                      <div className="text-center py-6">
+                        <div className="w-12 h-12 bg-gray-100 dark:bg-secondary-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                          <ChatBubbleLeftRightIcon className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                          No conversations yet
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          Start chatting with support agents below
+                        </p>
+                      </div>
+                    ) : (
+                      chats
+                        .filter((chat) => chat.type !== "support")
+                        .map((chat) => (
                         <div
                           key={chat.id}
                           onClick={() => setSelectedChat(chat.id)}
@@ -939,7 +999,8 @@ else {
                             </div>
                           </div>
                         </div>
-                      ))}
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -953,20 +1014,39 @@ else {
                       <button
                         onClick={fetchSupportAgents}
                         disabled={loadingSupportAgents}
-                        className="p-2 rounded-xl text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-white/50 dark:hover:bg-primary-800/30 transition-all duration-200 shadow-sm"
+                        className="p-2 rounded-xl text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-white/50 dark:hover:bg-primary-800/30 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={loadingSupportAgents ? "Loading..." : "Refresh support agents"}
                       >
-                        <EllipsisVerticalIcon className="h-5 w-5" />
+                        {loadingSupportAgents ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
+                        ) : (
+                          <EllipsisVerticalIcon className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
-                    {loadingSupportAgents && (
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
-                    )}
                   </div>
                   <div className="space-y-2 flex-1 overflow-y-auto">
-                    {supportAgents.map((agent) => (
+                    {loadingSupportAgents ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-3"></div>
+                          <p className="text-sm text-primary-600 dark:text-primary-400">
+                            Loading support agents...
+                          </p>
+                        </div>
+                      </div>
+                    ) : supportAgents.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          No support agents available
+                        </p>
+                      </div>
+                    ) : (
+                      supportAgents.map((agent) => (
               // Update the onClick handler for support agents
 <button
   key={agent.email}
+  disabled={startingConversation}
   onClick={async () => {
     setSelectedChat(`support_${agent.email}`);
     
@@ -981,7 +1061,7 @@ else {
       ));
     }
   }}
-  className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] ${
+  className={`w-full p-3 rounded-xl text-left transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
     selectedChat === `support_${agent.email}`
       ? "bg-white dark:bg-secondary-700 shadow-md border-2 border-primary-300 dark:border-primary-600"
       : "hover:bg-white/60 dark:hover:bg-secondary-700/50 border-2 border-transparent"
@@ -1004,9 +1084,15 @@ else {
                               Support Agent
                             </p>
                           </div>
+                          {startingConversation && (
+                            <div className="ml-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent"></div>
+                            </div>
+                          )}
                         </div>
                       </button>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -1103,12 +1189,12 @@ else {
             
 {/* Messages */}
 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-secondary-900">
-  {loadingMessages && selectedChat === "system" ? (
+  {(loadingMessages && selectedChat === "system") || (loadingPersonalMessages && selectedChat !== "system") ? (
     <div className="flex items-center justify-center py-12">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-3"></div>
         <p className="text-gray-500 dark:text-gray-400">
-          Loading messages...
+          {selectedChat === "system" ? "Loading group messages..." : "Loading messages..."}
         </p>
       </div>
     </div>
