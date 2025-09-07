@@ -50,8 +50,38 @@ const GuideSchedule = () => {
     }
   }, [currentMonth, userEmail, getSchedule]);
 
+  // Helper function to check if a date is modifiable
+  const isDateModifiable = (date) => {
+    const selectedDate = new Date(date);
+    const today = new Date();
+    const fourteenDaysFromNow = new Date();
+    fourteenDaysFromNow.setDate(today.getDate() + 14);
+    
+    // Date must be at least 14 days in the future
+    return selectedDate >= fourteenDaysFromNow;
+  };
+
+  // Helper function to check if a date is locked
+  const isDateLocked = (date) => {
+    const dateStr = typeof date === 'string' ? date : formatDate(date);
+    const { availability } = getScheduleForDate(new Date(dateStr));
+    return availability?.status === 'locked';
+  };
+
   // Handle date selection for bulk operations
   const handleDateSelect = (date) => {
+    // Don't allow selection of locked dates
+    if (isDateLocked(date)) {
+      alert('Locked dates cannot be modified. These dates are reserved for confirmed bookings.');
+      return;
+    }
+
+    // Don't allow selection of dates within 14 days
+    if (!isDateModifiable(date)) {
+      alert('You can only modify availability for dates that are at least 14 days in the future.');
+      return;
+    }
+
     setSelectedDates(prev =>
       prev.includes(date) 
         ? prev.filter(d => d !== date) 
@@ -61,7 +91,17 @@ const GuideSchedule = () => {
 
   // Handle marking days as unavailable
   const handleMarkUnavailable = async () => {
-    if (selectedDates.length === 0) return;
+    if (selectedDates.length === 0) {
+      alert('Please select at least one date to mark as unavailable.');
+      return;
+    }
+
+    // Check if all selected dates are modifiable
+    const invalidDates = selectedDates.filter(date => !isDateModifiable(date) || isDateLocked(date));
+    if (invalidDates.length > 0) {
+      alert('Some selected dates cannot be modified. Please ensure dates are at least 14 days in the future and not locked.');
+      return;
+    }
 
     try {
       await markUnavailable(selectedDates);
@@ -75,7 +115,17 @@ const GuideSchedule = () => {
 
   // Handle marking days as available
   const handleMarkAvailable = async () => {
-    if (selectedDates.length === 0) return;
+    if (selectedDates.length === 0) {
+      alert('Please select at least one date to mark as available.');
+      return;
+    }
+
+    // Check if all selected dates are modifiable
+    const invalidDates = selectedDates.filter(date => !isDateModifiable(date) || isDateLocked(date));
+    if (invalidDates.length > 0) {
+      alert('Some selected dates cannot be modified. Please ensure dates are at least 14 days in the future and not locked.');
+      return;
+    }
 
     try {
       await markAvailable(selectedDates);
@@ -246,17 +296,10 @@ const GuideSchedule = () => {
                   Mark Unavailable
                 </button>
                 <button
-                  onClick={handleLockDays}
-                  disabled={loading}
-                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm"
-                >
-                  Lock Days
-                </button>
-                <button
                   onClick={() => setSelectedDates([])}
                   className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
                 >
-                  Clear
+                  Clear Selection
                 </button>
               </div>
             </div>
@@ -294,14 +337,23 @@ const GuideSchedule = () => {
             const isPast = day < today;
             const dateStr = formatDate(day);
             const isSelected = selectedDates.includes(dateStr);
+            const isLocked = availability?.status === 'locked';
+            const isModifiable = isDateModifiable(dateStr);
 
             return (
               <div 
                 key={index}
-                className={`border-r border-gray-200 last:border-r-0 min-h-[280px] cursor-pointer transition-colors ${
-                  isPast ? 'bg-gray-50' : 'bg-white hover:bg-gray-50'
+                className={`border-r border-gray-200 last:border-r-0 min-h-[280px] transition-colors ${
+                  isPast ? 'bg-gray-50' : 
+                  isLocked ? 'bg-yellow-50 cursor-not-allowed' :
+                  !isModifiable ? 'bg-red-50 cursor-not-allowed' :
+                  'bg-white hover:bg-gray-50 cursor-pointer'
                 } ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}
-                onClick={() => handleDateSelect(dateStr)}
+                onClick={() => {
+                  if (!isPast && isModifiable && !isLocked) {
+                    handleDateSelect(dateStr);
+                  }
+                }}
               >
                 {/* Day Header */}
                 <div className={`p-3 border-b border-gray-200 text-center ${
@@ -339,9 +391,25 @@ const GuideSchedule = () => {
                   )}
 
                   {/* Empty State */}
-                  {!availability && (
+                  {!availability && isModifiable && !isPast && (
                     <div className="text-center text-gray-400 text-xs py-4">
                       Click to set schedule
+                    </div>
+                  )}
+
+                  {/* Not modifiable state */}
+                  {!availability && !isModifiable && !isPast && (
+                    <div className="text-center text-red-400 text-xs py-4">
+                      Cannot modify
+                      <br />
+                      (within 14 days)
+                    </div>
+                  )}
+
+                  {/* Past date state */}
+                  {!availability && isPast && (
+                    <div className="text-center text-gray-400 text-xs py-4">
+                      Past date
                     </div>
                   )}
                 </div>
@@ -456,6 +524,17 @@ const GuideSchedule = () => {
               const formData = new FormData(e.target);
               const date = formData.get('date');
               
+              // Validate date before submission
+              if (!isDateModifiable(date)) {
+                alert('You can only set schedule for dates that are at least 14 days in the future.');
+                return;
+              }
+
+              if (isDateLocked(date)) {
+                alert('This date is locked and cannot be modified.');
+                return;
+              }
+              
               try {
                 if (availabilityStatus === 'available') {
                   await markAvailable([date]);
@@ -477,9 +556,16 @@ const GuideSchedule = () => {
                     type="date"
                     name="date"
                     required
-                    min={new Date().toISOString().split('T')[0]}
+                    min={(() => {
+                      const fourteenDaysFromNow = new Date();
+                      fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+                      return fourteenDaysFromNow.toISOString().split('T')[0];
+                    })()}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    You can only set schedule for dates at least 14 days in the future
+                  </p>
                 </div>
                 
                 <div>

@@ -189,16 +189,20 @@ const DriverTrips = () => {
         if (acceptResponse.data.success) {
           console.log('Driver accepted successfully:', acceptResponse.data);
           
-          // Update driver schedule to mark dates as unavailable
+          // Update driver schedule to lock dates for the trip
           try {
             const tripDates = generateDateRange(currentTrip.startDate, currentTrip.endDate);
             
             if (tripDates.length > 0) {
-              console.log('Updating driver schedule for dates:', tripDates, 'Driver email:', driverEmail);
+              // Create a combined trip identifier with name and ID for later separation
+              const tripIdentifier = `${currentTrip.tripName || 'Trip'}_${tripId}`;
               
-              const scheduleResponse = await axios.post('http://localhost:5005/schedule/driver/mark-unavailable', {
+              console.log('Locking driver schedule for dates:', tripDates, 'Driver email:', driverEmail, 'Trip ID:', tripIdentifier);
+              
+              const scheduleResponse = await axios.post('http://localhost:5005/schedule/driver/lock', {
                 email: driverEmail,
-                dates: tripDates
+                dates: tripDates,
+                tripId: tripIdentifier
               }, {
                 headers: {
                   'Content-Type': 'application/json'
@@ -206,16 +210,16 @@ const DriverTrips = () => {
               });
               
               if (scheduleResponse.data.success) {
-                console.log('Driver schedule updated successfully for dates:', tripDates);
+                console.log('Driver schedule locked successfully for dates:', tripDates, 'Trip ID:', tripIdentifier);
               } else {
-                console.warn('Failed to update driver schedule:', scheduleResponse.data.message || 'Unknown error');
+                console.warn('Failed to lock driver schedule:', scheduleResponse.data.message || 'Unknown error');
                 // Don't fail the whole operation, just log the warning
               }
             } else {
               console.warn('No valid dates found for trip. Start date:', currentTrip.startDate, 'End date:', currentTrip.endDate);
             }
           } catch (scheduleError) {
-            console.error('Error updating driver schedule:', scheduleError.response?.data || scheduleError.message);
+            console.error('Error locking driver schedule:', scheduleError.response?.data || scheduleError.message);
             // Don't fail the whole operation, just log the error
           }
           

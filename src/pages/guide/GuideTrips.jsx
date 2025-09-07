@@ -182,16 +182,20 @@ const GuideTrips = () => {
         if (acceptResponse.data.success) {
           console.log('Guide accepted successfully:', acceptResponse.data);
           
-          // Update guide schedule to mark dates as unavailable
+          // Update guide schedule to lock dates for the trip
           try {
             const tripDates = generateDateRange(currentTrip.startDate, currentTrip.endDate);
             
             if (tripDates.length > 0) {
-              console.log('Updating guide schedule for dates:', tripDates, 'Guide email:', guideEmail);
+              // Create a combined trip identifier with name and ID for later separation
+              const tripIdentifier = `${currentTrip.tripName || 'Tour'}_${tripId}`;
               
-              const scheduleResponse = await axios.post('http://localhost:5005/schedule/guide/mark-unavailable', {
+              console.log('Locking guide schedule for dates:', tripDates, 'Guide email:', guideEmail, 'Trip ID:', tripIdentifier);
+              
+              const scheduleResponse = await axios.post('http://localhost:5005/schedule/guide/lock', {
                 email: guideEmail,
-                dates: tripDates
+                dates: tripDates,
+                tripId: tripIdentifier
               }, {
                 headers: {
                   'Content-Type': 'application/json'
@@ -199,16 +203,16 @@ const GuideTrips = () => {
               });
               
               if (scheduleResponse.data.success) {
-                console.log('Guide schedule updated successfully for dates:', tripDates);
+                console.log('Guide schedule locked successfully for dates:', tripDates, 'Trip ID:', tripIdentifier);
               } else {
-                console.warn('Failed to update guide schedule:', scheduleResponse.data.message || 'Unknown error');
+                console.warn('Failed to lock guide schedule:', scheduleResponse.data.message || 'Unknown error');
                 // Don't fail the whole operation, just log the warning
               }
             } else {
               console.warn('No valid dates found for trip. Start date:', currentTrip.startDate, 'End date:', currentTrip.endDate);
             }
           } catch (scheduleError) {
-            console.error('Error updating guide schedule:', scheduleError.response?.data || scheduleError.message);
+            console.error('Error locking guide schedule:', scheduleError.response?.data || scheduleError.message);
             // Don't fail the whole operation, just log the error
           }
           
