@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, Users, Star, Camera, Bed, Utensils, Car, Calendar, ChevronDown, Clock } from 'lucide-react';
+import { MapPin, Users, Star, Camera, Bed, Utensils, Car, Calendar, ChevronDown, Clock, Play, Square } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import ConfirmStartModal from '../components/ConfirmStartModal';
+import ConfirmEndModal from '../components/ConfirmEndModal';
+import TripCompletionModal from '../components/TripCompletionModal';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
 import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
@@ -199,98 +202,209 @@ const ChatComponent = ({ tripId, tripData }) => {
 };
 
 
-// Component for displaying ongoing trip banner
-const mockItinerary = {
-  0: {
-    date: new Date('2025-08-15'),
-    activities: [
+// Mock daily plans in the format expected by the collapsible itinerary
+const mockDailyPlans = [
+  {
+    day: 1,
+    city: 'Kandy',
+    attractions: [
       {
         id: 1,
-        name: 'Arrival in Kandy',
-        location: 'Kandy',
-        duration: '2 hours',
-        rating: 4.5,
-        description: 'Arrive and check in to hotel',
-        price: '$25',
-        time: '10:00'
+        name: 'Temple of the Tooth',
+        location: { lat: 7.2936, lng: 80.6411 },
+        rating: 4.7,
+        description: 'Visit the famous Kandy Temple',
+        time: '14:00',
+        image: '/src/assets/destinations/kandy-temple.jpg'
       },
       {
         id: 2,
-        name: 'Temple Visit',
-        location: 'Kandy Temple',
-        duration: '2 hours',
-        rating: 4.7,
-        description: 'Visit the famous Kandy Temple',
-        price: '$10',
-        time: '14:00'
-      },
-      {
-        id: 10,
-        name: 'Evening Walk by Lake',
-        location: 'Kandy Lake',
-        duration: '1 hour',
+        name: 'Kandy Lake',
+        location: { lat: 7.2906, lng: 80.6337 },
         rating: 4.2,
         description: 'Relaxing walk around the lake',
-        price: '$0',
-        time: '17:00'
+        time: '17:00',
+        image: '/src/assets/destinations/kandy-lake.jpg'
       }
     ],
-    places: [
-      {
-        id: 1,
-        name: 'Kandy City Hotel',
-        location: 'Kandy',
-        price: '$100/night',
-        rating: 4.3,
-        reviews: 120,
-        description: 'Central hotel in Kandy',
-        checkIn: '12:00',
-        checkOut: '11:00'
-      }
-    ],
-    food: [
+    restaurants: [
       {
         id: 1,
         name: 'Cafe Aroma',
-        location: 'Kandy',
-        cuisine: 'Sri Lankan',
+        location: { lat: 7.2955, lng: 80.6357 },
         rating: 4.6,
-        reviews: 200,
         description: 'Authentic local food',
-        priceRange: '$10-20',
         time: '19:00'
       },
       {
-        id: 11,
+        id: 2,
         name: 'Royal Bar & Hotel',
-        location: 'Kandy',
-        cuisine: 'Bar',
+        location: { lat: 7.2944, lng: 80.6378 },
         rating: 4.1,
-        reviews: 90,
         description: 'Historic bar for drinks',
-        priceRange: '$15-30',
         time: '21:00'
       }
     ],
-    transportation: [
+    hotels: [
       {
         id: 1,
-        name: 'Airport Transfer',
-        type: 'Private Car',
-        price: '$30',
-        rating: 4.5,
-        description: 'Pickup from airport',
-        time: '09:00',
-        duration: '1 hour'
+        name: 'Kandy City Hotel',
+        location: { lat: 7.2965, lng: 80.6345 },
+        rating: 4.3,
+        description: 'Central hotel in Kandy'
       }
     ]
   },
-  1: {
-    date: new Date('2025-08-16'),
-    activities: [
+  {
+    day: 2,
+    city: 'Nuwara Eliya',
+    attractions: [
       {
         id: 3,
-        name: 'Nuwara Eliya Tour',
+        name: 'Tea Plantations Tour',
+        location: { lat: 6.9497, lng: 80.7891 },
+        rating: 4.8,
+        description: 'Explore tea plantations',
+        time: '10:00',
+        image: '/src/assets/destinations/tea-plantation.jpg'
+      },
+      {
+        id: 4,
+        name: 'Gregory Lake',
+        location: { lat: 6.9514, lng: 80.7844 },
+        rating: 4.6,
+        description: 'Boat ride and lakeside picnic',
+        time: '15:00',
+        image: '/src/assets/destinations/gregory-lake.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 3,
+        name: 'Tea Lounge',
+        location: { lat: 6.9488, lng: 80.7903 },
+        rating: 4.2,
+        description: 'Tea and snacks',
+        time: '13:00'
+      },
+      {
+        id: 4,
+        name: 'Salmiya Italian Restaurant',
+        location: { lat: 6.9502, lng: 80.7865 },
+        rating: 4.4,
+        description: 'Popular for pizza and pasta',
+        time: '19:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 2,
+        name: 'Grand Hotel',
+        location: { lat: 6.9485, lng: 80.7888 },
+        rating: 4.7,
+        description: 'Historic hotel with gardens'
+      }
+    ]
+  },
+  {
+    day: 3,
+    city: 'Horton Plains',
+    attractions: [
+      {
+        id: 5,
+        name: 'World\'s End',
+        location: { lat: 6.8081, lng: 80.8056 },
+        rating: 4.9,
+        description: 'Hike to World\'s End and Baker\'s Falls',
+        time: '06:00',
+        image: '/src/assets/destinations/worlds-end.jpg'
+      },
+      {
+        id: 6,
+        name: 'Strawberry Farm',
+        location: { lat: 6.9520, lng: 80.7832 },
+        rating: 4.3,
+        description: 'Pick and taste fresh strawberries',
+        time: '15:00',
+        image: '/src/assets/destinations/strawberry-farm.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 5,
+        name: 'Grand Indian',
+        location: { lat: 6.9495, lng: 80.7870 },
+        rating: 4.5,
+        description: 'Famous for curries',
+        time: '18:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 3,
+        name: 'Jetwing St. Andrew\'s',
+        location: { lat: 6.9490, lng: 80.7885 },
+        rating: 4.5,
+        description: 'Colonial-style hotel'
+      }
+    ]
+  },
+  {
+    day: 4,
+    city: 'Nuwara Eliya',
+    attractions: [
+      {
+        id: 7,
+        name: 'Pedro Tea Estate',
+        location: { lat: 6.9510, lng: 80.7920 },
+        rating: 4.6,
+        description: 'Learn about tea production',
+        time: '09:00',
+        image: '/src/assets/destinations/tea-factory.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 6,
+        name: 'The Pub',
+        location: { lat: 6.9488, lng: 80.7895 },
+        rating: 4.0,
+        description: 'Casual pub for dinner',
+        time: '20:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 4,
+        name: 'Araliya Green Hills',
+        location: { lat: 6.9475, lng: 80.7910 },
+        rating: 4.4,
+        description: 'Modern hotel with mountain views'
+      }
+    ]
+  }
+];
+
+// Mock data for places on the map
+
+// Remove old mock data as it's been converted to mockDailyPlans format
+
+// Remove old mock data as it's been converted to mockDailyPlans format
+
+// Mock data will be declared later
+
+// Temporarily removed - using the proper mockPlaces below
+
+/*
+All the orphaned data has been commented out.
+The proper mockPlaces declaration follows below.
+*/
+
+// ALL ORPHANED DATA FROM OLD MOCKITINERARY HAS BEEN CLEANED UP
+// The proper mockPlaces declaration is at the bottom of the file
+
+/*
+ORPHANED DATA COMMENTED OUT - TO BE REMOVED LATER:
         location: 'Nuwara Eliya',
         duration: '4 hours',
         rating: 4.8,
@@ -475,12 +589,9 @@ const mockItinerary = {
       }
     ]
   }
-};
+*/
 
-const tripProgress = {
-  currentDay: 1, // 1-based index for user display, 0-based for code
-  totalDays: 2,
-};
+// Remove old mock data as it's been converted to mockDailyPlans format
 const mockPlaces = [
   {
     name: 'Kandy Temple',
@@ -775,6 +886,27 @@ const OngoingTripPage = () => {
     _originalData
   } = tripData;
 
+  // Detect if we're in offline mode or showing mock data
+  // This happens when:
+  // 1. The trip ID matches known mock trip IDs (like 2 from MyTripsPage)
+  // 2. dailyPlans is empty but we're showing an active trip
+  // 3. Trip name matches mock trip names
+  const isMockData = generalId === 2 || 
+                     tripName === 'Cultural Heritage Tour' ||
+                     (dailyPlans.length === 0 && destination === 'Central Province');
+  
+  // Use mockDailyPlans when we detect offline/mock scenario
+  const effectiveDailyPlans = isMockData ? mockDailyPlans : dailyPlans;
+  
+  console.log('OngoingTripPage - Mock data detection:', {
+    isMockData,
+    tripId: generalId,
+    tripName,
+    destination,
+    originalDailyPlansLength: dailyPlans.length,
+    effectiveDailyPlansLength: effectiveDailyPlans.length
+  });
+
   // Log the full trip data structure to understand what's available
   console.log('OngoingTripPage - Full trip data structure:', tripData);
   console.log('OngoingTripPage - All keys in tripData:', Object.keys(tripData));
@@ -889,16 +1021,24 @@ const OngoingTripPage = () => {
   // Expand all days by default
   const [expandedDays, setExpandedDays] = useState(() => {
     const expanded = {};
-    dailyPlans.forEach((_, index) => { expanded[index] = true; });
+    effectiveDailyPlans.forEach((_, index) => { expanded[index] = true; });
     return expanded;
   });
   const [itineraryCollapsed, setItineraryCollapsed] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [dayStarted, setDayStarted] = useState(false); // Track if the day has been started
+  const [showStartModal, setShowStartModal] = useState(false); // Control start modal visibility
+  const [startMeterReading, setStartMeterReading] = useState(null); // Store the meter reading
+  const [showEndModal, setShowEndModal] = useState(false); // Control end modal visibility
+  const [dayEnded, setDayEnded] = useState(false); // Track if the day has been ended
+  const [currentDayIndex, setCurrentDayIndex] = useState(0); // Track which day we're currently on
+  const [showTripCompletionModal, setShowTripCompletionModal] = useState(false); // Control trip completion modal
+  const [endMeterReadings, setEndMeterReadings] = useState([]); // Store end readings for each day
   
   // Create map center from first attraction if available
   const getMapCenter = () => {
-    if (dailyPlans.length > 0 && dailyPlans[0].attractions && dailyPlans[0].attractions.length > 0) {
-      return dailyPlans[0].attractions[0].location;
+    if (effectiveDailyPlans.length > 0 && effectiveDailyPlans[0].attractions && effectiveDailyPlans[0].attractions.length > 0) {
+      return effectiveDailyPlans[0].attractions[0].location;
     }
     return { lat: 7.8731, lng: 80.7718 }; // Default Sri Lanka center
   };
@@ -1016,40 +1156,182 @@ const OngoingTripPage = () => {
         <div className="flex flex-col md:flex-row gap-8 w-full">
           {/* Left: Itinerary, vertical timeline style, collapsible */}
           <div className="w-full md:w-1/2 min-w-0 flex flex-col">
-            {/* Trip Progress Card */}
-            <div className="mb-4">
-              <div className="bg-white border border-primary-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="w-full">
-                  <h3 className="text-lg font-semibold text-primary-700 mb-1">Trip Progress</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
-                    <span className="font-medium">{tripName}</span>
-                    <span className="text-gray-400">|</span>
-                    <span>Day <span className="font-bold">{1}</span> of <span className="font-bold">{dailyPlans.length || Math.max(1, daysLeft)}</span></span>
-                    <span className="text-gray-400">|</span>
-                    <span>{daysLeft} days left</span>
+            {/* Trip Progress Card - 3 States */}
+            <div className="mb-4 relative">
+              {/* State 1: Before Trip Started - with overlay (only for first day) */}
+              {!dayStarted && currentDayIndex === 0 && (
+                <div className="relative">
+                  {/* Blurred background content */}
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4 blur-sm">
+                    <div className="w-full">
+                      <h3 className="text-lg font-semibold text-gray-600 mb-1">Trip Ready to Start</h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                        <span className="font-medium">{tripName}</span>
+                        <span className="text-gray-400">|</span>
+                        <span>Day <span className="font-bold">{currentDayIndex + 1}</span> of <span className="font-bold">{effectiveDailyPlans.length || Math.max(1, daysLeft)}</span></span>
+                        <span className="text-gray-400">|</span>
+                        <span>{Math.max(0, daysLeft - currentDayIndex)} days remaining</span>
+                      </div>
+                      {/* Progress Bar - Not Started */}
+                      <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
+                        <div className="h-full bg-gray-300 transition-all" style={{ width: '0%' }}></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Ready to Start</span>
+                        <span>Waiting to begin</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">Not Started</span>
+                    </div>
                   </div>
-                  {/* Progress Bar */}
-                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
-                    <div
-                      className="h-full bg-primary-500 transition-all"
-                      style={{ width: `${Math.round((1) / Math.max(1, dailyPlans.length || daysLeft) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>Start</span>
-                    <span>End</span>
+                  
+                  {/* Overlay with start button */}
+                  <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-4">
+                    <div className="text-center">
+                      <h4 className="text-xl font-bold text-gray-800 mb-2">Ready to Begin Your Journey?</h4>
+                      <p className="text-gray-600 text-sm">Click the button below to start your trip</p>
+                    </div>
+                    <button
+                      onClick={() => setShowStartModal(true)}
+                      className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+                    >
+                      <Play className="w-5 h-5" />
+                      Start Trip
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-semibold">Ongoing</span>
+              )}
+
+              {/* State 1b: Not Started - After First Day (no overlay, simple card) */}
+              {!dayStarted && currentDayIndex > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="w-full">
+                    <h3 className="text-lg font-semibold text-gray-600 mb-1">Day {currentDayIndex + 1} Ready</h3>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                      <span className="font-medium">{tripName}</span>
+                      <span className="text-gray-400">|</span>
+                      <span>Day <span className="font-bold">{currentDayIndex + 1}</span> of <span className="font-bold">{effectiveDailyPlans.length || Math.max(1, daysLeft)}</span></span>
+                      <span className="text-gray-400">|</span>
+                      <span>{Math.max(0, daysLeft - currentDayIndex)} days remaining</span>
+                    </div>
+                    {/* Progress Bar - Not Started */}
+                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
+                      <div className="h-full bg-gray-300 transition-all" style={{ width: `${Math.round(currentDayIndex / Math.max(1, effectiveDailyPlans.length || daysLeft) * 100)}%` }}></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Ready for next day</span>
+                      <span>Check Today's Plan to start</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">Ready</span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* State 2: Trip in Progress */}
+              {dayStarted && !dayEnded && (
+                <div className="bg-white border border-primary-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="w-full">
+                    <h3 className="text-lg font-semibold text-primary-700 mb-1">Trip in Progress</h3>
+                    <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
+                      <span className="font-medium">{tripName}</span>
+                      <span className="text-gray-400">|</span>
+                      <span>Day <span className="font-bold">{currentDayIndex + 1}</span> of <span className="font-bold">{effectiveDailyPlans.length || Math.max(1, daysLeft)}</span></span>
+                      <span className="text-gray-400">|</span>
+                      <span>{Math.max(0, daysLeft - currentDayIndex)} days left</span>
+                      {startMeterReading && (
+                        <>
+                          <span className="text-gray-400">|</span>
+                          <span>Started at {startMeterReading} km</span>
+                        </>
+                      )}
+                    </div>
+                    {/* Progress Bar - Active */}
+                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
+                      <div
+                        className="h-full bg-primary-500 transition-all animate-pulse"
+                        style={{ width: `${Math.round((currentDayIndex + 1) / Math.max(1, effectiveDailyPlans.length || daysLeft) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>In Progress</span>
+                      <span>Trip Active</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      Active
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* State 3: Day Completed - Show Next Day Button if available */}
+              {dayEnded && (
+                <div className="bg-white border border-green-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="w-full">
+                    <h3 className="text-lg font-semibold text-green-700 mb-1">Day {currentDayIndex + 1} Completed</h3>
+                    <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
+                      <span className="font-medium">{tripName}</span>
+                      <span className="text-gray-400">|</span>
+                      <span>Day <span className="font-bold">{currentDayIndex + 1}</span> completed</span>
+                      {startMeterReading && (
+                        <>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-green-600 font-semibold">Distance: 157 km</span>
+                        </>
+                      )}
+                    </div>
+                    {/* Progress Bar - Completed */}
+                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
+                      <div
+                        className="h-full bg-green-500 transition-all"
+                        style={{ width: `${Math.round((currentDayIndex + 1) / Math.max(1, effectiveDailyPlans.length || daysLeft) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Completed</span>
+                      <span>{currentDayIndex + 1 < effectiveDailyPlans.length ? 'Next day available' : 'Trip finished!'}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    {currentDayIndex + 1 < effectiveDailyPlans.length ? (
+                      <button
+                        onClick={() => {
+                          setCurrentDayIndex(currentDayIndex + 1);
+                          setDayStarted(false);
+                          setDayEnded(false);
+                          setStartMeterReading(null);
+                        }}
+                        className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-1 px-3 rounded-md transition-colors duration-200 flex items-center gap-2 text-xs"
+                      >
+                        <Play className="w-3 h-3" />
+                        Next Day
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setShowTripCompletionModal(true);
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 rounded-md transition-colors duration-200 flex items-center gap-2 text-xs"
+                      >
+                        <Square className="w-3 h-3" />
+                        End Trip
+                      </button>
+                    )}
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">✓ Completed</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Today's Details Card */}
             {(() => {
-              const todayIdx = 0; // Currently showing first day as today
-              const today = dailyPlans[todayIdx];
+              const todayIdx = currentDayIndex; // Use current day index
+              const today = effectiveDailyPlans[todayIdx];
               if (!today) return null;
               
               // Gather all activities and attractions for today
@@ -1073,6 +1355,21 @@ const OngoingTripPage = () => {
                       <Calendar className="w-5 h-5 text-blue-500" />
                       Today's Plan: <span className="font-medium text-blue-700 ml-1">Day {today.day} - {today.city}</span>
                     </h3>
+                    {/* Confirm Start button */}
+                    <div className="mb-4">
+                      <button
+                        onClick={() => setShowStartModal(true)}
+                        disabled={dayStarted}
+                        className={`font-normal py-2 px-3 rounded-md transition-colors duration-200 flex items-center gap-2 text-sm border ${
+                          dayStarted 
+                            ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' 
+                            : 'bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200'
+                        }`}
+                      >
+                        <Play className="w-4 h-4" />
+                        {dayStarted ? `Day Started (${startMeterReading} km)` : 'Confirm Start'}
+                      </button>
+                    </div>
                     <ol className="space-y-2">
                       {stops.length === 0 && (
                         <li className="text-gray-400 italic">No destinations or stops planned for today.</li>
@@ -1103,6 +1400,23 @@ const OngoingTripPage = () => {
                         );
                       })}
                     </ol>
+                    {/* Confirm End button */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setShowEndModal(true)}
+                        disabled={!dayStarted || dayEnded}
+                        className={`font-normal py-2 px-3 rounded-md transition-colors duration-200 flex items-center gap-2 text-sm border ${
+                          !dayStarted 
+                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
+                            : dayEnded
+                            ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                            : 'bg-red-100 hover:bg-red-200 text-red-700 border-red-200'
+                        }`}
+                      >
+                        <Square className="w-4 h-4" />
+                        {dayEnded ? 'Trip Ended' : 'Confirm End'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -1131,7 +1445,7 @@ const OngoingTripPage = () => {
                 <div>
                   {/* Show only the first day and first item as a preview, faded and compact */}
                   {(() => {
-                    const dayData = dailyPlans[0];
+                    const dayData = effectiveDailyPlans[0];
                     if (!dayData) return <div className="text-gray-500 text-sm">No itinerary data available</div>;
                     
                     const hasItems = (dayData.attractions?.length || 0) > 0 ||
@@ -1214,7 +1528,7 @@ const OngoingTripPage = () => {
                 </div>
               ) : (
                 <div className="space-y-0">
-                  {dailyPlans.map((dayData, dayIndex) => {
+                  {effectiveDailyPlans.map((dayData, dayIndex) => {
                     const isExpanded = expandedDays[dayIndex];
                     const hasItems = (dayData.attractions?.length || 0) > 0 ||
                       (dayData.restaurants?.length || 0) > 0 ||
@@ -1409,7 +1723,7 @@ const OngoingTripPage = () => {
                         zoomControl: true,
                       }}
                     >
-                      {dailyPlans.flatMap(dayPlan => 
+                      {effectiveDailyPlans.flatMap(dayPlan => 
                         dayPlan.attractions?.map((attraction, index) => (
                           <Marker
                             key={`${attraction.name}-${index}`}
@@ -1553,6 +1867,45 @@ const OngoingTripPage = () => {
         destination={selectedDestination}
         isPublic={isPublic}
         setIsPublic={setIsPublic}
+      />
+      
+      {/* Confirm Start Modal */}
+      <ConfirmStartModal
+        isOpen={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        driverMeterReading="45,230" // Mock driver meter reading
+        onConfirm={(meterReading) => {
+          setDayStarted(true);
+          setStartMeterReading(meterReading);
+          console.log('Trip day started with meter reading:', meterReading);
+        }}
+      />
+
+      {/* Confirm End Modal */}
+      <ConfirmEndModal
+        isOpen={showEndModal}
+        onClose={() => setShowEndModal(false)}
+        driverMeterReading="45,387" // Mock driver end meter reading
+        startMeterReading={startMeterReading}
+        onConfirm={(endMeterReading) => {
+          setDayEnded(true);
+          // Store the end reading for this day
+          const newEndReadings = [...endMeterReadings];
+          newEndReadings[currentDayIndex] = endMeterReading;
+          setEndMeterReadings(newEndReadings);
+          console.log('Trip day ended with meter reading:', endMeterReading);
+        }}
+      />
+
+      {/* Trip Completion Modal */}
+      <TripCompletionModal
+        isOpen={showTripCompletionModal}
+        onClose={() => setShowTripCompletionModal(false)}
+        tripData={tripData}
+        totalDistance={157} // You could calculate this from all meter readings
+        totalDays={effectiveDailyPlans.length}
+        startMeterReading="45,230" // First day start reading
+        endMeterReading="45,387" // Last day end reading
       />
       
       <Footer />
