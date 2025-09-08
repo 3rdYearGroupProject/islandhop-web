@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Star, Clock, User, Car, Map } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getCityImageUrl } from '../utils/imageUtils';
@@ -14,6 +16,7 @@ const CompletedTripDetailsPage = () => {
   const [tripData, setTripData] = useState(location.state?.trip || null);
   const [loading, setLoading] = useState(!location.state?.trip);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   
   // Review states
   const [showDriverReview, setShowDriverReview] = useState(false);
@@ -23,6 +26,14 @@ const CompletedTripDetailsPage = () => {
   const [driverReviewText, setDriverReviewText] = useState('');
   const [guideReviewText, setGuideReviewText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Get current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Fetch trip data if not provided in location state
   useEffect(() => {
@@ -57,9 +68,13 @@ const CompletedTripDetailsPage = () => {
       const originalData = tripData._originalData || tripData;
       setDriverReviewText(originalData.driver_review || '');
       setGuideReviewText(originalData.guide_review || '');
-      // Set initial ratings based on existing reviews (you might want to extract this from review text)
-      setDriverRating(originalData.driver_reviewed ? 5 : 0);
-      setGuideRating(originalData.guide_reviewed ? 5 : 0);
+      // Set default ratings for new reviews (only used when creating new reviews)
+      if (!originalData.driver_reviewed) {
+        setDriverRating(0);
+      }
+      if (!originalData.guide_reviewed) {
+        setGuideRating(0);
+      }
     }
   }, [tripData]);
 
@@ -106,37 +121,102 @@ const CompletedTripDetailsPage = () => {
   const submitReview = async (type) => {
     const originalData = tripData._originalData || tripData;
     
+    // Check if user is authenticated
+    if (!currentUser) {
+      alert('Please log in to submit a review.');
+      return;
+    }
+    
     try {
       setSubmittingReview(true);
       
-      const reviewData = {
-        tripId: originalData._id || originalData.id,
-        type: type, // 'driver' or 'guide'
-        rating: type === 'driver' ? driverRating : guideRating,
-        review: type === 'driver' ? driverReviewText : guideReviewText
+      const reviewText = type === 'driver' ? driverReviewText : guideReviewText;
+      const rating = type === 'driver' ? driverRating : guideRating;
+      const email = type === 'driver' ? originalData.driver_email : originalData.guide_email;
+      
+      // Validate inputs
+      if (!reviewText.trim()) {
+        alert('Please write a review before submitting.');
+        return;
+      }
+      
+      if (rating === 0) {
+        alert('Please provide a rating before submitting.');
+        return;
+      }
+      
+      if (!email) {
+        alert(`No ${type} email found for this trip.`);
+        return;
+      }
+      
+      // Prepare data for both endpoints
+      const generalReviewData = {
+        email: email,
+        review: reviewText,
+        reviewerEmail: currentUser?.email || "user@example.com",
+        reviewerFirstname: currentUser?.displayName?.split(' ')[0] || "User",
+        reviewerLastname: currentUser?.displayName?.split(' ')[1] || "Name",
+        rating: rating
       };
+      
+      const tripSpecificReviewData = {
+        tripId: originalData._id || originalData.id,
+        review: reviewText
+      };
+      
+      // Determine endpoints based on type
+      const generalEndpoint = type === 'driver' 
+        ? 'http://localhost:8082/api/v1/reviews/drivers'
+        : 'http://localhost:8082/api/v1/reviews/guides';
+      
+      const tripSpecificEndpoint = type === 'driver'
+        ? 'http://localhost:4015/api/driver-review'
+        : 'http://localhost:4015/api/guide-review';
+      
+      console.log(`Submitting ${type} review to both endpoints...`);
+      console.log('General review data:', generalReviewData);
+      console.log('Trip-specific review data:', tripSpecificReviewData);
+      
+      // Submit to both endpoints
+      const [generalResponse, tripSpecificResponse] = await Promise.all([
+        fetch(generalEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(generalReviewData)
+        }),
+        fetch(tripSpecificEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(tripSpecificReviewData)
+        })
+      ]);
 
-      const response = await fetch('http://localhost:4015/api/submit-review', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reviewData)
-      });
+      console.log('General review response:', generalResponse.status, generalResponse.statusText);
+      console.log('Trip-specific review response:', tripSpecificResponse.status, tripSpecificResponse.statusText);
 
-      if (response.ok) {
+      // Check if both requests were successful
+      if (generalResponse.ok && tripSpecificResponse.ok) {
         // Update local state to reflect the review submission
         const updatedTripData = { ...tripData };
         const updatedOriginalData = { ...originalData };
         
         if (type === 'driver') {
           updatedOriginalData.driver_reviewed = 1;
-          updatedOriginalData.driver_review = driverReviewText;
+          updatedOriginalData.driver_review = reviewText;
           setShowDriverReview(false);
+          setDriverReviewText('');
+          setDriverRating(0);
         } else {
           updatedOriginalData.guide_reviewed = 1;
-          updatedOriginalData.guide_review = guideReviewText;
+          updatedOriginalData.guide_review = reviewText;
           setShowGuideReview(false);
+          setGuideReviewText('');
+          setGuideRating(0);
         }
         
         updatedTripData._originalData = updatedOriginalData;
@@ -144,11 +224,18 @@ const CompletedTripDetailsPage = () => {
         
         alert(`${type.charAt(0).toUpperCase() + type.slice(1)} review submitted successfully!`);
       } else {
-        throw new Error('Failed to submit review');
+        let errorMessage = `Failed to submit ${type} review. `;
+        if (!generalResponse.ok) {
+          errorMessage += `General review failed (${generalResponse.status}). `;
+        }
+        if (!tripSpecificResponse.ok) {
+          errorMessage += `Trip-specific review failed (${tripSpecificResponse.status}).`;
+        }
+        throw new Error(errorMessage);
       }
     } catch (err) {
-      console.error('Error submitting review:', err);
-      alert('Failed to submit review. Please try again.');
+      console.error(`Error submitting ${type} review:`, err);
+      alert(`Failed to submit ${type} review. Please try again.`);
     } finally {
       setSubmittingReview(false);
     }
@@ -386,17 +473,19 @@ const CompletedTripDetailsPage = () => {
                 <h2 className="text-xl font-bold text-gray-900">Driver Review</h2>
               </div>
 
-              {originalData.driver_reviewed ? (
+              {originalData.driver_reviewed === 1 ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-green-600 font-semibold">✓ Review Submitted</span>
+                    <span className="text-green-600 font-semibold">✓ Review Already Submitted</span>
                   </div>
-                  <div>
-                    <StarRating rating={driverRating} readonly />
-                  </div>
-                  {originalData.driver_review && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700">{originalData.driver_review}</p>
+                  {originalData.driver_review && originalData.driver_review.trim() !== "" ? (
+                    <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                      <h4 className="font-semibold text-gray-900 mb-2">Your Review:</h4>
+                      <p className="text-gray-700 italic">"{originalData.driver_review}"</p>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-gray-300">
+                      <p className="text-gray-500 italic">Review submitted without comments</p>
                     </div>
                   )}
                 </div>
@@ -422,17 +511,19 @@ const CompletedTripDetailsPage = () => {
                 <h2 className="text-xl font-bold text-gray-900">Guide Review</h2>
               </div>
 
-              {originalData.guide_reviewed ? (
+              {originalData.guide_reviewed === 1 ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-green-600 font-semibold">✓ Review Submitted</span>
+                    <span className="text-green-600 font-semibold">✓ Review Already Submitted</span>
                   </div>
-                  <div>
-                    <StarRating rating={guideRating} readonly />
-                  </div>
-                  {originalData.guide_review && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700">{originalData.guide_review}</p>
+                  {originalData.guide_review && originalData.guide_review.trim() !== "" ? (
+                    <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-green-500">
+                      <h4 className="font-semibold text-gray-900 mb-2">Your Review:</h4>
+                      <p className="text-gray-700 italic">"{originalData.guide_review}"</p>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-gray-300">
+                      <p className="text-gray-500 italic">Review submitted without comments</p>
                     </div>
                   )}
                 </div>
@@ -488,7 +579,7 @@ const CompletedTripDetailsPage = () => {
                   </button>
                   <button
                     onClick={() => submitReview('driver')}
-                    disabled={driverRating === 0 || submittingReview}
+                    disabled={driverRating === 0 || submittingReview || !currentUser || !driverReviewText.trim()}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submittingReview ? 'Submitting...' : 'Submit Review'}
@@ -536,7 +627,7 @@ const CompletedTripDetailsPage = () => {
                   </button>
                   <button
                     onClick={() => submitReview('guide')}
-                    disabled={guideRating === 0 || submittingReview}
+                    disabled={guideRating === 0 || submittingReview || !currentUser || !guideReviewText.trim()}
                     className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submittingReview ? 'Submitting...' : 'Submit Review'}
