@@ -17,6 +17,8 @@ import PaymentReturnPage from '../pages/PaymentReturnPage';
 import PaymentCancelPage from '../pages/PaymentCancelPage';
 import ViewPoolPage from '../pages/ViewPoolPage';
 import MyTripsPage from '../pages/MyTripsPage';
+import OngoingTripPage from '../pages/OngoingTripPage';
+import CompletedTripDetailsPage from '../pages/CompletedTripDetailsPage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
@@ -89,6 +91,16 @@ const GeneralRoutes = () => (
     <Route path="/trip/:tripId" element={
       <PublicRoute>
         <ViewTripPage />
+      </PublicRoute>
+    } />
+    <Route path="/ongoing-trip" element={
+      <PublicRoute>
+        <OngoingTripPage />
+      </PublicRoute>
+    } />
+    <Route path="/completed-trip/:tripId" element={
+      <PublicRoute>
+        <CompletedTripDetailsPage />
       </PublicRoute>
     } />
     <Route path="/trip/:tripId/booking" element={

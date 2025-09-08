@@ -1163,6 +1163,14 @@ const MyTripsPage = () => {
           tripData: trip._originalData || trip
         } 
       });
+    } else if (trip.status === 'completed') {
+      // If it's a completed trip, navigate to completed trip details page
+      console.log('🚀 Navigating to completed trip details page with data:', trip._originalData || trip);
+      navigate(`/completed-trip/${trip.tripId || trip.id}`, { 
+        state: { 
+          trip: trip
+        } 
+      });
     } else {
       // For non-active trips, use the regular trip view
       navigate(`/trip/${trip.id}`, { 
