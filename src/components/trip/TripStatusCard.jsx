@@ -36,6 +36,18 @@ const TripStatusCard = ({
       const dayStartConfirmed = dayPlan.start_confirmed === 1;
       const dayEndConfirmed = dayPlan.end_confirmed === 1;
       
+      // If no start time exists, cannot confirm start
+      if (!hasStartTime) {
+        return { 
+          currentDay: day, 
+          action: 'start', 
+          allCompleted: false,
+          dayPlan,
+          canConfirm: false,
+          reason: 'No start time available'
+        };
+      }
+      
       // Can only confirm start if start time exists and not yet confirmed
       if (hasStartTime && !dayStartConfirmed) {
         return { 
@@ -56,6 +68,17 @@ const TripStatusCard = ({
           canConfirm: true
         };
       }
+      // If start is confirmed but no end time, wait for end time
+      else if (dayStartConfirmed && !hasEndTime) {
+        return { 
+          currentDay: day, 
+          action: 'end', 
+          allCompleted: false,
+          dayPlan,
+          canConfirm: false,
+          reason: 'No end time available'
+        };
+      }
       // If this day is not complete, block further actions
       else if (!dayEndConfirmed && hasStartTime) {
         return { 
@@ -63,16 +86,34 @@ const TripStatusCard = ({
           action: dayStartConfirmed ? 'end' : 'start', 
           allCompleted: false,
           dayPlan,
-          canConfirm: hasEndTime || !dayStartConfirmed
+          canConfirm: hasEndTime || !dayStartConfirmed,
+          reason: !hasEndTime && dayStartConfirmed ? 'No end time available' : undefined
         };
       }
+    }
+    
+    // All days completed - but check if any day actually has times
+    const hasAnyTimes = dailyPlans.some(plan => 
+      (plan.start && (plan.start.$date || plan.start)) || 
+      (plan.end && (plan.end.$date || plan.end))
+    );
+    
+    if (!hasAnyTimes) {
+      return { 
+        currentDay: 1, 
+        action: 'start', 
+        allCompleted: false, 
+        dayPlan: dailyPlans[0], 
+        canConfirm: false,
+        reason: 'No trip times scheduled yet'
+      };
     }
     
     // All days completed
     return { currentDay: totalDays, action: 'trip-end', allCompleted: true, dayPlan: null, canConfirm: true };
   };
 
-  const { currentDay, action, allCompleted, dayPlan, canConfirm } = getCurrentDayAndAction();
+  const { currentDay, action, allCompleted, dayPlan, canConfirm, reason } = getCurrentDayAndAction();
 
   const handleDayStart = (day) => {
     const dayPlan = dailyPlans.find(plan => plan.day === day);
@@ -147,13 +188,13 @@ const TripStatusCard = ({
             <span>Progress: {confirmedActions}/{totalPossibleActions} actions</span>
             <span className="text-gray-400">|</span>
             <span>{dailyPlans.length} total days</span>
-            {dayPlan && action === 'start' && dayPlan.start_meter_read !== undefined && (
+            {dayPlan && action === 'start' && dayPlan.start_meter_read !== undefined && canConfirm && (
               <>
                 <span className="text-gray-400">|</span>
                 <span className="text-blue-600 font-medium">Start: {dayPlan.start_meter_read} km</span>
               </>
             )}
-            {dayPlan && action === 'end' && (
+            {dayPlan && action === 'end' && canConfirm && (
               <>
                 <span className="text-gray-400">|</span>
                 <span className="text-orange-600 font-medium">End: {dayPlan.end_meter_read} km</span>
@@ -163,6 +204,12 @@ const TripStatusCard = ({
                     <span className="text-red-600 font-medium">Deduct: ${dayPlan.deduct_amount}</span>
                   </>
                 )}
+              </>
+            )}
+            {!canConfirm && reason && (
+              <>
+                <span className="text-gray-400">|</span>
+                <span className="text-amber-600 font-medium">{reason}</span>
               </>
             )}
           </div>
@@ -177,7 +224,7 @@ const TripStatusCard = ({
               {allCompleted 
                 ? 'All days completed' 
                 : !canConfirm 
-                  ? `Waiting for ${action === 'start' ? 'start time' : 'previous day completion'} - Day ${currentDay}`
+                  ? `${reason || 'Waiting for requirements'} - Day ${currentDay}`
                   : `${action === 'start' ? 'Ready to start' : action === 'end' ? 'Ready to end' : ''} Day ${currentDay}`
               }
             </span>
@@ -232,7 +279,7 @@ const TripStatusCard = ({
             allCompleted 
               ? 'bg-green-100 text-green-700' 
               : !canConfirm
-                ? 'bg-gray-100 text-gray-500'
+                ? 'bg-amber-100 text-amber-700'
                 : action === 'start' 
                   ? 'bg-blue-100 text-blue-700' 
                   : 'bg-orange-100 text-orange-700'
@@ -240,7 +287,7 @@ const TripStatusCard = ({
             {allCompleted 
               ? 'Ready to Complete' 
               : !canConfirm 
-                ? 'Waiting for Requirements'
+                ? 'Waiting for Schedule'
                 : action === 'start' 
                   ? 'Ready to Start' 
                   : 'Ready to End'
@@ -250,43 +297,49 @@ const TripStatusCard = ({
       </div>
       
       {/* Progress Summary - Updated to use real data */}
-      {confirmedActions > 0 && (
+      {confirmedActions > 0 || dailyPlans.length > 0 ? (
         <div className="mt-4 pt-4 border-t border-gray-100">
-          <div className="flex flex-wrap gap-2">
-            {dailyPlans.map((dayPlan) => {
-              const dayStartConfirmed = dayPlan.start_confirmed === 1;
-              const dayEndConfirmed = dayPlan.end_confirmed === 1;
-              const hasStartTime = dayPlan.start && (dayPlan.start.$date || dayPlan.start);
-              const hasEndTime = dayPlan.end && (dayPlan.end.$date || dayPlan.end);
-              
-              return (
-                <div key={dayPlan.day} className="flex items-center gap-1">
-                  <span className="text-xs font-medium text-gray-600">Day {dayPlan.day}:</span>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    dayStartConfirmed ? 'bg-green-100 text-green-700' : hasStartTime ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {dayStartConfirmed ? '✓ Started' : hasStartTime ? 'Ready to Start' : 'No Start Time'}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    dayEndConfirmed ? 'bg-green-100 text-green-700' : hasEndTime && dayStartConfirmed ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {dayEndConfirmed ? '✓ Ended' : hasEndTime && dayStartConfirmed ? 'Ready to End' : 'Waiting'}
-                  </span>
-                  {dayPlan.start_meter_read !== undefined && (
-                    <span className="text-xs text-blue-600">Start: {dayPlan.start_meter_read}km</span>
-                  )}
-                  {dayPlan.end_meter_read !== undefined && dayEndConfirmed && (
-                    <span className="text-xs text-orange-600">End: {dayPlan.end_meter_read}km</span>
-                  )}
-                  {dayPlan.additional_note && (
-                    <span className="text-xs text-gray-500 italic">"{dayPlan.additional_note}"</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {dailyPlans.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {dailyPlans.map((dayPlan) => {
+                const dayStartConfirmed = dayPlan.start_confirmed === 1;
+                const dayEndConfirmed = dayPlan.end_confirmed === 1;
+                const hasStartTime = dayPlan.start && (dayPlan.start.$date || dayPlan.start);
+                const hasEndTime = dayPlan.end && (dayPlan.end.$date || dayPlan.end);
+                
+                return (
+                  <div key={dayPlan.day} className="flex items-center gap-1">
+                    <span className="text-xs font-medium text-gray-600">Day {dayPlan.day}:</span>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      dayStartConfirmed ? 'bg-green-100 text-green-700' : hasStartTime ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {dayStartConfirmed ? '✓ Started' : hasStartTime ? 'Ready to Start' : 'No Start Time'}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      dayEndConfirmed ? 'bg-green-100 text-green-700' : hasEndTime && dayStartConfirmed ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {dayEndConfirmed ? '✓ Ended' : hasEndTime && dayStartConfirmed ? 'Ready to End' : hasEndTime ? 'Waiting for Start' : 'No End Time'}
+                    </span>
+                    {dayPlan.start_meter_read !== undefined && hasStartTime && (
+                      <span className="text-xs text-blue-600">Start: {dayPlan.start_meter_read}km</span>
+                    )}
+                    {dayPlan.end_meter_read !== undefined && dayEndConfirmed && (
+                      <span className="text-xs text-orange-600">End: {dayPlan.end_meter_read}km</span>
+                    )}
+                    {dayPlan.additional_note && (
+                      <span className="text-xs text-gray-500 italic">"{dayPlan.additional_note}"</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">No daily plans available</p>
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

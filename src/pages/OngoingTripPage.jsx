@@ -574,8 +574,10 @@ const OngoingTripPage = () => {
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [dayStarted, setDayStarted] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
+  const [startModalData, setStartModalData] = useState(null);
   const [startMeterReading, setStartMeterReading] = useState(null);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [endModalData, setEndModalData] = useState(null);
   const [dayEnded, setDayEnded] = useState(false);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const [showTripCompletionModal, setShowTripCompletionModal] = useState(false);
@@ -671,14 +673,16 @@ const OngoingTripPage = () => {
               setShowStartModal={(show, data) => {
                 setShowStartModal(show);
                 if (data) {
-                  // Store additional data if needed
+                  // Store the modal data containing meter reading
+                  setStartModalData(data);
                   console.log('Start modal data:', data);
                 }
               }}
               setShowEndModal={(show, data) => {
                 setShowEndModal(show);
                 if (data) {
-                  // Store additional data if needed
+                  // Store the modal data containing meter reading
+                  setEndModalData(data);
                   console.log('End modal data:', data);
                 }
               }}
@@ -751,7 +755,7 @@ const OngoingTripPage = () => {
       <ConfirmStartModal
         isOpen={showStartModal}
         onClose={() => setShowStartModal(false)}
-        driverMeterReading="45,230"
+        driverMeterReading={startModalData?.meterReading?.toString() || "0"}
         onConfirm={(meterReading) => {
           setStartMeterReading(meterReading);
           setDayStarted(true);
@@ -764,7 +768,7 @@ const OngoingTripPage = () => {
       <ConfirmEndModal
         isOpen={showEndModal}
         onClose={() => setShowEndModal(false)}
-        driverMeterReading="45,387"
+        driverMeterReading={endModalData?.endMeterReading?.toString() || "0"}
         startMeterReading={startMeterReading}
         onConfirm={(endMeterReading) => {
           setEndMeterReadings([...endMeterReadings, endMeterReading]);
