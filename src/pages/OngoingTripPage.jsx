@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ConfirmStartModal from '../components/ConfirmStartModal';
@@ -12,6 +13,31 @@ import TripItinerary from '../components/trip/TripItinerary';
 import TripMapView from '../components/trip/TripMapView';
 import TripChat from '../components/trip/TripChat';
 import { shouldShowChat } from '../utils/chatService';
+
+// API functions for trip confirmation
+const confirmDayStart = async (tripId, day) => {
+  try {
+    const response = await axios.post(`http://localhost:5007/api/trips/confirm-day-${day}-start`, {
+      tripId: tripId
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error confirming day ${day} start:`, error);
+    throw error;
+  }
+};
+
+const confirmDayEnd = async (tripId, day) => {
+  try {
+    const response = await axios.post(`http://localhost:5007/api/trips/confirm-day-${day}-end`, {
+      tripId: tripId
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error confirming day ${day} end:`, error);
+    throw error;
+  }
+};
 
 // Mock daily plans in the format expected by the collapsible itinerary
 const mockDailyPlans = [
@@ -756,12 +782,33 @@ const OngoingTripPage = () => {
         isOpen={showStartModal}
         onClose={() => setShowStartModal(false)}
         driverMeterReading={startModalData?.meterReading?.toString() || "0"}
-        onConfirm={(meterReading) => {
-          setStartMeterReading(meterReading);
-          setDayStarted(true);
-          setShowStartModal(false);
-          // Refresh trip data after start confirmation
-          refreshTripData();
+        onConfirm={async (meterReading) => {
+          try {
+            // Get the trip ID and day number
+            const tripId = getTripId(tripData);
+            const dayNumber = startModalData?.day || 1;
+            
+            if (!tripId) {
+              throw new Error('Trip ID not found');
+            }
+            
+            // Call the API to confirm day start
+            await confirmDayStart(tripId, dayNumber);
+            
+            // Update local state
+            setStartMeterReading(meterReading);
+            setDayStarted(true);
+            setShowStartModal(false);
+            
+            // Refresh trip data after start confirmation
+            refreshTripData();
+            
+            console.log(`Day ${dayNumber} start confirmed successfully`);
+          } catch (error) {
+            console.error('Failed to confirm day start:', error);
+            // You might want to show an error message to the user here
+            alert('Failed to confirm day start. Please try again.');
+          }
         }}
       />
 
@@ -769,13 +816,36 @@ const OngoingTripPage = () => {
         isOpen={showEndModal}
         onClose={() => setShowEndModal(false)}
         driverMeterReading={endModalData?.endMeterReading?.toString() || "0"}
-        startMeterReading={startMeterReading}
-        onConfirm={(endMeterReading) => {
-          setEndMeterReadings([...endMeterReadings, endMeterReading]);
-          setDayEnded(true);
-          setShowEndModal(false);
-          // Refresh trip data after end confirmation
-          refreshTripData();
+        startMeterReading={endModalData?.startMeterReading?.toString() || startMeterReading}
+        deductAmount={endModalData?.deductAmount || 0}
+        additionalNote={endModalData?.additionalNote || ""}
+        onConfirm={async (endMeterReading) => {
+          try {
+            // Get the trip ID and day number
+            const tripId = getTripId(tripData);
+            const dayNumber = endModalData?.day || 1;
+            
+            if (!tripId) {
+              throw new Error('Trip ID not found');
+            }
+            
+            // Call the API to confirm day end
+            await confirmDayEnd(tripId, dayNumber);
+            
+            // Update local state
+            setEndMeterReadings([...endMeterReadings, endMeterReading]);
+            setDayEnded(true);
+            setShowEndModal(false);
+            
+            // Refresh trip data after end confirmation
+            refreshTripData();
+            
+            console.log(`Day ${dayNumber} end confirmed successfully`);
+          } catch (error) {
+            console.error('Failed to confirm day end:', error);
+            // You might want to show an error message to the user here
+            alert('Failed to confirm day end. Please try again.');
+          }
         }}
       />
 

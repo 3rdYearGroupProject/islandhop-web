@@ -134,6 +134,7 @@ const TripStatusCard = ({
       setShowEndModal(true, {
         day: day,
         endMeterReading: dayPlan.end_meter_read,
+        startMeterReading: dayPlan.start_meter_read,
         deductAmount: dayPlan.deduct_amount,
         additionalNote: dayPlan.additional_note,
         endTime: dayPlan.end && (dayPlan.end.$date || dayPlan.end)
