@@ -410,6 +410,21 @@ const OngoingTripPage = () => {
     return data?._id || data?.tripId || data?.id || data?.mongodb_id || data?.objectId;
   };
 
+  // Calculate total distance from meter readings
+  const calculateTotalTripDistance = () => {
+    if (!tripData?.dailyPlans) return 0;
+    
+    let totalDistance = 0;
+    tripData.dailyPlans.forEach(plan => {
+      if (plan.start_meter_read && plan.end_meter_read) {
+        const dayDistance = plan.end_meter_read - plan.start_meter_read - (plan.deduct_amount || 0);
+        totalDistance += Math.max(0, dayDistance); // Ensure no negative distances
+      }
+    });
+    
+    return totalDistance;
+  };
+
   // Fetch updated trip data from API
   const fetchTripData = async (tripId) => {
     if (!tripId) return;
@@ -853,10 +868,8 @@ const OngoingTripPage = () => {
         isOpen={showTripCompletionModal}
         onClose={() => setShowTripCompletionModal(false)}
         tripData={tripData}
-        totalDistance={157}
+        totalDistance={calculateTotalTripDistance()}
         totalDays={effectiveDailyPlans.length}
-        startMeterReading="45,230"
-        endMeterReading="45,387"
       />
       
       <Footer />
