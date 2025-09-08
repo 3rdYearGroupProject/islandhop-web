@@ -51,8 +51,7 @@ const MyTripsPage = () => {
   const filterOptions = [
     { value: 'all', label: 'All Trips' },
     { value: 'active', label: 'Active' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'draft', label: 'Drafts' }
+    { value: 'completed', label: 'Completed' }
   ];
   
   const sortOptions = [
