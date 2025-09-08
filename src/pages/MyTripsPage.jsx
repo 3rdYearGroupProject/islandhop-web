@@ -438,8 +438,10 @@ const MyTripsPage = () => {
     let apiUrl;
     if (filter === 'active') {
       apiUrl = `http://localhost:5006/api/trips/user/${userId}`;
+    } else if (filter === 'completed') {
+      apiUrl = `http://localhost:4015/api/user-trips/${userId}`;
     } else {
-      // For 'all', 'completed', 'draft' use the existing endpoint
+      // For 'all', 'draft' use the existing endpoint
       apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary?userId=${userId}`;
     }
     console.log('🔗 Complete API URL:', apiUrl);
@@ -509,7 +511,7 @@ const MyTripsPage = () => {
       console.log('📦 Raw data:', data);
       console.log('📦 First item sample:', Array.isArray(data) && data.length > 0 ? data[0] : 'No items');
       
-      // Validate active trips API response (different structure than the all trips API)
+      // Validate API response structures
       if (filter === 'active') {
         // Active trips API can have two possible structures:
         // 1. Direct: { userId: string, trips: array, totalTrips: number }
@@ -528,6 +530,18 @@ const MyTripsPage = () => {
           // Don't throw error, just log and continue with empty array
         } else {
           console.log('✅ Active trips API structure validation passed');
+        }
+      } else if (filter === 'completed') {
+        // Completed trips API response format:
+        // { message: string, userId: string, count: number, data: array }
+        
+        if (!data.userId || !Array.isArray(data.data)) {
+          console.error('❌ Completed trips API unexpected response structure');
+          console.error('Expected data to have: { message: string, userId: string, count: number, data: array }');
+          console.error('Received data:', data);
+          // Don't throw error, just log and continue with empty array
+        } else {
+          console.log('✅ Completed trips API structure validation passed');
         }
       }
       
@@ -559,6 +573,24 @@ const MyTripsPage = () => {
           console.warn('⚠️ Unexpected active trips API response structure:', data);
           backendTrips = [];
         }
+      } else if (filter === 'completed') {
+        // Completed trips API response format (from localhost:4015)
+        // Expected: { message: string, userId: string, count: number, data: array }
+        
+        if (Array.isArray(data.data)) {
+          // Expected structure
+          backendTrips = data.data;
+          console.log('📊 Completed trips API - userId:', data.userId);
+          console.log('📊 Completed trips API - count:', data.count);
+          console.log('📊 Completed trips API - message:', data.message);
+        } else if (Array.isArray(data)) {
+          // Fallback: direct array
+          backendTrips = data;
+          console.log('📊 Completed trips API (fallback array) - length:', data.length);
+        } else {
+          console.warn('⚠️ Unexpected completed trips API response structure:', data);
+          backendTrips = [];
+        }
       } else {
         // All trips API response format (from localhost:8085)
         backendTrips = Array.isArray(data) ? data : [];
@@ -573,6 +605,8 @@ const MyTripsPage = () => {
         let transformed;
         if (filter === 'active') {
           transformed = transformActiveTrip(trip);
+        } else if (filter === 'completed') {
+          transformed = transformCompletedTrip(trip);
         } else {
           transformed = transformBackendTripSummary(trip);
         }
@@ -834,6 +868,131 @@ const MyTripsPage = () => {
       createdAt: activeTrip.lastUpdated,
       _originalData: activeTrip,
       _source: 'active_trips_api'
+    };
+  };
+
+  // Transform completed trip data from completed trips API to frontend format
+  const transformCompletedTrip = (completedTrip) => {
+    console.log('🔄 Transforming completed trip data:', completedTrip);
+    console.log('🔍 Completed trip fields:', Object.keys(completedTrip || {}));
+    console.log('🔍 Completed trip potential IDs:', {
+      _id: completedTrip?._id,
+      originalTripId: completedTrip?.originalTripId,
+      id: completedTrip?.id
+    });
+    
+    const formatTripDates = (startDate, endDate) => {
+      if (!startDate || !endDate) return 'Dates not set';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${start.toLocaleDateString('en-US', formatOptions)} → ${end.toLocaleDateString('en-US', formatOptions)}`;
+    };
+
+    // Extract trip data based on the actual API response structure
+    // The API response has: _id, originalTripId, tripName, startDate, endDate, baseCity, etc.
+    const tripId = completedTrip._id || completedTrip.originalTripId || completedTrip.id || `trip_${Date.now()}_${Math.random()}`;
+    
+    console.log('🔍 Completed trip ID extraction:', {
+      _id: completedTrip._id,
+      originalTripId: completedTrip.originalTripId,
+      id: completedTrip.id,
+      selectedTripId: tripId,
+      fullCompletedTrip: completedTrip
+    });
+    
+    const tripName = completedTrip.tripName || completedTrip.name || completedTrip.title || 'Untitled Trip';
+    const startDate = completedTrip.startDate;
+    const endDate = completedTrip.endDate;
+    const destination = completedTrip.baseCity || completedTrip.destination || completedTrip.location || 'Sri Lanka';
+    
+    // Calculate budget and spent from the cost fields
+    const averageDriverCost = completedTrip.averageDriverCost || 0;
+    const averageGuideCost = completedTrip.averageGuideCost || 0;
+    const totalBudget = averageDriverCost + averageGuideCost;
+    const spent = parseFloat(completedTrip.payedAmount) || 0;
+
+    // Get city image for the destination
+    const cityImage = getCityImageUrl(destination);
+    
+    // Build highlights array from dailyPlans, preferredTerrains, and preferredActivities
+    let highlights = [];
+    
+    // Add destination
+    if (destination) {
+      highlights.push(destination);
+    }
+    
+    // Add preferred terrains
+    if (completedTrip.preferredTerrains && Array.isArray(completedTrip.preferredTerrains)) {
+      highlights = [...highlights, ...completedTrip.preferredTerrains.slice(0, 2)];
+    }
+    
+    // Add preferred activities
+    if (completedTrip.preferredActivities && Array.isArray(completedTrip.preferredActivities)) {
+      highlights = [...highlights, ...completedTrip.preferredActivities.slice(0, 2)];
+    }
+    
+    // Add cities from daily plans
+    if (completedTrip.dailyPlans && Array.isArray(completedTrip.dailyPlans)) {
+      const cities = completedTrip.dailyPlans
+        .map(plan => plan.city)
+        .filter(city => city && city !== destination)
+        .slice(0, 2);
+      highlights = [...highlights, ...cities];
+    }
+    
+    // Remove duplicates and limit to 5 highlights
+    highlights = [...new Set(highlights)].slice(0, 5);
+    
+    // Calculate number of days
+    const numberOfDays = completedTrip.dailyPlans ? completedTrip.dailyPlans.length : 
+                        (startDate && endDate ? Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1 : 1);
+    
+    // Calculate rating based on reviews
+    let rating = null;
+    let reviewCount = 0;
+    let totalRating = 0;
+    
+    if (completedTrip.driver_reviewed && completedTrip.driver_review) {
+      reviewCount++;
+      // Assume driver review has rating (you might need to extract this from the review content)
+      totalRating += 4.5; // Default rating if not available
+    }
+    
+    if (completedTrip.guide_reviewed && completedTrip.guide_review) {
+      reviewCount++;
+      // Assume guide review has rating (you might need to extract this from the review content)
+      totalRating += 4.5; // Default rating if not available
+    }
+    
+    if (reviewCount > 0) {
+      rating = (totalRating / reviewCount).toFixed(1);
+    }
+    
+    return {
+      id: tripId,
+      tripId: tripId, // Explicitly preserve the backend trip ID
+      name: tripName,
+      dates: formatTripDates(startDate, endDate),
+      destination: destination,
+      image: cityImage,
+      status: 'completed', // All trips from this API are completed
+      progress: 100, // Completed trips have 100% progress
+      daysLeft: 0, // Completed trips have no days left
+      travelers: 1, // Default as the API doesn't seem to have group size info
+      rating: rating ? parseFloat(rating) : null,
+      memories: 0, // Could be calculated from photos/reviews if available
+      highlights: highlights,
+      budget: totalBudget,
+      spent: spent,
+      numberOfDays: numberOfDays,
+      message: `${completedTrip.activityPacing || 'Normal'} paced trip with ${completedTrip.budgetLevel || 'Medium'} budget`,
+      createdAt: completedTrip.createdAt,
+      _originalData: completedTrip,
+      _source: 'completed_trips_api'
     };
   };
 
