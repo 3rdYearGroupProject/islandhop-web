@@ -12,56 +12,126 @@ const TripStatusCard = ({
   setShowStartModal,
   setShowEndModal,
   setShowTripCompletionModal,
-  onNextDay 
+  onNextDay,
+  tripData, // Add tripData prop to access dailyPlans with meter readings
+  refreshTripData // Add refreshTripData prop to refresh data after actions
 }) => {
-  // Track completed days - in a real app this would come from props or state management
-  const [completedDays, setCompletedDays] = useState(new Set());
-  const [currentAction, setCurrentAction] = useState('start'); // 'start' or 'end'
-  // Calculate current day and action needed
+  // Get daily plans from trip data
+  const dailyPlans = tripData?.dailyPlans || [];
+  
+  // Calculate current day and action needed based on actual trip data
   const getCurrentDayAndAction = () => {
-    const totalDays = dailyPlansLength || Math.max(1, daysLeft);
+    const totalDays = dailyPlans.length || Math.max(1, daysLeft);
     
-    // Find the current day that needs action
+    // Find the current day that needs action based on actual data
     for (let day = 1; day <= totalDays; day++) {
-      const dayStarted = completedDays.has(`day-${day}-start`);
-      const dayEnded = completedDays.has(`day-${day}-end`);
+      const dayPlan = dailyPlans.find(plan => plan.day === day);
       
-      if (!dayStarted) {
-        return { currentDay: day, action: 'start', allCompleted: false };
-      } else if (!dayEnded) {
-        return { currentDay: day, action: 'end', allCompleted: false };
+      if (!dayPlan) continue;
+      
+      // Check if day has start/end times (required for confirmation)
+      const hasStartTime = dayPlan.start && (dayPlan.start.$date || dayPlan.start);
+      const hasEndTime = dayPlan.end && (dayPlan.end.$date || dayPlan.end);
+      
+      const dayStartConfirmed = dayPlan.start_confirmed === 1;
+      const dayEndConfirmed = dayPlan.end_confirmed === 1;
+      
+      // Can only confirm start if start time exists and not yet confirmed
+      if (hasStartTime && !dayStartConfirmed) {
+        return { 
+          currentDay: day, 
+          action: 'start', 
+          allCompleted: false,
+          dayPlan,
+          canConfirm: true
+        };
+      } 
+      // Can only confirm end if start is confirmed, end time exists, and end not yet confirmed
+      else if (dayStartConfirmed && hasEndTime && !dayEndConfirmed) {
+        return { 
+          currentDay: day, 
+          action: 'end', 
+          allCompleted: false,
+          dayPlan,
+          canConfirm: true
+        };
+      }
+      // If this day is not complete, block further actions
+      else if (!dayEndConfirmed && hasStartTime) {
+        return { 
+          currentDay: day, 
+          action: dayStartConfirmed ? 'end' : 'start', 
+          allCompleted: false,
+          dayPlan,
+          canConfirm: hasEndTime || !dayStartConfirmed
+        };
       }
     }
     
     // All days completed
-    return { currentDay: totalDays, action: 'trip-end', allCompleted: true };
+    return { currentDay: totalDays, action: 'trip-end', allCompleted: true, dayPlan: null, canConfirm: true };
   };
 
-  const { currentDay, action, allCompleted } = getCurrentDayAndAction();
+  const { currentDay, action, allCompleted, dayPlan, canConfirm } = getCurrentDayAndAction();
 
   const handleDayStart = (day) => {
-    setCompletedDays(prev => new Set([...prev, `day-${day}-start`]));
-    setShowStartModal(true);
+    const dayPlan = dailyPlans.find(plan => plan.day === day);
+    if (dayPlan && dayPlan.start_meter_read !== undefined) {
+      // Pass the meter reading to the modal
+      setShowStartModal(true, {
+        day: day,
+        meterReading: dayPlan.start_meter_read,
+        startTime: dayPlan.start && (dayPlan.start.$date || dayPlan.start)
+      });
+    }
   };
 
   const handleDayEnd = (day) => {
-    setCompletedDays(prev => new Set([...prev, `day-${day}-end`]));
-    setShowEndModal(true);
+    const dayPlan = dailyPlans.find(plan => plan.day === day);
+    if (dayPlan) {
+      // Pass end data to the modal
+      setShowEndModal(true, {
+        day: day,
+        endMeterReading: dayPlan.end_meter_read,
+        deductAmount: dayPlan.deduct_amount,
+        additionalNote: dayPlan.additional_note,
+        endTime: dayPlan.end && (dayPlan.end.$date || dayPlan.end)
+      });
+    }
   };
 
   const handleTripEnd = () => {
     setShowTripCompletionModal(true);
   };
 
-  // Calculate progress percentage based on completed actions
+  // Calculate progress percentage based on actual confirmed actions
   const calculateProgress = () => {
-    const totalDays = Math.max(1, dailyPlansLength || daysLeft);
+    const totalDays = dailyPlans.length || Math.max(1, daysLeft);
     const totalActions = totalDays * 2; // Each day has start and end
-    const completedActions = completedDays.size;
+    
+    let completedActions = 0;
+    dailyPlans.forEach(plan => {
+      if (plan.start_confirmed === 1) completedActions++;
+      if (plan.end_confirmed === 1) completedActions++;
+    });
+    
     return Math.round((completedActions / totalActions) * 100);
   };
 
   const progress = calculateProgress();
+  
+  // Count confirmed actions for display
+  const getConfirmedActionsCount = () => {
+    let count = 0;
+    dailyPlans.forEach(plan => {
+      if (plan.start_confirmed === 1) count++;
+      if (plan.end_confirmed === 1) count++;
+    });
+    return count;
+  };
+
+  const confirmedActions = getConfirmedActionsCount();
+  const totalPossibleActions = dailyPlans.length * 2;
 
   // Main trip status display
   return (
@@ -74,9 +144,27 @@ const TripStatusCard = ({
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
             <span className="font-medium">{tripName}</span>
             <span className="text-gray-400">|</span>
-            <span>Progress: {completedDays.size}/{(dailyPlansLength || Math.max(1, daysLeft)) * 2} actions</span>
+            <span>Progress: {confirmedActions}/{totalPossibleActions} actions</span>
             <span className="text-gray-400">|</span>
-            <span>{dailyPlansLength || Math.max(1, daysLeft)} total days</span>
+            <span>{dailyPlans.length} total days</span>
+            {dayPlan && action === 'start' && dayPlan.start_meter_read !== undefined && (
+              <>
+                <span className="text-gray-400">|</span>
+                <span className="text-blue-600 font-medium">Start: {dayPlan.start_meter_read} km</span>
+              </>
+            )}
+            {dayPlan && action === 'end' && (
+              <>
+                <span className="text-gray-400">|</span>
+                <span className="text-orange-600 font-medium">End: {dayPlan.end_meter_read} km</span>
+                {dayPlan.deduct_amount !== undefined && (
+                  <>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-red-600 font-medium">Deduct: ${dayPlan.deduct_amount}</span>
+                  </>
+                )}
+              </>
+            )}
           </div>
           <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
             <div 
@@ -85,7 +173,14 @@ const TripStatusCard = ({
             ></div>
           </div>
           <div className="flex justify-between text-xs text-gray-500">
-            <span>{allCompleted ? 'All days completed' : `${action === 'start' ? 'Ready to start' : action === 'end' ? 'Ready to end' : ''} Day ${currentDay}`}</span>
+            <span>
+              {allCompleted 
+                ? 'All days completed' 
+                : !canConfirm 
+                  ? `Waiting for ${action === 'start' ? 'start time' : 'previous day completion'} - Day ${currentDay}`
+                  : `${action === 'start' ? 'Ready to start' : action === 'end' ? 'Ready to end' : ''} Day ${currentDay}`
+              }
+            </span>
             <span>{progress}% Complete</span>
           </div>
         </div>
@@ -102,54 +197,90 @@ const TripStatusCard = ({
           ) : action === 'start' ? (
             <button
               onClick={() => handleDayStart(currentDay)}
-              className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+              disabled={!canConfirm}
+              className={`font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg ${
+                canConfirm 
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white hover:shadow-xl transform hover:scale-105 cursor-pointer' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               <Play className="w-5 h-5" />
               Confirm Day {currentDay} Start
+              {dayPlan?.start_meter_read !== undefined && canConfirm && (
+                <span className="text-sm opacity-80">({dayPlan.start_meter_read} km)</span>
+              )}
             </button>
           ) : (
             <button
               onClick={() => handleDayEnd(currentDay)}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+              disabled={!canConfirm}
+              className={`font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg ${
+                canConfirm 
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white hover:shadow-xl transform hover:scale-105 cursor-pointer' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               <Square className="w-5 h-5" />
               Confirm Day {currentDay} End
+              {dayPlan?.end_meter_read !== undefined && canConfirm && (
+                <span className="text-sm opacity-80">({dayPlan.end_meter_read} km)</span>
+              )}
             </button>
           )}
           
           <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
             allCompleted 
               ? 'bg-green-100 text-green-700' 
-              : action === 'start' 
-                ? 'bg-blue-100 text-blue-700' 
-                : 'bg-orange-100 text-orange-700'
+              : !canConfirm
+                ? 'bg-gray-100 text-gray-500'
+                : action === 'start' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'bg-orange-100 text-orange-700'
           }`}>
-            {allCompleted ? 'Ready to Complete' : action === 'start' ? 'Ready to Start' : 'Ready to End'}
+            {allCompleted 
+              ? 'Ready to Complete' 
+              : !canConfirm 
+                ? 'Waiting for Requirements'
+                : action === 'start' 
+                  ? 'Ready to Start' 
+                  : 'Ready to End'
+            }
           </span>
         </div>
       </div>
       
-      {/* Progress Summary */}
-      {completedDays.size > 0 && (
+      {/* Progress Summary - Updated to use real data */}
+      {confirmedActions > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex flex-wrap gap-2">
-            {Array.from({ length: dailyPlansLength || Math.max(1, daysLeft) }, (_, i) => i + 1).map((day) => {
-              const dayStarted = completedDays.has(`day-${day}-start`);
-              const dayEnded = completedDays.has(`day-${day}-end`);
+            {dailyPlans.map((dayPlan) => {
+              const dayStartConfirmed = dayPlan.start_confirmed === 1;
+              const dayEndConfirmed = dayPlan.end_confirmed === 1;
+              const hasStartTime = dayPlan.start && (dayPlan.start.$date || dayPlan.start);
+              const hasEndTime = dayPlan.end && (dayPlan.end.$date || dayPlan.end);
               
               return (
-                <div key={day} className="flex items-center gap-1">
-                  <span className="text-xs font-medium text-gray-600">Day {day}:</span>
+                <div key={dayPlan.day} className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-gray-600">Day {dayPlan.day}:</span>
                   <span className={`text-xs px-2 py-1 rounded ${
-                    dayStarted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    dayStartConfirmed ? 'bg-green-100 text-green-700' : hasStartTime ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
                   }`}>
-                    {dayStarted ? '✓ Started' : 'Not Started'}
+                    {dayStartConfirmed ? '✓ Started' : hasStartTime ? 'Ready to Start' : 'No Start Time'}
                   </span>
                   <span className={`text-xs px-2 py-1 rounded ${
-                    dayEnded ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    dayEndConfirmed ? 'bg-green-100 text-green-700' : hasEndTime && dayStartConfirmed ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
                   }`}>
-                    {dayEnded ? '✓ Ended' : 'Not Ended'}
+                    {dayEndConfirmed ? '✓ Ended' : hasEndTime && dayStartConfirmed ? 'Ready to End' : 'Waiting'}
                   </span>
+                  {dayPlan.start_meter_read !== undefined && (
+                    <span className="text-xs text-blue-600">Start: {dayPlan.start_meter_read}km</span>
+                  )}
+                  {dayPlan.end_meter_read !== undefined && dayEndConfirmed && (
+                    <span className="text-xs text-orange-600">End: {dayPlan.end_meter_read}km</span>
+                  )}
+                  {dayPlan.additional_note && (
+                    <span className="text-xs text-gray-500 italic">"{dayPlan.additional_note}"</span>
+                  )}
                 </div>
               );
             })}

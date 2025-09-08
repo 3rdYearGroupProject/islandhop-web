@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { 
@@ -28,6 +28,7 @@ import {
 // Chat Component using our chat service
 const TripChat = ({ tripId, tripData }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const messagesEndRef = useRef(null);
   
   // Get current user
   useEffect(() => {
@@ -44,6 +45,15 @@ const TripChat = ({ tripId, tripData }) => {
   const { sendMessage, sending } = useSendMessage(tripId, userId, userDisplayName);
   const [messageText, setMessageText] = useState('');
   const [optimisticMessages, setOptimisticMessages] = useState([]);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, optimisticMessages]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -182,6 +192,8 @@ const TripChat = ({ tripId, tripData }) => {
             ))}
           </div>
         )}
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </div>
       
       {/* Chat Input */}

@@ -371,20 +371,99 @@ const OngoingTripPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Get trip data from navigation state (passed from MyTripsPage)
-  const tripData = location.state?.tripData;
+  // Get initial trip data from navigation state (passed from MyTripsPage)
+  const initialTripData = location.state?.tripData;
   
-  // If no trip data provided, redirect back to trips page
+  // State for real-time trip data
+  const [tripData, setTripData] = useState(initialTripData);
+  const [isLoadingTripData, setIsLoadingTripData] = useState(false);
+  const [tripDataError, setTripDataError] = useState(null);
+
+  // Extract trip ID for API calls
+  const getTripId = (data) => {
+    return data?._id || data?.tripId || data?.id || data?.mongodb_id || data?.objectId;
+  };
+
+  // Fetch updated trip data from API
+  const fetchTripData = async (tripId) => {
+    if (!tripId) return;
+    
+    try {
+      setIsLoadingTripData(true);
+      setTripDataError(null);
+      
+      const response = await fetch(`http://localhost:5007/api/trips/trip/${tripId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch trip data: ${response.status} ${response.statusText}`);
+      }
+      
+      const apiResponse = await response.json();
+      console.log('API Response:', apiResponse);
+      
+      // Extract the actual trip data from the response
+      const updatedTripData = apiResponse.data || apiResponse;
+      console.log('Extracted trip data:', updatedTripData);
+      
+      setTripData(updatedTripData);
+    } catch (error) {
+      console.error('Error fetching trip data:', error);
+      setTripDataError(error.message);
+    } finally {
+      setIsLoadingTripData(false);
+    }
+  };
+
+  // If no initial trip data provided, redirect back to trips page
   useEffect(() => {
-    if (!tripData) {
+    if (!initialTripData) {
       navigate('/trips');
     }
-  }, [tripData, navigate]);
+  }, [initialTripData, navigate]);
+
+  // Fetch updated trip data on component mount and when trip ID changes
+  useEffect(() => {
+    const tripId = getTripId(tripData);
+    if (tripId) {
+      fetchTripData(tripId);
+    }
+  }, [getTripId(initialTripData)]); // Only fetch once on mount
+
+  // Refresh trip data function (can be called by child components)
+  const refreshTripData = () => {
+    const tripId = getTripId(tripData);
+    if (tripId) {
+      fetchTripData(tripId);
+    }
+  };
   
+  // If no initial trip data provided, redirect back to trips page
+  useEffect(() => {
+    if (!initialTripData) {
+      navigate('/trips');
+    }
+  }, [initialTripData, navigate]);
+
+  // Fetch updated trip data on component mount and when trip ID changes
+  useEffect(() => {
+    const tripId = getTripId(tripData);
+    if (tripId) {
+      fetchTripData(tripId);
+    }
+  }, [getTripId(initialTripData)]); // Only fetch once on mount
+
   // If trip data is not available, show loading or return null
   if (!tripData) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-lg">Loading trip details...</div>
+      <div className="text-center">
+        <div className="text-lg mb-2">Loading trip details...</div>
+        {isLoadingTripData && (
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        )}
+        {tripDataError && (
+          <div className="text-red-600 text-sm mt-2">Error: {tripDataError}</div>
+        )}
+      </div>
     </div>;
   }
 
@@ -408,7 +487,16 @@ const OngoingTripPage = () => {
     dailyPlans = [],
     travelers = 1,
     _originalData
-  } = tripData;
+  } = tripData || {};
+
+  console.log('Extracted data:', {
+    tripName,
+    destination,
+    dailyPlansCount: dailyPlans.length,
+    driverNeeded,
+    guideNeeded,
+    tripData
+  });
 
   // Detect if we're in offline mode or showing mock data
   const isMockData = generalId === 2 || 
@@ -512,6 +600,28 @@ const OngoingTripPage = () => {
     <div className="min-h-screen bg-white flex flex-col">
       <div className="relative z-10">
         <Navbar />
+        {/* Trip data refresh indicator */}
+        {isLoadingTripData && (
+          <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+            <div className="max-w-7xl mx-auto flex items-center gap-3">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm text-blue-700 font-medium">Updating trip data...</span>
+            </div>
+          </div>
+        )}
+        {tripDataError && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <span className="text-sm text-red-700">Error updating trip data: {tripDataError}</span>
+              <button 
+                onClick={refreshTripData}
+                className="text-sm text-red-700 underline hover:no-underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
       <TripBanner 
@@ -519,6 +629,31 @@ const OngoingTripPage = () => {
         formattedDates={formattedDates}
         daysLeft={daysLeft}
       />
+
+      {/* Trip Actions Bar */}
+      <div className="bg-gray-50 border-b border-gray-200 py-3">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">
+              Trip ID: <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{actualTripId}</span>
+            </span>
+            <span className="text-sm text-gray-600">
+              Last Updated: {tripData?.updatedAt ? new Date(tripData.updatedAt.$date || tripData.updatedAt).toLocaleString() : 'Unknown'}
+            </span>
+          </div>
+          <button
+            onClick={refreshTripData}
+            disabled={isLoadingTripData}
+            className={`text-sm px-3 py-1.5 rounded-md font-medium transition-colors ${
+              isLoadingTripData 
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+            }`}
+          >
+            {isLoadingTripData ? 'Refreshing...' : 'Refresh Data'}
+          </button>
+        </div>
+      </div>
 
       {/* Main Content: Itinerary + Map */}
       <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
@@ -533,13 +668,28 @@ const OngoingTripPage = () => {
               dayStarted={dayStarted}
               dayEnded={dayEnded}
               startMeterReading={startMeterReading}
-              setShowStartModal={setShowStartModal}
-              setShowEndModal={setShowEndModal}
+              setShowStartModal={(show, data) => {
+                setShowStartModal(show);
+                if (data) {
+                  // Store additional data if needed
+                  console.log('Start modal data:', data);
+                }
+              }}
+              setShowEndModal={(show, data) => {
+                setShowEndModal(show);
+                if (data) {
+                  // Store additional data if needed
+                  console.log('End modal data:', data);
+                }
+              }}
               setShowTripCompletionModal={setShowTripCompletionModal}
+              tripData={tripData}
+              refreshTripData={refreshTripData}
               onNextDay={() => {
                 setCurrentDayIndex(prev => prev + 1);
                 setDayStarted(false);
                 setDayEnded(false);
+                refreshTripData(); // Refresh data when moving to next day
               }}
             />
 
@@ -606,6 +756,8 @@ const OngoingTripPage = () => {
           setStartMeterReading(meterReading);
           setDayStarted(true);
           setShowStartModal(false);
+          // Refresh trip data after start confirmation
+          refreshTripData();
         }}
       />
 
@@ -618,6 +770,8 @@ const OngoingTripPage = () => {
           setEndMeterReadings([...endMeterReadings, endMeterReading]);
           setDayEnded(true);
           setShowEndModal(false);
+          // Refresh trip data after end confirmation
+          refreshTripData();
         }}
       />
 
