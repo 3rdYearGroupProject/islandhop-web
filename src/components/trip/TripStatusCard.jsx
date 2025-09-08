@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Square } from 'lucide-react';
 
 const TripStatusCard = ({ 
@@ -14,185 +14,150 @@ const TripStatusCard = ({
   setShowTripCompletionModal,
   onNextDay 
 }) => {
-  // Calculate progress percentage
+  // Track completed days - in a real app this would come from props or state management
+  const [completedDays, setCompletedDays] = useState(new Set());
+  const [currentAction, setCurrentAction] = useState('start'); // 'start' or 'end'
+  // Calculate current day and action needed
+  const getCurrentDayAndAction = () => {
+    const totalDays = dailyPlansLength || Math.max(1, daysLeft);
+    
+    // Find the current day that needs action
+    for (let day = 1; day <= totalDays; day++) {
+      const dayStarted = completedDays.has(`day-${day}-start`);
+      const dayEnded = completedDays.has(`day-${day}-end`);
+      
+      if (!dayStarted) {
+        return { currentDay: day, action: 'start', allCompleted: false };
+      } else if (!dayEnded) {
+        return { currentDay: day, action: 'end', allCompleted: false };
+      }
+    }
+    
+    // All days completed
+    return { currentDay: totalDays, action: 'trip-end', allCompleted: true };
+  };
+
+  const { currentDay, action, allCompleted } = getCurrentDayAndAction();
+
+  const handleDayStart = (day) => {
+    setCompletedDays(prev => new Set([...prev, `day-${day}-start`]));
+    setShowStartModal(true);
+  };
+
+  const handleDayEnd = (day) => {
+    setCompletedDays(prev => new Set([...prev, `day-${day}-end`]));
+    setShowEndModal(true);
+  };
+
+  const handleTripEnd = () => {
+    setShowTripCompletionModal(true);
+  };
+
+  // Calculate progress percentage based on completed actions
   const calculateProgress = () => {
     const totalDays = Math.max(1, dailyPlansLength || daysLeft);
-    if (dayEnded) {
-      return Math.round((currentDayIndex + 1) / totalDays * 100);
-    } else if (dayStarted) {
-      return Math.round((currentDayIndex + 1) / totalDays * 100);
-    } else {
-      return Math.round(currentDayIndex / totalDays * 100);
-    }
+    const totalActions = totalDays * 2; // Each day has start and end
+    const completedActions = completedDays.size;
+    return Math.round((completedActions / totalActions) * 100);
   };
 
   const progress = calculateProgress();
 
-  // Not started yet
-  if (!dayStarted && currentDayIndex === 0) {
-    return (
-      <div className="relative">
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4 blur-sm">
-          <div className="w-full">
-            <h3 className="text-lg font-semibold text-gray-600 mb-1">Trip Ready to Start</h3>
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-              <span className="font-medium">{tripName}</span>
-              <span className="text-gray-400">|</span>
-              <span>Day <span className="font-bold">{currentDayIndex + 1}</span> of <span className="font-bold">{dailyPlansLength || Math.max(1, daysLeft)}</span></span>
-              <span className="text-gray-400">|</span>
-              <span>{Math.max(0, daysLeft - currentDayIndex)} days remaining</span>
-            </div>
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
-              <div className="h-full bg-gray-300 transition-all" style={{ width: '0%' }}></div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Ready to Start</span>
-              <span>Waiting to begin</span>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">Not Started</span>
-          </div>
-        </div>
-        
-        <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-4">
-          <div className="text-center">
-            <h4 className="text-xl font-bold text-gray-800 mb-2">Ready to Begin Your Journey?</h4>
-            <p className="text-gray-600 text-sm">Click the button below to start your trip</p>
-          </div>
-          <button
-            onClick={() => setShowStartModal(true)}
-            className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <Play className="w-5 h-5" />
-            Start Trip
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Ready for next day
-  if (!dayStarted && currentDayIndex > 0) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+  // Main trip status display
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="w-full">
-          <h3 className="text-lg font-semibold text-gray-600 mb-1">Day {currentDayIndex + 1} Ready</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">
+            {allCompleted ? 'Trip Ready to Complete' : `Day ${currentDay} ${action === 'start' ? 'Ready to Start' : action === 'end' ? 'Ready to End' : ''}`}
+          </h3>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
             <span className="font-medium">{tripName}</span>
             <span className="text-gray-400">|</span>
-            <span>Day <span className="font-bold">{currentDayIndex + 1}</span> of <span className="font-bold">{dailyPlansLength || Math.max(1, daysLeft)}</span></span>
+            <span>Progress: {completedDays.size}/{(dailyPlansLength || Math.max(1, daysLeft)) * 2} actions</span>
             <span className="text-gray-400">|</span>
-            <span>{Math.max(0, daysLeft - currentDayIndex)} days remaining</span>
+            <span>{dailyPlansLength || Math.max(1, daysLeft)} total days</span>
           </div>
           <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
-            <div className="h-full bg-gray-300 transition-all" style={{ width: `${progress}%` }}></div>
+            <div 
+              className={`h-full transition-all ${allCompleted ? 'bg-green-500' : 'bg-primary-500'}`} 
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
           <div className="flex justify-between text-xs text-gray-500">
-            <span>Ready for next day</span>
-            <span>Check Today's Plan to start</span>
+            <span>{allCompleted ? 'All days completed' : `${action === 'start' ? 'Ready to start' : action === 'end' ? 'Ready to end' : ''} Day ${currentDay}`}</span>
+            <span>{progress}% Complete</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">Ready</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Trip in progress
-  if (dayStarted && !dayEnded) {
-    return (
-      <div className="bg-white border border-primary-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="w-full">
-          <h3 className="text-lg font-semibold text-primary-700 mb-1">Trip in Progress</h3>
-          <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
-            <span className="font-medium">{tripName}</span>
-            <span className="text-gray-400">|</span>
-            <span>Day <span className="font-bold">{currentDayIndex + 1}</span> of <span className="font-bold">{dailyPlansLength || Math.max(1, daysLeft)}</span></span>
-            <span className="text-gray-400">|</span>
-            <span>{Math.max(0, daysLeft - currentDayIndex)} days left</span>
-            {startMeterReading && (
-              <>
-                <span className="text-gray-400">|</span>
-                <span>Started at {startMeterReading} km</span>
-              </>
-            )}
-          </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
-            <div
-              className="h-full bg-primary-500 transition-all animate-pulse"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>In Progress</span>
-            <span>Trip Active</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold flex items-center gap-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            Active
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // Day completed
-  if (dayEnded) {
-    return (
-      <div className="bg-white border border-green-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="w-full">
-          <h3 className="text-lg font-semibold text-green-700 mb-1">Day {currentDayIndex + 1} Completed</h3>
-          <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
-            <span className="font-medium">{tripName}</span>
-            <span className="text-gray-400">|</span>
-            <span>Day <span className="font-bold">{currentDayIndex + 1}</span> completed</span>
-            {startMeterReading && (
-              <>
-                <span className="text-gray-400">|</span>
-                <span className="text-green-600 font-semibold">Distance: 157 km</span>
-              </>
-            )}
-          </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
-            <div
-              className="h-full bg-green-500 transition-all"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>Completed</span>
-            <span>{currentDayIndex + 1 < dailyPlansLength ? 'Next day available' : 'Trip finished!'}</span>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          {currentDayIndex + 1 < dailyPlansLength ? (
+        
+        <div className="flex flex-col items-center gap-3">
+          {allCompleted ? (
             <button
-              onClick={onNextDay}
-              className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-1 px-3 rounded-md transition-colors duration-200 flex items-center gap-2 text-xs"
+              onClick={handleTripEnd}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              <Play className="w-3 h-3" />
-              Next Day
+              <Square className="w-5 h-5" />
+              Confirm Trip End
+            </button>
+          ) : action === 'start' ? (
+            <button
+              onClick={() => handleDayStart(currentDay)}
+              className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              <Play className="w-5 h-5" />
+              Confirm Day {currentDay} Start
             </button>
           ) : (
             <button
-              onClick={() => setShowTripCompletionModal(true)}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 rounded-md transition-colors duration-200 flex items-center gap-2 text-xs"
+              onClick={() => handleDayEnd(currentDay)}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              <Square className="w-3 h-3" />
-              End Trip
+              <Square className="w-5 h-5" />
+              Confirm Day {currentDay} End
             </button>
           )}
-          <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">✓ Completed</span>
+          
+          <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+            allCompleted 
+              ? 'bg-green-100 text-green-700' 
+              : action === 'start' 
+                ? 'bg-blue-100 text-blue-700' 
+                : 'bg-orange-100 text-orange-700'
+          }`}>
+            {allCompleted ? 'Ready to Complete' : action === 'start' ? 'Ready to Start' : 'Ready to End'}
+          </span>
         </div>
       </div>
-    );
-  }
-
-  return null;
+      
+      {/* Progress Summary */}
+      {completedDays.size > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: dailyPlansLength || Math.max(1, daysLeft) }, (_, i) => i + 1).map((day) => {
+              const dayStarted = completedDays.has(`day-${day}-start`);
+              const dayEnded = completedDays.has(`day-${day}-end`);
+              
+              return (
+                <div key={day} className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-gray-600">Day {day}:</span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    dayStarted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {dayStarted ? '✓ Started' : 'Not Started'}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    dayEnded ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {dayEnded ? '✓ Ended' : 'Not Ended'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default TripStatusCard;

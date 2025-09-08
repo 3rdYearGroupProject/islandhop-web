@@ -9,6 +9,22 @@ import {
   shouldShowChat 
 } from '../../utils/chatService';
 
+/**
+ * TripChat Component
+ * 
+ * Handles real-time chat functionality for trips with drivers and guides.
+ * 
+ * API Endpoint: http://localhost:8090/api/v1/chat/group/send
+ * Message Structure:
+ * {
+ *   "groupId": "group_123456789",
+ *   "senderId": "user123", 
+ *   "content": "Hey everyone! Ready for our Sri Lanka adventure?",
+ *   "messageType": "TEXT",
+ *   "senderName": "John Doe"
+ * }
+ */
+
 // Chat Component using our chat service
 const TripChat = ({ tripId, tripData }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -27,17 +43,16 @@ const TripChat = ({ tripId, tripData }) => {
   const { messages, loading, error, groupId, refreshMessages } = useChatMessages(tripId, userId);
   const { sendMessage, sending } = useSendMessage(tripId, userId, userDisplayName);
   const [messageText, setMessageText] = useState('');
+  const [optimisticMessages, setOptimisticMessages] = useState([]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    console.log('Send button clicked:', { messageText, sending, groupId, currentUser });
     
     if (!messageText.trim()) {
       return;
     }
     
     if (sending) {
-      console.log('Already sending, skipping...');
       return;
     }
     
@@ -52,35 +67,43 @@ const TripChat = ({ tripId, tripData }) => {
     }
 
     try {
-      await sendMessage(messageText);
+      // Add optimistic message for immediate UI feedback
+      const optimisticMessage = {
+        id: `temp-${Date.now()}`,
+        text: messageText,
+        sender: userDisplayName,
+        timestamp: new Date(),
+        isCurrentUser: true,
+        messageType: 'TEXT',
+        isOptimistic: true
+      };
+      
+      setOptimisticMessages(prev => [...prev, optimisticMessage]);
       setMessageText('');
+      
+      await sendMessage(messageText, groupId);
+      
+      // Remove optimistic message and refresh to get real message
+      setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
       refreshMessages();
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove optimistic message on error
+      setOptimisticMessages(prev => prev.filter(msg => !msg.isOptimistic));
     }
   };
 
-  const groupedMessages = groupMessagesByDate(messages);
+  const groupedMessages = groupMessagesByDate([...messages, ...optimisticMessages]);
 
-  // Debug logging
-  console.log('ChatComponent Debug:', {
-    tripId,
-    userId,
-    groupId,
-    messagesCount: messages.length,
-    loading,
-    error,
-    currentUser: currentUser ? { uid: currentUser.uid, displayName: currentUser.displayName } : null
-  });
-
-  // Additional debug info for chat service
-  console.log('ChatComponent Chat Service Debug:', {
-    receivedTripId: tripId,
-    receivedUserId: userId,
-    foundGroupId: groupId,
-    hasMessages: messages.length > 0,
-    chatServiceError: error
-  });
+  // Only log errors and important debugging info
+  if (error) {
+    console.error('TripChat Error:', {
+      tripId,
+      userId,
+      error,
+      groupId
+    });
+  }
 
   if (loading) {
     return (
@@ -116,7 +139,7 @@ const TripChat = ({ tripId, tripData }) => {
     <>
       {/* Chat Messages Area */}
       <div className="border rounded-lg bg-gray-50 h-64 mb-4 p-4 overflow-y-auto">
-        {messages.length === 0 ? (
+        {messages.length === 0 && optimisticMessages.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             <p className="mb-2">No messages yet</p>
             <p className="text-sm">Start the conversation!</p>
@@ -134,7 +157,7 @@ const TripChat = ({ tripId, tripData }) => {
                     <div 
                       className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
                         message.isCurrentUser 
-                          ? 'bg-blue-600 text-white' 
+                          ? `bg-blue-600 text-white ${message.isOptimistic ? 'opacity-70' : ''}` 
                           : 'bg-white border border-gray-200'
                       }`}
                     >
@@ -144,10 +167,13 @@ const TripChat = ({ tripId, tripData }) => {
                         </div>
                       )}
                       <div className="text-sm">{message.text}</div>
-                      <div className={`text-xs mt-1 ${
+                      <div className={`text-xs mt-1 flex items-center gap-1 ${
                         message.isCurrentUser ? 'text-blue-200' : 'text-gray-400'
                       }`}>
                         {formatMessageTime(message.timestamp)}
+                        {message.isOptimistic && (
+                          <span className="text-xs">📤</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -164,9 +190,9 @@ const TripChat = ({ tripId, tripData }) => {
           type="text"
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
-          placeholder="Type your message..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          disabled={sending}
+          placeholder={groupId ? "Type your message..." : "Connecting to chat..."}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+          disabled={sending || !groupId || !currentUser}
           onKeyPress={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -176,8 +202,11 @@ const TripChat = ({ tripId, tripData }) => {
         />
         <button
           type="submit"
-          onClick={handleSendMessage}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            sending || !messageText.trim() || !groupId || !currentUser
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
           disabled={sending || !messageText.trim() || !groupId || !currentUser}
         >
           {sending ? 'Sending...' : 'Send'}
