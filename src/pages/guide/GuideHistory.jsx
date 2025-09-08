@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getUserData } from '../../utils/userStorage';
+import axios from 'axios';
 import { 
   CalendarIcon, 
   MapPinIcon, 
@@ -8,7 +10,8 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   DocumentArrowDownIcon,
-  EyeIcon
+  EyeIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
@@ -17,111 +20,63 @@ const GuideHistory = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState('all');
   const [selectedTour, setSelectedTour] = useState(null);
+  const [tourHistory, setTourHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const tourHistory = [
-    {
-      id: 'TG001',
-      tourist: 'Emily Johnson',
-      tourPackage: 'Kandy Cultural Heritage Tour',
-      startLocation: 'Kandy Central',
-      endLocation: 'Temple of the Tooth',
-      date: '2024-07-03',
-      startTime: '09:00',
-      endTime: '15:00',
-      duration: '6h 00m',
-      groupSize: 4,
-      earnings: 150.00,
-      rating: 5,
-      status: 'completed',
-      paymentMethod: 'card',
-      notes: 'Family group, children interested in history'
-    },
-    {
-      id: 'TG002',
-      tourist: 'Marco Rodriguez',
-      tourPackage: 'Ella Adventure Trek',
-      startLocation: 'Ella Town',
-      endLocation: 'Little Adams Peak',
-      date: '2024-07-02',
-      startTime: '06:00',
-      endTime: '14:00',
-      duration: '8h 00m',
-      groupSize: 2,
-      earnings: 180.00,
-      rating: 5,
-      status: 'completed',
-      paymentMethod: 'cash',
-      notes: 'Early morning start, photography focused'
-    },
-    {
-      id: 'TG003',
-      tourist: 'Sarah Chen',
-      tourPackage: 'Colombo Food Discovery',
-      startLocation: 'Colombo Fort',
-      endLocation: 'Pettah Market',
-      date: '2024-07-01',
-      startTime: '10:00',
-      endTime: '16:00',
-      duration: '6h 00m',
-      groupSize: 3,
-      earnings: 95.00,
-      rating: 4,
-      status: 'completed',
-      paymentMethod: 'digital',
-      notes: 'Vegetarian preferences, spice sensitivity'
-    },
-    {
-      id: 'TG004',
-      tourist: 'James Wilson',
-      tourPackage: 'Sigiriya Historical Tour',
-      startLocation: 'Sigiriya Village',
-      endLocation: 'Sigiriya Rock Fortress',
-      date: '2024-06-30',
-      startTime: '07:30',
-      endTime: '16:30',
-      duration: '9h 00m',
-      groupSize: 6,
-      earnings: 200.00,
-      rating: 5,
-      status: 'completed',
-      paymentMethod: 'card',
-      notes: 'Large group, multiple language requirements'
-    },
-    {
-      id: 'TG005',
-      tourist: 'Lisa Thompson',
-      tourPackage: 'Galle Fort Walking Tour',
-      startLocation: 'Galle Railway Station',
-      endLocation: 'Galle Lighthouse',
-      date: '2024-06-29',
-      startTime: '14:00',
-      endTime: '18:00',
-      duration: '4h 00m',
-      groupSize: 2,
-      earnings: 120.00,
-      rating: 4,
-      status: 'completed',
-      paymentMethod: 'card',
-      notes: 'Sunset tour, photography requests'
-    },
-    {
-      id: 'TG006',
-      tourist: 'David Kumar',
-      tourPackage: 'Nuwara Eliya Tea Tour',
-      startLocation: 'Nuwara Eliya Town',
-      endLocation: 'Pedro Tea Estate',
-      date: '2024-06-28',
-      startTime: '09:00',
-      endTime: '13:00',
-      duration: '4h 00m',
-      groupSize: 5,
-      earnings: 0.00,
-      rating: null,
-      status: 'cancelled',
-      paymentMethod: 'none',
-      notes: 'Weather conditions, tour rescheduled'
+  const userData = getUserData();
+  const guideEmail = userData?.email;
+
+  useEffect(() => {
+    if (guideEmail) {
+      fetchTourHistory();
     }
-  ];
+  }, [guideEmail]);
+
+  const fetchTourHistory = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching tour history for guide:', guideEmail);
+      
+      const response = await axios.get(`http://localhost:5002/api/guides/${guideEmail}/tours`);
+      console.log('Tour History API Response:', response);
+      
+      if (response.data.success) {
+        const apiTours = response.data.data;
+        
+        // Transform API data to match history component structure
+        const transformedTours = apiTours.map((tour, index) => ({
+          id: tour.id || `TG${String(index + 1).padStart(3, '0')}`,
+          tourist: tour.customerName || tour.tourist || `Customer ${index + 1}`,
+          tourPackage: tour.tourName || tour.tourPackage || 'Unknown Tour',
+          startLocation: tour.startLocation || 'Unknown Location',
+          endLocation: tour.endLocation || 'Unknown Location',
+          date: tour.date ? new Date(tour.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          startTime: tour.startTime || '09:00',
+          endTime: tour.endTime || '17:00',
+          duration: tour.duration || '8h 00m',
+          groupSize: tour.groupSize || 1,
+          earnings: tour.earnings || 0,
+          rating: tour.rating || null,
+          status: tour.status || 'completed',
+          paymentMethod: tour.paymentMethod || 'card',
+          notes: tour.notes || ''
+        }));
+
+        setTourHistory(transformedTours);
+      } else {
+        console.warn('API returned success: false, using empty data');
+        setTourHistory([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tour history:', err);
+      setError('Failed to load tour history. Please try again later.');
+      setTourHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const statusOptions = [
     { value: 'all', label: 'All Tours' },
@@ -193,8 +148,40 @@ const GuideHistory = () => {
 
   const stats = calculateStats();
 
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/3 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-gray-200 rounded-lg h-32"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6">
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">{error}</span>
+            <button 
+              onClick={fetchTourHistory}
+              className="ml-auto text-red-600 hover:text-red-800 underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">

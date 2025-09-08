@@ -224,7 +224,7 @@ const AboutPage = () => {
       <Navbar />
       
       {/* Hero Video Section */}
-      <section className="relative w-full h-[25vh] md:h-[45vh] overflow-hidden">
+      <section className="relative w-full h-[75vh] md:h-[45vh] overflow-hidden">
         <video
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 

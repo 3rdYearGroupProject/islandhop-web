@@ -7,6 +7,7 @@ import logo from '../assets/islandHopIcon.png';
 import logoText from '../assets/IslandHop.png';
 import ProfileModal from './ProfileModal';
 import SettingsModal from './SettingsModal';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import './GoogleTranslate.css';
 import './Navbar.css';
 import api from '../api/axios';
@@ -20,6 +21,7 @@ const Navbar = () => {
   const [showLang, setShowLang] = useState(false);
   const [currentLang, setCurrentLang] = useState('English');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [userMenuAnimation, setUserMenuAnimation] = useState('');
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
@@ -171,6 +173,11 @@ const Navbar = () => {
     };
   }, []);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [location.pathname]);
+
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -299,142 +306,317 @@ const Navbar = () => {
   }, [tempUser]);
 
   return (
-    <nav className="fixed top-4 left-4 right-4 z-50 bg-white/95 shadow-lg rounded-full h-18 flex items-center px-6 border border-gray-200">
-      {/* Blur overlay when profile popup is open */}
-      {showProfilePopup && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}></div>
-      )}
-      <div className="w-full flex items-center h-20 px-6">
-        {/* Logo - Left Edge */}
-        <Link to="/" className="flex items-center ml-2">
-          <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-2" />
-          <img src={logoText} alt="IslandHop" className="h-6" />
-        </Link>
-        
-        {/* Nav Links - Center */}
-        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-20">
-          <Link to="/" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/' ? 'font-bold' : 'font-normal'} relative`}>
-            Home
-            {location.pathname === '/' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+    <>
+      <nav className="fixed top-6 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-50 bg-white/95 shadow-lg rounded-full border border-gray-200">
+        {/* Blur overlay when profile popup is open */}
+        {showProfilePopup && (
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}></div>
+        )}
+        <div className="w-full flex items-center justify-between h-16 sm:h-20 px-3 sm:px-6 min-w-0">
+          {/* Logo - Left */}
+          <Link to="/" className="flex items-center flex-shrink-0 min-w-0 ml-2 sm:ml-3">
+            <img src={logo} alt="IslandHop Icon" className="h-6 w-6 sm:h-8 sm:w-8 mr-2 flex-shrink-0" />
+            <img src={logoText} alt="IslandHop" className="h-4 sm:h-6 flex-shrink-0" />
           </Link>
-          <Link to="/discover" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/discover' ? 'font-bold' : 'font-normal'} relative`}>
-            Discover
-            {location.pathname === '/discover' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
-          </Link>
-          <Link to="/trips" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/trips' ? 'font-bold' : 'font-normal'} relative`}>
-            Trips
-            {location.pathname === '/trips' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
-          </Link>
-          <Link to="/pools" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/pools' ? 'font-bold' : 'font-normal'} relative`}>
-            Pools
-            {location.pathname === '/pools' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
-          </Link>
-          <Link to="/about" className={`text-gray-700 hover:text-primary-600 text-lg ${location.pathname === '/about' ? 'font-bold' : 'font-normal'} relative`}>
-            About
-            {location.pathname === '/about' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
-          </Link>
-        </div>
-        
-        {/* Spacer for layout balance */}
-        <div className="flex-1"></div>
-        
-        {/* User/Currency/Language - Right Edge */}
-        <div className="flex items-center space-x-4">
-          {/* Display current currency */}
-          <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center">
-            {currentCurrency}
-          </button>
           
-          {/* Language Switcher */}
-          <div className="relative" ref={translateRef}>
-            <button
-              onClick={toggleLanguageDropdown}
-              className="text-gray-700 hover:text-primary-600 font-medium flex items-center px-3 py-2 border rounded-lg transition-colors"
-              aria-label="Change language"
-            >
-              🌐 {currentLang}
-              <svg 
-                className={`ml-1 h-4 w-4 transition-transform ${showLang ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {showLang && (
-              <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-h-64 overflow-y-auto">
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => handleLanguageChange(lang.code, lang.name)}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
-                  >
-                    <span className="text-lg">{lang.flag}</span>
-                    <span className="text-gray-700">{lang.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Desktop Nav Links - Center */}
+          <div className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 space-x-8 xl:space-x-12">
+            <Link to="/" className={`text-gray-700 hover:text-primary-600 text-base xl:text-lg ${location.pathname === '/' ? 'font-bold' : 'font-normal'} relative transition-colors`}>
+              Home
+              {location.pathname === '/' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+            </Link>
+            <Link to="/discover" className={`text-gray-700 hover:text-primary-600 text-base xl:text-lg ${location.pathname === '/discover' ? 'font-bold' : 'font-normal'} relative transition-colors`}>
+              Discover
+              {location.pathname === '/discover' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+            </Link>
+            <Link to="/trips" className={`text-gray-700 hover:text-primary-600 text-base xl:text-lg ${location.pathname === '/trips' ? 'font-bold' : 'font-normal'} relative transition-colors`}>
+              Trips
+              {location.pathname === '/trips' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+            </Link>
+            <Link to="/pools" className={`text-gray-700 hover:text-primary-600 text-base xl:text-lg ${location.pathname === '/pools' ? 'font-bold' : 'font-normal'} relative transition-colors`}>
+              Pools
+              {location.pathname === '/pools' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+            </Link>
+            <Link to="/about" className={`text-gray-700 hover:text-primary-600 text-base xl:text-lg ${location.pathname === '/about' ? 'font-bold' : 'font-normal'} relative transition-colors`}>
+              About
+              {location.pathname === '/about' && <div className="absolute bottom-[-8px] left-0 right-0 h-0.5 bg-black"></div>}
+            </Link>
           </div>
           
-          {user ? (
-            <div className="relative flex items-center space-x-2" ref={userMenuRef}>
+          {/* Desktop User/Currency/Language - Right */}
+          <div className="hidden lg:flex items-center space-x-2 lg:space-x-4 desktop-only">
+            {/* Currency Display */}
+            <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center text-sm lg:text-base transition-colors">
+              {currentCurrency}
+            </button>
+            
+            {/* Language Switcher */}
+            <div className="relative" ref={translateRef}>
               <button
-                className="flex items-center space-x-2 focus:outline-none"
-                onClick={() => setShowUserMenu((v) => !v)}
-                aria-haspopup="true"
-                aria-expanded={showUserMenu}
+                onClick={toggleLanguageDropdown}
+                className="text-gray-700 hover:text-primary-600 font-medium flex items-center px-2 lg:px-3 py-2 border rounded-lg transition-colors text-sm lg:text-base"
+                aria-label="Change language"
               >
-                <span className="text-gray-700 font-medium">{user.displayName || user.email || 'User'}</span>
-                
-                {profileLoading ? (
-                  /* Loading animation */
-                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : (
-                  /* Profile image or avatar */
-                  <>
-                    {(user.photoURL || userProfile.profilePicture) && !imageLoaded && (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                    {user.photoURL || userProfile.profilePicture ? (
-                      <img 
-                        src={userProfile.profilePicture || user.photoURL} 
-                        alt="Profile" 
-                        className={`w-12 h-12 rounded-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
-                        onLoad={() => setImageLoaded(true)}
-                        onError={() => setImageLoaded(true)}
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-lg font-medium">
-                          {(user.displayName?.[0] || user.email?.[0] || userProfile.firstName?.[0] || 'U').toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
+                🌐 <span className="hidden sm:inline ml-1">{currentLang}</span>
+                <svg 
+                  className={`ml-1 h-3 w-3 lg:h-4 lg:w-4 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
-              {(showUserMenu || userMenuAnimation === 'animate-navbar-dropdown-leave') && (
-                <div className={`fixed right-8 top-20 w-44 bg-white border rounded-lg shadow-lg z-50 py-2 transition-all duration-200 ease-out transform ${userMenuAnimation}`}>
-                  <Link to="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={e => {e.preventDefault(); setShowProfilePopup(true); setShowUserMenu(false);}}>Profile</Link>
-                  <Link to="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={e => {e.preventDefault(); setShowSettingsPopup(true); setShowUserMenu(false);}}>Settings</Link>
-                  <button className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100" onClick={handleLogout}>Logout</button>
+              {showLang && (
+                <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-h-64 overflow-y-auto">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageChange(lang.code, lang.name)}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                    >
+                      <span className="text-lg">{lang.flag}</span>
+                      <span className="text-gray-700">{lang.name}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              <Link to="/login" className="text-gray-700 hover:text-primary-600 font-medium">Sign in</Link>
-              <Link to="/signup" className="ml-2 px-4 py-3 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition navbar-signup-btn">Sign up</Link>
-            </>
-          )}
+            
+            {user ? (
+              <div className="relative flex items-center space-x-2" ref={userMenuRef}>
+                <button
+                  className="flex items-center space-x-2 focus:outline-none"
+                  onClick={() => setShowUserMenu((v) => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={showUserMenu}
+                >
+                  <span className="text-gray-700 font-medium text-sm lg:text-base hidden lg:block">{user.displayName || user.email || 'User'}</span>
+                  
+                  {profileLoading ? (
+                    <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="w-4 h-4 lg:w-6 lg:h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <>
+                      {(user.photoURL || userProfile.profilePicture) && !imageLoaded && (
+                        <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          <div className="w-4 h-4 lg:w-6 lg:h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {user.photoURL || userProfile.profilePicture ? (
+                        <img 
+                          src={userProfile.profilePicture || user.photoURL} 
+                          alt="Profile" 
+                          className={`w-8 h-8 lg:w-12 lg:h-12 rounded-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
+                          onLoad={() => setImageLoaded(true)}
+                          onError={() => setImageLoaded(true)}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 lg:w-12 lg:h-12 bg-primary-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm lg:text-lg font-medium">
+                            {(user.displayName?.[0] || user.email?.[0] || userProfile.firstName?.[0] || 'U').toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </button>
+                {(showUserMenu || userMenuAnimation === 'animate-navbar-dropdown-leave') && (
+                  <div className={`absolute right-0 top-12 w-44 bg-white border rounded-lg shadow-lg z-50 py-2 transition-all duration-200 ease-out transform ${userMenuAnimation}`}>
+                    <Link to="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={e => {e.preventDefault(); setShowProfilePopup(true); setShowUserMenu(false);}}>Profile</Link>
+                    <Link to="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={e => {e.preventDefault(); setShowSettingsPopup(true); setShowUserMenu(false);}}>Settings</Link>
+                    <button className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100" onClick={handleLogout}>Logout</button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link to="/login" className="text-gray-700 hover:text-primary-600 font-medium text-sm lg:text-base transition-colors">Sign in</Link>
+                <Link to="/signup" className="ml-2 px-3 lg:px-4 py-2 lg:py-3 bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition text-sm lg:text-base">Sign up</Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors mobile-menu-btn flex-shrink-0"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            aria-label="Toggle mobile menu"
+          >
+            {showMobileMenu ? (
+              <XMarkIcon className="h-6 w-6 text-gray-700" />
+            ) : (
+              <Bars3Icon className="h-6 w-6 text-gray-700" />
+            )}
+          </button>
         </div>
-      </div>
+      </nav>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <>
+          {/* Mobile Menu Overlay */}
+          <div 
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden mobile-overlay" 
+            onClick={() => setShowMobileMenu(false)}
+          />
+          
+          {/* Mobile Menu Panel */}
+          <div className="fixed top-24 left-2 right-2 z-50 bg-white rounded-2xl shadow-lg border border-gray-200 lg:hidden animate-slide-in mobile-menu-panel">
+            <div className="p-4 space-y-4 overflow-hidden w-full">
+              {/* Mobile Navigation Links */}
+              <div className="space-y-1">
+                <Link 
+                  to="/" 
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Home
+                </Link>
+                <Link 
+                  to="/discover" 
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/discover' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Discover
+                </Link>
+                <Link 
+                  to="/trips" 
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/trips' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Trips
+                </Link>
+                <Link 
+                  to="/pools" 
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/pools' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Pools
+                </Link>
+                <Link 
+                  to="/about" 
+                  className={`block px-4 py-4 rounded-lg transition-colors text-base font-medium ${location.pathname === '/about' ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  About
+                </Link>
+              </div>
+
+              {/* Mobile User Section */}
+              {user ? (
+                <div className="border-t border-gray-200 pt-4 space-y-2">
+                  <div className="flex items-center px-4 py-2">
+                    {profileLoading ? (
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    ) : (
+                      <>
+                        {user.photoURL || userProfile.profilePicture ? (
+                          <img 
+                            src={userProfile.profilePicture || user.photoURL} 
+                            alt="Profile" 
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {(user.displayName?.[0] || user.email?.[0] || userProfile.firstName?.[0] || 'U').toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="ml-3">
+                      <p className="font-medium text-gray-900">{user.displayName || 'User'}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    className="block w-full text-left px-4 py-4 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
+                    onClick={() => {setShowProfilePopup(true); setShowMobileMenu(false);}}
+                  >
+                    Profile
+                  </button>
+                  <button 
+                    className="block w-full text-left px-4 py-4 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
+                    onClick={() => {setShowSettingsPopup(true); setShowMobileMenu(false);}}
+                  >
+                    Settings
+                  </button>
+                  <button 
+                    className="block w-full text-left px-4 py-4 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-base font-medium"
+                    onClick={() => {handleLogout(); setShowMobileMenu(false);}}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="border-t border-gray-200 pt-4 space-y-1">
+                  <Link 
+                    to="/login" 
+                    className="block px-4 py-4 text-center text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Sign in
+                  </Link>
+                  <Link 
+                    to="/signup" 
+                    className="block px-4 py-4 bg-primary-600 text-white text-center rounded-lg font-semibold hover:bg-primary-700 transition-colors text-base"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
+
+              {/* Mobile Language & Currency */}
+              <div className="border-t border-gray-200 pt-4 space-y-3">
+                {/* Language Switcher for Mobile */}
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-gray-700 font-medium">Language</span>
+                  <div className="relative" ref={translateRef}>
+                    <button
+                      onClick={toggleLanguageDropdown}
+                      className="flex items-center px-3 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      🌐 <span className="ml-1">{currentLang}</span>
+                      <svg 
+                        className={`ml-1 h-3 w-3 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showLang && (
+                      <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-w-[220px] max-h-64 overflow-y-auto">
+                        {languages.map((lang) => (
+                          <button
+                            key={lang.code}
+                            onClick={() => handleLanguageChange(lang.code, lang.name)}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                          >
+                            <span className="text-lg">{lang.flag}</span>
+                            <span className="text-gray-700 truncate">{lang.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-gray-700 font-medium">Currency</span>
+                  <span className="text-gray-600 font-medium">{currentCurrency}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Profile Popup Modal */}
       <ProfileModal
@@ -453,7 +635,7 @@ const Navbar = () => {
         currentUnits={currentUnits}
         setCurrentUnits={setCurrentUnits}
       />
-    </nav>
+    </>
   );
 };
 

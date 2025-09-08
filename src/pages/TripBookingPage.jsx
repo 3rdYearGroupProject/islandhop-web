@@ -8,6 +8,7 @@ import { getCityImageUrl, placeholderImage, logImageError } from '../utils/image
 import { tripPlanningApi } from '../api/axios';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import PaymentForm from '../components/PaymentForm';
@@ -47,7 +48,7 @@ const TripBookingPage = () => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'marker'], // Use same libraries as ViewTripPage
+    libraries: GOOGLE_MAPS_LIBRARIES, // Use shared constant to prevent repeated API loading
     preventGoogleFontsLoading: true
   });
 
@@ -289,7 +290,7 @@ const TripBookingPage = () => {
     return calculateTotal() * 0.5;
   };
 
-  const handlePaymentSuccess = (orderId) => {
+  const handlePaymentSuccess = async (orderId) => {
     setPaymentOrderId(orderId);
     setPaymentCompleted(true);
     setShowPayment(false);
@@ -327,14 +328,40 @@ const TripBookingPage = () => {
       setGuide: needGuide ? 1 : 0,
       setDriver: needDriver ? 1 : 0,
       paymentOrderId,
+      advancePaymentAmount: paymentCompleted ? calculateAdvancePayment() : 0,
+      totalAmount: calculateTotal(),
+      paymentStatus: paymentCompleted ? 'advance_paid' : 'pending'
     };
 
     try {
       const response = await axios.post('http://localhost:8095/api/v1/trips/initiate', payload);
       console.log('Trip initiated successfully:', response);
-      navigate('/trips', { state: { bookingSuccess: true } });
+      
+      // Show success message with payment details
+      const successMessage = paymentCompleted 
+        ? `Trip booked successfully! Advance payment of LKR ${calculateAdvancePayment().toLocaleString()} confirmed.`
+        : 'Trip booked successfully!';
+        
+      navigate('/trips', { 
+        state: { 
+          bookingSuccess: true, 
+          message: successMessage,
+          paymentDetails: paymentCompleted ? {
+            orderId: paymentOrderId,
+            amount: calculateAdvancePayment()
+          } : null
+        } 
+      });
     } catch (err) {
       console.error('Error initiating trip:', err);
+      
+      // Show specific error message
+      let errorMessage = 'Failed to complete booking. Please try again.';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -384,7 +411,16 @@ const TripBookingPage = () => {
       {/* Trip Header - blue background behind navbar, pulled up to be visible behind floating navbar */}
       <div className="relative">
         <div className="absolute inset-0 w-full h-[300px] bg-gradient-to-r from-primary-600 to-primary-700 pointer-events-none" style={{ zIndex: 0 }}></div>
-        <div className="relative max-w-7xl mx-auto px-4 pt-40 pb-12" style={{ zIndex: 1 }}>
+        <div className="relative max-w-7xl mx-auto px-4 pt-28 md:pt-32 pb-12" style={{ zIndex: 1 }}>
+          {/* Back button - white, in the blue banner */}
+          <div className="mb-4">
+            <button
+              onClick={handleCancel}
+              className="text-white hover:text-white/80 font-medium transition-colors"
+            >
+              ← Back to Trip
+            </button>
+          </div>
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
@@ -411,10 +447,106 @@ const TripBookingPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
+      <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 pt-4 md:pt-8 pb-8">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          {/* Left Side - Booking Content */}
-          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl border border-gray-200 p-8 overflow-y-auto">
+          {/* Mobile: Map first, then booking content */}
+          {/* Desktop: Booking content left, Map right (sticky) */}
+          
+          {/* Map - Mobile: First (order-1), Desktop: Second (order-2) */}
+          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[600px] md:h-[calc(100vh-160px)] md:sticky top-32 order-1 md:order-2">
+            {isLoaded ? (
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b border-gray-100">
+                  <h2 className="font-bold text-lg">Trip Map</h2>
+                  <p className="text-sm text-gray-500">Your trip destinations</p>
+                </div>
+                <div className="flex-1">
+                  <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={mapCenter}
+                    zoom={12}
+                    options={{
+                      fullscreenControl: true,
+                      streetViewControl: false,
+                      mapTypeControl: true,
+                      zoomControl: true,
+                    }}
+                  >
+                    {places.map((place, index) => (
+                      <Marker
+                        key={`${place.name}-${index}`}
+                        position={{
+                          lat: place.location.lat,
+                          lng: place.location.lng
+                        }}
+                        onClick={() => handleMarkerClick(place)}
+                        icon={getMarkerIcon(place.placeType)}
+                        title={place.name}
+                      />
+                    ))}
+                    {selectedMarker && (
+                      <InfoWindow
+                        position={{
+                          lat: selectedMarker.location.lat,
+                          lng: selectedMarker.location.lng
+                        }}
+                        onCloseClick={handleInfoWindowClose}
+                      >
+                        <div className="p-2">
+                          <h3 className="font-bold">{selectedMarker.name}</h3>
+                          <p className="text-sm">{selectedMarker.type}</p>
+                          {selectedMarker.rating && (
+                            <div className="flex items-center mt-1">
+                              <span className="text-yellow-500">★</span>
+                              <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                            </div>
+                          )}
+                          <img 
+                            src={getCityImageUrl(selectedMarker.name || 'Sri Lanka')}
+                            alt={selectedMarker.name} 
+                            className="mt-2 w-full h-24 object-cover rounded"
+                            onError={(e) => {
+                              logImageError('TripBookingPage InfoWindow', selectedMarker, e.target.src);
+                              e.target.src = placeholderImage;
+                            }}
+                          />
+                          <div className="mt-2 text-sm">
+                            <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
+                          </div>
+                        </div>
+                      </InfoWindow>
+                    )}
+                  </GoogleMap>
+                </div>
+                <div className="p-3 border-t border-gray-100">
+                  <div className="flex gap-4 flex-wrap">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                      <span className="text-xs">Attractions</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                      <span className="text-xs">Hotels</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                      <span className="text-xs">Restaurants</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                  <p className="font-medium">Loading Map...</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Booking Content - Mobile: Second (order-2), Desktop: First (order-1) */}
+          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl border border-gray-200 p-8 overflow-y-auto order-2 md:order-1">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Trip Preferences</h2>
             
             <div className="space-y-6">
@@ -541,9 +673,11 @@ const TripBookingPage = () => {
                     <span className="font-bold text-primary-600 text-lg">LKR {calculateAdvancePayment().toLocaleString()}.00</span>
                   </div>
                   {paymentCompleted && (
-                    <div className="flex justify-between mt-2 text-green-600">
+                    <div className="flex justify-between mt-2">
                       <span className="font-bold">Payment Status</span>
-                      <span className="font-bold">✓ Paid</span>
+                      <div className="flex items-center">
+                        <span className="font-bold text-green-600">✓ Paid</span>
+                      </div>
                     </div>
                   )}
                   <div className="text-xs text-gray-500 mt-2">
@@ -562,6 +696,8 @@ const TripBookingPage = () => {
                     onPaymentError={handlePaymentError}
                     submitting={submitting}
                     setSubmitting={setSubmitting}
+                    tripId={tripId} // Pass the tripId prop
+                    tripData={trip} // Pass trip data for group creation
                   />
                 </div>
               )}
@@ -622,99 +758,6 @@ const TripBookingPage = () => {
       )}
               </div>
             </div>
-          </div>
-
-          {/* Right Side - Map */}
-          <div className="w-full md:w-1/2 min-w-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-160px)]">
-            {isLoaded ? (
-              <div className="h-full flex flex-col">
-                <div className="p-4 border-b border-gray-100">
-                  <h2 className="font-bold text-lg">Trip Map</h2>
-                  <p className="text-sm text-gray-500">Your trip destinations</p>
-                </div>
-                <div className="flex-1">
-                  <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={mapCenter}
-                    zoom={12}
-                    options={{
-                      fullscreenControl: true,
-                      streetViewControl: true,
-                      mapTypeControl: true,
-                      zoomControl: true,
-                    }}
-                  >
-                    {places.map((place, index) => (
-                      <Marker
-                        key={`${place.name}-${index}`}
-                        position={{
-                          lat: place.location.lat,
-                          lng: place.location.lng
-                        }}
-                        onClick={() => handleMarkerClick(place)}
-                        icon={getMarkerIcon(place.placeType)}
-                        title={place.name}
-                      />
-                    ))}
-                    {selectedMarker && (
-                      <InfoWindow
-                        position={{
-                          lat: selectedMarker.location.lat,
-                          lng: selectedMarker.location.lng
-                        }}
-                        onCloseClick={handleInfoWindowClose}
-                      >
-                        <div className="p-2">
-                          <h3 className="font-bold">{selectedMarker.name}</h3>
-                          <p className="text-sm">{selectedMarker.type}</p>
-                          {selectedMarker.rating && (
-                            <div className="flex items-center mt-1">
-                              <span className="text-yellow-500">★</span>
-                              <span className="ml-1 text-sm">{selectedMarker.rating}</span>
-                            </div>
-                          )}
-                          <img 
-                            src={getCityImageUrl(selectedMarker.name || 'Sri Lanka')}
-                            alt={selectedMarker.name} 
-                            className="mt-2 w-full h-24 object-cover rounded"
-                            onError={(e) => {
-                              logImageError('TripBookingPage InfoWindow', selectedMarker, e.target.src);
-                              e.target.src = placeholderImage;
-                            }}
-                          />
-                          <div className="mt-2 text-sm">
-                            <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
-                          </div>
-                        </div>
-                      </InfoWindow>
-                    )}
-                  </GoogleMap>
-                </div>
-                <div className="p-3 border-t border-gray-100">
-                  <div className="flex gap-4 flex-wrap">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-                      <span className="text-xs">Attractions</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
-                      <span className="text-xs">Hotels</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
-                      <span className="text-xs">Restaurants</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                  <p className="font-medium">Loading Map...</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

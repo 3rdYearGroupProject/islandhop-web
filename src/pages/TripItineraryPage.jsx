@@ -604,7 +604,7 @@ const TripItineraryPage = () => {
     try {
       console.log('🔄 Fetching suggestions for modal - category:', category, 'type:', apiType, 'day:', dayNumber);
       
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary/${tripId}/day/${dayNumber}/suggestions/${apiType}?userId=${userUid}`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary/${tripId}/day/${dayNumber}/suggestions/${apiType}?userId=${userUid}`;
       
       console.log('📡 API URL:', apiUrl);
 
@@ -681,7 +681,7 @@ const TripItineraryPage = () => {
     try {
       console.log('🔄 Adding place to backend itinerary - category:', category, 'type:', apiType, 'day:', dayNumber);
       
-      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1'}/itinerary/${tripId}/day/${dayNumber}/${apiType}?userId=${userUid}`;
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary/${tripId}/day/${dayNumber}/${apiType}?userId=${userUid}`;
       
       console.log('📡 API URL:', apiUrl);
       console.log('📦 Place data:', place);
@@ -1172,6 +1172,7 @@ const TripItineraryPage = () => {
         tripId={tripId}
         userUid={userUid}
         startDate={selectedDates?.[0]}
+        groupId={null} // Individual trips don't have groupId
       />
 
       <Footer />

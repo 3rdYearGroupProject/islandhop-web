@@ -18,13 +18,23 @@ const InvitationsManager = ({ isOpen, onClose, onInvitationUpdate }) => {
 
   const fetchInvitations = async () => {
     try {
+      console.log('🔄 InvitationsManager: Starting fetchInvitations for user:', user.uid);
       setLoading(true);
       setError(null);
       
+      console.log('📨 InvitationsManager: Calling PoolsApi.getUserInvitations');
       const response = await PoolsApi.getUserInvitations(user.uid);
+      console.log('📨 InvitationsManager: Response received:', response);
+      console.log('📨 InvitationsManager: Invitations data:', response.invitations);
+      
       setInvitations(response.invitations || []);
+      console.log('✅ InvitationsManager: Invitations set successfully, count:', (response.invitations || []).length);
     } catch (error) {
-      console.error('Error fetching invitations:', error);
+      console.error('❌ InvitationsManager: Error fetching invitations:', error);
+      console.error('❌ InvitationsManager: Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
       setError('Failed to fetch invitations');
     } finally {
       setLoading(false);
@@ -33,6 +43,7 @@ const InvitationsManager = ({ isOpen, onClose, onInvitationUpdate }) => {
 
   const handleRespond = async (invitationId, action, message = null) => {
     try {
+      console.log('📮 InvitationsManager: Starting handleRespond', { invitationId, action, message });
       setResponding(prev => ({ ...prev, [invitationId]: true }));
       
       const responseData = {
@@ -42,18 +53,28 @@ const InvitationsManager = ({ isOpen, onClose, onInvitationUpdate }) => {
         ...(message && { message })
       };
 
+      console.log('📮 InvitationsManager: Calling PoolsApi.respondToInvitation with:', responseData);
       const result = await PoolsApi.respondToInvitation(responseData);
+      console.log('📮 InvitationsManager: Response result:', result);
       
       // Remove the responded invitation from the list
       setInvitations(prev => prev.filter(inv => inv.invitationId !== invitationId));
+      console.log('✅ InvitationsManager: Invitation removed from list');
       
       // Notify parent component
       if (onInvitationUpdate) {
+        console.log('📢 InvitationsManager: Notifying parent component');
         onInvitationUpdate(result);
       }
       
     } catch (error) {
-      console.error('Error responding to invitation:', error);
+      console.error('❌ InvitationsManager: Error responding to invitation:', error);
+      console.error('❌ InvitationsManager: Error details:', {
+        message: error.message,
+        stack: error.stack,
+        invitationId,
+        action
+      });
       setError(`Failed to ${action} invitation: ${error.message}`);
     } finally {
       setResponding(prev => ({ ...prev, [invitationId]: false }));

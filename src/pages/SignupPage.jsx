@@ -6,6 +6,8 @@ import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, de
 import { useToast } from '../components/ToastProvider';
 import sriLankaVideo from '../assets/sri-lanka-video.mp4';
 import islandhopFooterLogo from '../assets/islandhop footer 1.png';
+import logo from '../assets/islandHopIcon.png';
+import logoText from '../assets/IslandHop.png';
 import api from '../api/axios';
 import { encryptUserData } from '../utils/userStorage';
 
@@ -271,6 +273,11 @@ const SignupPage = () => {
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
+            {/* Centered Logo */}
+            <div className="flex items-center justify-center mb-6 cursor-pointer" onClick={() => navigate('/')}>
+              <img src={logo} alt="IslandHop Icon" className="h-8 w-8 mr-3" />
+              <img src={logoText} alt="IslandHop" className="h-6" />
+            </div>
             <h2 className="text-3xl font-semibold text-gray-900 mb-2">Create Account</h2>
           </div>
           

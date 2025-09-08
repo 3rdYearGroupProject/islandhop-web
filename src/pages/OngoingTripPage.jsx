@@ -1,958 +1,877 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MapPin, Users, Star, Camera, Bed, Utensils, Car, Calendar, ChevronDown, Clock } from 'lucide-react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Users } from 'lucide-react';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import ConfirmStartModal from '../components/ConfirmStartModal';
+import ConfirmEndModal from '../components/ConfirmEndModal';
+import TripCompletionModal from '../components/TripCompletionModal';
+import TripBanner from '../components/trip/TripBanner';
+import TripStatusCard from '../components/trip/TripStatusCard';
+import TripItinerary from '../components/trip/TripItinerary';
+import TripMapView from '../components/trip/TripMapView';
+import TripChat from '../components/trip/TripChat';
+import { shouldShowChat } from '../utils/chatService';
 
-
-// For demo, use mock data. Replace with real data as needed.
-const ongoingTrip = {
-  name: 'Cultural Heritage Tour',
-  dates: 'Aug 15 → Aug 25, 2025',
-  destination: 'Central Province',
-  travelers: 4,
-  rating: null,
-  memories: 0,
-  highlights: ['Kandy Temple', 'Nuwara Eliya'],
-  daysLeft: 12,
-};
-
-// Demo places for the map
-
-// Mock itinerary data (structure matches ViewTripPage)
-const mockItinerary = {
-  0: {
-    date: new Date('2025-08-15'),
-    activities: [
-      {
-        id: 1,
-        name: 'Arrival in Kandy',
-        location: 'Kandy',
-        duration: '2 hours',
-        rating: 4.5,
-        description: 'Arrive and check in to hotel',
-        price: '$25',
-        time: '10:00'
-      },
-      {
-        id: 2,
-        name: 'Temple Visit',
-        location: 'Kandy Temple',
-        duration: '2 hours',
-        rating: 4.7,
-        description: 'Visit the famous Kandy Temple',
-        price: '$10',
-        time: '14:00'
-      },
-      {
-        id: 10,
-        name: 'Evening Walk by Lake',
-        location: 'Kandy Lake',
-        duration: '1 hour',
-        rating: 4.2,
-        description: 'Relaxing walk around the lake',
-        price: '$0',
-        time: '17:00'
-      }
-    ],
-    places: [
-      {
-        id: 1,
-        name: 'Kandy City Hotel',
-        location: 'Kandy',
-        price: '$100/night',
-        rating: 4.3,
-        reviews: 120,
-        description: 'Central hotel in Kandy',
-        checkIn: '12:00',
-        checkOut: '11:00'
-      }
-    ],
-    food: [
-      {
-        id: 1,
-        name: 'Cafe Aroma',
-        location: 'Kandy',
-        cuisine: 'Sri Lankan',
-        rating: 4.6,
-        reviews: 200,
-        description: 'Authentic local food',
-        priceRange: '$10-20',
-        time: '19:00'
-      },
-      {
-        id: 11,
-        name: 'Royal Bar & Hotel',
-        location: 'Kandy',
-        cuisine: 'Bar',
-        rating: 4.1,
-        reviews: 90,
-        description: 'Historic bar for drinks',
-        priceRange: '$15-30',
-        time: '21:00'
-      }
-    ],
-    transportation: [
-      {
-        id: 1,
-        name: 'Airport Transfer',
-        type: 'Private Car',
-        price: '$30',
-        rating: 4.5,
-        description: 'Pickup from airport',
-        time: '09:00',
-        duration: '1 hour'
-      }
-    ]
-  },
-  1: {
-    date: new Date('2025-08-16'),
-    activities: [
-      {
-        id: 3,
-        name: 'Nuwara Eliya Tour',
-        location: 'Nuwara Eliya',
-        duration: '4 hours',
-        rating: 4.8,
-        description: 'Explore tea plantations',
-        price: '$20',
-        time: '10:00'
-      },
-      {
-        id: 12,
-        name: 'Gregory Lake Boating',
-        location: 'Gregory Lake',
-        duration: '2 hours',
-        rating: 4.6,
-        description: 'Boat ride and lakeside picnic',
-        price: '$15',
-        time: '15:00'
-      }
-    ],
-    places: [
-      {
-        id: 2,
-        name: 'Grand Hotel',
-        location: 'Nuwara Eliya',
-        price: '$150/night',
-        rating: 4.7,
-        reviews: 300,
-        description: 'Historic hotel with gardens',
-        checkIn: '14:00',
-        checkOut: '12:00'
-      }
-    ],
-    food: [
-      {
-        id: 2,
-        name: 'Tea Lounge',
-        location: 'Nuwara Eliya',
-        cuisine: 'Cafe',
-        rating: 4.2,
-        reviews: 80,
-        description: 'Tea and snacks',
-        priceRange: '$5-15',
-        time: '13:00'
-      },
-      {
-        id: 13,
-        name: 'Salmiya Italian Restaurant',
-        location: 'Nuwara Eliya',
-        cuisine: 'Italian',
-        rating: 4.4,
-        reviews: 60,
-        description: 'Popular for pizza and pasta',
-        priceRange: '$10-25',
-        time: '19:00'
-      }
-    ],
-    transportation: [
-      {
-        id: 2,
-        name: 'Kandy to Nuwara Eliya',
-        type: 'Train',
-        price: '$8',
-        rating: 4.9,
-        description: 'Scenic train ride',
-        time: '08:00',
-        duration: '3 hours'
-      }
-    ]
-  },
-  2: {
-    date: new Date('2025-08-17'),
-    activities: [
-      {
-        id: 4,
-        name: 'Horton Plains Hike',
-        location: 'Horton Plains',
-        duration: '6 hours',
-        rating: 4.9,
-        description: 'Hike to World’s End and Baker’s Falls',
-        price: '$30',
-        time: '06:00'
-      },
-      {
-        id: 5,
-        name: 'Visit Strawberry Farm',
-        location: 'Nuwara Eliya',
-        duration: '1 hour',
-        rating: 4.3,
-        description: 'Pick and taste fresh strawberries',
-        price: '$8',
-        time: '15:00'
-      }
-    ],
-    places: [
-      {
-        id: 3,
-        name: 'Jetwing St. Andrew’s',
-        location: 'Nuwara Eliya',
-        price: '$120/night',
-        rating: 4.5,
-        reviews: 180,
-        description: 'Colonial-style hotel',
-        checkIn: '14:00',
-        checkOut: '12:00'
-      }
-    ],
-    food: [
-      {
-        id: 3,
-        name: 'Grand Indian',
-        location: 'Nuwara Eliya',
-        cuisine: 'Indian',
-        rating: 4.5,
-        reviews: 150,
-        description: 'Famous for curries',
-        priceRange: '$10-20',
-        time: '18:00'
-      }
-    ],
-    transportation: [
-      {
-        id: 3,
-        name: 'Private Van',
-        type: 'Van',
-        price: '$40',
-        rating: 4.7,
-        description: 'Transport for the day',
-        time: '05:30',
-        duration: '12 hours'
-      }
-    ]
-  },
-  3: {
-    date: new Date('2025-08-18'),
-    activities: [
-      {
-        id: 6,
-        name: 'Tea Factory Tour',
-        location: 'Pedro Tea Estate',
-        duration: '2 hours',
-        rating: 4.6,
-        description: 'Learn about tea production',
-        price: '$12',
-        time: '09:00'
-      }
-    ],
-    places: [
-      {
-        id: 4,
-        name: 'Araliya Green Hills',
-        location: 'Nuwara Eliya',
-        price: '$110/night',
-        rating: 4.4,
-        reviews: 140,
-        description: 'Modern hotel with mountain views',
-        checkIn: '14:00',
-        checkOut: '12:00'
-      }
-    ],
-    food: [
-      {
-        id: 4,
-        name: 'The Pub',
-        location: 'Nuwara Eliya',
-        cuisine: 'Pub',
-        rating: 4.0,
-        reviews: 70,
-        description: 'Casual pub for dinner',
-        priceRange: '$8-18',
-        time: '20:00'
-      }
-    ],
-    transportation: [
-      {
-        id: 4,
-        name: 'Tuk Tuk',
-        type: 'Tuk Tuk',
-        price: '$5',
-        rating: 4.2,
-        description: 'Short rides in town',
-        time: '08:30',
-        duration: '1 hour'
-      }
-    ]
+// API functions for trip confirmation
+const confirmDayStart = async (tripId, day) => {
+  try {
+    const response = await axios.post(`http://localhost:5007/api/trips/confirm-day-${day}-start`, {
+      tripId: tripId
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error confirming day ${day} start:`, error);
+    throw error;
   }
 };
 
-const tripProgress = {
-  currentDay: 1, // 1-based index for user display, 0-based for code
-  totalDays: 2,
+const confirmDayEnd = async (tripId, day) => {
+  try {
+    const response = await axios.post(`http://localhost:5007/api/trips/confirm-day-${day}-end`, {
+      tripId: tripId
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error confirming day ${day} end:`, error);
+    throw error;
+  }
 };
-const mockPlaces = [
+
+// Mock daily plans in the format expected by the collapsible itinerary
+const mockDailyPlans = [
   {
-    name: 'Kandy Temple',
-    type: 'Attraction',
-    location: { lat: 7.2936, lng: 80.6411 },
-    dayNumber: 1,
-    placeType: 'attraction',
-    rating: 4.8,
+    day: 1,
+    city: 'Kandy',
+    attractions: [
+      {
+        id: 1,
+        name: 'Temple of the Tooth',
+        location: { lat: 7.2936, lng: 80.6411 },
+        rating: 4.7,
+        description: 'Visit the famous Kandy Temple',
+        time: '14:00',
+        image: '/src/assets/destinations/kandy-temple.jpg'
+      },
+      {
+        id: 2,
+        name: 'Kandy Lake',
+        location: { lat: 7.2906, lng: 80.6337 },
+        rating: 4.2,
+        description: 'Relaxing walk around the lake',
+        time: '17:00',
+        image: '/src/assets/destinations/kandy-lake.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 1,
+        name: 'Cafe Aroma',
+        location: { lat: 7.2955, lng: 80.6357 },
+        rating: 4.6,
+        description: 'Authentic local food',
+        time: '19:00'
+      },
+      {
+        id: 2,
+        name: 'Royal Bar & Hotel',
+        location: { lat: 7.2944, lng: 80.6378 },
+        rating: 4.1,
+        description: 'Historic bar for drinks',
+        time: '21:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 1,
+        name: 'Kandy City Hotel',
+        location: { lat: 7.2965, lng: 80.6345 },
+        rating: 4.3,
+        description: 'Central hotel in Kandy'
+      }
+    ]
   },
   {
-    name: 'Nuwara Eliya',
-    type: 'City',
-    location: { lat: 6.9497, lng: 80.7891 },
-    dayNumber: 2,
-    placeType: 'attraction',
-    rating: 4.7,
+    day: 2,
+    city: 'Nuwara Eliya',
+    attractions: [
+      {
+        id: 3,
+        name: 'Tea Plantations Tour',
+        location: { lat: 6.9497, lng: 80.7891 },
+        rating: 4.8,
+        description: 'Explore tea plantations',
+        time: '10:00',
+        image: '/src/assets/destinations/tea-plantation.jpg'
+      },
+      {
+        id: 4,
+        name: 'Gregory Lake',
+        location: { lat: 6.9514, lng: 80.7844 },
+        rating: 4.6,
+        description: 'Boat ride and lakeside picnic',
+        time: '15:00',
+        image: '/src/assets/destinations/gregory-lake.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 3,
+        name: 'Tea Lounge',
+        location: { lat: 6.9488, lng: 80.7903 },
+        rating: 4.2,
+        description: 'Tea and snacks',
+        time: '13:00'
+      },
+      {
+        id: 4,
+        name: 'Salmiya Italian Restaurant',
+        location: { lat: 6.9502, lng: 80.7865 },
+        rating: 4.4,
+        description: 'Popular for pizza and pasta',
+        time: '19:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 2,
+        name: 'Grand Hotel',
+        location: { lat: 6.9485, lng: 80.7888 },
+        rating: 4.7,
+        description: 'Historic hotel with gardens'
+      }
+    ]
   },
+  {
+    day: 3,
+    city: 'Horton Plains',
+    attractions: [
+      {
+        id: 5,
+        name: 'World\'s End',
+        location: { lat: 6.8081, lng: 80.8056 },
+        rating: 4.9,
+        description: 'Hike to World\'s End and Baker\'s Falls',
+        time: '06:00',
+        image: '/src/assets/destinations/worlds-end.jpg'
+      },
+      {
+        id: 6,
+        name: 'Strawberry Farm',
+        location: { lat: 6.9520, lng: 80.7832 },
+        rating: 4.3,
+        description: 'Pick and taste fresh strawberries',
+        time: '15:00',
+        image: '/src/assets/destinations/strawberry-farm.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 5,
+        name: 'Grand Indian',
+        location: { lat: 6.9495, lng: 80.7870 },
+        rating: 4.5,
+        description: 'Famous for curries',
+        time: '18:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 3,
+        name: 'Jetwing St. Andrew\'s',
+        location: { lat: 6.9490, lng: 80.7885 },
+        rating: 4.5,
+        description: 'Colonial-style hotel'
+      }
+    ]
+  },
+  {
+    day: 4,
+    city: 'Nuwara Eliya',
+    attractions: [
+      {
+        id: 7,
+        name: 'Pedro Tea Estate',
+        location: { lat: 6.9510, lng: 80.7920 },
+        rating: 4.6,
+        description: 'Learn about tea production',
+        time: '09:00',
+        image: '/src/assets/destinations/tea-factory.jpg'
+      }
+    ],
+    restaurants: [
+      {
+        id: 6,
+        name: 'The Pub',
+        location: { lat: 6.9488, lng: 80.7895 },
+        rating: 4.0,
+        description: 'Casual pub for dinner',
+        time: '20:00'
+      }
+    ],
+    hotels: [
+      {
+        id: 4,
+        name: 'Araliya Green Hills',
+        location: { lat: 6.9475, lng: 80.7910 },
+        rating: 4.4,
+        description: 'Modern hotel with mountain views'
+      }
+    ]
+  }
 ];
 
-const OngoingTripBanner = ({ trip }) => (
-  <div className="relative">
-    <div className="absolute inset-0 w-full h-[340px] bg-gradient-to-r from-primary-600 to-primary-700 pointer-events-none" style={{ zIndex: 0 }}></div>
-    <div className="relative max-w-7xl mx-auto px-4 pt-32 pb-8" style={{ zIndex: 1 }}>
-      <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Ongoing Trip</span>
-            <span className="text-white/80 text-sm">{trip.dates}</span>
+// Mock data for other travelers at destinations
+const mockTravelersData = {
+  'Kandy Temple': [
+    {
+      id: 1,
+      name: 'Sarah Johnson',
+      avatar: 'https://via.placeholder.com/40/FF6B6B/FFFFFF?text=SJ',
+      arrivalTime: '2:30 PM',
+      groupSize: 2,
+      tripType: 'Cultural Tour',
+      isPublic: true
+    },
+    {
+      id: 2,
+      name: 'Mike Chen',
+      avatar: 'https://via.placeholder.com/40/4ECDC4/FFFFFF?text=MC',
+      arrivalTime: '3:15 PM',
+      groupSize: 1,
+      tripType: 'Solo Adventure',
+      isPublic: true
+    },
+    {
+      id: 3,
+      name: 'Emma & David',
+      avatar: 'https://via.placeholder.com/40/45B7D1/FFFFFF?text=ED',
+      arrivalTime: '4:00 PM',
+      groupSize: 2,
+      tripType: 'Honeymoon',
+      isPublic: true
+    }
+  ],
+  'Nuwara Eliya': [
+    {
+      id: 4,
+      name: 'Alex Rivera',
+      avatar: 'https://via.placeholder.com/40/96CEB4/FFFFFF?text=AR',
+      arrivalTime: '11:00 AM',
+      groupSize: 3,
+      tripType: 'Family Trip',
+      isPublic: true
+    },
+    {
+      id: 5,
+      name: 'Lisa Park',
+      avatar: 'https://via.placeholder.com/40/FFEAA7/000000?text=LP',
+      arrivalTime: '1:30 PM',
+      groupSize: 1,
+      tripType: 'Photography Tour',
+      isPublic: true
+    }
+  ]
+};
+
+// Travelers Modal Component
+const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic }) => {
+  // Prevent body scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const travelers = mockTravelersData[destination] || [];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Who's Going to {destination}?</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <h1 className="text-4xl font-bold mb-2 text-white drop-shadow">{trip.name}</h1>
-          <div className="flex items-center text-white/90 mb-2">
-            <MapPin className="h-5 w-5 mr-2 text-blue-200" />
-            <span className="text-lg font-medium">{trip.destination}</span>
-          </div>
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex items-center text-blue-100">
-              <Users className="h-4 w-4 mr-1" />
-              <span className="text-sm">{trip.travelers} traveler{trip.travelers !== 1 ? 's' : ''}</span>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+          {!isPublic ? (
+            /* Initial state - Make arrival public */
+            <div className="text-center py-8">
+              <div className="mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect with Fellow Travelers</h3>
+                <p className="text-gray-600 text-sm mb-6">
+                  Make your arrival time public to see other travelers visiting {destination} and potentially meet up!
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPublic(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Make My Arrival Public
+              </button>
+              <p className="text-xs text-gray-500 mt-3">
+                You can change this anytime in your privacy settings
+              </p>
             </div>
-            {trip.daysLeft && (
-              <span className="px-3 py-1 bg-orange-100/80 text-orange-900 text-xs rounded-full font-semibold">{trip.daysLeft} days left</span>
-            )}
-          </div>
-          {trip.highlights && trip.highlights.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {trip.highlights.slice(0, 3).map((highlight, idx) => (
-                <span key={idx} className="inline-block px-2 py-1 bg-white/20 text-blue-100 text-xs rounded-md">{highlight}</span>
-              ))}
-              {trip.highlights.length > 3 && (
-                <span className="inline-block px-2 py-1 bg-white/10 text-white text-xs rounded-md">+{trip.highlights.length - 3} more</span>
+          ) : (
+            /* Show other travelers */
+            <div>
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center text-green-800">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium">Your arrival is now public!</span>
+                </div>
+              </div>
+
+              {travelers.length > 0 ? (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    Other travelers visiting today ({travelers.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {travelers.map((traveler) => (
+                      <div key={traveler.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={traveler.avatar}
+                            alt={traveler.name}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{traveler.name}</p>
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <span>Arriving at {traveler.arrivalTime}</span>
+                              <span>•</span>
+                              <span>{traveler.groupSize} {traveler.groupSize === 1 ? 'person' : 'people'}</span>
+                            </div>
+                            <p className="text-xs text-blue-600">{traveler.tripType}</p>
+                          </div>
+                        </div>
+                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors">
+                          Connect
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600">No other public travelers at this destination today.</p>
+                  <p className="text-sm text-gray-500 mt-1">Check back later or explore other destinations!</p>
+                </div>
               )}
             </div>
           )}
-          <div className="flex items-center gap-6 mt-2">
-            {trip.rating && (
-              <div className="flex items-center">
-                <Star className="h-5 w-5 text-yellow-400 fill-current mr-1" />
-                <span className="font-semibold text-lg text-white">{trip.rating}</span>
-              </div>
-            )}
-            {trip.memories > 0 && (
-              <div className="flex items-center">
-                <Camera className="h-5 w-5 mr-1 text-blue-200" />
-                <span className="font-semibold text-lg text-white">{trip.memories} memories</span>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
-  </div>
-);
-
-
-
-const days = Object.values(mockItinerary).map(day => day.date);
+  );
+};
 
 const OngoingTripPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get initial trip data from navigation state (passed from MyTripsPage)
+  const initialTripData = location.state?.tripData;
+  
+  // State for real-time trip data
+  const [tripData, setTripData] = useState(initialTripData);
+  const [isLoadingTripData, setIsLoadingTripData] = useState(false);
+  const [tripDataError, setTripDataError] = useState(null);
+
+  // Extract trip ID for API calls
+  const getTripId = (data) => {
+    return data?._id || data?.tripId || data?.id || data?.mongodb_id || data?.objectId;
+  };
+
+  // Calculate total distance from meter readings
+  const calculateTotalTripDistance = () => {
+    if (!tripData?.dailyPlans) return 0;
+    
+    let totalDistance = 0;
+    tripData.dailyPlans.forEach(plan => {
+      if (plan.start_meter_read && plan.end_meter_read) {
+        const dayDistance = plan.end_meter_read - plan.start_meter_read - (plan.deduct_amount || 0);
+        totalDistance += Math.max(0, dayDistance); // Ensure no negative distances
+      }
+    });
+    
+    return totalDistance;
+  };
+
+  // Fetch updated trip data from API
+  const fetchTripData = async (tripId) => {
+    if (!tripId) return;
+    
+    try {
+      setIsLoadingTripData(true);
+      setTripDataError(null);
+      
+      const response = await fetch(`http://localhost:5007/api/trips/trip/${tripId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch trip data: ${response.status} ${response.statusText}`);
+      }
+      
+      const apiResponse = await response.json();
+      console.log('API Response:', apiResponse);
+      
+      // Extract the actual trip data from the response
+      const updatedTripData = apiResponse.data || apiResponse;
+      console.log('Extracted trip data:', updatedTripData);
+      
+      setTripData(updatedTripData);
+    } catch (error) {
+      console.error('Error fetching trip data:', error);
+      setTripDataError(error.message);
+    } finally {
+      setIsLoadingTripData(false);
+    }
+  };
+
+  // If no initial trip data provided, redirect back to trips page
+  useEffect(() => {
+    if (!initialTripData) {
+      navigate('/trips');
+    }
+  }, [initialTripData, navigate]);
+
+  // Fetch updated trip data on component mount and when trip ID changes
+  useEffect(() => {
+    const tripId = getTripId(tripData);
+    if (tripId) {
+      fetchTripData(tripId);
+    }
+  }, [getTripId(initialTripData)]); // Only fetch once on mount
+
+  // Refresh trip data function (can be called by child components)
+  const refreshTripData = () => {
+    const tripId = getTripId(tripData);
+    if (tripId) {
+      fetchTripData(tripId);
+    }
+  };
+  
+  // If no initial trip data provided, redirect back to trips page
+  useEffect(() => {
+    if (!initialTripData) {
+      navigate('/trips');
+    }
+  }, [initialTripData, navigate]);
+
+  // Fetch updated trip data on component mount and when trip ID changes
+  useEffect(() => {
+    const tripId = getTripId(tripData);
+    if (tripId) {
+      fetchTripData(tripId);
+    }
+  }, [getTripId(initialTripData)]); // Only fetch once on mount
+
+  // If trip data is not available, show loading or return null
+  if (!tripData) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-lg mb-2">Loading trip details...</div>
+        {isLoadingTripData && (
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        )}
+        {tripDataError && (
+          <div className="text-red-600 text-sm mt-2">Error: {tripDataError}</div>
+        )}
+      </div>
+    </div>;
+  }
+
+  // Determine if chat should be shown based on trip data
+  const showChat = shouldShowChat(tripData);
+  console.log('OngoingTripPage - Trip data:', tripData);
+  console.log('OngoingTripPage - Show chat:', showChat);
+
+  // Extract trip information from the real data
+  const {
+    tripId: backendTripId,
+    _id: mongoId,
+    id: generalId,
+    tripName = 'Untitled Trip',
+    baseCity: destination = 'Unknown Destination',
+    startDate,
+    endDate,
+    driverNeeded = 0,
+    guideNeeded = 0,
+    userId,
+    dailyPlans = [],
+    travelers = 1,
+    _originalData
+  } = tripData || {};
+
+  console.log('Extracted data:', {
+    tripName,
+    destination,
+    dailyPlansCount: dailyPlans.length,
+    driverNeeded,
+    guideNeeded,
+    tripData
+  });
+
+  // Detect if we're in offline mode or showing mock data
+  const isMockData = generalId === 2 || 
+                     tripName === 'Cultural Heritage Tour' ||
+                     (dailyPlans.length === 0 && destination === 'Central Province');
+  
+  // Use mockDailyPlans when we detect offline/mock scenario
+  const effectiveDailyPlans = isMockData ? mockDailyPlans : dailyPlans;
+
+  // Determine the correct trip ID for chat functionality
+  let actualTripId = (_originalData && _originalData.tripId) || 
+                     backendTripId || 
+                     tripData.tripId ||
+                     mongoId || 
+                     generalId ||
+                     tripData._id ||
+                     tripData.id ||
+                     tripData.mongodb_id || 
+                     tripData.objectId ||
+                     tripData.uuid ||
+                     tripData.trip_id;
+
+  // TEMPORARY FIX: If we still don't have a trip ID, but we know the mapping based on tripName
+  if (!actualTripId && tripData.tripName) {
+    const tempTripMapping = {
+      'tt2-trip1': 'f5b9ac55-788d-43df-be16-4bdbce426346',
+      'tt2-trip2': '0d989cc5-de6b-429a-8790-13fb3ed1a5a7', 
+      'tt2-trip3': '06ed669b-296a-4a2e-9ab4-21f5f8260f25'
+    };
+    
+    actualTripId = tempTripMapping[tripData.tripName];
+  }
+
+  // Format dates
+  const formatTripDates = () => {
+    if (!startDate || !endDate) return 'Dates not available';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const formatDate = (date) => {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+    
+    const startFormatted = formatDate(start);
+    const endFormatted = formatDate(end);
+    const year = start.getFullYear();
+    
+    return `${startFormatted} → ${endFormatted}, ${year}`;
+  };
+
+  // Calculate days left
+  const calculateDaysLeft = () => {
+    if (!endDate) return 0;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+
+  const formattedDates = formatTripDates();
+  const daysLeft = calculateDaysLeft();
+  
   // Expand all days by default
   const [expandedDays, setExpandedDays] = useState(() => {
     const expanded = {};
-    Object.keys(mockItinerary).forEach((k) => { expanded[k] = true; });
+    effectiveDailyPlans.forEach((_, index) => {
+      expanded[index] = true;
+    });
     return expanded;
   });
-  const [itineraryCollapsed, setItineraryCollapsed] = useState(true);
+  
+  const [itineraryCollapsed, setItineraryCollapsed] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [mapCenter, setMapCenter] = useState(mockPlaces[0]?.location || { lat: 7.8731, lng: 80.7718 });
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'marker'], // Use consistent libraries
-    preventGoogleFontsLoading: true
-  });
-
-  // Animation for itinerary collapse/expand
-  const itineraryRef = useRef(null);
-  const [itineraryMaxHeight, setItineraryMaxHeight] = useState('none');
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    if (!itineraryRef.current) return;
-    if (!isAnimating) {
-      // Set maxHeight to current scrollHeight for smooth expand
-      setItineraryMaxHeight(itineraryRef.current.scrollHeight + 'px');
+  const [dayStarted, setDayStarted] = useState(false);
+  const [showStartModal, setShowStartModal] = useState(false);
+  const [startModalData, setStartModalData] = useState(null);
+  const [startMeterReading, setStartMeterReading] = useState(null);
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endModalData, setEndModalData] = useState(null);
+  const [dayEnded, setDayEnded] = useState(false);
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const [showTripCompletionModal, setShowTripCompletionModal] = useState(false);
+  const [endMeterReadings, setEndMeterReadings] = useState([]);
+  
+  // Create map center from first attraction if available
+  const getMapCenter = () => {
+    if (effectiveDailyPlans.length > 0 && effectiveDailyPlans[0].attractions && effectiveDailyPlans[0].attractions.length > 0) {
+      return effectiveDailyPlans[0].attractions[0].location;
     }
-  }, [itineraryCollapsed, isAnimating]);
-
-  // Animate on collapse/expand
-  useEffect(() => {
-    if (!itineraryRef.current) return;
-    setIsAnimating(true);
-    if (itineraryCollapsed) {
-      // Animate to collapsed height
-      setItineraryMaxHeight('140px');
-      const timeout = setTimeout(() => {
-        setIsAnimating(false);
-      }, 500);
-      return () => clearTimeout(timeout);
-    } else {
-      // Remove maxHeight restriction so it takes required height
-      setItineraryMaxHeight('none');
-      setIsAnimating(false);
-    }
-  }, [itineraryCollapsed]);
-
-  const getMarkerIcon = (placeType) => {
-    switch (placeType) {
-      case 'attraction':
-        return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-      case 'hotel':
-        return 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
-      case 'restaurant':
-        return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
-      default:
-        return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
-    }
+    return { lat: 7.2906, lng: 80.6337 }; // Default to Kandy, Sri Lanka
   };
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  
+  const [mapCenter, setMapCenter] = useState(getMapCenter());
+  
+  // Modal states for "See who else is coming"
+  const [showTravelersModal, setShowTravelersModal] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [isPublic, setIsPublic] = useState(false);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="relative z-10">
         <Navbar />
-      </div>
-      {/* Blue Banner/Header */}
-      <div className="relative">
-        <div className="absolute inset-0 w-full h-[300px] bg-gradient-to-r from-primary-600 to-primary-700 pointer-events-none" style={{ zIndex: 0 }}></div>
-        <div className="relative max-w-7xl mx-auto px-4 pt-40 pb-12" style={{ zIndex: 1 }}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Ongoing Trip</span>
-                <span className="text-white/80 text-sm">{ongoingTrip.dates}</span>
-              </div>
-              <h1 className="text-4xl font-bold mb-2 text-white drop-shadow">{ongoingTrip.name}</h1>
-              <p className="text-white/90 text-lg">{ongoingTrip.destination}</p>
+        {/* Trip data refresh indicator */}
+        {isLoadingTripData && (
+          <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+            <div className="max-w-7xl mx-auto flex items-center gap-3">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm text-blue-700 font-medium">Updating trip data...</span>
             </div>
           </div>
+        )}
+        {tripDataError && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <span className="text-sm text-red-700">Error updating trip data: {tripDataError}</span>
+              <button 
+                onClick={refreshTripData}
+                className="text-sm text-red-700 underline hover:no-underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <TripBanner 
+        tripData={tripData}
+        formattedDates={formattedDates}
+        daysLeft={daysLeft}
+      />
+
+      {/* Trip Actions Bar */}
+      <div className="bg-gray-50 border-b border-gray-200 py-3">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">
+              Trip ID: <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{actualTripId}</span>
+            </span>
+            <span className="text-sm text-gray-600">
+              Last Updated: {tripData?.updatedAt ? new Date(tripData.updatedAt.$date || tripData.updatedAt).toLocaleString() : 'Unknown'}
+            </span>
+          </div>
+          <button
+            onClick={refreshTripData}
+            disabled={isLoadingTripData}
+            className={`text-sm px-3 py-1.5 rounded-md font-medium transition-colors ${
+              isLoadingTripData 
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+            }`}
+          >
+            {isLoadingTripData ? 'Refreshing...' : 'Refresh Data'}
+          </button>
         </div>
       </div>
 
       {/* Main Content: Itinerary + Map */}
       <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8 w-full">
-          {/* Left: Itinerary, vertical timeline style, collapsible */}
+          {/* Left: Itinerary and Status */}
           <div className="w-full md:w-1/2 min-w-0 flex flex-col">
-            {/* Trip Progress Card */}
-            <div className="mb-4">
-              <div className="bg-white border border-primary-200 rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="w-full">
-                  <h3 className="text-lg font-semibold text-primary-700 mb-1">Trip Progress</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-700 mb-2">
-                    <span className="font-medium">{ongoingTrip.name}</span>
-                    <span className="text-gray-400">|</span>
-                    <span>Day <span className="font-bold">{tripProgress.currentDay}</span> of <span className="font-bold">{tripProgress.totalDays}</span></span>
-                    <span className="text-gray-400">|</span>
-                    <span>{ongoingTrip.daysLeft} days left</span>
-                  </div>
-                  {/* Progress Bar */}
-                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden mt-1 mb-1">
-                    <div
-                      className="h-full bg-primary-500 transition-all"
-                      style={{ width: `${Math.round((tripProgress.currentDay-1) / tripProgress.totalDays * 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>Start</span>
-                    <span>End</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-semibold">Ongoing</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Today's Details Card */}
-            {(() => {
-              const todayIdx = tripProgress.currentDay - 1;
-              const today = mockItinerary[todayIdx];
-              if (!today) return null;
-              // Gather all stops in order: transportation, activities, food, places
-              const stops = [
-                ...(today.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
-                ...(today.activities?.map(a => ({ ...a, category: 'activities' })) || []),
-                ...(today.food?.map(a => ({ ...a, category: 'food' })) || []),
-                ...(today.places?.map(a => ({ ...a, category: 'places' })) || []),
-              ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
-              return (
-                <div className="mb-6">
-                  <div className="bg-white border border-blue-200 rounded-lg shadow p-4">
-                    <h3 className="text-base font-bold text-blue-800 mb-3 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-500" />
-                      Today's Plan: <span className="font-medium text-blue-700 ml-1">{today.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                    </h3>
-                    <ol className="space-y-2">
-                      {stops.length === 0 && (
-                        <li className="text-gray-400 italic">No destinations or stops planned for today.</li>
-                      )}
-                      {(() => {
-                        // Highlight previous, current, and next stops
-                        const currentIdx = 1; // For demo, highlight the second stop as current
-                        return stops.map((stop, idx) => {
-                          let highlight = '';
-                          if (idx === currentIdx - 1) highlight = 'before';
-                          else if (idx === currentIdx) highlight = 'current';
-                          else if (idx === currentIdx + 1) highlight = 'next';
-                          return (
-                            <li
-                              key={idx}
-                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all border border-transparent ${
-                                highlight === 'current' ? 'bg-blue-100 border-blue-400 shadow font-bold text-blue-900' :
-                                highlight === 'before' ? 'bg-gray-50 text-gray-500' :
-                                highlight === 'next' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
-                                'hover:bg-blue-50 text-gray-800'
-                              }`}
-                            >
-                              <span className="flex-shrink-0">
-                                {stop.category === 'transportation' && <Car className="w-4 h-4 text-blue-600" />}
-                                {stop.category === 'activities' && <Camera className="w-4 h-4 text-primary-600" />}
-                                {stop.category === 'food' && <Utensils className="w-4 h-4 text-orange-600" />}
-                                {stop.category === 'places' && <Bed className="w-4 h-4 text-green-600" />}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="truncate text-base">{stop.name}</span>
-                                  {stop.location && <span className="text-gray-500 text-xs">({stop.location})</span>}
-                                </div>
-                                <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 flex-wrap">
-                                  {stop.time && <span className="flex items-center"><Clock className="w-3 h-3 mr-1" />{stop.time}</span>}
-                                  {stop.duration && <span className="flex items-center"><span className="ml-1">[{stop.duration}]</span></span>}
-                                </div>
-                              </div>
-                              {stop.rating && (
-                                <span className="flex items-center text-yellow-500 text-xs font-medium ml-2"><Star className="w-4 h-4 mr-1 fill-yellow-400" />{stop.rating}</span>
-                              )}
-                              {highlight === 'current' && <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">Current</span>}
-                              {highlight === 'next' && <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-white text-xs rounded-full">Next</span>}
-                            </li>
-                          );
-                        });
-                      })()}
-                    </ol>
-                  </div>
-                </div>
-              );
-            })()}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
-              <button
-                onClick={() => setItineraryCollapsed((prev) => !prev)}
-                className="flex items-center text-primary-600 hover:text-primary-700 font-medium px-3 py-1 rounded transition-colors"
-                aria-label={itineraryCollapsed ? 'Expand itinerary' : 'Collapse itinerary'}
-              >
-                {itineraryCollapsed ? 'Expand All' : 'Collapse All'}
-                <ChevronDown className={`w-5 h-5 ml-2 transition-transform ${itineraryCollapsed ? '' : 'rotate-180'}`} />
-              </button>
-            </div>
-            {/* Animated collapse/expand for itinerary */}
-            <div
-              ref={itineraryRef}
-              className={`relative transition-all duration-500 overflow-hidden${itineraryCollapsed ? ' opacity-70' : ''}`}
-              style={{
-                maxHeight: itineraryMaxHeight,
+            <TripStatusCard
+              tripName={tripName}
+              currentDayIndex={currentDayIndex}
+              dailyPlansLength={effectiveDailyPlans.length}
+              daysLeft={daysLeft}
+              dayStarted={dayStarted}
+              dayEnded={dayEnded}
+              startMeterReading={startMeterReading}
+              setShowStartModal={(show, data) => {
+                setShowStartModal(show);
+                if (data) {
+                  // Store the modal data containing meter reading
+                  setStartModalData(data);
+                  console.log('Start modal data:', data);
+                }
               }}
-            >
-              {itineraryCollapsed ? (
-                <div>
-                  {/* Show only the first day and first item as a preview, faded and compact */}
-                  {(() => {
-                    const [dayIndex, dayData] = Object.entries(mockItinerary)[0];
-                    const hasItems = (dayData.activities?.length || 0) > 0 ||
-                      (dayData.places?.length || 0) > 0 ||
-                      (dayData.food?.length || 0) > 0 ||
-                      (dayData.transportation?.length || 0) > 0;
-                    const allItems = [
-                      ...(dayData.activities?.map(a => ({ ...a, category: 'activities' })) || []),
-                      ...(dayData.places?.map(a => ({ ...a, category: 'places' })) || []),
-                      ...(dayData.food?.map(a => ({ ...a, category: 'food' })) || []),
-                      ...(dayData.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
-                    ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
-                    const previewItem = allItems[0];
-                    const getCategoryIcon = (category) => {
-                      switch(category) {
-                        case 'activities': return <Camera className="w-5 h-5 text-primary-600" />;
-                        case 'places': return <Bed className="w-5 h-5 text-green-600" />;
-                        case 'food': return <Utensils className="w-5 h-5 text-orange-600" />;
-                        case 'transportation': return <Car className="w-5 h-5 text-blue-600" />;
-                        default: return <MapPin className="w-5 h-5 text-gray-600" />;
-                      }
-                    };
-                    const getCategoryColor = (category) => {
-                      switch(category) {
-                        case 'activities': return 'bg-primary-50 border-primary-200';
-                        case 'places': return 'bg-green-50 border-green-200';
-                        case 'food': return 'bg-orange-50 border-orange-200';
-                        case 'transportation': return 'bg-blue-50 border-blue-200';
-                        default: return 'bg-gray-50 border-gray-200';
-                      }
-                    };
-                    return (
-                      <div key={dayIndex} className="border-l-2 border-gray-200 relative opacity-60 pointer-events-none select-none">
-                        <div className="flex items-center mb-2 -ml-3">
-                          <div className="bg-white border-4 border-primary-600 w-5 h-5 rounded-full"></div>
-                          <span className="ml-3 flex items-center text-base font-semibold text-gray-900">Day {parseInt(dayIndex, 10) + 1} - {formatDate(dayData.date)}</span>
-                          {hasItems && (
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({allItems.length} items)
-                            </span>
-                          )}
-                        </div>
-                        <div className="ml-6 pb-2">
-                          {hasItems && previewItem ? (
-                            <div className={`p-2 rounded border ${getCategoryColor(previewItem.category)} flex items-center gap-2`}>
-                              {getCategoryIcon(previewItem.category)}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="font-semibold text-gray-900 truncate text-sm">{previewItem.name}</h4>
-                                  {previewItem.time && (
-                                    <span className="text-xs text-gray-500 ml-2">{previewItem.time}</span>
-                                  )}
-                                </div>
-                                {previewItem.location && (
-                                  <div className="flex items-center text-xs text-gray-600 mt-1">
-                                    <MapPin className="w-3 h-3 mr-1" />
-                                    {previewItem.location}
-                                  </div>
-                                )}
-                                {previewItem.rating && (
-                                  <span className="flex items-center text-yellow-500 mt-1">
-                                    <Star className="w-4 h-4 mr-1 fill-yellow-400" />
-                                    {previewItem.rating}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-center py-4 text-gray-500">
-                              <Calendar className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                              <p className="text-xs">No activities planned for this day</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {/* Overlay with expand prompt */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 pointer-events-none select-none">
-                    <span className="text-primary-700 font-semibold text-base mb-1">Itinerary Collapsed</span>
-                    <span className="text-gray-500 text-xs">Expand to see the full trip plan</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-0">
-                  {Object.entries(mockItinerary).map(([dayIndex, dayData]) => {
-                    const isExpanded = expandedDays[dayIndex];
-                    const hasItems = (dayData.activities?.length || 0) > 0 ||
-                      (dayData.places?.length || 0) > 0 ||
-                      (dayData.food?.length || 0) > 0 ||
-                      (dayData.transportation?.length || 0) > 0;
-                    // Gather all items, add category, and sort by time
-                    const allItems = [
-                      ...(dayData.activities?.map(a => ({ ...a, category: 'activities' })) || []),
-                      ...(dayData.places?.map(a => ({ ...a, category: 'places' })) || []),
-                      ...(dayData.food?.map(a => ({ ...a, category: 'food' })) || []),
-                      ...(dayData.transportation?.map(a => ({ ...a, category: 'transportation' })) || []),
-                    ].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
-                    // Icon and color helpers
-                    const getCategoryIcon = (category) => {
-                      switch(category) {
-                        case 'activities': return <Camera className="w-5 h-5 text-primary-600" />;
-                        case 'places': return <Bed className="w-5 h-5 text-green-600" />;
-                        case 'food': return <Utensils className="w-5 h-5 text-orange-600" />;
-                        case 'transportation': return <Car className="w-5 h-5 text-blue-600" />;
-                        default: return <MapPin className="w-5 h-5 text-gray-600" />;
-                      }
-                    };
-                    const getCategoryColor = (category) => {
-                      switch(category) {
-                        case 'activities': return 'bg-primary-50 border-primary-200';
-                        case 'places': return 'bg-green-50 border-green-200';
-                        case 'food': return 'bg-orange-50 border-orange-200';
-                        case 'transportation': return 'bg-blue-50 border-blue-200';
-                        default: return 'bg-gray-50 border-gray-200';
-                      }
-                    };
-                    // Highlight logic: highlight middle item of current day
-                    const dayNum = parseInt(dayIndex, 10) + 1;
-                    const isCurrentDay = dayNum === tripProgress.currentDay;
-                    const isUpcomingDay = dayNum > tripProgress.currentDay;
-                    return (
-                      <div key={dayIndex} className="border-l-2 border-gray-200 relative">
-                        {/* Day Header */}
-                        <div className="flex items-center mb-4 -ml-3">
-                          <div className="bg-white border-4 border-primary-600 w-6 h-6 rounded-full"></div>
-                          <button
-                            onClick={() => setExpandedDays(prev => ({ ...prev, [dayIndex]: !prev[dayIndex] }))}
-                            className="ml-4 flex items-center text-lg font-semibold text-gray-900 hover:text-primary-600"
-                          >
-                            Day {parseInt(dayIndex, 10) + 1} - {formatDate(dayData.date)}
-                            <ChevronDown className={`w-4 h-4 ml-2 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                          {hasItems && (
-                            <span className="ml-3 text-sm text-gray-500">
-                              ({allItems.length} items)
-                            </span>
-                          )}
-                        </div>
-                        {/* Day Content */}
-                        {isExpanded && (
-                          <div className="ml-6 pb-8">
-                            {hasItems ? (
-                              <div className="space-y-4">
-                                {allItems.map((item, itemIndex) => {
-                                  // Middle index for current day
-                                  let middleIndex = Math.floor((allItems.length - 1) / 2);
-                                  const isCurrentItem = isCurrentDay && itemIndex === middleIndex;
-                                  const isCompleted = isCurrentDay && itemIndex < middleIndex;
-                                  // Mark as completed for all items after the current one in current and upcoming days
-                                  const isMarkable = (isCurrentDay && itemIndex > middleIndex) || isUpcomingDay;
-                                  return (
-                                    <div
-                                      key={`${item.category}-${itemIndex}`}
-                                      className={`px-4 py-3 rounded-lg border max-w-[520px] relative ${getCategoryColor(item.category)} ${isCurrentItem ? 'ring-2 ring-primary-500 bg-primary-50/80 relative' : ''}`}
-                                      style={{ marginLeft: 0 }}
-                                    >
-                                      {/* Time at true bottom right of card */}
-                                      {item.time && (
-                                        <span className="absolute bottom-2 right-4 text-sm text-gray-500">{item.time}</span>
-                                      )}
-                                      <div className="flex items-start justify-between">
-                                        <div className="flex items-start space-x-3 flex-1">
-                                          {getCategoryIcon(item.category)}
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                              <h4 className="font-semibold text-gray-900 truncate">{item.name}</h4>
-                                            </div>
-                                            {item.location && (
-                                              <div className="flex items-center text-sm text-gray-600 mt-1">
-                                                <MapPin className="w-3 h-3 mr-1" />
-                                                {item.location}
-                                              </div>
-                                            )}
-                                            {item.description && (
-                                              <p className="text-sm text-gray-600 mt-2">{item.description}</p>
-                                            )}
-                                            <div className="flex items-center justify-between mt-3">
-                                              <div className="flex items-center space-x-4 text-sm">
-                                                {item.duration && (
-                                                  <span className="flex items-center text-gray-500">
-                                                    <Clock className="w-3 h-3 mr-1" />
-                                                    {item.duration}
-                                                  </span>
-                                                )}
-                                                {item.rating && (
-                                                  <span className="flex items-center text-yellow-500">
-                                                    <Star className="w-4 h-4 mr-1 fill-yellow-400" />
-                                                    {item.rating}
-                                                  </span>
-                                                )}
-                                                {item.reviews && (
-                                                  <span className="text-gray-500">({item.reviews} reviews)</span>
-                                                )}
-                                              </div>
-                                              {/* No time here, handled by absolute at card bottom right */}
-                                              <div className="text-right"></div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                          {isCompleted && (
-                                            <span className="mb-1 px-2 py-1 bg-green-500 text-white text-xs rounded font-semibold shadow">Completed</span>
-                                          )}
-                                          {isCurrentItem && (
-                                            <span className="ml-4 px-2 py-1 bg-primary-500 text-white text-xs rounded font-semibold shadow">Current</span>
-                                          )}
-                                          {isMarkable && (
-                                            <button
-                                              className="ml-4 px-2 py-1 bg-gray-300 hover:bg-green-500 text-gray-700 hover:text-white text-xs rounded font-semibold shadow transition-colors"
-                                              style={{ minWidth: '110px' }}
-                                              onClick={() => { /* Implement mark as completed logic here */ }}
-                                            >
-                                              Mark as Completed
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="text-center py-8 text-gray-500">
-                                <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                <p>No activities planned for this day</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+              setShowEndModal={(show, data) => {
+                setShowEndModal(show);
+                if (data) {
+                  // Store the modal data containing meter reading
+                  setEndModalData(data);
+                  console.log('End modal data:', data);
+                }
+              }}
+              setShowTripCompletionModal={setShowTripCompletionModal}
+              tripData={tripData}
+              refreshTripData={refreshTripData}
+              onNextDay={() => {
+                setCurrentDayIndex(prev => prev + 1);
+                setDayStarted(false);
+                setDayEnded(false);
+                refreshTripData(); // Refresh data when moving to next day
+              }}
+            />
 
-            {/* Chat Interface Card below the whole itinerary */}
-            <div className="mt-8">
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-                <h3 className="text-lg font-semibold text-primary-700 mb-2">Chat with Driver &amp; Guide</h3>
-                <div className="h-56 overflow-y-auto bg-gray-50 rounded p-3 mb-3 flex flex-col gap-2" style={{ minHeight: '180px' }}>
-                  {/* Example chat bubbles, replace with real chat logic */}
-                  <div className="self-end max-w-[70%]">
-                    <div className="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1 text-sm">Hi, when will we reach the next stop?</div>
-                    <div className="text-xs text-gray-400 text-right mr-1">You (Tourist)</div>
-                  </div>
-                  <div className="self-start max-w-[70%]">
-                    <div className="bg-green-100 text-green-900 px-3 py-2 rounded-lg mb-1 text-sm">We will reach in about 30 minutes.</div>
-                    <div className="text-xs text-gray-400 ml-1">Driver</div>
-                  </div>
-                  <div className="self-start max-w-[70%]">
-                    <div className="bg-yellow-100 text-yellow-900 px-3 py-2 rounded-lg mb-1 text-sm">Let me know if you want to stop for food!</div>
-                    <div className="text-xs text-gray-400 ml-1">Guide</div>
-                  </div>
-                </div>
-                <form className="flex gap-2">
-                  <input
-                    type="text"
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                    placeholder="Type your message..."
-                  />
-                  <button
-                    type="submit"
-                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-          {/* Right: Map */}
-          <div className="w-full md:w-1/2 min-w-0 flex flex-col h-[calc(100vh-160px)] md:sticky top-32">
-            <div className="bg-white rounded-xl w-full h-full shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              {isLoaded ? (
-                <div className="flex-1 flex flex-col">
-                  <div className="p-4 border-b border-gray-100 shrink-0">
-                    <h2 className="font-bold text-lg">Trip Map</h2>
-                    <p className="text-sm text-gray-500">Explore your trip destinations</p>
-                  </div>
-                  <div className="flex-1 min-h-[400px]">
-                    <GoogleMap
-                      mapContainerStyle={{ width: '100%', height: '100%', minHeight: '400px' }}
-                      center={mapCenter}
-                      zoom={10}
-                      options={{
-                        fullscreenControl: true,
-                        streetViewControl: true,
-                        mapTypeControl: true,
-                        zoomControl: true,
-                      }}
-                    >
-                      {mockPlaces.map((place, index) => (
-                        <Marker
-                          key={`${place.name}-${index}`}
-                          position={place.location}
-                          onClick={() => {
-                            setSelectedMarker(place);
-                            setMapCenter(place.location);
-                          }}
-                          icon={getMarkerIcon(place.placeType)}
-                          title={place.name}
-                        />
-                      ))}
-                      {selectedMarker && (
-                        <InfoWindow
-                          position={selectedMarker.location}
-                          onCloseClick={() => setSelectedMarker(null)}
-                        >
-                          <div className="p-2">
-                            <h3 className="font-bold">{selectedMarker.name}</h3>
-                            <p className="text-sm">{selectedMarker.type}</p>
-                            {selectedMarker.rating && (
-                              <div className="flex items-center mt-1">
-                                <span className="text-yellow-500">★</span>
-                                <span className="ml-1 text-sm">{selectedMarker.rating}</span>
-                              </div>
-                            )}
-                            <div className="mt-2 text-sm">
-                              <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
-                            </div>
-                          </div>
-                        </InfoWindow>
-                      )}
-                    </GoogleMap>
-                  </div>
-                  <div className="p-3 border-t border-gray-100 shrink-0">
-                    <div className="flex gap-4 flex-wrap">
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-                        <span className="text-xs">Attractions</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
-                        <span className="text-xs">Hotels</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
-                        <span className="text-xs">Restaurants</span>
+            <TripItinerary
+              dailyPlans={effectiveDailyPlans}
+              itineraryCollapsed={itineraryCollapsed}
+              setItineraryCollapsed={setItineraryCollapsed}
+              expandedDays={expandedDays}
+              setExpandedDays={setExpandedDays}
+              setSelectedMarker={setSelectedMarker}
+              setShowTravelersModal={setShowTravelersModal}
+              setSelectedDestination={setSelectedDestination}
+            />
+
+            {/* Chat Section */}
+            {(driverNeeded === 1 || guideNeeded === 1) && (
+              <div className="mt-8">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                  <h3 className="text-lg font-semibold text-primary-700 mb-2">Chat with Driver &amp; Guide</h3>
+                  {actualTripId ? (
+                    <TripChat 
+                      tripId={actualTripId} 
+                      tripData={tripData}
+                    />
+                  ) : (
+                    <div className="border rounded-lg bg-yellow-50 h-32 mb-4 p-4 flex items-center justify-center">
+                      <div className="text-center text-yellow-600">
+                        <p className="mb-2">Chat Unavailable</p>
+                        <p className="text-sm">Valid trip ID required for chat functionality</p>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                    <p className="font-medium">Loading Map...</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+          
+          {/* Right: Map */}
+          <TripMapView
+            dailyPlans={effectiveDailyPlans}
+            mapCenter={mapCenter}
+            selectedMarker={selectedMarker}
+            setSelectedMarker={setSelectedMarker}
+            setShowTravelersModal={setShowTravelersModal}
+            setSelectedDestination={setSelectedDestination}
+          />
         </div>
       </div>
+      
+      {/* Modals */}
+      <TravelersModal
+        isOpen={showTravelersModal}
+        onClose={() => setShowTravelersModal(false)}
+        destination={selectedDestination}
+        isPublic={isPublic}
+        setIsPublic={setIsPublic}
+      />
+      
+      <ConfirmStartModal
+        isOpen={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        driverMeterReading={startModalData?.meterReading?.toString() || "0"}
+        onConfirm={async (meterReading) => {
+          try {
+            // Get the trip ID and day number
+            const tripId = getTripId(tripData);
+            const dayNumber = startModalData?.day || 1;
+            
+            if (!tripId) {
+              throw new Error('Trip ID not found');
+            }
+            
+            // Call the API to confirm day start
+            await confirmDayStart(tripId, dayNumber);
+            
+            // Update local state
+            setStartMeterReading(meterReading);
+            setDayStarted(true);
+            setShowStartModal(false);
+            
+            // Refresh trip data after start confirmation
+            refreshTripData();
+            
+            console.log(`Day ${dayNumber} start confirmed successfully`);
+          } catch (error) {
+            console.error('Failed to confirm day start:', error);
+            // You might want to show an error message to the user here
+            alert('Failed to confirm day start. Please try again.');
+          }
+        }}
+      />
+
+      <ConfirmEndModal
+        isOpen={showEndModal}
+        onClose={() => setShowEndModal(false)}
+        driverMeterReading={endModalData?.endMeterReading?.toString() || "0"}
+        startMeterReading={endModalData?.startMeterReading?.toString() || startMeterReading}
+        deductAmount={endModalData?.deductAmount || 0}
+        additionalNote={endModalData?.additionalNote || ""}
+        onConfirm={async (endMeterReading) => {
+          try {
+            // Get the trip ID and day number
+            const tripId = getTripId(tripData);
+            const dayNumber = endModalData?.day || 1;
+            
+            if (!tripId) {
+              throw new Error('Trip ID not found');
+            }
+            
+            // Call the API to confirm day end
+            await confirmDayEnd(tripId, dayNumber);
+            
+            // Update local state
+            setEndMeterReadings([...endMeterReadings, endMeterReading]);
+            setDayEnded(true);
+            setShowEndModal(false);
+            
+            // Refresh trip data after end confirmation
+            refreshTripData();
+            
+            console.log(`Day ${dayNumber} end confirmed successfully`);
+          } catch (error) {
+            console.error('Failed to confirm day end:', error);
+            // You might want to show an error message to the user here
+            alert('Failed to confirm day end. Please try again.');
+          }
+        }}
+      />
+
+      <TripCompletionModal
+        isOpen={showTripCompletionModal}
+        onClose={() => setShowTripCompletionModal(false)}
+        tripData={tripData}
+        totalDistance={calculateTotalTripDistance()}
+        totalDays={effectiveDailyPlans.length}
+      />
+      
       <Footer />
     </div>
   );

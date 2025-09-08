@@ -25,7 +25,7 @@ const QuickActionsButton = ({ isLoggedIn, userRole }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-if (!isLoggedIn) return null;
+if (!isLoggedIn || userRole !== 'tourist') return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50" ref={menuRef}>
@@ -68,7 +68,7 @@ if (!isLoggedIn) return null;
             style={{ animationDelay: '0.3s' }}
             onClick={() => setActiveModal('lost')}
           >
-            Report Lost Item
+            Report lost Item
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v4a1 1 0 001 1h3m10 0h3a1 1 0 001-1V7m-4 0V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2m4 4v6m-4 0h8" />
             </svg>

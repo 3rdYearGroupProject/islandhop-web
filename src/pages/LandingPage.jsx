@@ -241,8 +241,8 @@ const PlaceModal = ({ place, isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[10000]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[61]">
         <div className="relative">
           {/* Main image */}
           <img 
@@ -402,19 +402,19 @@ const inspirationDestinations = [
 
 // Why Choose IslandHop section (imported from AboutPage)
 const WhyChooseIslandHop = () => (
-  <section className="w-full py-16">
+  <section className="w-full py-8 sm:py-12 md:py-16">
     <div className="content-container">
-      <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 dark:text-white text-center mb-12">
+      <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-gray-900 dark:text-white text-center mb-6 sm:mb-8 md:mb-12 px-4">
         Why Choose IslandHop?
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-4">
         <Card hover className="text-center">
           <CardBody>
-            <ShieldCheckIcon className="h-16 w-16 text-success-600 mx-auto mb-6" />
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            <ShieldCheckIcon className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 text-success-600 mx-auto mb-3 sm:mb-4 md:mb-6" />
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
               Verified Professionals
             </h3>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               All our drivers and guides undergo strict verification processes including background checks, 
               license verification, and continuous performance monitoring.
             </p>
@@ -422,11 +422,11 @@ const WhyChooseIslandHop = () => (
         </Card>
         <Card hover className="text-center">
           <CardBody>
-            <UserGroupIcon className="h-16 w-16 text-primary-600 mx-auto mb-6" />
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            <UserGroupIcon className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 text-primary-600 mx-auto mb-3 sm:mb-4 md:mb-6" />
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
               Travel Pools
             </h3>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               Join travel pools to meet like-minded travelers, share costs, and create unforgettable 
               group experiences while exploring Sri Lanka together.
             </p>
@@ -434,11 +434,11 @@ const WhyChooseIslandHop = () => (
         </Card>
         <Card hover className="text-center">
           <CardBody>
-            <HeartIcon className="h-16 w-16 text-danger-600 mx-auto mb-6" />
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            <HeartIcon className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 text-danger-600 mx-auto mb-3 sm:mb-4 md:mb-6" />
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
               Authentic Experiences
             </h3>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               Our local professionals provide insider knowledge and authentic cultural experiences 
               that you won't find in typical tourist guides.
             </p>
@@ -491,7 +491,7 @@ const LandingPage = () => {
           className="absolute top-0 left-0 w-full h-full object-cover"
           autoPlay 
           muted 
-          loop w
+          loop
           playsInline
           preload="auto"
           onLoadedData={(e) => {
@@ -512,19 +512,19 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/50"></div>
         
         {/* Hero Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4 sm:px-6 lg:px-8">
           {/* Logo/Brand */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <img 
               src={require('../assets/islandhop footer 1.png')} 
               alt="IslandHop" 
-              className="h-12 md:h-16 w-auto mx-auto mb-4"
+              className="h-8 sm:h-12 md:h-16 w-auto mx-auto mb-3 sm:mb-4"
               draggable="false"
             />
           </div>
           
           {/* Main Heading */}
-          <h1 className="text-6xl md:text-8xl font-light mb-6 tracking-tight leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-light mb-4 sm:mb-6 tracking-tight leading-tight">
             Your Sri Lankan<br />
             <span className="font-semibold text-primary-600">
               Adventure
@@ -532,44 +532,29 @@ const LandingPage = () => {
           </h1>
           
           {/* Subheading */}
-          <p className="text-xl md:text-2xl mb-4 max-w-4xl font-light opacity-90">
+          <p className="text-lg sm:text-xl md:text-2xl mb-2 sm:mb-4 max-w-xs sm:max-w-2xl lg:max-w-4xl font-light opacity-90 px-4">
             Discover the pearl of the Indian Ocean with verified local guides
           </p>
-          <p className="text-lg md:text-xl mb-12 max-w-3xl opacity-75">
+          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-xs sm:max-w-xl lg:max-w-3xl opacity-75 px-4">
             From ancient temples to pristine beaches, create unforgettable memories with IslandHop
           </p>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8 w-full max-w-md sm:max-w-2xl mx-auto justify-center items-center px-4">
             <button
-              className="relative inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white rounded-full font-bold text-lg transition-all duration-300 justify-center overflow-hidden bg-white hover:bg-gray-200 group"
-              style={{}}
+              className="relative inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto sm:min-w-[240px] border-2 border-white rounded-full font-bold text-base sm:text-lg transition-all duration-300 justify-center overflow-hidden bg-white hover:bg-gray-200 group touch-manipulation"
               onClick={() => navigate('/trips')}
             >
-              {/* The text and icon as a cutout */}
-              <span
-                className="absolute inset-0 flex items-center justify-center select-none"
-                style={{
-                  WebkitMaskImage: 'linear-gradient(white, white)',
-                  maskImage: 'linear-gradient(white, white)',
-                  WebkitMaskComposite: 'destination-out',
-                  color: 'black',
-                  zIndex: 2,
-                  pointerEvents: 'none',
-                  mixBlendMode: 'destination-out',
-                }}
-              >
-                <Sparkles className="mr-3 h-6 w-6" aria-hidden="true" />
+              <span className="flex items-center justify-center text-gray-900">
+                <Sparkles className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                 <span>Start Your Journey</span>
               </span>
-              {/* Fallback text for accessibility, visually hidden */}
-              <span className="opacity-0">Start Your Journey</span>
             </button>
             <button
-              className="inline-flex items-center px-8 py-4 min-w-[240px] border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center"
+              className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto sm:min-w-[240px] border-2 border-white text-white rounded-full font-bold text-base sm:text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm justify-center touch-manipulation"
               onClick={() => navigate('/pools')}
             >
-              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1a3 3 0 000-6h-1m5 6h1a3 3 0 000-6h-1m-7 6h7m-7 0v8a2 2 0 002 2h10a2 2 0 002-2v-8m-9 0V9a2 2 0 012-2h5a2 2 0 012 2v3.028M12 17.5V21" />
               </svg>
               Join a Pool
@@ -577,7 +562,7 @@ const LandingPage = () => {
           </div>
           
           {/* Trust indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm opacity-80">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm opacity-80">
             <div>Verified Professionals</div>
             <div className="hidden sm:block w-1 h-1 bg-white/60 rounded-full"></div>
             <div>Available 24/7</div>
@@ -585,32 +570,32 @@ const LandingPage = () => {
         </div>
         
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/70 animate-bounce">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 text-white/70 animate-bounce">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
         </div>
       </section>
 
       {/* Problem/Solution Statement */}
-      <section className="w-full py-16 bg-gray-50">
+      <section className="w-full py-12 sm:py-16 bg-gray-50">
         <div className="content-container text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 px-4">
             Planning a Sri Lankan Adventure Shouldn't Be Overwhelming
           </h2>
-          <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-2xl sm:max-w-3xl mx-auto leading-relaxed px-4">
             From finding trusted guides to discovering hidden gems, IslandHop connects you with verified local professionals 
             and like-minded travelers to create unforgettable experiences across Sri Lanka.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-md sm:max-w-none mx-auto px-4">
             <button
-              className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition touch-manipulation"
               onClick={() => navigate('/trips')}
             >
               Start Your Journey
             </button>
             <button
-              className="px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-full hover:bg-primary-600 hover:text-white transition"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-full hover:bg-primary-600 hover:text-white transition touch-manipulation"
               onClick={() => navigate('/discover')}
             >
               Learn More
@@ -634,9 +619,9 @@ const LandingPage = () => {
       </div>
 
       {/* Secondary Showcase: Iconic places */}
-      <section className="w-full py-8">
+      <section className="w-full py-8 sm:py-12">
         <div className="content-container">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Must-Visit Iconic Places</h2>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 px-4">Must-Visit Iconic Places</h2>
           <CardGrid cardType="scroll" maxCards={6}>
             {iconicPlacesData.map((place, i) => (
               <ExploreCard
@@ -655,10 +640,10 @@ const LandingPage = () => {
       </section>
 
       {/* Inspiration Section */}
-      <section className="w-full py-8">
+      <section className="w-full py-8 sm:py-12">
         <div className="content-container">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Discover Sri Lanka's Best</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 px-4">Discover Sri Lanka's Best</h2>
+          <div className="flex gap-2 sm:gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide px-4">
             {inspirationDestinations.map((inspiration, i) => {
               // Map card name to filter value
               const nameToFilter = {
@@ -672,7 +657,7 @@ const LandingPage = () => {
               return (
                 <div
                   key={i}
-                  className="flex-shrink-0 w-64 md:w-72 cursor-pointer"
+                  className="flex-shrink-0 w-48 sm:w-56 md:w-64 lg:w-72 cursor-pointer"
                   onClick={filter ? () => navigate(`/discover?filter=${filter}`) : undefined}
                   tabIndex={filter ? 0 : undefined}
                   role={filter ? 'button' : undefined}
@@ -686,7 +671,7 @@ const LandingPage = () => {
                   <DestinationCard
                     destination={inspiration}
                     imageUrl={inspiration.image}
-                    className="h-48 md:h-56"
+                    className="h-40 sm:h-44 md:h-48 lg:h-56"
                   />
                 </div>
               );
@@ -724,8 +709,8 @@ const LandingPage = () => {
       {/* Themed collections */}
       <section className="w-full py-8">
         <div className="content-container">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">Browse themed collections</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 px-4">Browse themed collections</h2>
+          <div className="flex gap-2 sm:gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide px-4">
             {[
               {
                 name: 'Tea Plantation Tours',
@@ -788,12 +773,12 @@ const LandingPage = () => {
                 bestTime: 'Year-round, especially hot months'
               }
             ].map((collection, i) => (
-              <div key={i} className="flex-shrink-0 w-64 md:w-72">
+              <div key={i} className="flex-shrink-0 w-48 sm:w-56 md:w-64 lg:w-72">
                 <DestinationCard
                   destination={collection}
                   imageUrl={collection.image}
                   onClick={() => openModal(collection)}
-                  className="h-48 md:h-56"
+                  className="h-40 sm:h-44 md:h-48 lg:h-56"
                 />
               </div>
             ))}

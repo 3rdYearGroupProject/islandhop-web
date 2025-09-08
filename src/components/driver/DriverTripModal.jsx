@@ -6,72 +6,122 @@ const DriverTripModal = ({ open, onClose, trip }) => {
   
   if (!open || !trip) return null;
 
-  // Mock itinerary data for the trip
-  const mockItinerary = {
-    0: {
-      date: new Date(),
-      activities: [
-        {
-          id: 1,
-          name: 'Visit Kandy Temple',
-          location: 'Temple of the Tooth',
-          duration: '2 hours',
-          rating: 4.7,
-          description: 'Explore the sacred Buddhist temple',
-          price: 'LKR 500',
-          time: '09:00'
-        },
-        {
-          id: 2,
-          name: 'Royal Botanical Gardens',
-          location: 'Peradeniya',
-          duration: '3 hours',
-          rating: 4.5,
-          description: 'Walk through beautiful botanical gardens',
-          price: 'LKR 300',
-          time: '14:00'
-        }
-      ],
-      places: [
-        {
-          id: 1,
-          name: 'Hotel Suisse',
-          location: 'Kandy',
-          price: 'LKR 12,000/night',
-          rating: 4.3,
-          reviews: 120,
-          description: 'Luxury hotel in the heart of Kandy',
-          checkIn: '15:00',
-          checkOut: '11:00'
-        }
-      ],
-      food: [
-        {
-          id: 1,
-          name: 'White House Restaurant',
-          location: 'Kandy',
-          cuisine: 'Sri Lankan',
-          rating: 4.6,
-          reviews: 200,
-          description: 'Authentic local cuisine',
-          priceRange: 'LKR 800-1500',
-          time: '19:00'
-        }
-      ],
-      transportation: [
-        {
-          id: 1,
-          name: 'Airport Transfer',
-          type: 'Private Car',
-          price: 'LKR 3500',
-          rating: 4.5,
-          description: 'Pickup from Colombo Airport',
-          time: '08:00',
-          duration: '2.5 hours'
-        }
-      ]
-    }
-  };
+  // Use actual trip data from dailyPlans if available, otherwise use mock data
+  const itineraryData = trip.dailyPlans && Array.isArray(trip.dailyPlans) && trip.dailyPlans.length > 0 ? 
+    trip.dailyPlans.reduce((acc, day, index) => {
+      
+      // Transform attractions array into categorized arrays
+      const activities = [];
+      const places = [];
+      const food = [];
+      const transportation = [];
+      
+      if (day.attractions && Array.isArray(day.attractions)) {
+        day.attractions.forEach(attraction => {
+          const item = {
+            id: attraction.id || Math.random(),
+            name: attraction.name,
+            location: typeof attraction.location === 'object' 
+              ? `${attraction.location.lat}, ${attraction.location.lng}`
+              : attraction.location || 'Location not specified',
+            rating: attraction.rating,
+            type: attraction.type,
+            description: attraction.description || `Visit ${attraction.name}`
+          };
+          
+          // Categorize based on type
+          switch (attraction.type?.toLowerCase()) {
+            case 'activity':
+            case 'attraction':
+              activities.push(item);
+              break;
+            case 'place':
+            case 'accommodation':
+              places.push(item);
+              break;
+            case 'food':
+            case 'restaurant':
+              food.push(item);
+              break;
+            case 'transport':
+            case 'transportation':
+              transportation.push(item);
+              break;
+            default:
+              // Default to activities if type is unclear
+              activities.push(item);
+          }
+        });
+      }
+      
+      acc[index] = {
+        date: new Date(day.date || trip.startDate),
+        city: day.city || day.destination || `Day ${index + 1}`,
+        activities: activities,
+        places: places,
+        food: food,
+        transportation: transportation
+      };
+      
+      return acc;
+    }, {}) :
+    // Fallback: Create a basic itinerary structure from available trip data
+    {
+      0: {
+        date: new Date(trip.startDate || Date.now()),
+        city: trip.destination || trip.pickupLocation || 'Trip Location',
+        activities: [
+          {
+            id: 1,
+            name: 'Trip to ' + (trip.destination || 'destination'),
+            location: trip.destination || 'Various locations',
+            duration: trip.estimatedTime || '2-3 hours',
+            rating: 4.5,
+            description: 'Driver service for your planned trip',
+            price: `LKR ${trip.fare || 0}`,
+            time: '09:00'
+          }
+        ],
+        places: trip.destination ? [
+          {
+            id: 1,
+            name: 'Destination Area',
+            location: trip.destination,
+            price: `LKR ${trip.fare || 0}/trip`,
+            rating: 4.0,
+            reviews: 50,
+            description: 'Your planned destination',
+            checkIn: '15:00',
+            checkOut: '11:00'
+          }
+        ] : [],
+        food: [
+          {
+            id: 1,
+            name: 'Local Restaurant',
+            location: trip.destination || 'Destination',
+            cuisine: 'Sri Lankan',
+            rating: 4.3,
+            reviews: 75,
+            description: 'Authentic local cuisine',
+            priceRange: 'LKR 500-1000',
+            time: '12:00'
+          }
+        ],
+        transportation: [
+          {
+            id: 1,
+            name: trip.vehicleType || 'Private Vehicle',
+            type: trip.vehicleType || 'Car',
+            price: `LKR ${trip.fare || 0}`,
+            rating: 4.5,
+            description: `${trip.distance || 'Full'} trip transportation`,
+            time: '08:00',
+            duration: trip.estimatedTime || '1 day'
+          }
+        ]
+      }
+    };
 
   const toggleDay = (dayIndex) => {
     setExpandedDays(prev => ({
@@ -116,7 +166,9 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                 <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Active Trip</span>
                 <span className="text-white/80 text-sm">#{trip.id}</span>
               </div>
-              <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">Trip to {trip.destination}</h1>
+              <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">
+                {trip.tripName || `Trip to ${trip.destination}`}
+              </h1>
               <div className="flex items-center text-white/90 mb-2">
                 <MapPin className="h-5 w-5 mr-2 text-blue-200" />
                 <span className="text-lg font-medium">{trip.pickupLocation} → {trip.destination}</span>
@@ -187,7 +239,8 @@ const DriverTripModal = ({ open, onClose, trip }) => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Tourist's Planned Activities</h2>
               
               <div className="space-y-4">
-                {Object.entries(mockItinerary).map(([dayIndex, dayData]) => (
+                {Object.entries(itineraryData).length > 0 ? (
+                  Object.entries(itineraryData).map(([dayIndex, dayData]) => (
                   <div key={dayIndex} className="bg-white border border-gray-200 rounded-lg shadow-sm">
                     <button
                       onClick={() => toggleDay(dayIndex)}
@@ -230,7 +283,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                     </div>
                                     <p className="text-sm text-gray-600 mb-1">{activity.description}</p>
                                     <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {activity.location}</span>
+                                      <span>📍 {typeof activity.location === 'object' ? `${activity.location.lat}, ${activity.location.lng}` : activity.location}</span>
                                       <span>⏱️ {activity.duration}</span>
                                       <span>🕐 {activity.time}</span>
                                       <span>⭐ {activity.rating}/5</span>
@@ -257,7 +310,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                     </div>
                                     <p className="text-sm text-gray-600 mb-1">{restaurant.description}</p>
                                     <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {restaurant.location}</span>
+                                      <span>📍 {typeof restaurant.location === 'object' ? `${restaurant.location.lat}, ${restaurant.location.lng}` : restaurant.location}</span>
                                       <span>🍽️ {restaurant.cuisine}</span>
                                       <span>🕐 {restaurant.time}</span>
                                       <span>⭐ {restaurant.rating}/5 ({restaurant.reviews} reviews)</span>
@@ -284,7 +337,7 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                                     </div>
                                     <p className="text-sm text-gray-600 mb-1">{place.description}</p>
                                     <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {place.location}</span>
+                                      <span>📍 {typeof place.location === 'object' ? `${place.location.lat}, ${place.location.lng}` : place.location}</span>
                                       <span>🏨 Check-in: {place.checkIn}</span>
                                       <span>🚪 Check-out: {place.checkOut}</span>
                                       <span>⭐ {place.rating}/5 ({place.reviews} reviews)</span>
@@ -321,11 +374,37 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                               </div>
                             </div>
                           )}
+                          
+                          {/* Show message if no itinerary data is available */}
+                          {(!dayData.activities || dayData.activities.length === 0) &&
+                           (!dayData.food || dayData.food.length === 0) &&
+                           (!dayData.places || dayData.places.length === 0) &&
+                           (!dayData.transportation || dayData.transportation.length === 0) && (
+                            <div className="text-center py-6">
+                              <div className="text-gray-400 mb-2">📋</div>
+                              <p className="text-gray-500 text-sm">
+                                No detailed itinerary available for this day.
+                              </p>
+                              <p className="text-gray-400 text-xs mt-1">
+                                The tourist hasn't added specific activities yet.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">🗺️</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Itinerary Available</h3>
+                    <p className="text-gray-600 max-w-md mx-auto">
+                      The tourist hasn't created a detailed itinerary for this trip yet. 
+                      You can still provide transportation services based on the pickup and destination locations.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GlobeAltIcon,
   CloudIcon,
@@ -10,77 +10,64 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
+const API_ENDPOINTS = {
+  "Places API (New)": "http://localhost:9000/usage/places-backend.googleapis.com/metrics",
+  "Places API": "http://localhost:9000/usage/places.googleapis.com/metrics",
+  "Routes API": "http://localhost:9000/usage/routes.googleapis.com/metrics",
+  "Maps JavaScript API": "http://localhost:9000/usage/maps-backend.googleapis.com/metrics",
+  "Cloud Monitoring API": "http://localhost:9000/usage/monitoring.googleapis.com/metrics",
+  "Service Usage API": "http://localhost:9000/usage/serviceusage.googleapis.com/metrics"
+};
+
+const API_ICONS = {
+  "Places API (New)": GlobeAltIcon,
+  "Places API": GlobeAltIcon,
+  "Routes API": CloudIcon,
+  "Maps JavaScript API": GlobeAltIcon,
+  "Cloud Monitoring API": SignalIcon,
+  "Service Usage API": ChatBubbleLeftRightIcon
+};
+
+const API_COLORS = {
+  "Places API (New)": 'primary',
+  "Places API": 'primary',
+  "Routes API": 'info',
+  "Maps JavaScript API": 'primary',
+  "Cloud Monitoring API": 'success',
+  "Service Usage API": 'warning'
+};
+
 const APIs = () => {
-  const [apiData, setApiData] = useState({
-    googleMaps: {
-      name: 'Google Maps API',
-      status: 'active',
-      cost: 'LKR 127.45',
-      monthlyCost: 'LKR 1,480.00',
-      requests: '45,230',
-      monthlyRequests: '523,400',
-      latency: '187ms',
-      uptime: '99.9%',
-      lastUpdated: '2 minutes ago',
-      description: 'Location services, routing, and geocoding',
-      keyStatus: 'Valid',
-      rateLimit: '1,000 requests/hour',
-      nextBilling: 'Jan 15, 2025',
-      icon: GlobeAltIcon,
-      color: 'primary'
-    },
-    weather: {
-      name: 'OpenWeather API',
-      status: 'active',
-      cost: 'LKR 23.80',
-      monthlyCost: 'LKR 89.50',
-      requests: '12,450',
-      monthlyRequests: '156,780',
-      latency: '120ms',
-      uptime: '99.7%',
-      lastUpdated: '5 minutes ago',
-      description: 'Real-time weather data and forecasts',
-      keyStatus: 'Valid',
-      rateLimit: '500 requests/hour',
-      nextBilling: 'Jan 12, 2025',
-      icon: CloudIcon,
-      color: 'info'
-    },
-    messaging: {
-      name: 'Twilio SMS API',
-      status: 'active',
-      cost: 'LKR 45.20',
-      monthlyCost: 'LKR 198.75',
-      requests: '3,240',
-      monthlyRequests: '38,920',
-      latency: '95ms',
-      uptime: '99.8%',
-      lastUpdated: '1 minute ago',
-      description: 'SMS notifications and messaging services',
-      keyStatus: 'Valid',
-      rateLimit: '100 requests/hour',
-      nextBilling: 'Jan 18, 2025',
-      icon: ChatBubbleLeftRightIcon,
-      color: 'success'
-    },
-    payment: {
-      name: 'Stripe Payment API',
-      status: 'warning',
-      cost: 'LKR 89.30',
-      monthlyCost: 'LKR 1,200.40',
-      requests: '8,920',
-      monthlyRequests: '95,430',
-      latency: '210ms',
-      uptime: '99.5%',
-      lastUpdated: '8 minutes ago',
-      description: 'Payment processing and transactions',
-      keyStatus: 'Valid',
-      rateLimit: '200 requests/hour',
-      nextBilling: 'Jan 20, 2025',
-      icon: CurrencyDollarIcon,
-      color: 'warning'
-    }
-  });
+  const [apiData, setApiData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const results = await Promise.all(
+          Object.entries(API_ENDPOINTS).map(async ([name, url]) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Failed to fetch ${name}`);
+            const data = await res.json();
+            return [name, data];
+          })
+        );
+        const apiDataObj = {};
+        results.forEach(([name, data]) => {
+          apiDataObj[name] = data;
+        });
+        setApiData(apiDataObj);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -124,20 +111,47 @@ const APIs = () => {
     return colors[color] || colors.primary;
   };
 
-  // Calculate overview stats
+
+  // Calculate overview stats (fallback to 0 if missing)
   const totalCost = Object.values(apiData).reduce((sum, api) => {
-    return sum + parseFloat(api.monthlyCost.replace('$', '').replace(',', ''));
+    const cost = parseFloat((api.monthlyCost || '0').replace(/[^\d.]/g, ''));
+    return sum + (isNaN(cost) ? 0 : cost);
   }, 0);
 
   const totalRequests = Object.values(apiData).reduce((sum, api) => {
-    return sum + parseInt(api.monthlyRequests.replace(',', ''));
+    const req = parseInt((api.monthlyRequests || '0').replace(/[^\d]/g, ''));
+    return sum + (isNaN(req) ? 0 : req);
   }, 0);
 
   const activeApis = Object.values(apiData).filter(api => api.status === 'active').length;
 
   const averageUptime = Object.values(apiData).reduce((sum, api) => {
-    return sum + parseFloat(api.uptime.replace('%', ''));
-  }, 0) / Object.values(apiData).length;
+    const up = parseFloat((api.uptime || '0').replace('%', ''));
+    return sum + (isNaN(up) ? 0 : up);
+  }, 0) / (Object.values(apiData).length || 1);
+
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-secondary-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading API usage data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-secondary-900">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Error: {error}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Could not fetch API usage data.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
@@ -161,9 +175,10 @@ const APIs = () => {
                   Total Monthly Cost
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {/* ${totalCost.toLocaleString()} */}LKR 234,788.78
+                  LKR {totalCost.toLocaleString()}
                 </p>
                 <p className="text-sm text-success-600 dark:text-success-400 mt-1">
+                  {/* Placeholder for trend */}
                   +8.2% from last month
                 </p>
               </div>
@@ -183,6 +198,7 @@ const APIs = () => {
                   {(totalRequests / 1000).toFixed(0)}K
                 </p>
                 <p className="text-sm text-success-600 dark:text-success-400 mt-1">
+                  {/* Placeholder for trend */}
                   +12.5% from last month
                 </p>
               </div>
@@ -221,6 +237,7 @@ const APIs = () => {
                   {averageUptime.toFixed(1)}%
                 </p>
                 <p className="text-sm text-success-600 dark:text-success-400 mt-1">
+                  {/* Placeholder for trend */}
                   +0.1% from last month
                 </p>
               </div>
@@ -234,31 +251,32 @@ const APIs = () => {
         {/* API Cards Grid - Bento Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {Object.entries(apiData).map(([key, api]) => {
-            const IconComponent = api.icon;
+            const IconComponent = API_ICONS[key] || GlobeAltIcon;
+            const color = API_COLORS[key] || 'primary';
             return (
               <div 
                 key={key}
-                className={`bg-white dark:bg-secondary-800 rounded-xl border p-6 transition-all hover:scale-105 ${getCardColor(api.color)}`}
+                className={`bg-white dark:bg-secondary-800 rounded-xl border p-6 transition-all hover:scale-105 ${getCardColor(color)}`}
               >
                 {/* API Header */}
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center space-x-3">
                     <div className="p-3 bg-white dark:bg-secondary-700 rounded-lg">
-                      <IconComponent className={`h-6 w-6 ${getIconColor(api.color)}`} />
+                      <IconComponent className={`h-6 w-6 ${getIconColor(color)}`} />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                        {api.name}
+                        {key}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {api.description}
+                        {api.description || 'No description'}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {getStatusIcon(api.status)}
-                    <span className={`text-sm font-medium ${getStatusColor(api.status)}`}>
-                      {api.status}
+                    {getStatusIcon(api.status || 'active')}
+                    <span className={`text-sm font-medium ${getStatusColor(api.status || 'active')}`}>
+                      {api.status || 'active'}
                     </span>
                   </div>
                 </div>
@@ -271,7 +289,7 @@ const APIs = () => {
                         Today's Cost
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.cost}
+                        {api.cost || '-'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -279,7 +297,7 @@ const APIs = () => {
                         Monthly
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.monthlyCost}
+                        {api.monthlyCost || '-'}
                       </span>
                     </div>
                   </div>
@@ -290,7 +308,7 @@ const APIs = () => {
                         Today's Requests
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.requests}
+                        {api.requests || '-'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -298,7 +316,7 @@ const APIs = () => {
                         Monthly
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.monthlyRequests}
+                        {api.monthlyRequests || '-'}
                       </span>
                     </div>
                   </div>
@@ -309,7 +327,7 @@ const APIs = () => {
                         Latency
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.latency}
+                        {api.latency || '-'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -317,7 +335,7 @@ const APIs = () => {
                         Uptime
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.uptime}
+                        {api.uptime || '-'}
                       </span>
                     </div>
                   </div>
@@ -328,7 +346,7 @@ const APIs = () => {
                         Rate Limit
                       </span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {api.rateLimit}
+                        {api.rateLimit || '-'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -336,7 +354,7 @@ const APIs = () => {
                         Key Status
                       </span>
                       <span className="text-sm font-bold text-success-600 dark:text-success-400">
-                        {api.keyStatus}
+                        {api.keyStatus || '-'}
                       </span>
                     </div>
                   </div>
@@ -349,7 +367,7 @@ const APIs = () => {
                       Last Updated
                     </span>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {api.lastUpdated}
+                      {api.lastUpdated || '-'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-secondary-600">
@@ -357,7 +375,7 @@ const APIs = () => {
                       Next Billing
                     </span>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {api.nextBilling}
+                      {api.nextBilling || '-'}
                     </span>
                   </div>
                 </div>

@@ -2,6 +2,11 @@ import React from 'react';
 import { Heart, MoreHorizontal, MapPin, Calendar, Users, Star, Share2, UserPlus, Eye, TrendingUp } from 'lucide-react';
 
 const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonIcon = UserPlus, showCompatibilityScore = false, compatibilityScore }) => {
+  // Debug log to check pool structure and visibility
+  console.log('🔍 PoolCard - Pool data:', pool);
+  console.log('🔍 PoolCard - Pool visibility:', pool.visibility);
+  console.log('🔍 PoolCard - Pool status:', pool.status);
+  
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
@@ -70,6 +75,26 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
             {getStatusText(pool.status || 'open')}
           </span>
         </div>
+
+        {/* Visibility Label */}
+        <div className="absolute top-4 right-4">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border shadow ${
+            pool.visibility === 'public'
+              ? 'bg-blue-100 text-blue-800 border-blue-400'
+              : pool.visibility === 'private'
+                ? 'bg-gray-100 text-gray-800 border-gray-300'
+                : 'bg-gray-100 text-gray-500 border-gray-200'
+          }`}>
+            {pool.visibility === 'public' ? 'Public' : pool.visibility === 'private' ? 'Private' : 'Private'}
+          </span>
+        </div>
+        
+        {/* Heart Button - moved below visibility label */}
+        <div className="absolute top-16 right-4">
+          <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
+            <Heart className="h-4 w-4 text-gray-600 hover:text-red-500" />
+          </button>
+        </div>
         
         {/* Compatibility Score Badge */}
         {showCompatibilityScore && compatibilityScore && (
@@ -80,11 +105,6 @@ const PoolCard = ({ pool, onJoinPool, onClick, buttonText = "Join Pool", buttonI
             </div>
           </div>
         )}
-        <div className="absolute top-4 right-4">
-          <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-            <Heart className="h-4 w-4 text-gray-600 hover:text-red-500" />
-          </button>
-        </div>
         <div className="absolute bottom-4 right-4">
           <div className="bg-white/90 backdrop-blur-sm text-gray-900 px-3 py-1 rounded-full text-sm font-bold shadow">
             {pool.price}

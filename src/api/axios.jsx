@@ -15,9 +15,10 @@ console.log('🔧 Environment Debug:', {
 // Base URLs for different microservices
 const BASE_URLS = {
   USER_SERVICES: process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1',
-  TRIP_PLANNING: process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8084/api/v1',
+  TRIP_PLANNING: process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1',
   ADMIN_SERVICES: process.env.REACT_APP_API_BASE_URL_ADMIN_SERVICES || 'http://localhost:8091/api/v1',
-  POOLING_SERVICES: process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1'
+  POOLING_SERVICES: process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1',
+  LOST_ITEMS: process.env.REACT_APP_API_BASE_URL_LOST_ITEMS || 'http://localhost:8062'
 };
 
 // Create base axios instance
@@ -119,6 +120,7 @@ export const userServicesApi = createApiInstance(BASE_URLS.USER_SERVICES);
 export const tripPlanningApi = createApiInstance(BASE_URLS.TRIP_PLANNING);
 export const adminServicesApi = createApiInstance(BASE_URLS.ADMIN_SERVICES);
 export const poolingServicesApi = createApiInstance(BASE_URLS.POOLING_SERVICES);
+export const lostItemsApi = createApiInstance(BASE_URLS.LOST_ITEMS);
 
 // Default export (User Services for backward compatibility)
 export default userServicesApi;
