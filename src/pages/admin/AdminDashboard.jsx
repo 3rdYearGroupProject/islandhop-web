@@ -17,6 +17,8 @@ import {
 const AdminDashboard = ({ onPageChange }) => {
   const navigate = useNavigate();
   const [totalUsers, setTotalUsers] = useState("Loading...");
+  const [activeBookings, setActiveBookings] = useState("Loading...");
+  const [revenue, setRevenue] = useState("Loading...");
   const [authToken, setAuthToken] = useState("");
 
   // Get Firebase auth token
@@ -42,7 +44,7 @@ const AdminDashboard = ({ onPageChange }) => {
 
     try {
       const response = await fetch(
-        "http://localhost:8070/api/admin/users/total-count",
+        "http://localhost:8070/api/admin/analytics/users/count",
         {
           method: "GET",
           headers: {
@@ -66,10 +68,49 @@ const AdminDashboard = ({ onPageChange }) => {
     }
   };
 
+  // Fetch revenue and bookings data
+  const fetchRevenueAndBookings = async () => {
+    if (!authToken) return;
+
+    try {
+      const response = await fetch(
+        "http://localhost:8070/api/admin/analytics/revenue/monthly",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Revenue and bookings response:", data);
+
+        // Extract active bookings and total revenue
+        const totalBookings = data.data?.yearlyTotal?.totalTrips || 0;
+        const totalRevenue = data.data?.yearlyTotal?.totalRevenue || 0;
+
+        setActiveBookings(totalBookings.toLocaleString()); // Format with commas
+        setRevenue(`LKR ${totalRevenue.toLocaleString()}`); // Format with currency
+      } else {
+        console.error("Failed to fetch revenue and bookings:", response.status);
+        setActiveBookings("N/A");
+        setRevenue("N/A");
+      }
+    } catch (error) {
+      console.error("Error fetching revenue and bookings:", error);
+      setActiveBookings("Error");
+      setRevenue("Error");
+    }
+  };
+
   // Fetch user count when auth token is available
   useEffect(() => {
     if (authToken) {
       fetchTotalUserCount();
+      fetchRevenueAndBookings(); // Also fetch revenue and bookings
     }
   }, [authToken]);
 
@@ -85,7 +126,7 @@ const AdminDashboard = ({ onPageChange }) => {
     },
     {
       title: "Active Bookings",
-      value: "2,847",
+      value: activeBookings,
       change: "+8%",
       changeType: "positive",
       icon: PresentationChartBarIcon,
@@ -93,7 +134,7 @@ const AdminDashboard = ({ onPageChange }) => {
     },
     {
       title: "Revenue",
-      value: "LKR 324,567",
+      value: revenue,
       change: "+15%",
       changeType: "positive",
       icon: ChartBarIcon,

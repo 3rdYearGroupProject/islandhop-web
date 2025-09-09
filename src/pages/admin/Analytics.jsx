@@ -109,7 +109,7 @@ const Analytics = () => {
         totalUsers:
           userCountResponse.data.data.totalUsers || userCountResponse.data || 0,
         totalBookings:
-          revenueResponse.data.data.yearlyTotal.totalPaidTrips || 0,
+          revenueResponse.data.data.yearlyTotal.totalTrips || 0,
         totalRevenue: revenueResponse.data.data.yearlyTotal.totalRevenue || 0,
         conversionRate:
           revenueResponse.data.data.yearlyTotal.conversionRate || 0,
