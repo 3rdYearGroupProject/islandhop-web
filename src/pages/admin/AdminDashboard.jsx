@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../../firebase";
 import {
   UsersIcon,
   ChartBarIcon,
@@ -15,12 +16,68 @@ import {
 
 const AdminDashboard = ({ onPageChange }) => {
   const navigate = useNavigate();
+  const [totalUsers, setTotalUsers] = useState("Loading...");
+  const [authToken, setAuthToken] = useState("");
+
+  // Get Firebase auth token
+  useEffect(() => {
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setAuthToken("");
+        }
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch total user count
+  const fetchTotalUserCount = async () => {
+    if (!authToken) return;
+
+    try {
+      const response = await fetch(
+        "http://localhost:8070/api/admin/users/total-count",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Total user count response:", data);
+        setTotalUsers(data.data.totalUsers.toString()); // Convert to string for display
+      } else {
+        console.error("Failed to fetch total user count:", response.status);
+        setTotalUsers("N/A");
+      }
+    } catch (error) {
+      console.error("Error fetching total user count:", error);
+      setTotalUsers("Error");
+    }
+  };
+
+  // Fetch user count when auth token is available
+  useEffect(() => {
+    if (authToken) {
+      fetchTotalUserCount();
+    }
+  }, [authToken]);
 
   // Dashboard stats data
   const dashboardStats = [
     {
       title: "Total Users",
-      value: "15,234",
+      value: totalUsers,
       change: "+12%",
       changeType: "positive",
       icon: UsersIcon,

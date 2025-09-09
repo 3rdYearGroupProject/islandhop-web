@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { auth } from "../../firebase";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,6 +41,97 @@ const Analytics = () => {
   const [selectedUser, setSelectedUser] = useState("user1");
   const [leftMetric, setLeftMetric] = useState("bookings");
   const [rightMetric, setRightMetric] = useState("users");
+  const [authToken, setAuthToken] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [apiData, setApiData] = useState({
+    totalUsers: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    conversionRate: 0,
+    monthlyRevenue: [],
+    serviceProviders: [],
+  });
+
+  // Get Firebase auth token
+  useEffect(() => {
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setAuthToken("");
+        }
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    if (!authToken) return;
+
+    setLoading(true);
+    try {
+      // Fetch total user count
+      const userCountResponse = await axios.get(
+        "http://localhost:8070/api/admin/analytics/users/count",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Fetch monthly revenue data (which includes bookings, revenue, conversion rate)
+      const revenueResponse = await axios.get(
+        "http://localhost:8070/api/admin/analytics/revenue/monthly",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("User count response:", userCountResponse.data);
+      console.log("Revenue response:", revenueResponse.data);
+      console.log(
+        "Service providers response:",
+        userCountResponse.data.data.breakdown
+      );
+
+      // Update API data state
+      setApiData({
+        totalUsers:
+          userCountResponse.data.data.totalUsers || userCountResponse.data || 0,
+        totalBookings:
+          revenueResponse.data.data.yearlyTotal.totalPaidTrips || 0,
+        totalRevenue: revenueResponse.data.data.yearlyTotal.totalRevenue || 0,
+        conversionRate:
+          revenueResponse.data.data.yearlyTotal.conversionRate || 0,
+        monthlyRevenue:
+          revenueResponse.data.data.yearlyTotal.averageAmount || [],
+        serviceProviders:
+          userCountResponse.data.data.breakdown || userCountResponse.data || [],
+      });
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+      // Keep mock data if API fails
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when auth token is available
+  useEffect(() => {
+    if (authToken) {
+      fetchAnalyticsData();
+    }
+  }, [authToken]);
 
   // Mock data for different users
   const userData = {
@@ -200,12 +293,15 @@ const Analytics = () => {
     },
   };
 
-  // Key metrics for the selected user
+  // Key metrics for the selected user - now using API data when available
   const currentData = userData[selectedUser];
   const keyMetrics = [
     {
       title: "Total Bookings",
-      value: currentData.bookings[currentData.bookings.length - 1],
+      value: loading
+        ? "Loading..."
+        : apiData.totalBookings ||
+          currentData.bookings[currentData.bookings.length - 1],
       change: "+12.5%",
       changeType: "positive",
       icon: ChartBarIcon,
@@ -213,7 +309,9 @@ const Analytics = () => {
     },
     {
       title: "Active Users",
-      value: currentData.users[currentData.users.length - 1],
+      value: loading
+        ? "Loading..."
+        : apiData.totalUsers || currentData.users[currentData.users.length - 1],
       change: "+8.3%",
       changeType: "positive",
       icon: UsersIcon,
@@ -221,9 +319,13 @@ const Analytics = () => {
     },
     {
       title: "Revenue",
-      value: `$${(
-        currentData.revenue[currentData.revenue.length - 1] / 1000
-      ).toFixed(1)}k`,
+      value: loading
+        ? "Loading..."
+        : apiData.totalRevenue
+        ? `$${(apiData.totalRevenue / 1000).toFixed(1)}k`
+        : `$${(
+            currentData.revenue[currentData.revenue.length - 1] / 1000
+          ).toFixed(1)}k`,
       change: "+15.2%",
       changeType: "positive",
       icon: CurrencyDollarIcon,
@@ -231,7 +333,11 @@ const Analytics = () => {
     },
     {
       title: "Conversion Rate",
-      value: `${currentData.conversion[currentData.conversion.length - 1]}%`,
+      value: loading
+        ? "Loading..."
+        : apiData.conversionRate
+        ? `${apiData.conversionRate}%`
+        : `${currentData.conversion[currentData.conversion.length - 1]}%`,
       change: "+2.1%",
       changeType: "positive",
       icon: ArrowTrendingUpIcon,
@@ -247,11 +353,49 @@ const Analytics = () => {
     { name: "Sigiriya", bookings: 98, percentage: 13 },
   ];
 
-
-  const serviceProviders = [
-    { type: "Drivers", count: 156, icon: TruckIcon, trend: "+5" },
-    { type: "Guides", count: 89, icon: UserIcon, trend: "+3" },
-  ];
+  const serviceProviders = loading
+    ? [
+        { type: "Loading...", count: "...", icon: TruckIcon, trend: "..." },
+        { type: "Loading...", count: "...", icon: UserIcon, trend: "..." },
+      ]
+    : apiData.serviceProviders &&
+      typeof apiData.serviceProviders === "object" &&
+      !Array.isArray(apiData.serviceProviders)
+    ? Object.entries(apiData.serviceProviders)
+        .filter(([key]) =>
+          ["driver", "guide", "admin", "support"].includes(key.toLowerCase())
+        ) // Filter out tourist
+        .map(([key, value]) => ({
+          type: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize first letter
+          count: value.count || 0,
+          percentage: value.percentage || 0,
+          icon: key.toLowerCase().includes("driver")
+            ? TruckIcon
+            : key.toLowerCase().includes("guide")
+            ? UserIcon
+            : key.toLowerCase().includes("admin")
+            ? BuildingOfficeIcon
+            : key.toLowerCase().includes("support")
+            ? SparklesIcon
+            : UserIcon,
+          trend: value.percentage ? `${value.percentage.toFixed(1)}%` : "+0%", // Use percentage as trend
+        }))
+    : apiData.serviceProviders &&
+      Array.isArray(apiData.serviceProviders) &&
+      apiData.serviceProviders.length > 0
+    ? apiData.serviceProviders.map((provider) => ({
+        type: provider.type || provider.name || "Unknown",
+        count: provider.count || provider.total || 0,
+        icon:
+          provider.type === "Drivers" || provider.name === "Drivers"
+            ? TruckIcon
+            : UserIcon,
+        trend: provider.trend || `+${provider.growth || 0}`,
+      }))
+    : [
+        { type: "Drivers", count: 156, icon: TruckIcon, trend: "+5" },
+        { type: "Guides", count: 89, icon: UserIcon, trend: "+3" },
+      ];
 
   const getMetricCardColor = (color) => {
     const colors = {
@@ -363,15 +507,48 @@ const Analytics = () => {
 
             {/* Chart */}
             <div className="h-80">
-              <Line data={chartData} options={chartOptions} />
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Loading analytics data...
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Line data={chartData} options={chartOptions} />
+              )}
             </div>
           </div>
 
           {/* Key Metrics - 2 columns wide */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-              Key Metrics
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Key Metrics
+              </h3>
+              <button
+                onClick={fetchAnalyticsData}
+                disabled={loading || !authToken}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh data"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </button>
+            </div>
             <div className="space-y-4">
               {keyMetrics.map((metric, index) => {
                 const IconComponent = metric.icon;
@@ -450,8 +627,6 @@ const Analytics = () => {
               ))}
             </div>
           </div>
-
-
 
           {/* Service Providers - 2 columns wide */}
           <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
