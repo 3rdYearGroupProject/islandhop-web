@@ -25,6 +25,8 @@ const Accounts = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [accountsPerPage] = useState(10);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
@@ -35,7 +37,7 @@ const Accounts = () => {
     last_name: "",
     address: "",
     contact_no: "",
-    permission: ""
+    permission: "",
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -44,24 +46,61 @@ const Accounts = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
-  // Fetch users from backend with Firebase token
-  async function getAllUsers() {
+  // Fetch users from backend with Firebase token and pagination
+  async function getAllUsers(page = 1, size = 10) {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
       const token = await user.getIdToken();
-      const response = await userServicesApi.get("/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
-      console.log("Fetched users:", response.data);
-      if (response.status === 200 && response.data.status === "success") {
-        return response.data.users;
+
+      const response = await fetch(
+        `http://localhost:8070/api/admin/users?page=${page}&size=${size}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Fetched users:", data); // Change this to see the full response
+
+      // Fix the success check - handle both boolean and string
+      if (data.success === true || data.success === "true") {
+        return {
+          users: data.data?.users || data.users || [],
+          totalUsers:
+            data.data?.pagination?.totalUsers ||
+            data.data?.totalUsers ||
+            data.totalUsers ||
+            0,
+          totalPages:
+            data.data?.pagination?.totalPages ||
+            data.data?.totalPages ||
+            data.totalPages ||
+            0,
+          currentPage:
+            data.data?.pagination?.currentPage ||
+            data.data?.currentPage ||
+            data.currentPage ||
+            page,
+        };
       } else {
-        throw new Error("Unexpected response format");
+        console.error(
+          "API returned success:",
+          data.success,
+          "Expected: true or 'true'"
+        );
+        throw new Error(
+          `API error: ${data.message || "Unexpected response format"}`
+        );
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -71,12 +110,12 @@ const Accounts = () => {
 
   useEffect(() => {
     setLoading(true);
-    getAllUsers()
-      .then((users) => {
+    getAllUsers(currentPage, accountsPerPage)
+      .then((result) => {
         // Map API response to local format for table
-        const mapped = users.map((u, idx) => ({
-          id: idx + 1,
-          name: `${u.firstName} ${u.lastName}`,
+        const mapped = result.users.map((u, idx) => ({
+          id: (currentPage - 1) * accountsPerPage + idx + 1,
+          name: `${u.first_name} ${u.last_name}`,
           email: u.email,
           phone: u.phone || "",
           userType: u.accountType ? u.accountType.toLowerCase() : "",
@@ -87,36 +126,46 @@ const Accounts = () => {
           profileCompletion: u.profileCompletion || 100,
           avatar: u.profilePicUrl || null,
         }));
+
         setAccounts(mapped);
         setFilteredAccounts(mapped);
+        setTotalUsers(result.totalUsers);
+        setTotalPages(result.totalPages);
         setLoading(false);
       })
       .catch(() => {
         setAccounts([]);
         setFilteredAccounts([]);
+        setTotalUsers(0);
+        setTotalPages(0);
         setLoading(false);
       });
-  }, []);
+  }, [currentPage, accountsPerPage]);
 
   useEffect(() => {
-    // Filter accounts based on search and filters
+    // For now, we'll use client-side filtering since the API doesn't support search/filter parameters
+    // In a real implementation, you might want to add search/filter parameters to the API
     let filtered = accounts.filter((account) => {
       const matchesSearch =
         (account.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-         account.email?.toLowerCase().includes(filters.search.toLowerCase())) ?? false;
+          account.email
+            ?.toLowerCase()
+            .includes(filters.search.toLowerCase())) ??
+        false;
 
       let matchesStatus = false;
       if (filters.status === "all") {
         matchesStatus = true;
       } else {
-        matchesStatus = account.status?.toLowerCase() === filters.status.toLowerCase();
+        matchesStatus =
+          account.status?.toLowerCase() === filters.status.toLowerCase();
       }
 
       return matchesSearch && matchesStatus;
     });
 
     setFilteredAccounts(filtered);
-    setCurrentPage(1);
+    // Don't reset page when filtering since we're using server-side pagination
   }, [accounts, filters]);
 
   const handleFilterChange = (key, value) => {
@@ -152,14 +201,10 @@ const Accounts = () => {
     }
   };
 
-  // Pagination
+  // Pagination - now uses server-side pagination
   const indexOfLastAccount = currentPage * accountsPerPage;
   const indexOfFirstAccount = indexOfLastAccount - accountsPerPage;
-  const currentAccounts = filteredAccounts.slice(
-    indexOfFirstAccount,
-    indexOfLastAccount
-  );
-  const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
+  const currentAccounts = filteredAccounts; // Show all accounts from current page
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -203,10 +248,10 @@ const Accounts = () => {
 
       if (response.status === 200 && response.data.status === "success") {
         // Refresh the accounts list
-        getAllUsers()
-          .then((users) => {
-            const mapped = users.map((u, idx) => ({
-              id: idx + 1,
+        getAllUsers(currentPage, accountsPerPage)
+          .then((result) => {
+            const mapped = result.users.map((u, idx) => ({
+              id: (currentPage - 1) * accountsPerPage + idx + 1,
               name: `${u.firstName} ${u.lastName}`,
               email: u.email,
               phone: u.phone || "",
@@ -220,11 +265,15 @@ const Accounts = () => {
             }));
             setAccounts(mapped);
             setFilteredAccounts(mapped);
+            setTotalUsers(result.totalUsers);
+            setTotalPages(result.totalPages);
             setLoading(false);
           })
           .catch(() => {
             setAccounts([]);
             setFilteredAccounts([]);
+            setTotalUsers(0);
+            setTotalPages(0);
             setLoading(false);
           });
         setShowConfirmModal(false);
@@ -251,23 +300,29 @@ const Accounts = () => {
       const authToken = await auth.currentUser.getIdToken();
       const requesterId = auth.currentUser.uid;
 
-      const response = await fetch('http://localhost:8093/api/v1/firebase/user/email-to-group', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          email,
-          groupId: '6872785e3372e21e0948ecc8',
-          requesterId
-        })
-      });
+      const response = await fetch(
+        "http://localhost:8093/api/v1/firebase/user/email-to-group",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            email,
+            groupId: "6872785e3372e21e0948ecc8",
+            requesterId,
+          }),
+        }
+      );
 
       if (response.ok) {
         console.log(`Email successfully sent to group for ${email}`);
       } else {
-        console.error(`Failed to send email to group for ${email}:`, response.status);
+        console.error(
+          `Failed to send email to group for ${email}:`,
+          response.status
+        );
       }
     } catch (error) {
       console.error(`Error sending email to group for ${email}:`, error);
@@ -277,62 +332,64 @@ const Accounts = () => {
   // Form validation
   const validateForm = () => {
     const errors = {};
-    
+
     // Email validation
     if (!formData.email) {
       errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = "Please enter a valid email address";
     }
-    
+
     // First name validation
     if (!formData.first_name) {
       errors.first_name = "First name is required";
     } else if (formData.first_name.length < 2) {
       errors.first_name = "First name must be at least 2 characters";
     }
-    
+
     // Last name validation
     if (!formData.last_name) {
       errors.last_name = "Last name is required";
     } else if (formData.last_name.length < 2) {
       errors.last_name = "Last name must be at least 2 characters";
     }
-    
+
     // Address validation
     if (!formData.address) {
       errors.address = "Address is required";
     } else if (formData.address.length < 10) {
-      errors.address = "Please enter a complete address (minimum 10 characters)";
+      errors.address =
+        "Please enter a complete address (minimum 10 characters)";
     }
-    
+
     // Contact number validation
     if (!formData.contact_no) {
       errors.contact_no = "Contact number is required";
     } else if (!/^\+94[0-9]{9}$/.test(formData.contact_no)) {
-      errors.contact_no = "Please enter a valid Sri Lankan phone number (+94xxxxxxxxx)";
+      errors.contact_no =
+        "Please enter a valid Sri Lankan phone number (+94xxxxxxxxx)";
     }
-    
+
     // Permission validation
     if (!formData.permission) {
       errors.permission = "Permission level is required";
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleFormChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (formErrors[field]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [field]: ""
+        [field]: "",
       }));
     }
   };
@@ -344,7 +401,7 @@ const Accounts = () => {
       last_name: "",
       address: "",
       contact_no: "",
-      permission: ""
+      permission: "",
     });
     setFormErrors({});
     setAddError("");
@@ -360,54 +417,74 @@ const Accounts = () => {
     setAddLoading(true);
     setAddError("");
     setAddSuccess("");
-    
+
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
-      
+
       const token = await user.getIdToken();
-      
+
       // Make API call to backend with all form data
-      const response = await fetch('http://localhost:8061/register-support-agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          address: formData.address,
-          contact_no: formData.contact_no,
-          permission: parseInt(formData.permission)
-        })
-      });
+      const response = await fetch(
+        "http://localhost:8061/register-support-agent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            address: formData.address,
+            contact_no: formData.contact_no,
+            permission: parseInt(formData.permission),
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setAddSuccess("Support agent account created successfully! Credentials have been sent via email.");
-        
+        setAddSuccess(
+          "Support agent account created successfully! Credentials have been sent via email."
+        );
+
         // Send email to group
         await sendEmailToGroup(formData.email);
-        
+
         // Reset form and refresh accounts list
         setTimeout(() => {
           setShowAddModal(false);
           resetForm();
           // Refresh accounts list
-          getAllUsers()
-            .then((users) => {
-              setAccounts(users || []);
+          getAllUsers(currentPage, accountsPerPage)
+            .then((result) => {
+              const mapped = result.users.map((u, idx) => ({
+                id: (currentPage - 1) * accountsPerPage + idx + 1,
+                name: `${u.firstName} ${u.lastName}`,
+                email: u.email,
+                phone: u.phone || "",
+                userType: u.accountType ? u.accountType.toLowerCase() : "",
+                status: u.status ? u.status.toLowerCase() : "",
+                location: u.location || "",
+                joinDate: u.joinDate || "",
+                lastActive: u.lastActive || "",
+                profileCompletion: u.profileCompletion || 100,
+                avatar: u.profilePicUrl || null,
+              }));
+              setAccounts(mapped);
+              setFilteredAccounts(mapped);
+              setTotalUsers(result.totalUsers);
+              setTotalPages(result.totalPages);
               setLoading(false);
             })
             .catch(() => {
               setLoading(false);
             });
         }, 2000);
-        
       } else {
         setAddError(data.message || "Failed to create support agent account");
       }
@@ -424,7 +501,9 @@ const Accounts = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading accounts...</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading accounts...
+          </p>
         </div>
       </div>
     );
@@ -456,8 +535,10 @@ const Accounts = () => {
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-6">Create Support Agent Account</h3>
-              
+              <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-6">
+                Create Support Agent Account
+              </h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email */}
                 <div className="md:col-span-2">
@@ -467,14 +548,20 @@ const Accounts = () => {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={e => handleFormChange('email', e.target.value)}
+                    onChange={(e) => handleFormChange("email", e.target.value)}
                     className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.email ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                      formErrors.email
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-secondary-600"
                     }`}
                     placeholder="Enter email address"
                     disabled={addLoading}
                   />
-                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
+                  {formErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.email}
+                    </p>
+                  )}
                 </div>
 
                 {/* First Name */}
@@ -485,14 +572,22 @@ const Accounts = () => {
                   <input
                     type="text"
                     value={formData.first_name}
-                    onChange={e => handleFormChange('first_name', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("first_name", e.target.value)
+                    }
                     className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.first_name ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                      formErrors.first_name
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-secondary-600"
                     }`}
                     placeholder="Enter first name"
                     disabled={addLoading}
                   />
-                  {formErrors.first_name && <p className="text-red-500 text-sm mt-1">{formErrors.first_name}</p>}
+                  {formErrors.first_name && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.first_name}
+                    </p>
+                  )}
                 </div>
 
                 {/* Last Name */}
@@ -503,14 +598,22 @@ const Accounts = () => {
                   <input
                     type="text"
                     value={formData.last_name}
-                    onChange={e => handleFormChange('last_name', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("last_name", e.target.value)
+                    }
                     className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.last_name ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                      formErrors.last_name
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-secondary-600"
                     }`}
                     placeholder="Enter last name"
                     disabled={addLoading}
                   />
-                  {formErrors.last_name && <p className="text-red-500 text-sm mt-1">{formErrors.last_name}</p>}
+                  {formErrors.last_name && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.last_name}
+                    </p>
+                  )}
                 </div>
 
                 {/* Contact Number */}
@@ -521,14 +624,22 @@ const Accounts = () => {
                   <input
                     type="tel"
                     value={formData.contact_no}
-                    onChange={e => handleFormChange('contact_no', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("contact_no", e.target.value)
+                    }
                     className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.contact_no ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                      formErrors.contact_no
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-secondary-600"
                     }`}
                     placeholder="+94771234567"
                     disabled={addLoading}
                   />
-                  {formErrors.contact_no && <p className="text-red-500 text-sm mt-1">{formErrors.contact_no}</p>}
+                  {formErrors.contact_no && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.contact_no}
+                    </p>
+                  )}
                 </div>
 
                 {/* Permission Level */}
@@ -538,9 +649,13 @@ const Accounts = () => {
                   </label>
                   <select
                     value={formData.permission}
-                    onChange={e => handleFormChange('permission', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("permission", e.target.value)
+                    }
                     className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.permission ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                      formErrors.permission
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-secondary-600"
                     }`}
                     disabled={addLoading}
                   >
@@ -550,7 +665,11 @@ const Accounts = () => {
                     <option value="3">Complaints</option>
                     <option value="4">All</option>
                   </select>
-                  {formErrors.permission && <p className="text-red-500 text-sm mt-1">{formErrors.permission}</p>}
+                  {formErrors.permission && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.permission}
+                    </p>
+                  )}
                 </div>
 
                 {/* Address */}
@@ -560,27 +679,39 @@ const Accounts = () => {
                   </label>
                   <textarea
                     value={formData.address}
-                    onChange={e => handleFormChange('address', e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("address", e.target.value)
+                    }
                     rows={3}
                     className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none ${
-                      formErrors.address ? 'border-red-500' : 'border-neutral-300 dark:border-secondary-600'
+                      formErrors.address
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-secondary-600"
                     }`}
                     placeholder="Enter complete address"
                     disabled={addLoading}
                   />
-                  {formErrors.address && <p className="text-red-500 text-sm mt-1">{formErrors.address}</p>}
+                  {formErrors.address && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.address}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Error and Success Messages */}
               {addError && (
                 <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-red-600 dark:text-red-400 text-sm">{addError}</p>
+                  <p className="text-red-600 dark:text-red-400 text-sm">
+                    {addError}
+                  </p>
                 </div>
               )}
               {addSuccess && (
                 <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <p className="text-green-600 dark:text-green-400 text-sm">{addSuccess}</p>
+                  <p className="text-green-600 dark:text-green-400 text-sm">
+                    {addSuccess}
+                  </p>
                 </div>
               )}
 
@@ -627,7 +758,7 @@ const Accounts = () => {
                   Total Accounts
                 </p>
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                  {accounts.length}
+                  {totalUsers}
                 </p>
               </div>
             </div>
@@ -657,7 +788,12 @@ const Accounts = () => {
                   Inactive Accounts
                 </p>
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                  {accounts.filter((a) => a.status === "inactive" || a.status === "deactivated").length}
+                  {
+                    accounts.filter(
+                      (a) =>
+                        a.status === "inactive" || a.status === "deactivated"
+                    ).length
+                  }
                 </p>
               </div>
             </div>
@@ -778,14 +914,14 @@ const Accounts = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                         {account.status === "active" ? (
-                          <button 
+                          <button
                             onClick={() => handleAction(account, "deactivate")}
                             className="block mb-2 text-warning-600 hover:text-warning-700 dark:text-warning-400 dark:hover:text-warning-300"
                           >
                             Deactivate
                           </button>
                         ) : (
-                          <button 
+                          <button
                             onClick={() => handleAction(account, "activate")}
                             className="block mb-2 text-success-600 hover:text-success-700 dark:text-success-400 dark:hover:text-success-300"
                           >
@@ -807,14 +943,14 @@ const Accounts = () => {
                 <div className="flex items-center">
                   <p className="text-sm text-neutral-700 dark:text-neutral-300">
                     Showing{" "}
-                    <span className="font-medium">{indexOfFirstAccount + 1}</span>{" "}
+                    <span className="font-medium">
+                      {indexOfFirstAccount + 1}
+                    </span>{" "}
                     to{" "}
                     <span className="font-medium">
-                      {Math.min(indexOfLastAccount, filteredAccounts.length)}
+                      {Math.min(indexOfLastAccount, totalUsers)}
                     </span>{" "}
-                    of{" "}
-                    <span className="font-medium">{filteredAccounts.length}</span>{" "}
-                    results
+                    of <span className="font-medium">{totalUsers}</span> results
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
