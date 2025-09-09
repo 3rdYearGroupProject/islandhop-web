@@ -30,12 +30,26 @@ const GuideEarnings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Bank details state
+  const [bankDetails, setBankDetails] = useState({
+    accountHolderName: '',
+    bankName: '',
+    accountNumber: '',
+    branchCode: '',
+    branchName: ''
+  });
+  const [bankLoading, setBankLoading] = useState(false);
+  const [bankError, setBankError] = useState(null);
+  const [isEditingBank, setIsEditingBank] = useState(false);
+  const [hasBankDetails, setHasBankDetails] = useState(false);
+
   const userData = getUserData();
   const guideEmail = userData?.email;
 
   useEffect(() => {
     if (guideEmail) {
       fetchEarningsData();
+      fetchBankDetails();
     }
   }, [guideEmail, timeFilter]);
 
@@ -110,6 +124,94 @@ const GuideEarnings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch bank details
+  const fetchBankDetails = async () => {
+    try {
+      setBankLoading(true);
+      setBankError(null);
+      
+      const response = await axios.get(`http://localhost:4021/bank/${guideEmail}`);
+      
+      if (response.data.success && response.data.data) {
+        const bankData = response.data.data;
+        setBankDetails({
+          accountHolderName: bankData.accountHolderName || '',
+          bankName: bankData.bankName || '',
+          accountNumber: bankData.accountNumber || '',
+          branchCode: bankData.branchCode || '',
+          branchName: bankData.branchName || ''
+        });
+        setHasBankDetails(true);
+        setIsEditingBank(false);
+      } else {
+        // No bank details found, show empty form for adding
+        setHasBankDetails(false);
+        setIsEditingBank(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch bank details:', err);
+      if (err.response?.status === 404) {
+        // No bank details found, show empty form for adding
+        setBankError(null);
+        setHasBankDetails(false);
+        setIsEditingBank(true);
+      } else {
+        setBankError('Failed to load bank details. Please try again later.');
+      }
+    } finally {
+      setBankLoading(false);
+    }
+  };
+
+  // Save or update bank details
+  const saveBankDetails = async () => {
+    try {
+      setBankLoading(true);
+      setBankError(null);
+      
+      const bankData = {
+        email: guideEmail,
+        accountHolderName: bankDetails.accountHolderName,
+        bankName: bankDetails.bankName,
+        accountNumber: bankDetails.accountNumber,
+        branchCode: bankDetails.branchCode,
+        branchName: bankDetails.branchName
+      };
+      
+      let response;
+      if (hasBankDetails) {
+        // Update existing bank details
+        const updateData = { ...bankData };
+        delete updateData.email; // Remove email from update payload
+        response = await axios.put(`http://localhost:4021/bank/update/${guideEmail}`, updateData);
+      } else {
+        // Add new bank details
+        response = await axios.post('http://localhost:4021/bank/add', bankData);
+      }
+      
+      if (response.data.success) {
+        setHasBankDetails(true);
+        setIsEditingBank(false);
+        alert('Bank details saved successfully!');
+      } else {
+        throw new Error(response.data.message || 'Failed to save bank details');
+      }
+    } catch (err) {
+      console.error('Failed to save bank details:', err);
+      setBankError(err.response?.data?.message || 'Failed to save bank details. Please try again.');
+    } finally {
+      setBankLoading(false);
+    }
+  };
+
+  // Handle bank details input changes
+  const handleBankDetailsChange = (field, value) => {
+    setBankDetails(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const currentData = earningsData?.[timeFilter] || {
@@ -340,78 +442,188 @@ const GuideEarnings = () => {
 
         {/* Banking Details & Payouts */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Banking Details</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Account Holder Name
-              </label>
-              <input 
-                type="text" 
-                placeholder="John Doe"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bank Name
-              </label>
-              <select className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                <option value="">Select Bank</option>
-                <option value="BOC">Bank of Ceylon</option>
-                <option value="PB">People's Bank</option>
-                <option value="COM">Commercial Bank</option>
-                <option value="HNB">Hatton National Bank</option>
-                <option value="SDB">Sanasa Development Bank</option>
-                <option value="NSB">National Savings Bank</option>
-                <option value="DFCC">DFCC Bank</option>
-                <option value="NDB">National Development Bank</option>
-                <option value="UBL">Union Bank</option>
-                <option value="SLB">Seylan Bank</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Account Number
-              </label>
-              <input 
-                type="text" 
-                placeholder="1234567890"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Branch Code
-              </label>
-              <input 
-                type="text" 
-                placeholder="123"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Branch Name
-              </label>
-              <input 
-                type="text" 
-                placeholder="Colombo Main Branch"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            
-            <div className="pt-4">
-              <button className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                Save Banking Details
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Banking Details</h2>
+            {hasBankDetails && !isEditingBank && (
+              <button
+                onClick={() => setIsEditingBank(true)}
+                className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+              >
+                Edit
               </button>
-            </div>
+            )}
           </div>
+          
+          {bankError && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                <span className="text-red-700 text-sm">{bankError}</span>
+                <button 
+                  onClick={fetchBankDetails}
+                  className="ml-auto text-red-600 hover:text-red-800 underline text-sm"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {bankLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Holder Name
+                </label>
+                {isEditingBank ? (
+                  <input 
+                    type="text" 
+                    value={bankDetails.accountHolderName}
+                    onChange={(e) => handleBankDetailsChange('accountHolderName', e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                ) : (
+                  <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {bankDetails.accountHolderName || 'Not set'}
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bank Name
+                </label>
+                {isEditingBank ? (
+                  <select 
+                    value={bankDetails.bankName}
+                    onChange={(e) => handleBankDetailsChange('bankName', e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="">Select Bank</option>
+                    <option value="Bank of Ceylon">Bank of Ceylon</option>
+                    <option value="People's Bank">People's Bank</option>
+                    <option value="Commercial Bank">Commercial Bank</option>
+                    <option value="Hatton National Bank">Hatton National Bank</option>
+                    <option value="Sanasa Development Bank">Sanasa Development Bank</option>
+                    <option value="National Savings Bank">National Savings Bank</option>
+                    <option value="DFCC Bank">DFCC Bank</option>
+                    <option value="National Development Bank">National Development Bank</option>
+                    <option value="Union Bank">Union Bank</option>
+                    <option value="Seylan Bank">Seylan Bank</option>
+                    <option value="National Bank of Sri Lanka">National Bank of Sri Lanka</option>
+                  </select>
+                ) : (
+                  <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {bankDetails.bankName || 'Not set'}
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Number
+                </label>
+                {isEditingBank ? (
+                  <input 
+                    type="text" 
+                    value={bankDetails.accountNumber}
+                    onChange={(e) => handleBankDetailsChange('accountNumber', e.target.value)}
+                    placeholder="1234567890"
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                ) : (
+                  <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {bankDetails.accountNumber ? `****${bankDetails.accountNumber.slice(-4)}` : 'Not set'}
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Branch Code
+                </label>
+                {isEditingBank ? (
+                  <input 
+                    type="text" 
+                    value={bankDetails.branchCode}
+                    onChange={(e) => handleBankDetailsChange('branchCode', e.target.value)}
+                    placeholder="123"
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                ) : (
+                  <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {bankDetails.branchCode || 'Not set'}
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Branch Name
+                </label>
+                {isEditingBank ? (
+                  <input 
+                    type="text" 
+                    value={bankDetails.branchName}
+                    onChange={(e) => handleBankDetailsChange('branchName', e.target.value)}
+                    placeholder="Colombo Main Branch"
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                ) : (
+                  <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {bankDetails.branchName || 'Not set'}
+                  </div>
+                )}
+              </div>
+              
+              {isEditingBank && (
+                <div className="pt-4 flex space-x-3">
+                  <button 
+                    onClick={saveBankDetails}
+                    disabled={bankLoading || !bankDetails.accountHolderName || !bankDetails.bankName || !bankDetails.accountNumber}
+                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {bankLoading ? 'Saving...' : (hasBankDetails ? 'Update Details' : 'Save Details')}
+                  </button>
+                  {hasBankDetails && (
+                    <button 
+                      onClick={() => {
+                        setIsEditingBank(false);
+                        fetchBankDetails(); // Reset to original values
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {!isEditingBank && hasBankDetails && (
+                <div className="pt-4">
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      <span className="text-sm text-green-700 font-medium">Bank details verified</span>
+                    </div>
+                    <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                      Request Payout →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
