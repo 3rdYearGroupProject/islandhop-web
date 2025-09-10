@@ -6,6 +6,7 @@ import ProtectedSupportRoute from "../components/ProtectedSupportRoute";
 // Import support pages
 import SupportDashboard from "../pages/support/SupportDashboard";
 import ViewTickets from "../pages/support/ViewTickets";
+import Payments from "../pages/support/Payments";
 import Reviews from "../pages/support/Reviews";
 import ChatEmailSupport from "../pages/support/ChatEmailSupport";
 import ResolveComplaint from "../pages/support/ResolveComplaint";
@@ -22,6 +23,7 @@ const SupportRoutes = () => {
         <Route path="/" element={<SupportDashboard />} />
         <Route path="dashboard" element={<SupportDashboard />} />
         <Route path="tickets" element={<ViewTickets />} />
+        <Route path="payments" element={<Payments />} />
         <Route 
           path="reviews" 
           element={

@@ -87,6 +87,13 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       permissions: [1, 2, 3, 4], // All users can view tickets
     },
     {
+      name: "Payments",
+      path: "/support/payments",
+      icon: CurrencyDollarIcon,
+      description: "Manage Driver & Guide Payments",
+      permissions: [1, 2, 3, 4], // All users can access payments
+    },
+    {
       name: "Reviews",
       path: "/support/reviews",
       icon: StarIcon,
