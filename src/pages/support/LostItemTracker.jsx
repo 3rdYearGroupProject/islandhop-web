@@ -18,6 +18,7 @@ const LostItemTracker = () => {
   const [reports, setReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState({});
 
   // useEffect hook to fetch lost items from database
   useEffect(() => {
@@ -43,8 +44,13 @@ const LostItemTracker = () => {
         console.log('✅ Lost items fetched successfully:', data);
 
         // Check if data has the expected structure
-        if (data && data.success && data.data) {
+        if (data && data.data) {
+          // Set the reports from the data array
           setReports(data.data);
+          if (data.dashboardStats) {
+              setDashboardStats(data.dashboardStats);
+            }
+          
         } else if (Array.isArray(data)) {
           // If data is directly an array
           setReports(data);
@@ -96,7 +102,6 @@ const LostItemTracker = () => {
   const [statusFilter, setStatusFilter] = useState("All");
 
   const statusOptions = ["Ongoing", "Resolved", "Unresolved"];
-  const filterOptions = ["All", "Ongoing", "Resolved", "Unresolved"];
 
   //Filter reports based on search and status
   const filteredReports = reports.filter((report) => {
@@ -109,13 +114,6 @@ const LostItemTracker = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Get statistics
-  const stats = {
-    total: reports.length,
-    ongoing: reports.filter((r) => r.status === "Ongoing").length,
-    resolved: reports.filter((r) => r.status === "Resolved").length,
-    unresolved: reports.filter((r) => r.status === "Unresolved").length,
-  };
 
   const getPriorityClasses = (priority) => {
     switch (priority) {
@@ -130,12 +128,53 @@ const LostItemTracker = () => {
     }
   };
 
-  const handleStatusChange = (idx, newStatus) => {
+  const handleStatusChange = async (idx, newStatus) => {
+    const report = reports[idx];
+    const previousStatus = report.status;
+    
+    // Optimistically update the UI
     setReports(
       reports.map((report, index) =>
         index === idx ? { ...report, status: newStatus } : report
       )
     );
+
+    try {
+      console.log(`🔄 Updating status for item ${report.id || report._id} to ${newStatus}...`);
+      
+      const response = await fetch(`http://localhost:8062/lost-items/updateStatus/${report.id || report._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          updatedAt: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Status updated successfully:', result);
+
+      // Show success message
+      alert(`Status updated to "${newStatus}" successfully!`);
+      
+    } catch (error) {
+      console.error('❌ Error updating status:', error);
+      
+      // Revert the optimistic update
+      setReports(
+        reports.map((report, index) =>
+          index === idx ? { ...report, status: previousStatus } : report
+        )
+      );
+      
+      alert(`Failed to update status: ${error.message}`);
+    }
   };
 
   const handleContact = (type, person) => {
@@ -154,8 +193,186 @@ const LostItemTracker = () => {
     );
   };
 
-  const handleSaveUpdate = (idx) => {
-    alert("Update saved successfully!");
+  const handleSaveUpdate = async (idx) => {
+    const report = reports[idx];
+    const updateNotes = report.update;
+    
+    if (!updateNotes || updateNotes.trim() === '') {
+      alert('Please enter progress notes before saving.');
+      return;
+    }
+
+    // Debug logging
+    // console.log('🔍 Debug Info:', {
+    //   reportId: report.id || report._id,
+    //   updateNotes: updateNotes,
+    //   reportObject: report
+    // });
+
+    try {
+      console.log(`🔄 Saving progress notes for item ${report.id || report._id}...`);
+      
+      const requestUrl = `http://localhost:8062/lost-items/updateProgressNotes/${report.id || report._id}`;
+      const requestBody = {
+        progressNotes: updateNotes
+        // Remove the extra fields that backend doesn't expect
+      };
+      
+      console.log('🔍 Request details:', {
+        url: requestUrl,
+        method: 'PUT',
+        body: requestBody
+      });
+      
+      const response = await fetch(requestUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error text:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Progress notes saved successfully:', result);
+
+      // Update the local state with the response data if available
+      if (result.data) {
+        setReports(
+          reports.map((report, index) =>
+            index === idx ? { ...report, ...result.data } : report
+          )
+        );
+      }
+
+      alert('Progress notes saved successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error saving progress notes:', error);
+      
+      // More detailed error information
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('Network error: Unable to connect to the server. Please check if the backend is running on port 8062.');
+      } else if (error.message.includes('HTTP error')) {
+        alert(`Server error: ${error.message}`);
+      } else {
+        alert(`Failed to save progress notes: ${error.message}`);
+      }
+    }
+  };
+
+  // Combined function to update both status and progress notes
+  // const handleSaveStatusAndNotes = async (idx, newStatus = null) => {
+  //   const report = reports[idx];
+  //   const currentStatus = newStatus || report.status;
+  //   const updateNotes = report.update;
+    
+  //   if (!updateNotes || updateNotes.trim() === '') {
+  //     alert('Please enter progress notes before saving.');
+  //     return;
+  //   }
+
+  //   try {
+  //     console.log(`🔄 Updating status and notes for item ${report.id || report._id}...`);
+      
+  //     const response = await fetch(`http://localhost:8062/lost-items/updateItemDetails/${report.id || report._id}`, {
+  //       method: 'PATCH',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         status: currentStatus,
+  //         progressNotes: updateNotes,
+  //         lastUpdatedBy: 'Support Agent',
+  //         updatedAt: new Date().toISOString()
+  //       })
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+
+  //     const result = await response.json();
+  //     console.log('✅ Status and notes updated successfully:', result);
+
+  //     // Update the local state
+  //     setReports(
+  //       reports.map((report, index) =>
+  //         index === idx ? { 
+  //           ...report, 
+  //           status: currentStatus,
+  //           update: updateNotes,
+  //           lastUpdatedBy: 'Support Agent',
+  //           updatedAt: new Date().toISOString()
+  //         } : report
+  //       )
+  //     );
+
+  //     alert(`Status updated to "${currentStatus}" and progress notes saved successfully!`);
+      
+  //   } catch (error) {
+  //     console.error('❌ Error updating status and notes:', error);
+  //     alert(`Failed to update: ${error.message}`);
+  //   }
+  // };
+
+  // Function to mark item as resolved with resolution notes
+  const handleResolveItem = async (idx) => {
+    const report = reports[idx];
+    const resolutionNotes = report.update;
+    
+    if (!resolutionNotes || resolutionNotes.trim() === '') {
+      alert('Please provide resolution details before marking as resolved.');
+      return;
+    }
+
+    try {
+      console.log(`🔄 Resolving item ${report.id || report._id}...`);
+      
+      const response = await fetch(`http://localhost:8062/lost-items/resolve-item/${report.id || report._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resolutionNotes: resolutionNotes,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Item resolved successfully:', result);
+
+      // Update the local state
+      setReports(
+        reports.map((report, index) =>
+          index === idx ? { 
+            ...report, 
+            status: 'Resolved',
+            update: resolutionNotes,
+            resolvedBy: 'Support Agent',
+            resolvedAt: new Date().toISOString()
+          } : report
+        )
+      );
+
+      alert('Item marked as resolved successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error resolving item:', error);
+      alert(`Failed to resolve item: ${error.message}`);
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -244,7 +461,7 @@ const LostItemTracker = () => {
                   Total Reports
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {stats.total}
+                  {dashboardStats.totalCases ? dashboardStats.totalCases : 0}
                 </p>
               </div>
               <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
@@ -253,21 +470,7 @@ const LostItemTracker = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Ongoing
-                </p>
-                <p className="text-2xl font-bold text-warning-600 dark:text-warning-400">
-                  {stats.ongoing}
-                </p>
-              </div>
-              <div className="p-3 bg-warning-100 dark:bg-warning-900/20 rounded-lg">
-                <ClockIcon className="h-6 w-6 text-warning-600 dark:text-warning-400" />
-              </div>
-            </div>
-          </div>
+          
 
           <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
             <div className="flex items-center justify-between">
@@ -276,7 +479,7 @@ const LostItemTracker = () => {
                   Resolved
                 </p>
                 <p className="text-2xl font-bold text-success-600 dark:text-success-400">
-                  {stats.resolved}
+                  {dashboardStats.foundCases ? dashboardStats.foundCases : 0}
                 </p>
               </div>
               <div className="p-3 bg-success-100 dark:bg-success-900/20 rounded-lg">
@@ -292,7 +495,7 @@ const LostItemTracker = () => {
                   Unresolved
                 </p>
                 <p className="text-2xl font-bold text-danger-600 dark:text-danger-400">
-                  {stats.unresolved}
+                  {dashboardStats.notFoundCases ? dashboardStats.notFoundCases : 0}
                 </p>
               </div>
               <div className="p-3 bg-danger-100 dark:bg-danger-900/20 rounded-lg">
@@ -313,20 +516,6 @@ const LostItemTracker = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
-          </div>
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="h-5 w-5 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              {filterOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
       </div>
@@ -443,44 +632,42 @@ const LostItemTracker = () => {
 
                     {/* Status Management */}
                     <div className="bg-gray-50 dark:bg-secondary-700 rounded-lg p-3">
-                      <div className="flex items-center space-x-4 mb-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Update Status:
-                        </label>
-                        <select
-                          value={report.status}
-                          onChange={(e) =>
-                            handleStatusChange(idx, e.target.value)
-                          }
-                          className="px-2 py-1 border border-gray-300 dark:border-secondary-600 rounded-md bg-white dark:bg-secondary-800 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          {statusOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      
 
                       {/* Update Section */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Progress Notes
                         </label>
-                        <div className="flex space-x-2">
-                          <textarea
-                            value={report.update}
-                            onChange={(e) => handleUpdate(idx, e.target.value)}
-                            placeholder="Add update about the lost item status..."
-                            rows={2}
-                            className="flex-1 rounded-md border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-xs text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500"
-                          />
-                          <button
-                            onClick={() => handleSaveUpdate(idx)}
-                            className="px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-                          >
-                            Save
-                          </button>
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex space-x-2">
+                            <textarea
+                              value={report.update }
+                              onChange={(e) => handleUpdate(idx, e.target.value)}
+                              placeholder={report.progressNotes ? report.progressNotes : "Add update about the lost item status..."}
+                              rows={3}
+                              className="flex-1 rounded-md border border-gray-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-2 py-1 text-xs text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500"
+                            />
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => handleSaveUpdate(idx)}
+                              disabled={!report.update || report.update.trim() === ''}
+                              className="px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                            >
+                              Save Notes
+                            </button>
+                           
+                              <button
+                                onClick={() => handleResolveItem(idx)}
+                                disabled={!report.update || report.update.trim() === ''}
+                                className="px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-success-600 hover:bg-success-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-success-500 transition-colors"
+                              >
+                                Mark Resolved
+                              </button>
+                            
+                          </div>
                         </div>
                         {report.status === "Resolved" && report.update && (
                           <div className="mt-2 p-2 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-md">
