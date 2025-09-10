@@ -21,7 +21,7 @@ const Accounts = () => {
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
-    userType: "all",
+    userType: "tourist", // Default to tourist instead of "all"
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [accountsPerPage] = useState(10);
@@ -44,62 +44,78 @@ const Accounts = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
-  // Fetch users from backend with Firebase token
-  async function getAllUsers() {
+  // Fetch users from backend with Firebase token based on user type
+  async function getUsersByType(userType) {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
       const token = await user.getIdToken();
-      const response = await userServicesApi.get("/users", {
+      
+      // Map userType to appropriate endpoint
+      const endpoint = `http://localhost:4011/users/${userType}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        withCredentials: true,
+        credentials: 'include'
       });
-      console.log("Fetched users:", response.data);
-      if (response.status === 200 && response.data.status === "success") {
-        return response.data.users;
+      
+      console.log(`Fetched ${userType} users:`, response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`${userType} users data:`, data);
+      
+      if (data.success && Array.isArray(data.data)) {
+        return data.data;
       } else {
         throw new Error("Unexpected response format");
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error(`Error fetching ${userType} users:`, error);
       throw error;
     }
   }
 
   useEffect(() => {
     setLoading(true);
-    getAllUsers()
+    getUsersByType(filters.userType)
       .then((users) => {
         // Map API response to local format for table
         const mapped = users.map((u, idx) => ({
           id: idx + 1,
-          name: `${u.firstName} ${u.lastName}`,
+          name: `${u.firstName || u.first_name || ''} ${u.lastName || u.last_name || ''}`.trim(),
           email: u.email,
-          phone: u.phone || "",
-          userType: u.accountType ? u.accountType.toLowerCase() : "",
+          phone: u.phone || u.contact_no || "",
+          userType: filters.userType, // Use the filter type since we're fetching by type
           status: u.status ? u.status.toLowerCase() : "",
-          location: u.location || "",
-          joinDate: u.joinDate || "",
+          location: u.location || u.address || "",
+          joinDate: u.joinDate || u.createdAt || "",
           lastActive: u.lastActive || "",
           profileCompletion: u.profileCompletion || 100,
-          avatar: u.profilePicUrl || null,
+          avatar: u.profilePicUrl || u.avatar || null,
         }));
         setAccounts(mapped);
         setFilteredAccounts(mapped);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error loading users:", error);
         setAccounts([]);
         setFilteredAccounts([]);
         setLoading(false);
       });
-  }, []);
+  }, [filters.userType]); // Changed dependency to filters.userType
 
   useEffect(() => {
-    // Filter accounts based on search and filters
+    // Filter accounts based on search and status only (userType filtering is now done at API level)
     let filtered = accounts.filter((account) => {
       const matchesSearch =
         (account.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -117,7 +133,7 @@ const Accounts = () => {
 
     setFilteredAccounts(filtered);
     setCurrentPage(1);
-  }, [accounts, filters]);
+  }, [accounts, filters.search, filters.status]); // Removed filters.userType from dependencies
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
@@ -203,20 +219,20 @@ const Accounts = () => {
 
       if (response.status === 200 && response.data.status === "success") {
         // Refresh the accounts list
-        getAllUsers()
+        getUsersByType(filters.userType)
           .then((users) => {
             const mapped = users.map((u, idx) => ({
               id: idx + 1,
-              name: `${u.firstName} ${u.lastName}`,
+              name: `${u.firstName || u.first_name || ''} ${u.lastName || u.last_name || ''}`.trim(),
               email: u.email,
-              phone: u.phone || "",
-              userType: u.accountType ? u.accountType.toLowerCase() : "",
+              phone: u.phone || u.contact_no || "",
+              userType: filters.userType,
               status: u.status ? u.status.toLowerCase() : "",
-              location: u.location || "",
-              joinDate: u.joinDate || "",
+              location: u.location || u.address || "",
+              joinDate: u.joinDate || u.createdAt || "",
               lastActive: u.lastActive || "",
               profileCompletion: u.profileCompletion || 100,
-              avatar: u.profilePicUrl || null,
+              avatar: u.profilePicUrl || u.avatar || null,
             }));
             setAccounts(mapped);
             setFilteredAccounts(mapped);
@@ -398,7 +414,7 @@ const Accounts = () => {
           setShowAddModal(false);
           resetForm();
           // Refresh accounts list
-          getAllUsers()
+          getUsersByType(filters.userType)
             .then((users) => {
               setAccounts(users || []);
               setLoading(false);
@@ -693,10 +709,10 @@ const Accounts = () => {
               onChange={(e) => handleFilterChange("userType", e.target.value)}
               className="px-3 py-2 border border-neutral-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="all">All Types</option>
               <option value="tourist">Tourist</option>
               <option value="guide">Guide</option>
               <option value="driver">Driver</option>
+              <option value="support">Support</option>
             </select>
           </div>
         </div>
