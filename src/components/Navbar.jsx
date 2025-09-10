@@ -7,11 +7,12 @@ import logo from '../assets/islandHopIcon.png';
 import logoText from '../assets/IslandHop.png';
 import ProfileModal from './ProfileModal';
 import SettingsModal from './SettingsModal';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, BellIcon } from '@heroicons/react/24/outline';
 import './GoogleTranslate.css';
 import './Navbar.css';
 import api from '../api/axios';
 import { getAuth } from 'firebase/auth';
+import axios from 'axios';
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -31,6 +32,13 @@ const Navbar = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const translateRef = useRef(null);
   const userMenuRef = useRef(null);
+
+  // Notification state
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const notificationRef = useRef(null);
 
   // User profile state
   const [userProfile, setUserProfile] = useState(() => {
@@ -165,6 +173,9 @@ const Navbar = () => {
       if (translateRef.current && !translateRef.current.contains(event.target)) {
         setShowLang(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -190,6 +201,173 @@ const Navbar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Notification API functions
+  const fetchNotifications = async () => {
+    try {
+      const auth = getAuth();
+      const userEmail = auth.currentUser?.email || tempUser?.email;
+      if (!userEmail) return;
+
+      setNotificationLoading(true);
+      const response = await axios.get(`http://localhost:8090/api/v1/notifications/user/${userEmail}`);
+      
+      if (response.data) {
+        setNotifications(response.data.slice(0, 10)); // Show latest 10 notifications
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const auth = getAuth();
+      const userEmail = auth.currentUser?.email || tempUser?.email;
+      if (!userEmail) return;
+
+      const response = await axios.get(`http://localhost:8090/api/v1/notifications/user/${userEmail}/unread-count`);
+      
+      if (response.data && typeof response.data.count === 'number') {
+        setUnreadCount(response.data.count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.put(`http://localhost:8090/api/v1/notifications/${notificationId}/read`);
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, read: true, readAt: new Date().toISOString() }
+            : notification
+        )
+      );
+      
+      // Update unread count
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const auth = getAuth();
+      const userEmail = auth.currentUser?.email || tempUser?.email;
+      if (!userEmail) return;
+
+      await axios.put(`http://localhost:8090/api/v1/notifications/user/${userEmail}/read-all`);
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true, readAt: new Date().toISOString() }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const deleteNotification = async (notificationId) => {
+    try {
+      await axios.delete(`http://localhost:8090/api/v1/notifications/${notificationId}`);
+      
+      // Update local state
+      setNotifications(prev => prev.filter(notification => notification.id !== notificationId));
+      
+      // Update unread count if notification was unread
+      const notification = notifications.find(n => n.id === notificationId);
+      if (notification && !notification.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  };
+
+  const formatNotificationTime = (createdAtArray) => {
+    // Handle array format: [year, month, day, hour, minute, second, nanosecond]
+    if (Array.isArray(createdAtArray) && createdAtArray.length >= 6) {
+      const [year, month, day, hour, minute, second] = createdAtArray;
+      // Month is 1-based in the array, but Date constructor expects 0-based
+      const notificationTime = new Date(year, month - 1, day, hour, minute, second);
+      
+      const now = new Date();
+      const diff = now - notificationTime;
+      
+      const minutes = Math.floor(diff / (1000 * 60));
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      
+      if (minutes < 1) return 'Just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      if (days < 7) return `${days}d ago`;
+      return notificationTime.toLocaleDateString();
+    }
+    
+    // Fallback for timestamp format
+    const now = new Date();
+    const notificationTime = new Date(createdAtArray);
+    const diff = now - notificationTime;
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return notificationTime.toLocaleDateString();
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type?.toUpperCase()) {
+      case 'CHAT': return '💬';
+      case 'TRIP': return '🚗';
+      case 'PAYMENT': return '💰';
+      case 'BOOKING': return '📅';
+      case 'REVIEW': return '⭐';
+      case 'SYSTEM': return '🔔';
+      default: return '📢';
+    }
+  };
+
+  const getNotificationPriorityColor = (priority) => {
+    switch (priority?.toUpperCase()) {
+      case 'HIGH': return 'border-l-red-500';
+      case 'MEDIUM': return 'border-l-yellow-500';
+      case 'LOW': return 'border-l-green-500';
+      default: return 'border-l-blue-500';
+    }
+  };
+
+  // Fetch notifications when user is authenticated
+  useEffect(() => {
+    if (tempUser) {
+      fetchUnreadCount();
+      
+      // Set up polling for unread count every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [tempUser]);
+
+  // Fetch notifications when dropdown is opened
+  useEffect(() => {
+    if (showNotifications && tempUser) {
+      fetchNotifications();
+    }
+  }, [showNotifications, tempUser]);
 
   // Animate user menu open/close
   useEffect(() => {
@@ -385,6 +563,106 @@ const Navbar = () => {
             
             {user ? (
               <div className="relative flex items-center space-x-2" ref={userMenuRef}>
+                {/* Notifications */}
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="relative p-2 text-gray-700 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <BellIcon className="h-6 w-6" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white border rounded-lg shadow-lg z-50 max-h-96 overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Notifications List */}
+                      <div className="max-h-80 overflow-y-auto">
+                        {notificationLoading ? (
+                          <div className="p-4 text-center">
+                            <div className="inline-block w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-gray-500 mt-2">Loading notifications...</p>
+                          </div>
+                        ) : notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <BellIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer border-l-4 ${
+                                !notification.read ? 'bg-blue-50' : ''
+                              } ${getNotificationPriorityColor(notification.priority)}`}
+                              onClick={() => !notification.read && markAsRead(notification.id)}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <span className="text-lg flex-shrink-0 mt-0.5">
+                                  {getNotificationIcon(notification.type)}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className={`text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                                      {notification.title}
+                                    </p>
+                                    {notification.priority && notification.priority.toUpperCase() === 'HIGH' && (
+                                      <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">
+                                        High
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {formatNotificationTime(notification.createdAt)}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(notification.id);
+                                  }}
+                                  className="text-gray-400 hover:text-red-500 transition-colors"
+                                  aria-label="Delete notification"
+                                >
+                                  <XMarkIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      
+                      {notifications.length > 0 && (
+                        <div className="p-3 border-t border-gray-200 text-center">
+                          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                            View all notifications
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   className="flex items-center space-x-2 focus:outline-none"
                   onClick={() => setShowUserMenu((v) => !v)}
@@ -529,11 +807,94 @@ const Navbar = () => {
                         )}
                       </>
                     )}
-                    <div className="ml-3">
+                    <div className="ml-3 flex-1">
                       <p className="font-medium text-gray-900">{user.displayName || 'User'}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
+                    {/* Mobile Notifications */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="relative p-2 text-gray-700 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        aria-label="Notifications"
+                      >
+                        <BellIcon className="h-6 w-6" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   </div>
+                  
+                  {/* Mobile Notifications Dropdown */}
+                  {showNotifications && (
+                    <div className="mx-4 bg-white border rounded-lg shadow-lg max-h-60 overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-3 border-b border-gray-200">
+                        <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Notifications List */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {notificationLoading ? (
+                          <div className="p-3 text-center">
+                            <div className="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-gray-500 mt-1 text-xs">Loading...</p>
+                          </div>
+                        ) : notifications.length === 0 ? (
+                          <div className="p-4 text-center">
+                            <BellIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                            <p className="text-gray-500 text-xs">No notifications</p>
+                          </div>
+                        ) : (
+                          notifications.slice(0, 5).map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={`p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer border-l-4 ${
+                                !notification.read ? 'bg-blue-50' : ''
+                              } ${getNotificationPriorityColor(notification.priority)}`}
+                              onClick={() => !notification.read && markAsRead(notification.id)}
+                            >
+                              <div className="flex items-start space-x-2">
+                                <span className="text-sm flex-shrink-0 mt-0.5">
+                                  {getNotificationIcon(notification.type)}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className={`text-xs ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                                      {notification.title}
+                                    </p>
+                                    {notification.priority && notification.priority.toUpperCase() === 'HIGH' && (
+                                      <span className="px-1 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">
+                                        High
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {formatNotificationTime(notification.createdAt)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
                   <button 
                     className="block w-full text-left px-4 py-4 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-base font-medium"
                     onClick={() => {setShowProfilePopup(true); setShowMobileMenu(false);}}
