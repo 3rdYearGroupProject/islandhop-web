@@ -50,6 +50,7 @@ const Analytics = () => {
     conversionRate: 0,
     monthlyRevenue: [],
     serviceProviders: [],
+    monthlyData: null, // Add monthly breakdown data
   });
 
   // Get Firebase auth token
@@ -104,6 +105,30 @@ const Analytics = () => {
         userCountResponse.data.data.breakdown
       );
 
+      // Process monthly data for chart
+      const monthlyBreakdown =
+        revenueResponse.data.data?.monthlyBreakdown || [];
+      const processedMonthlyData = {
+        bookings: new Array(12).fill(0),
+        users: new Array(12).fill(0), // We'll use totalTrips as a proxy for users
+        revenue: new Array(12).fill(0),
+        conversion: new Array(12).fill(0),
+      };
+
+      // Fill in the data from API response
+      monthlyBreakdown.forEach((monthData) => {
+        const monthIndex = monthData.month - 1; // Convert to 0-based index
+        if (monthIndex >= 0 && monthIndex < 12) {
+          processedMonthlyData.bookings[monthIndex] =
+            monthData.totalTrips || 0;
+          processedMonthlyData.users[monthIndex] = userCountResponse.data.data.totalUsers || 0;
+          processedMonthlyData.revenue[monthIndex] =
+            monthData.totalRevenue || 0;
+          processedMonthlyData.conversion[monthIndex] =
+            monthData.conversionRate || 0;
+        }
+      });
+
       // Update API data state
       setApiData({
         totalUsers:
@@ -117,6 +142,7 @@ const Analytics = () => {
           revenueResponse.data.data.yearlyTotal.averageAmount || [],
         serviceProviders:
           userCountResponse.data.data.breakdown || userCountResponse.data || [],
+        monthlyData: processedMonthlyData,
       });
     } catch (error) {
       console.error("Error fetching analytics data:", error);
@@ -203,12 +229,22 @@ const Analytics = () => {
     "Dec",
   ];
 
+  // Get chart data - use API data if available, otherwise fall back to mock data
+  const getChartData = () => {
+    if (apiData.monthlyData && !loading) {
+      return apiData.monthlyData;
+    }
+    return userData[selectedUser];
+  };
+
+  const currentChartData = getChartData();
+
   const chartData = {
     labels: months,
     datasets: [
       {
         label: metricConfig[leftMetric].label,
-        data: userData[selectedUser][leftMetric],
+        data: currentChartData[leftMetric],
         borderColor: metricConfig[leftMetric].color,
         backgroundColor: metricConfig[leftMetric].bgColor,
         fill: true,
@@ -219,7 +255,7 @@ const Analytics = () => {
       },
       {
         label: metricConfig[rightMetric].label,
-        data: userData[selectedUser][rightMetric],
+        data: currentChartData[rightMetric],
         borderColor: metricConfig[rightMetric].color,
         backgroundColor: metricConfig[rightMetric].bgColor,
         fill: true,
