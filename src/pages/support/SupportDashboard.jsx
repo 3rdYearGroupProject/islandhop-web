@@ -15,6 +15,9 @@ import Modal from '../../components/Modal';
 const SupportDashboard = ({ onPageChange }) => {
   const toast = useToast();
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const user = getUserData();
@@ -23,57 +26,151 @@ const SupportDashboard = ({ onPageChange }) => {
     }
   }, []);
 
-  // Dashboard stats data
-  const dashboardStats = [
-    {
-      title: 'New Tickets',
-      value: '8',
-      change: '+3 today',
-      changeType: 'positive',
-      icon: TicketIcon,
-      color: 'secondary'
-    },
-    {
-      title: 'In Progress',
-      value: '5',
-      change: '-2 from yesterday',
-      changeType: 'negative',
-      icon: ExclamationTriangleIcon,
-      color: 'secondary'
-    },
-    {
-      title: 'Escalated',
-      value: '2',
-      change: '+1 today',
-      changeType: 'positive',
-      icon: ShieldExclamationIcon,
-      color: 'secondary'
-    },
-    {
-      title: 'Refunds',
-      value: '3',
-      change: 'No change',
-      changeType: 'neutral',
-      icon: CurrencyDollarIcon,
-      color: 'secondary'
-    },
-    {
-      title: 'Lost Items',
-      value: '4',
-      change: '+1 today',
-      changeType: 'positive',
-      icon: ArchiveBoxXMarkIcon,
-      color: 'secondary'
-    },
-    {
-      title: 'Panic Alerts',
-      value: '1',
-      change: 'Active',
-      changeType: 'warning',
-      icon: ShieldExclamationIcon,
-      color: 'secondary'
-    }
-  ];
+  // Fetch dashboard stats
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching dashboard stats...');
+        
+        const response = await fetch('http://localhost:8061/dashboard-stats', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Dashboard stats response:', result);
+
+        if (result.success && result.data) {
+          // Map the backend data to the dashboard stats format
+          const statsData = [
+            {
+              title: 'New Tickets',
+              value: result.data.totalComplaints || '0',
+              change: `+${result.data.totalComplaints || 0} today`,
+              changeType: 'positive',
+              icon: TicketIcon,
+              color: 'secondary'
+            },
+            {
+              title: 'In Progress',
+              value: result.data.unresolvedComplaints || '0',
+              change: `${result.data.unresolvedComplaintsChange || 0} from yesterday`,
+              changeType: result.data.unresolvedComplaintsChange >= 0 ? 'positive' : 'negative',
+              icon: ExclamationTriangleIcon,
+              color: 'secondary'
+            },
+            {
+              title: 'Escalated',
+              value: result.data.resolvedComplaints || '0',
+              change: `+${result.data.resolvedComplaintsToday || 0} today`,
+              changeType: 'positive',
+              icon: ShieldExclamationIcon,
+              color: 'secondary'
+            },
+            {
+              title: 'Refunds',
+              value: result.data.refunds || '0',
+              change: result.data.refundsChange || 'No change',
+              changeType: 'neutral',
+              icon: CurrencyDollarIcon,
+              color: 'secondary'
+            },
+            {
+              title: 'Lost Items',
+              value: result.data.lostItems || '0',
+              change: `+${result.data.lostItemsToday || 0} today`,
+              changeType: 'positive',
+              icon: ArchiveBoxXMarkIcon,
+              color: 'secondary'
+            },
+            {
+              title: 'Panic Alerts',
+              value: result.data.panicAlerts || '0',
+              change: result.data.panicAlertsActive ? 'Active' : 'None',
+              changeType: result.data.panicAlertsActive ? 'warning' : 'neutral',
+              icon: ShieldExclamationIcon,
+              color: 'secondary'
+            }
+          ];
+
+          setDashboardStats(statsData);
+          setError(null);
+        } else {
+          throw new Error(result.message || 'Failed to fetch dashboard stats');
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+        setError(err.message);
+        
+        // Fallback to default stats if API fails
+        const fallbackStats = [
+          {
+            title: 'New Tickets',
+            value: '8',
+            change: '+3 today',
+            changeType: 'positive',
+            icon: TicketIcon,
+            color: 'secondary'
+          },
+          {
+            title: 'In Progress',
+            value: '5',
+            change: '-2 from yesterday',
+            changeType: 'negative',
+            icon: ExclamationTriangleIcon,
+            color: 'secondary'
+          },
+          {
+            title: 'Escalated',
+            value: '2',
+            change: '+1 today',
+            changeType: 'positive',
+            icon: ShieldExclamationIcon,
+            color: 'secondary'
+          },
+          {
+            title: 'Refunds',
+            value: '3',
+            change: 'No change',
+            changeType: 'neutral',
+            icon: CurrencyDollarIcon,
+            color: 'secondary'
+          },
+          {
+            title: 'Lost Items',
+            value: '4',
+            change: '+1 today',
+            changeType: 'positive',
+            icon: ArchiveBoxXMarkIcon,
+            color: 'secondary'
+          },
+          {
+            title: 'Panic Alerts',
+            value: '1',
+            change: 'Active',
+            changeType: 'warning',
+            icon: ShieldExclamationIcon,
+            color: 'secondary'
+          }
+        ];
+        
+        setDashboardStats(fallbackStats);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
+  // Dashboard stats data (removed - now fetched from API)
 
   // Quick actions data
   const quickActions = [
@@ -218,6 +315,39 @@ const SupportDashboard = ({ onPageChange }) => {
       </div>
 
       {/* Stats Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-white dark:bg-secondary-800 p-6 rounded-xl border border-gray-200 dark:border-secondary-700 animate-pulse"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 bg-gray-300 dark:bg-secondary-600 rounded"></div>
+                </div>
+                <div className="ml-4 flex-1 min-w-0">
+                  <div className="h-4 bg-gray-300 dark:bg-secondary-600 rounded mb-2"></div>
+                  <div className="h-6 bg-gray-300 dark:bg-secondary-600 rounded"></div>
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="h-3 bg-gray-300 dark:bg-secondary-600 rounded w-20"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="h-6 w-6 text-red-600 dark:text-red-400 mr-3" />
+            <div>
+              <h3 className="text-red-800 dark:text-red-200 font-medium">Failed to load dashboard stats</h3>
+              <p className="text-red-600 dark:text-red-400 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {dashboardStats.map((stat, index) => {
           const Icon = stat.icon;
@@ -248,6 +378,7 @@ const SupportDashboard = ({ onPageChange }) => {
           );
         })}
       </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
