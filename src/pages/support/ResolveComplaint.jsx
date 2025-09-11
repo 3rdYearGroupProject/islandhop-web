@@ -235,12 +235,12 @@ const ResolveComplaint = () => {
       {/* Main Content - Only show when not loading */}
       {!loading && complaints.length > 0 && (
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Display all complaints */}
         {complaints.map((complaint, index) => (
-          <div key={complaint._id} className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 bg-gray-50 dark:bg-secondary-900 rounded-xl">
+          <div key={complaint._id} className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-4 bg-gray-50 dark:bg-secondary-900 rounded-xl">
             {/* Main Ticket Details */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-3 space-y-6">
               {/* Ticket Card */}
               <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -265,10 +265,10 @@ const ResolveComplaint = () => {
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
                   <p className="text-gray-700 dark:text-gray-300">{complaint.description}</p>
                 </div>
-              </div>
+              {/* </div> */}
 
               {/* Resolution Notes */}
-              <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+              {/* <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-3"> */}
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Resolution Notes
                 </h3>
@@ -301,104 +301,90 @@ const ResolveComplaint = () => {
             {/* Sidebar - User Profiles */}
             <div className="space-y-6">
               {/* Tourist Profile */}
-              <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-                <div className="flex flex-col items-center text-center mb-4">
-                  <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-secondary-600 mb-3">
-                    <UserIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+              <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-4 h-full">
+                <div className="flex flex-col items-center text-center mb-3">
+                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-secondary-600 mb-2">
+                    <UserIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     {complaint.tourist ? `${complaint.tourist.first_name} ${complaint.tourist.last_name}` : 'N/A'}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Tourist
                   </p>
                 </div>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex justify-between text-sm">
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-xs">
                     <span className="text-gray-600 dark:text-gray-400">Email:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-gray-900 dark:text-white text-right break-words max-w-32">
                       {complaint.tourist ? complaint.tourist.email : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs">
                     <span className="text-gray-600 dark:text-gray-400">Phone:</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {complaint.tourist ? complaint.tourist.contact_no : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs">
                     <span className="text-gray-600 dark:text-gray-400">Trips:</span>
                     <span className="font-medium text-gray-900 dark:text-white">5</span>
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleContact('phone', complaint.tourist)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-                  >
-                    <PhoneIcon className="h-4 w-4 mr-1" />
-                    Call
-                  </button>
+                <div className="mb-4">
                   <button
                     onClick={() => handleContact('email', complaint.tourist)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                    className="w-full inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
                   >
-                    <EnvelopeIcon className="h-4 w-4 mr-1" />
-                    Email
+                    <EnvelopeIcon className="h-3 w-3 mr-1" />
+                    Contact Tourist
                   </button>
                 </div>
-              </div>
 
-              {/* Driver Profile */}
-              <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-                <div className="flex flex-col items-center text-center mb-4">
-                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-secondary-600 mb-3">
-                    <TruckIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
+                {/* Driver Profile - Integrated into same card */}
+                <div className="border-t border-gray-200 dark:border-secondary-600 pt-4">
+                  <div className="flex flex-col items-center text-center mb-3">
+                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-secondary-600 mb-2">
+                      <TruckIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                      {complaint.driver ? `${complaint.driver.first_name} ${complaint.driver.last_name}` : 'N/A'}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Driver
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {complaint.driver ? `${complaint.driver.first_name} ${complaint.driver.last_name}` : 'N/A'}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Driver
-                  </p>
-                </div>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Email:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {complaint.driver ? complaint.driver.email : 'N/A'}
-                    </span>
+                  <div className="space-y-2 mb-3">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">Email:</span>
+                      <span className="font-medium text-gray-900 dark:text-white text-right break-words max-w-32">
+                        {complaint.driver ? complaint.driver.email : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">Phone:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {complaint.driver ? complaint.driver.contact_no : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">Rating:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">4.8 ⭐</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Phone:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {complaint.driver ? complaint.driver.contact_no : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Rating:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">4.8 ⭐</span>
-                  </div>
-                </div>
 
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleContact('phone', complaint.driver)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-                  >
-                    <PhoneIcon className="h-4 w-4 mr-1" />
-                    Call
-                  </button>
-                  <button
-                    onClick={() => handleContact('email', complaint.driver)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-info-500 transition-colors duration-200"
-                  >
-                    <EnvelopeIcon className="h-4 w-4 mr-1" />
-                    Email
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleContact('email', complaint.driver)}
+                      className="flex-1 inline-flex items-center justify-center px-2 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-info-500 transition-colors duration-200"
+                    >
+                      <EnvelopeIcon className="h-3 w-3 mr-1" />
+                      Email
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

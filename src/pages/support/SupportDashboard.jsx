@@ -9,11 +9,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData } from '../../utils/userStorage';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Modal from '../../components/Modal';
 
 const SupportDashboard = ({ onPageChange }) => {
   const toast = useToast();
+  const navigate = useNavigate();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [dashboardStats, setDashboardStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -179,42 +180,42 @@ const SupportDashboard = ({ onPageChange }) => {
       description: 'See and manage all support tickets',
       icon: TicketIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('ViewTickets')
+      action: () => navigate('/support/tickets')
     },
     {
       title: 'Handle Chat & Email',
       description: 'Respond to chat and email support',
       icon: ChatBubbleLeftRightIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('ChatEmailSupport')
+      action: () => navigate('/support/chat-email')
     },
     {
       title: 'Resolve Complaints',
       description: 'Address customer complaints',
       icon: ExclamationTriangleIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('ResolveComplaint')
+      action: () => navigate('/support/resolve-complaint')
     },
     {
       title: 'Process Refunds',
       description: 'Handle refund and compensation requests',
       icon: CurrencyDollarIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('RefundCompensation')
+      action: () => navigate('/support/refunds')
     },
     {
       title: 'Track Lost Items',
       description: 'Monitor lost item reports',
       icon: ArchiveBoxXMarkIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('LostItemTracker')
+      action: () => navigate('/support/lost-item-tracker')
     },
     {
       title: 'Panic Alerts',
       description: 'Handle emergency situations',
       icon: ShieldExclamationIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('PanicAlerts')
+      action: () => navigate('/support/panic-alerts')
     }
   ];
 
