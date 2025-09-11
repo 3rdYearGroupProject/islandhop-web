@@ -248,6 +248,14 @@ const PoolItineraryPage = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [isFinalizingTrip, setIsFinalizingTrip] = useState(false);
   
+  // Trip confirmation states
+  const [confirmationStatus, setConfirmationStatus] = useState(null);
+  const [isInitiatingConfirmation, setIsInitiatingConfirmation] = useState(false);
+  const [isConfirmingParticipation, setIsConfirmingParticipation] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmedTripId, setConfirmedTripId] = useState(null);
+  const [isCreator, setIsCreator] = useState(false); // Will be determined from group data
+  
   // Mock data for trip planning
   const mockSuggestions = {
     activities: [
@@ -882,6 +890,141 @@ const PoolItineraryPage = () => {
     });
   };
 
+  // ===============================
+  // TRIP CONFIRMATION FUNCTIONS
+  // ===============================
+
+  /**
+   * Check if current user is the trip creator and fetch confirmation status
+   */
+  const checkCreatorStatusAndConfirmation = async () => {
+    try {
+      // For now, assume the user who navigated with userUid is the creator
+      // In a real app, you'd fetch group details to check creator
+      const currentUserUID = getUserUID();
+      setIsCreator(currentUserUID === userUid);
+      
+      // Check if there's already a confirmation in progress
+      if (confirmedTripId) {
+        const status = await PoolsApi.getConfirmationStatus(confirmedTripId, currentUserUID);
+        setConfirmationStatus(status);
+      }
+    } catch (error) {
+      console.error('❌ Error checking creator status:', error);
+    }
+  };
+
+  /**
+   * Initiate trip confirmation - Only creators can do this
+   */
+  const handleInitiateTripConfirmation = async () => {
+    if (!isCreator) {
+      alert('❌ Only the trip creator can initiate confirmation');
+      return;
+    }
+
+    try {
+      setIsInitiatingConfirmation(true);
+      
+      const confirmationData = {
+        groupId: groupId,
+        userId: userUid,
+        minMembers: 2, // Minimum members required
+        maxMembers: 8, // Maximum members allowed
+        tripStartDate: normalizedDates[0]?.toISOString(),
+        tripEndDate: normalizedDates[normalizedDates.length - 1]?.toISOString(),
+        confirmationHours: 48, // Members have 48 hours to confirm
+        totalAmount: 40000, // Total trip cost in LKR
+        pricePerPerson: 10000, // Price per person in LKR
+        currency: 'LKR',
+        upfrontPaymentHours: 48, // Hours to make upfront payment
+        finalPaymentDaysBefore: 7, // Days before trip to make final payment
+        tripDetails: {
+          destinations: Object.values(destinations).map(dest => dest.name || dest),
+          activities: Object.values(itinerary).flat().map(activity => activity.name || activity.title)
+        }
+      };
+
+      console.log('🎯 Initiating trip confirmation with data:', confirmationData);
+      
+      const result = await PoolsApi.initiateTripConfirmation(confirmationData);
+      
+      console.log('✅ Trip confirmation initiated:', result);
+      setConfirmedTripId(result.confirmedTripId);
+      setConfirmationStatus(result);
+      setShowConfirmationModal(true);
+      
+      alert(`✅ Trip confirmation initiated successfully!\n\nConfirmation ID: ${result.confirmedTripId}\nMembers have 48 hours to confirm their participation.`);
+      
+    } catch (error) {
+      console.error('❌ Error initiating trip confirmation:', error);
+      alert(`❌ Failed to initiate trip confirmation: ${error.message}`);
+    } finally {
+      setIsInitiatingConfirmation(false);
+    }
+  };
+
+  /**
+   * Confirm participation in the trip - Members call this
+   */
+  const handleConfirmParticipation = async () => {
+    if (!confirmedTripId) {
+      alert('❌ No trip confirmation in progress');
+      return;
+    }
+
+    try {
+      setIsConfirmingParticipation(true);
+      
+      const result = await PoolsApi.confirmParticipation(confirmedTripId, getUserUID());
+      
+      console.log('✅ Participation confirmed:', result);
+      setConfirmationStatus(result);
+      
+      alert(`✅ Your participation has been confirmed!\n\nStatus: ${result.status}\nConfirmed members: ${result.confirmedMembers?.length || 0}`);
+      
+    } catch (error) {
+      console.error('❌ Error confirming participation:', error);
+      alert(`❌ Failed to confirm participation: ${error.message}`);
+    } finally {
+      setIsConfirmingParticipation(false);
+    }
+  };
+
+  /**
+   * Cancel trip confirmation - Only creators can do this
+   */
+  const handleCancelTripConfirmation = async () => {
+    if (!isCreator || !confirmedTripId) {
+      alert('❌ Only the trip creator can cancel confirmation');
+      return;
+    }
+
+    const reason = prompt('Please provide a reason for canceling the trip confirmation:');
+    if (!reason) return;
+
+    try {
+      const result = await PoolsApi.cancelTripConfirmation(confirmedTripId, userUid, reason);
+      
+      console.log('✅ Trip confirmation canceled:', result);
+      setConfirmationStatus(null);
+      setConfirmedTripId(null);
+      
+      alert(`✅ Trip confirmation canceled successfully.\n\nReason: ${reason}`);
+      
+    } catch (error) {
+      console.error('❌ Error canceling trip confirmation:', error);
+      alert(`❌ Failed to cancel trip confirmation: ${error.message}`);
+    }
+  };
+
+  // Check creator status on component mount
+  useEffect(() => {
+    if (groupId && userUid) {
+      checkCreatorStatusAndConfirmation();
+    }
+  }, [groupId, userUid, confirmedTripId]);
+
   const handleSaveTrip = async () => {
     console.log('💾 Starting trip save process to get suggestions...');
     
@@ -1382,8 +1525,166 @@ const PoolItineraryPage = () => {
               {isLoadingSuggestions ? 'Finding Similar Trips...' : isSavingTrip ? 'Saving...' : 'Save & Find Similar Trips'}
             </button>
           </div>
+
+          {/* Trip Confirmation Section */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              🎯 Trip Confirmation
+            </h3>
+            
+            {isCreator ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-blue-900 mb-2">
+                  👑 You are the trip creator
+                </h4>
+                {!confirmedTripId ? (
+                  <div>
+                    <p className="text-blue-800 text-sm mb-3">
+                      Once you have enough group members, you can proceed to trip confirmation. 
+                      This will give all members 48 hours to confirm their participation.
+                    </p>
+                    <button
+                      onClick={handleInitiateTripConfirmation}
+                      disabled={isInitiatingConfirmation}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isInitiatingConfirmation ? 'Initiating...' : '🚀 Proceed to Trip Confirmation'}
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-blue-800 text-sm mb-2">
+                      ✅ Trip confirmation initiated (ID: {confirmedTripId})
+                    </p>
+                    <p className="text-blue-700 text-sm mb-3">
+                      Status: {confirmationStatus?.status || 'Unknown'} | 
+                      Confirmed: {confirmationStatus?.confirmedMembers?.length || 0} members
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowConfirmationModal(true)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                      >
+                        📊 View Status
+                      </button>
+                      <button
+                        onClick={handleCancelTripConfirmation}
+                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
+                      >
+                        ❌ Cancel Confirmation
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-green-900 mb-2">
+                  👥 You are a group member
+                </h4>
+                {!confirmedTripId ? (
+                  <p className="text-green-800 text-sm">
+                    Wait for the trip creator to proceed to confirmation. 
+                    You'll be notified when you need to confirm your participation.
+                  </p>
+                ) : (
+                  <div>
+                    <p className="text-green-800 text-sm mb-2">
+                      🔔 Trip confirmation is in progress!
+                    </p>
+                    <p className="text-green-700 text-sm mb-3">
+                      Please confirm your participation within the deadline.
+                    </p>
+                    <button
+                      onClick={handleConfirmParticipation}
+                      disabled={isConfirmingParticipation}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isConfirmingParticipation ? 'Confirming...' : '✅ Confirm My Participation'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Trip Confirmation Status Modal */}
+      {showConfirmationModal && confirmationStatus && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  🎯 Trip Confirmation Status
+                </h2>
+                <button
+                  onClick={() => setShowConfirmationModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    📋 Confirmation Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">Confirmation ID:</span>
+                      <p className="text-gray-600">{confirmedTripId}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Status:</span>
+                      <p className="text-gray-600">{confirmationStatus.status}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Confirmed Members:</span>
+                      <p className="text-gray-600">{confirmationStatus.confirmedMembers?.length || 0}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Total Amount:</span>
+                      <p className="text-gray-600">{confirmationStatus.totalAmount} {confirmationStatus.currency}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {confirmationStatus.confirmedMembers && confirmationStatus.confirmedMembers.length > 0 && (
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <h3 className="font-medium text-green-900 mb-2">
+                      ✅ Confirmed Members
+                    </h3>
+                    <div className="space-y-2">
+                      {confirmationStatus.confirmedMembers.map((member, index) => (
+                        <div key={index} className="flex items-center space-x-2 text-sm text-green-800">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span>{member.userName || member.userId}</span>
+                          <span className="text-green-600">• {new Date(member.confirmedAt).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowConfirmationModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Similar Trips Modal */}
       {showSimilarTrips && (
