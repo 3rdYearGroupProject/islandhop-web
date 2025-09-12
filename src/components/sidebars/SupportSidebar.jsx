@@ -79,13 +79,13 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Overview & Stats",
       permissions: [1, 2, 3, 4], // All users can access dashboard
     },
-    {
-      name: "View Tickets",
-      path: "/support/tickets",
-      icon: TicketIcon,
-      description: "Manage Support Tickets",
-      permissions: [1, 2, 3, 4], // All users can view tickets
-    },
+    // {
+    //   name: "View Tickets",
+    //   path: "/support/tickets",
+    //   icon: TicketIcon,
+    //   description: "Manage Support Tickets",
+    //   permissions: [1, 2, 3, 4], // All users can view tickets
+    // },
     {
       name: "Reviews",
       path: "/support/reviews",

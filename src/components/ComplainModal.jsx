@@ -126,18 +126,18 @@ const ComplainModal = ({ onClose }) => {
                 tripId: selectedTripData?.originalTripId || null,
                 userId: user?.uid,
                 email: user?.email,
-                tripDetails: selectedTripData ? {
-                  tripName: selectedTripData.tripName,
-                  destination: selectedTripData.destination,
-                  startDate: selectedTripData.startDate,
-                  endDate: selectedTripData.endDate
-                } : null
+                // tripDetails: selectedTripData ? {
+                //   tripName: selectedTripData.tripName,
+                //   destination: selectedTripData.destination,
+                //   startDate: selectedTripData.startDate,
+                //   endDate: selectedTripData.endDate
+                // } : null
               };
               
               console.log('Complaint data:', complaintData);
 
               // Replace with your actual complaint submission endpoint
-              const res = await fetch('http://localhost:8061/tourist/addComplaint', {
+              const res = await fetch('http://localhost:8061/tickets/add-complaint', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'
@@ -151,7 +151,7 @@ const ComplainModal = ({ onClose }) => {
                 
                 // Show success toast
                 success(
-                  `Complaint submitted successfully!${selectedTripData ? ` Trip: ${selectedTripData.tripName} - ${selectedTripData.destination}` : ''}`,
+                  `Complaint submitted successfully!`,
                   {
                     duration: 5000,
                     showProgress: true
