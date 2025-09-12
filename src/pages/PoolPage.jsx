@@ -65,7 +65,7 @@ const PoolPage = () => {
       case 'my':
         return <MyPools />;
       case 'confirmed':
-        return <ConfirmedPools />;
+        return <ConfirmedPools currentUser={currentUser} />;
       case 'ongoing':
         return <OngoingPools />;
       case 'invitations':

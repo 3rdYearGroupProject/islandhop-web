@@ -1261,23 +1261,30 @@ export class PoolsApi {
       console.log('🎯 Making initiate request to URL:', fullUrl);
       console.log('🎯 Request payload:', JSON.stringify(confirmationData, null, 2));
       
+      // Simplified fetch without problematic headers
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify(confirmationData)
       });
 
       console.log('🎯 Initiate response status:', response.status);
       console.log('🎯 Initiate response ok:', response.ok);
+      console.log('🎯 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const errorText = await response.text();
+        console.error('🎯 Initiate error response text:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Unknown error' };
+        }
         console.error('🎯 Initiate error response:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
@@ -1285,6 +1292,15 @@ export class PoolsApi {
       return result;
     } catch (error) {
       console.error('🎯❌ Error initiating trip confirmation:', error);
+      console.error('🎯❌ Error type:', error.name);
+      console.error('🎯❌ Error message:', error.message);
+      console.error('🎯❌ Error stack:', error.stack);
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Unable to connect to confirmation service. This is likely a CORS issue. Backend: ${baseUrl}`);
+      }
+      
       throw new Error(`Failed to initiate trip confirmation: ${error.message}`);
     }
   }
@@ -1304,24 +1320,31 @@ export class PoolsApi {
       const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/confirm`;
       
       console.log('✅ Making confirm request to URL:', fullUrl);
+      console.log('✅ Request payload:', JSON.stringify({ userId }, null, 2));
       
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify({ userId })
       });
 
       console.log('✅ Confirm response status:', response.status);
       console.log('✅ Confirm response ok:', response.ok);
+      console.log('✅ Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const errorText = await response.text();
+        console.error('✅ Confirm error response text:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Unknown error' };
+        }
         console.error('✅ Confirm error response:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
@@ -1329,6 +1352,15 @@ export class PoolsApi {
       return result;
     } catch (error) {
       console.error('✅❌ Error confirming participation:', error);
+      console.error('✅❌ Error type:', error.name);
+      console.error('✅❌ Error message:', error.message);
+      console.error('✅❌ Error stack:', error.stack);
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Unable to connect to confirmation service. This is likely a CORS issue. Backend: ${process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074'}`);
+      }
+      
       throw new Error(`Failed to confirm participation: ${error.message}`);
     }
   }

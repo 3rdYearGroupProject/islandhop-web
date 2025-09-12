@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users, CheckCircle, AlertCircle, Timer } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -8,7 +8,7 @@ import SharePoolModal from '../components/SharePoolModal';
 import JoinPoolModal from '../components/JoinPoolModal';
 import InviteUserModal from '../components/InviteUserModal';
 import JoinRequestsManager from '../components/JoinRequestsManager';
-import { PoolsApi } from '../api/poolsApi';
+import { PoolsApi, poolsApi } from '../api/poolsApi';
 import { useAuth } from '../hooks/useAuth';
 
 // Mock participant data (replace with real data as needed)
@@ -69,6 +69,13 @@ const ViewPoolPage = () => {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
+  
+  // Trip Confirmation State
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmationStatus, setConfirmationStatus] = useState('pending'); // 'pending', 'confirming', 'confirmed', 'failed'
+  const [confirmationLoading, setConfirmationLoading] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  
   const { user } = useAuth();
   // Mock join requests data
   const mockJoinRequests = [
@@ -105,6 +112,75 @@ const ViewPoolPage = () => {
     // In a real app, this would make an API call to reject the request
     alert(`❌ Rejected join request from ${name}`);
     // You could update the mockJoinRequests state here to remove the rejected request
+  };
+
+  // Trip Confirmation Functions
+  const handleInitiateTripConfirmation = async () => {
+    setConfirmationLoading(true);
+    try {
+      // Prepare confirmation data object matching backend API spec
+      const confirmationData = {
+        groupId: pool.id,     // The pool ID is the group ID
+        tripId: pool.tripId,  // Use the separate tripId field
+        userId: user?.uid || user?.id,
+        minMembers: pool?.minParticipants || 2,
+        maxMembers: pool?.maxParticipants || 6,
+        tripStartDate: pool?.startDate ? new Date(pool.startDate).toISOString() : new Date().toISOString(),
+        tripEndDate: pool?.endDate ? new Date(pool.endDate).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        confirmationHours: 48,
+        totalAmount: pool?.totalCost || pool?.budget || 40000,
+        pricePerPerson: pool?.costPerPerson || pool?.pricePerPerson || 10000,
+        currency: "LKR",
+        paymentDeadlineHours: 72,
+        tripDetails: {
+          destinations: Array.isArray(pool?.destinations) ? pool.destinations : [pool?.destinations || "Sri Lanka"],
+          activities: pool?.preferredActivities || pool?.activities || ["sightseeing"],
+          accommodation: pool?.accommodation || "hotel",
+          transportation: pool?.transportation || "private_van"
+        }
+      };
+      
+      console.log('🎯 Sending confirmation data:', confirmationData);
+      console.log('🎯 Pool ID (groupId):', pool.id);
+      console.log('🎯 Trip ID:', pool.tripId);
+      const result = await poolsApi.initiateTripConfirmation(confirmationData);
+      console.log('Trip confirmation initiated:', result);
+      setConfirmationStatus('confirming');
+      setShowConfirmationModal(true);
+    } catch (error) {
+      console.error('Failed to initiate trip confirmation:', error);
+      alert('Failed to initiate trip confirmation. Please try again.');
+    } finally {
+      setConfirmationLoading(false);
+    }
+  };
+
+  const handleConfirmParticipation = async () => {
+    setConfirmationLoading(true);
+    try {
+      // Pass both confirmedTripId and userId as required by the API
+      const result = await poolsApi.confirmParticipation(pool.id, user?.uid || user?.id);
+      console.log('Participation confirmed:', result);
+      setConfirmationStatus('confirmed');
+      // Navigate to confirmed pools page
+      setTimeout(() => {
+        navigate('/pools', { state: { activeTab: 'confirmed' } });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to confirm participation:', error);
+      alert('Failed to confirm participation. Please try again.');
+    } finally {
+      setConfirmationLoading(false);
+    }
+  };
+
+  const checkUserRole = () => {
+    // In a real app, check if current user is the pool creator
+    // For now, use mock logic
+    if (user && pool) {
+      const creatorCheck = pool.creatorUserId === user.uid || pool.owner?.email === user.email;
+      setIsCreator(creatorCheck);
+    }
   };
 
   // --- Expandable Cost Breakdown State ---
@@ -568,6 +644,13 @@ const ViewPoolPage = () => {
     };
   }, [joinRequestsModalOpen]);
 
+  // Check user role when pool or user data changes
+  useEffect(() => {
+    if (pool && user) {
+      checkUserRole();
+    }
+  }, [pool, user]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -651,6 +734,91 @@ const ViewPoolPage = () => {
           // Refresh pool data if needed
         }}
       />
+
+      {/* Trip Confirmation Modal */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl max-w-md w-full p-6">
+            <div className="text-center">
+              {confirmationStatus === 'confirming' ? (
+                <>
+                  <AlertCircle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Confirm Your Participation
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    The trip organizer has initiated trip confirmation. Please confirm your participation to proceed with this amazing journey!
+                  </p>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Trip Details:</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Destination:</strong> {Array.isArray(pool?.destinations) ? pool.destinations.join(', ') : pool?.destinations || pool?.destination}<br/>
+                      <strong>Duration:</strong> {pool?.totalDays} days<br/>
+                      <strong>Dates:</strong> {pool?.dates ? `${formatDate(new Date(pool.dates[0]))} - ${formatDate(new Date(pool.dates[1]))}` : 'TBA'}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleConfirmParticipation}
+                      disabled={confirmationLoading}
+                      className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                    >
+                      {confirmationLoading ? (
+                        <>
+                          <Timer className="w-4 h-4 mr-2 animate-spin" />
+                          Confirming...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Confirm Participation
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowConfirmationModal(false)}
+                      className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors"
+                    >
+                      Maybe Later
+                    </button>
+                  </div>
+                </>
+              ) : confirmationStatus === 'confirmed' ? (
+                <>
+                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Participation Confirmed!
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Great! Your participation has been confirmed. You'll be redirected to your confirmed trips shortly.
+                  </p>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg mb-6">
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      🎉 You're all set! Check your email for next steps and payment details.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Trip Confirmation Started
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Trip confirmation has been initiated! All participants will be notified and can now confirm their participation.
+                  </p>
+                  <button
+                    onClick={() => setShowConfirmationModal(false)}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Got it!
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Floating Bill-shaped Navbar overlays the top, so pull content down and let blue header go behind */}
       <div className="relative z-10">
         <Navbar />
@@ -714,6 +882,39 @@ const ViewPoolPage = () => {
                     <Users className="w-5 h-5 mr-2" />
                     Join Requests
                   </button>
+                  
+                  {/* Trip Confirmation Button */}
+                  {pool && pool.status !== 'completed' && (
+                    <>
+                      <button
+                        onClick={handleInitiateTripConfirmation}
+                        disabled={confirmationLoading}
+                        className="flex items-center px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold rounded-full transition-colors border border-green-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                        title="Initiate Trip Confirmation"
+                      >
+                        {confirmationLoading ? (
+                          <Timer className="w-5 h-5 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                        )}
+                        {confirmationLoading ? 'Starting...' : 'Confirm Trip'}
+                      </button>
+                      
+                      <button
+                        onClick={handleConfirmParticipation}
+                        disabled={confirmationLoading}
+                        className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors border border-orange-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                        title="Confirm Your Participation"
+                      >
+                        {confirmationLoading ? (
+                          <Timer className="w-5 h-5 mr-2 animate-spin" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 mr-2" />
+                        )}
+                        {confirmationLoading ? 'Confirming...' : 'Confirm Participation'}
+                      </button>
+                    </>
+                  )}
                   {/* Join Requests Modal */}
                   {joinRequestsModalOpen && (
                     <div className="fixed inset-0" style={{ zIndex: 1000 }}>
