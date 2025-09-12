@@ -16,18 +16,69 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { poolsApi } from '../../api/poolsApi';
+import axios from 'axios';
 
 const ConfirmedPools = ({ currentUser }) => {
   const [confirmedTrips, setConfirmedTrips] = useState([]);
   const [currentTripIndex, setCurrentTripIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [payHereLoaded, setPayHereLoaded] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Sri Lanka'
+  });
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
     if (currentUser?.uid) {
       loadConfirmedTrips();
     }
   }, [currentUser]);
+
+  // Load PayHere script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://www.payhere.lk/lib/payhere.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+      console.log('PayHere script loaded successfully');
+      setPayHereLoaded(true);
+    };
+    script.onerror = () => {
+      console.error('Failed to load PayHere script');
+      setPaymentError('Failed to load payment system. Please refresh the page and try again.');
+    };
+    
+    // Check if script is already loaded
+    const existingScript = document.querySelector('script[src="https://www.payhere.lk/lib/payhere.js"]');
+    if (existingScript) {
+      if (window.payhere) {
+        setPayHereLoaded(true);
+      } else {
+        existingScript.onload = () => {
+          setPayHereLoaded(true);
+        };
+      }
+    } else {
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      // Only remove if we added it
+      if (!existingScript && document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
 
   const loadConfirmedTrips = async () => {
     if (!currentUser?.uid) {
@@ -37,15 +88,93 @@ const ConfirmedPools = ({ currentUser }) => {
 
     setLoading(true);
     try {
-      const response = await poolsApi.getUserConfirmedTrips(currentUser.uid);
-      
-      if (response.success && response.data.trips.length > 0) {
-        setConfirmedTrips(response.data.trips);
+      // Mock data for testing with specified trip ID
+      const mockTrip = {
+        confirmedTripId: "f8cbe64d-9df9-4d61-85aa-933fe56a8bc3",
+        groupId: "669e72aa-6ea3-4966-be1b-ae8bf75ea192",
+        tripId: "414ad9d2-7d24-466c-a829-9b88ab7ae6c9",
+        tripName: "test-pool-1",
+        groupName: "test-pool-1",
+        creatorUserId: "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
+        creatorName: "tourist test2",
+        members: [
+          {
+            userId: "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
+            name: "tourist test2",
+            email: "tourist.test2@example.com",
+            role: "leader",
+            joinedAt: "2025-09-12T13:52:48.521Z",
+            status: "active",
+            preferences: {
+              budgetLevel: "Medium",
+              preferredActivities: ["hiking", "photography"],
+              preferredTerrains: ["historical"],
+              activityPacing: "Normal"
+            }
+          }
+        ],
+        memberIds: ["qSUXJXYRncWpx6Y0Rjl5LIidPYr1"],
+        baseCity: "Colombo",
+        cities: ["Colombo", "Kandy"],
+        startDate: "2025-09-22",
+        endDate: "2025-09-23",
+        tripStartDate: "2025-09-22",
+        formattedDateRange: "Sep 22 - Sep 23, 2025",
+        tripDurationDays: 2,
+        visibility: "public",
+        memberCount: 1,
+        maxMembers: 3,
+        currentMemberCount: 1,
+        memberCountText: "1 participants / 3",
+        topAttractions: ["Temple of the Tooth", "Royal Botanical Gardens"],
+        budgetLevel: "Medium",
+        activityPacing: "Normal",
+        preferredActivities: ["hiking", "photography"],
+        preferredTerrains: ["historical"],
+        status: "confirmed",
+        createdAt: "2025-09-12T13:52:48.521Z",
+        compatibilityScore: 85,
+        confirmationDeadline: "2025-09-20",
+        userConfirmed: true,
+        userPaymentStatus: "pending",
+        isCreator: currentUser?.uid === "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
+        tripDetails: {
+          destinations: ["Colombo", "Kandy"],
+          accommodation: "3-star hotels",
+          transportation: "Private vehicle"
+        },
+        paymentInfo: {
+          pricePerPerson: 15000,
+          paymentDeadline: "2025-09-20",
+          memberPayments: [
+            {
+              userId: currentUser?.uid || "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
+              amount: 15000,
+              status: "pending",
+              name: "tourist test2"
+            }
+          ]
+        }
+      };
+
+      // Use mock data for testing, or fetch from API
+      if (process.env.NODE_ENV === 'development' || window.location.search.includes('mock=true')) {
+        console.log('🔧 Using mock confirmed trip data with trip ID:', mockTrip.confirmedTripId);
+        console.log('📋 Mock trip details:', mockTrip);
+        setConfirmedTrips([mockTrip]);
         setCurrentTripIndex(0);
         setError(null);
       } else {
-        setConfirmedTrips([]);
-        setError(null);
+        const response = await poolsApi.getUserConfirmedTrips(currentUser.uid);
+        
+        if (response.success && response.data.trips.length > 0) {
+          setConfirmedTrips(response.data.trips);
+          setCurrentTripIndex(0);
+          setError(null);
+        } else {
+          setConfirmedTrips([]);
+          setError(null);
+        }
       }
     } catch (err) {
       console.error('Error loading confirmed trips:', err);
@@ -136,6 +265,261 @@ const ConfirmedPools = ({ currentUser }) => {
     }
   };
 
+  const handleCustomerDetailsChange = (e) => {
+    const { name, value } = e.target;
+    setCustomerDetails(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const validatePaymentForm = () => {
+    const { firstName, lastName, email, phone } = customerDetails;
+    
+    // Check required fields
+    if (!firstName?.trim()) {
+      setPaymentError('First name is required');
+      return false;
+    }
+    
+    if (!lastName?.trim()) {
+      setPaymentError('Last name is required');
+      return false;
+    }
+    
+    if (!email?.trim()) {
+      setPaymentError('Email is required');
+      return false;
+    }
+    
+    if (!phone?.trim()) {
+      setPaymentError('Phone number is required');
+      return false;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setPaymentError('Please enter a valid email address');
+      return false;
+    }
+    
+    // Validate phone format (basic validation for Sri Lankan numbers)
+    const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
+    if (!phoneRegex.test(phone)) {
+      setPaymentError('Please enter a valid phone number');
+      return false;
+    }
+    
+    // Check if payment amount is valid
+    const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(
+      payment => payment.userId === currentUser?.uid
+    );
+    
+    if (!userPayment || !userPayment.amount || userPayment.amount <= 0) {
+      setPaymentError('Invalid payment amount. Please contact support.');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const completePayment = async (orderId, tripId) => {
+    try {
+      console.log('Completing payment for trip:', tripId, 'Order:', orderId);
+      
+      const response = await axios.post(
+        `http://localhost:8074/api/v1/pooling-confirm/${tripId}/complete-payment`,
+        {
+          userId: currentUser.uid
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Payment completion response:', response.data);
+      
+      if (response.data.status === 'success' || response.status === 200) {
+        // Refresh the confirmed trips to update payment status
+        await loadConfirmedTrips();
+        setShowPaymentForm(false);
+        setCustomerDetails({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          address: '',
+          city: '',
+          country: 'Sri Lanka'
+        });
+        
+        // Show success message and reload data
+        alert('Payment completed successfully! Your pool trip payment has been processed.');
+        setShowPaymentForm(false);
+        
+        // Reload confirmed trips to reflect payment status
+        loadConfirmedTrips();
+      } else {
+        throw new Error(response.data.message || 'Failed to complete payment');
+      }
+    } catch (error) {
+      console.error('Error completing payment:', error);
+      setPaymentError(error.response?.data?.message || error.message || 'Failed to complete payment');
+    }
+  };
+
+  // Navigation and UI event handlers
+  const handleViewDetails = () => {
+    if (currentTrip?.groupId) {
+      window.location.href = `/view-pool/${currentTrip.groupId}`;
+    }
+  };
+
+  const handleContactGroup = () => {
+    // TODO: Implement group contact functionality
+    console.log('Contact group functionality to be implemented');
+  };
+
+  const handleViewTripDetails = () => {
+    if (confirmedPool?.groupId) {
+      window.location.href = `/view-pool/${confirmedPool.groupId}`;
+    }
+  };
+
+  const handleClosePaymentModal = () => {
+    setShowPaymentForm(false);
+    setPaymentError(null);
+  };
+
+  const handleCancelPayment = () => {
+    setShowPaymentForm(false);
+    setPaymentError(null);
+  };
+
+  const handlePoolPayment = async () => {
+    if (!validatePaymentForm()) {
+      return;
+    }
+
+    if (!payHereLoaded || !window.payhere) {
+      setPaymentError('Payment system is not ready. Please refresh the page and try again.');
+      return;
+    }
+
+    setPaymentProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const userPayment = currentTrip.paymentInfo?.memberPayments?.find(
+        payment => payment.userId === currentUser.uid
+      );
+
+      if (!userPayment) {
+        throw new Error('Payment information not found');
+      }
+
+      const paymentAmount = userPayment.amount;
+      
+      console.log('💰 Processing payment for trip ID:', currentTrip.confirmedTripId);
+      console.log('💳 Payment amount:', paymentAmount);
+      
+      // Generate short order ID (max 50 characters)
+      // Format: POOL_[8-char-trip-id]_[8-char-timestamp] = ~22 characters total
+      const shortTripId = currentTrip.confirmedTripId.substring(0, 8); // First 8 chars of trip ID
+      const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
+      const orderId = `POOL_${shortTripId}_${timestamp}`;
+      
+      console.log('📝 Generated order ID:', orderId, `(${orderId.length} chars)`);
+      
+      // Send payment request to backend
+      const paymentRequest = {
+        amount: paymentAmount,
+        currency: "LKR",
+        orderId: orderId,
+        tripId: currentTrip.confirmedTripId,
+        itemName: `Pool Trip Payment - ${currentTrip.tripName}`,
+        customerDetails: {
+          firstName: customerDetails.firstName,
+          lastName: customerDetails.lastName,
+          email: customerDetails.email,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+          city: customerDetails.city,
+          country: customerDetails.country
+        }
+      };
+
+      console.log('Sending pool payment request to backend:', paymentRequest);
+
+      // Call payment creation API
+      const response = await axios.post('http://localhost:8088/api/v1/payments/create-payhere-payment', paymentRequest);
+
+      console.log('Backend payment response:', response.data);
+      
+      if (response.data && response.data.status === 'success') {
+        const paymentData = response.data.payHereData;
+
+        // Setup PayHere event handlers
+        window.payhere.onCompleted = async function onCompleted(orderId) {
+          console.log("Pool payment completed. OrderID:" + orderId);
+          
+          // Complete payment on backend immediately
+          await completePayment(orderId, currentTrip.confirmedTripId);
+          
+          setPaymentProcessing(false);
+        };
+
+        window.payhere.onDismissed = function onDismissed() {
+          console.log("Pool payment dismissed");
+          setPaymentError("Payment was cancelled");
+          setPaymentProcessing(false);
+        };
+
+        window.payhere.onError = function onError(error) {
+          console.log("Pool payment error:" + error);
+          setPaymentError("Payment failed: " + error);
+          setPaymentProcessing(false);
+        };
+
+        // PayHere payment initiation
+        const paymentDetails = {
+          sandbox: paymentData.sandbox || true,
+          merchant_id: paymentData.merchant_id,
+          return_url: paymentData.return_url,
+          cancel_url: paymentData.cancel_url,
+          notify_url: paymentData.notify_url,
+          order_id: paymentData.order_id,
+          items: paymentData.items,
+          amount: paymentData.amount,
+          currency: paymentData.currency,
+          hash: paymentData.hash,
+          first_name: paymentData.first_name,
+          last_name: paymentData.last_name,
+          email: paymentData.email,
+          phone: paymentData.phone,
+          address: paymentData.address,
+          city: paymentData.city,
+          country: paymentData.country,
+        };
+
+        console.log('Initiating PayHere pool payment with details:', paymentDetails);
+        window.payhere.startPayment(paymentDetails);
+
+      } else {
+        throw new Error(response.data.data?.message || 'Failed to create payment');
+      }
+
+    } catch (err) {
+      console.error('Pool payment creation error:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Payment failed. Please try again.';
+      setPaymentError(errorMessage);
+      setPaymentProcessing(false);
+    }
+  };
+
   if (!currentUser) {
     return (
       <div className="text-center py-8">
@@ -147,23 +531,29 @@ const ConfirmedPools = ({ currentUser }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading confirmed pools...</p>
+        </div>
       </div>
     );
   }
 
   if (error && confirmedTrips.length === 0) {
     return (
-      <div className="text-center text-red-600 p-8">
-        <ExclamationCircleIcon className="h-12 w-12 mx-auto mb-4" />
-        <p>{error}</p>
-        <button 
-          onClick={loadConfirmedTrips}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Retry
-        </button>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationCircleIcon className="h-12 w-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-600 font-medium mb-2">Error loading confirmed pools</p>
+          <p className="text-gray-600 text-sm mb-4">{error}</p>
+          <button 
+            onClick={loadConfirmedTrips}
+            className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors font-medium"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -346,12 +736,15 @@ const ConfirmedPools = ({ currentUser }) => {
               </div>
               <div className="flex items-center space-x-2 w-full sm:w-auto">
                 <button 
-                  onClick={() => window.location.href = `/view-pool/${currentTrip.groupId}`}
+                  onClick={handleViewDetails}
                   className="flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-blue-700 transition-colors flex-1 sm:flex-none justify-center"
                 >
                   View Details
                 </button>
-                <button className="flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex-1 sm:flex-none justify-center">
+                <button 
+                  onClick={handleContactGroup}
+                  className="flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium rounded-full hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex-1 sm:flex-none justify-center"
+                >
                   Contact Group
                 </button>
               </div>
@@ -485,21 +878,29 @@ const ConfirmedPools = ({ currentUser }) => {
       <Card className="rounded-lg sm:rounded-xl">
         <CardBody>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <button className="flex-1 bg-blue-100 text-blue-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-blue-200 transition-colors border border-blue-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base">
+            <button 
+              onClick={handleContactGroup}
+              className="flex-1 bg-blue-100 text-blue-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-blue-200 transition-colors border border-blue-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+              disabled={!currentTrip?.groupId}
+            >
               <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               Contact Group
             </button>
             <button 
-              onClick={() => window.location.href = `/view-pool/${confirmedPool.groupId}`}
+              onClick={handleViewTripDetails}
               className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 border border-gray-400 dark:border-secondary-500 text-sm sm:text-base"
             >
               <IdentificationIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               Trip Details
             </button>
             {confirmedPool.userPaymentStatus === 'pending' && (
-              <button className="flex-1 bg-green-100 text-green-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-200 transition-colors border border-green-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base">
+              <button 
+                onClick={() => setShowPaymentForm(true)}
+                disabled={paymentProcessing}
+                className="flex-1 bg-green-100 text-green-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-200 transition-colors border border-green-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <CreditCardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                Make Payment
+                {paymentProcessing ? 'Processing...' : 'Make Payment'}
               </button>
             )}
           </div>
@@ -522,6 +923,166 @@ const ConfirmedPools = ({ currentUser }) => {
           </div>
         </CardBody>
       </Card>
+
+      {/* Payment Form Modal */}
+      {showPaymentForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Make Payment</h3>
+              <button
+                onClick={handleClosePaymentModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {!payHereLoaded && (
+              <div className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading secure payment system...
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={customerDetails.firstName}
+                    onChange={handleCustomerDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={customerDetails.lastName}
+                    onChange={handleCustomerDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={customerDetails.email}
+                  onChange={handleCustomerDetailsChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Phone *</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={customerDetails.phone}
+                  onChange={handleCustomerDetailsChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={customerDetails.address}
+                  onChange={handleCustomerDetailsChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-1">City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={customerDetails.city}
+                    onChange={handleCustomerDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-1">Country</label>
+                  <input
+                    type="text"
+                    name="country"
+                    value={customerDetails.country}
+                    onChange={handleCustomerDetailsChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-gray-800">Amount Due:</span>
+                  <span className="text-xl font-bold text-primary-600">
+                    LKR {currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid)?.amount?.toLocaleString() || '0'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Payment will be processed securely through PayHere
+                </p>
+              </div>
+
+              {paymentError && (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                  {paymentError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelPayment}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePoolPayment}
+                  disabled={paymentProcessing || !payHereLoaded}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {paymentProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : !payHereLoaded ? (
+                    'Loading...'
+                  ) : (
+                    'Pay Now'
+                  )}
+                </button>
+              </div>
+
+              <div className="text-xs text-gray-500 text-center">
+                <p>Secured by PayHere Payment Gateway</p>
+                <p>Your payment information is encrypted and secure</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
