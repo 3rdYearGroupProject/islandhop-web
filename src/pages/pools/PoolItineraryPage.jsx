@@ -1118,23 +1118,23 @@ const PoolItineraryPage = () => {
       console.log('📊 Similar trips data:', response?.similarTrips);
       console.log('📊 ===== END SAVE-TRIP RESPONSE ANALYSIS =====');
       
-      // Always navigate to suggestions page, whether we have suggestions or not
-      console.log('🔄 Navigating to trip suggestions page...');
-      navigate('/trip-suggestions', {
+      // Navigate to cost estimation page after saving trip
+      console.log('🔄 Navigating to cost estimation page...');
+      navigate('/pool-cost-estimation', {
         state: {
           // Trip information
           tripId: tripId,
           groupId: groupId,
-          tripName: normalizedTripName,
-          startDate: normalizedDates[0],
-          endDate: normalizedDates[normalizedDates.length - 1],
+          poolName: normalizedTripName,
+          selectedDates: normalizedDates,
           destinations: Object.values(destinations),
-          terrains: normalizedTerrains,
-          activities: normalizedActivities,
+          selectedTerrainPreferences: normalizedTerrains,
+          selectedActivityPreferences: normalizedActivities,
           itinerary: itinerary,
           userUid: user?.uid || userUid,
+          userEmail: user?.email,
           
-          // Suggestions data from backend
+          // Store suggestions data for later use
           suggestions: response?.similarTrips || response?.suggestions || [],
           totalSuggestions: response?.totalSuggestions || 0,
           hasSuggestions: response?.hasSimilarTrips || false,
@@ -1516,7 +1516,7 @@ const PoolItineraryPage = () => {
               disabled={isSavingTrip || isLoadingSuggestions}
               className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoadingSuggestions ? 'Finding Similar Trips...' : isSavingTrip ? 'Saving...' : 'Save & Find Similar Trips'}
+              {isLoadingSuggestions ? 'Saving Trip...' : isSavingTrip ? 'Saving...' : 'Save Trip & Continue'}
             </button>
           </div>
 

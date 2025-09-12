@@ -492,7 +492,7 @@ const PoolPreferencesPage = () => {
       if (currentStep < 2) {
         setCurrentStep(currentStep + 1);
       } else {
-        // Both preferences are filled - always create group with trip via API
+        // Both preferences are filled - create group with trip and go to itinerary
         console.log('🎯 Creating group with trip for poolPrivacy:', poolPrivacy);
         await createGroupWithTrip();
       }

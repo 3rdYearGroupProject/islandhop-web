@@ -21,6 +21,7 @@ import OngoingTripPage from '../pages/OngoingTripPage';
 import CompletedTripDetailsPage from '../pages/CompletedTripDetailsPage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
+import PoolCostEstimationPage from '../pages/pools/PoolCostEstimationPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
 import PoolDetailsPage from '../pages/pools/PoolDetailsPage';
 import CompatibleGroupsPage from '../pages/pools/CompatibleGroupsPage';
@@ -133,6 +134,11 @@ const GeneralRoutes = () => (
     <Route path="/pool-preferences" element={
       <PublicRoute>
         <PoolPreferencesPage />
+      </PublicRoute>
+    } />
+    <Route path="/pool-cost-estimation" element={
+      <PublicRoute>
+        <PoolCostEstimationPage />
       </PublicRoute>
     } />
     <Route path="/compatible-groups" element={
