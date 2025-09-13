@@ -10,7 +10,7 @@ import { useAuth } from '../../hooks/useAuth';
 const PoolPreferencesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, displayInfo } = useAuth();
   const { poolName, selectedDates, poolSize, poolPrivacy, poolId, pool, userUid } = location.state || {};
 
   console.log('📍 PoolPreferencesPage received:', { poolName, selectedDates, poolSize, poolPrivacy, poolId, userUid });
@@ -137,9 +137,16 @@ const PoolPreferencesPage = () => {
         return;
       }
       
-      // Get user information (in a real app, this would come from user profile)
-      const userEmail = user?.email || 'user@example.com';
-      const userName = user?.displayName || 'Anonymous User';
+      // Get user information from the auth hook's displayInfo
+      const userEmail = user?.email || displayInfo?.email || 'user@example.com';
+      const userName = user?.displayName || displayInfo?.displayName || 'Anonymous User';
+      
+      console.log('👤 Join request user data debug:', {
+        user: user,
+        displayInfo: displayInfo,
+        extractedEmail: userEmail,
+        extractedName: userName
+      });
       
       // Create a personalized message based on user preferences
       const activityText = selectedActivityPreferences.length > 0 
@@ -297,11 +304,23 @@ const PoolPreferencesPage = () => {
         return;
       }
       
+      // Get user information from the auth hook's displayInfo
+      const userEmail = user?.email || displayInfo?.email || 'user@example.com';
+      const userName = user?.displayName || displayInfo?.displayName || 'Anonymous User';
+      
+      console.log('👤 User data extraction debug:', {
+        user: user,
+        displayInfo: displayInfo,
+        extractedEmail: userEmail,
+        extractedName: userName
+      });
+      
       // Prepare request data according to CreateGroupWithTripRequest schema
       const requestData = {
         // Required fields
         userId: userId,
-        userEmail: user?.email || 'user@example.com', // Add userEmail field
+        userEmail: userEmail, // Properly extracted user email
+        userName: userName, // Add user display name
         tripName: poolName, // Trip name from the modal
         startDate: startDate,
         endDate: endDate,
