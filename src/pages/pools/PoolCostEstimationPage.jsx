@@ -264,6 +264,20 @@ const PoolCostEstimationPage = () => {
           needDriver,
           needGuide,
           selectedVehicle,
+          
+          // Detailed cost breakdown
+          costBreakdown: {
+            averageDriverCost: priceData?.averageDriverCost || 0,
+            averageGuideCost: priceData?.averageGuideCost || 0,
+            totalCost: calculateTotal(),
+            costPerPerson: Math.ceil(calculateTotal() / (poolSize || 1)), // Calculate cost per person
+            maxParticipants: poolSize || 1,
+            vehicleType: selectedVehicle,
+            needDriver,
+            needGuide
+          },
+          
+          // Backward compatibility
           estimatedCost: calculateTotal(),
           
           // Suggestions data that was saved from itinerary page

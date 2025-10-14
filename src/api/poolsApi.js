@@ -405,6 +405,61 @@ export class PoolsApi {
   }
 
   /**
+   * Get ALL pending items requiring user action - both invitations received and join requests to vote on.
+   * This comprehensive endpoint combines:
+   * 1. Invitations the user has received (to join groups)
+   * 2. Join requests that need the user's vote (for groups they're a member of)
+   * 
+   * @param {string} userId - The ID of the current user
+   * @returns {Promise<Object>} ComprehensivePendingItemsResponse with all pending items requiring user attention
+   */
+  static async getAllPendingItems(userId) {
+    try {
+      console.log('📋🔔 Starting getAllPendingItems for userId:', userId);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/all-pending-items?userId=${userId}`;
+      
+      console.log('📋🔔 Making request to URL:', fullUrl);
+      console.log('📋🔔 Base URL from env:', process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('📋🔔 Response status:', response.status);
+      console.log('📋🔔 Response ok:', response.ok);
+      console.log('📋🔔 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📋🔔 Error response data:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📋🔔 All pending items fetched successfully:', result);
+      console.log('📋🔔 Result type:', typeof result);
+      console.log('📋🔔 Result keys:', Object.keys(result || {}));
+      console.log('📋🔔 Total pending items:', result.totalPendingItems);
+      console.log('📋🔔 Total invitations:', result.totalInvitations);
+      console.log('📋🔔 Total vote requests:', result.totalVoteRequests);
+      return result;
+    } catch (error) {
+      console.error('📋🔔❌ Error fetching all pending items:', error);
+      console.error('📋🔔❌ Error name:', error.name);
+      console.error('📋🔔❌ Error message:', error.message);
+      console.error('📋🔔❌ Error stack:', error.stack);
+      throw new Error(`Failed to fetch all pending items: ${error.message}`);
+    }
+  }
+
+  /**
    * Get user invitations
    * @param {string} userId - User ID
    * @returns {Promise<Object>} User invitations
