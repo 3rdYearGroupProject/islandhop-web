@@ -21,7 +21,6 @@ import {
   Filter,
   Search,
   MoreHorizontal,
-  Sparkles,
   Globe,
   Camera,
   Heart,
@@ -29,7 +28,6 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
-import CreateAiTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
@@ -41,7 +39,6 @@ const placeholder = placeholderImage;
 
 const MyTripsPage = () => {
   const [isCreateTripModalOpen, setIsCreateTripModalOpen] = useState(false);
-  const [isCreateAiTripModalOpen, setIsCreateAiTripModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
@@ -200,13 +197,6 @@ const MyTripsPage = () => {
   // Handle Plan New Adventure button click
   const handlePlanNewAdventure = () => {
     if (checkUserAccessAndProfile('plan new adventures')) {
-      setIsCreateTripModalOpen(true);
-    }
-  };
-
-  // Handle AI Trip Suggestions button click
-  const handleAITripSuggestions = () => {
-    if (checkUserAccessAndProfile('get AI trip suggestions')) {
       setIsCreateTripModalOpen(true);
     }
   };
@@ -1138,19 +1128,6 @@ const MyTripsPage = () => {
     setIsCreateTripModalOpen(false);
   };
 
-  const handleCreateAITrip = (tripData) => {
-    console.log('🚀 Creating trip with user UID:', currentUser?.uid);
-    console.log('📝 Trip data:', tripData);
-    
-    navigate('/ai-trip-duration', { 
-      state: { 
-        tripName: tripData.name,
-        userUid: currentUser?.uid
-      } 
-    });
-    setIsCreateAiTripModalOpen(false);
-  };
-
   const handleTripClick = (trip) => {
     console.log('🔍 Viewing trip:', trip.name);
     
@@ -1209,19 +1186,11 @@ const MyTripsPage = () => {
             <div className="flex flex-row gap-3 sm:gap-4 justify-center mb-8">
               <button
                 onClick={handlePlanNewAdventure}
-                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl flex-1 sm:flex-none"
+                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <Plus className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-90 transition-transform duration-300" />
                 <span className="hidden sm:inline">Plan New Adventure</span>
                 <span className="sm:hidden">Plan Adventure</span>
-              </button>
-              <button 
-                onClick={handleAITripSuggestions}
-                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 border-2 border-white text-white rounded-full font-bold text-sm sm:text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm flex-1 sm:flex-none"
-              >
-                <Sparkles className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6" />
-                <span className="hidden sm:inline">AI Trip Suggestions</span>
-                <span className="sm:hidden">AI Suggestions</span>
               </button>
             </div>
           </div>
@@ -1530,12 +1499,6 @@ const MyTripsPage = () => {
         isOpen={isCreateTripModalOpen}
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateTrip}
-      />
-      {/* Enhanced Create Trip Modal */}
-      <CreateAiTripModal
-        isOpen={isCreateAiTripModalOpen}
-        onClose={() => setIsCreateTripModalOpen(false)}
-        onCreateTrip={handleCreateAITrip}
       />
 
       {/* Login Required Popup */}
