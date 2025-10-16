@@ -185,14 +185,28 @@ export const useChatMessages = (tripId, userId) => {
         console.log('Group messages:', groupMessages);
 
         // Transform messages to match the expected format
-        const transformedMessages = (groupMessages.content || groupMessages || []).map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          sender: msg.senderName,
-          timestamp: new Date(msg.timestamp),
-          isCurrentUser: msg.senderId === userId,
-          messageType: msg.messageType
-        }));
+        const transformedMessages = (groupMessages.content || groupMessages || []).map(msg => {
+          // Handle timestamp conversion - it comes as an array [year, month, day, hour, minute, second, nanoseconds]
+          let messageTimestamp;
+          if (Array.isArray(msg.timestamp)) {
+            // Convert array format [2025, 10, 16, 8, 39, 38, 456000000] to Date
+            const [year, month, day, hour, minute, second, nanoseconds] = msg.timestamp;
+            // Note: month in Date constructor is 0-based, but the array is 1-based
+            messageTimestamp = new Date(year, month - 1, day, hour, minute, second, Math.floor(nanoseconds / 1000000));
+          } else {
+            // Fallback for other timestamp formats
+            messageTimestamp = new Date(msg.timestamp);
+          }
+          
+          return {
+            id: msg.id,
+            text: msg.content,
+            sender: msg.senderName,
+            timestamp: messageTimestamp,
+            isCurrentUser: msg.senderId === userId,
+            messageType: msg.messageType
+          };
+        });
 
         setMessages(transformedMessages);
         setLoading(false);
@@ -245,19 +259,39 @@ export const useSendMessage = (tripId, userId, userDisplayName = 'User') => {
 
 // Utility function to format message timestamps
 export const formatMessageTime = (timestamp) => {
-  const now = new Date();
-  const messageTime = new Date(timestamp);
-  const diffInMinutes = Math.floor((now - messageTime) / (1000 * 60));
+  try {
+    const now = new Date();
+    let messageTime;
+    
+    // Handle array format timestamps
+    if (Array.isArray(timestamp)) {
+      const [year, month, day, hour, minute, second, nanoseconds] = timestamp;
+      messageTime = new Date(year, month - 1, day, hour, minute, second, Math.floor(nanoseconds / 1000000));
+    } else {
+      messageTime = new Date(timestamp);
+    }
+    
+    // Check if the date is valid
+    if (isNaN(messageTime.getTime())) {
+      console.warn('Invalid timestamp:', timestamp);
+      return 'Invalid date';
+    }
+    
+    const diffInMinutes = Math.floor((now - messageTime) / (1000 * 60));
 
-  if (diffInMinutes < 1) {
-    return 'Just now';
-  } else if (diffInMinutes < 60) {
-    return `${diffInMinutes}m ago`;
-  } else if (diffInMinutes < 1440) { // Less than 24 hours
-    const hours = Math.floor(diffInMinutes / 60);
-    return `${hours}h ago`;
-  } else {
-    return messageTime.toLocaleDateString();
+    if (diffInMinutes < 1) {
+      return 'Just now';
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInMinutes < 1440) { // Less than 24 hours
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours}h ago`;
+    } else {
+      return messageTime.toLocaleDateString();
+    }
+  } catch (error) {
+    console.error('Error formatting message time:', error, 'for timestamp:', timestamp);
+    return 'Invalid date';
   }
 };
 
@@ -266,11 +300,37 @@ export const groupMessagesByDate = (messages) => {
   const groups = {};
   
   messages.forEach(message => {
-    const date = new Date(message.timestamp).toDateString();
-    if (!groups[date]) {
-      groups[date] = [];
+    try {
+      let messageDate;
+      
+      // Handle array format timestamps
+      if (Array.isArray(message.timestamp)) {
+        const [year, month, day, hour, minute, second, nanoseconds] = message.timestamp;
+        messageDate = new Date(year, month - 1, day, hour, minute, second, Math.floor(nanoseconds / 1000000));
+      } else {
+        messageDate = new Date(message.timestamp);
+      }
+      
+      // Check if the date is valid
+      if (isNaN(messageDate.getTime())) {
+        console.warn('Invalid message timestamp:', message.timestamp);
+        messageDate = new Date(); // Use current date as fallback
+      }
+      
+      const date = messageDate.toDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+    } catch (error) {
+      console.error('Error processing message date:', error, 'for message:', message);
+      // Use current date as fallback
+      const date = new Date().toDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
     }
-    groups[date].push(message);
   });
 
   return groups;

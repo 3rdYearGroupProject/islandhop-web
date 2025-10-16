@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../../firebase';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { 
   User, 
   Camera, 
@@ -27,7 +29,9 @@ import { useToast } from '../../components/ToastProvider';
 
 const GuideProfile = () => {
   const [activeTab, setActiveTab] = useState('personal'); // personal, certifications, languages, documents, preferences
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [firebaseData, setFirebaseData] = useState({ email: '', memberSince: '' });
 
   const [guideData, setGuideData] = useState({
     // Personal Information
@@ -64,6 +68,16 @@ const GuideProfile = () => {
 
   const { success: showSuccessToast, error: showErrorToast } = useToast();
 
+  // Utility function to convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+      reader.onerror = error => reject(error);
+    });
+  };
+
   // Separate edit states for each section
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [isEditingCerts, setIsEditingCerts] = useState(false);
@@ -78,86 +92,75 @@ const GuideProfile = () => {
 
   // Fetch all data on component mount
   useEffect(() => {
-  const fetchAllData = async () => {
-    setIsLoading(true);
-    try {
-      // Remove localStorage - let session handle authentication
-      console.log('Fetching profile data...');
-      
-      // Fetch personal info (no email parameter needed - session handles it)
-      const personalRes = await userServicesApi.get(`/guide/profile`);
-      if (personalRes.status === 200 && personalRes.data) {
-        let profilePicture = personalRes.data.profilePicture;
-        if (personalRes.data.profilePictureBase64) {
-          profilePicture = `data:image/jpeg;base64,${personalRes.data.profilePictureBase64}`;
+    let unsubscribe;
+    setLoadingProfile(true);
+    unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setFirebaseData({
+          email: user.email,
+          memberSince: user.metadata.creationTime
+        });
+        try {
+          console.log('Fetching guide profile data for:', user.email);
+          
+          // Fetch personal info
+          const personalRes = await userServicesApi.get(`/guide/profile`);
+          if (personalRes.status === 200 && personalRes.data) {
+            let profilePicture = personalRes.data.profilePicture;
+            if (personalRes.data.profilePictureBase64) {
+              profilePicture = `data:image/jpeg;base64,${personalRes.data.profilePictureBase64}`;
+            }
+            setGuideData(prev => ({ 
+              ...prev, 
+              ...personalRes.data, 
+              profilePicture, 
+              email: personalRes.data.email || user.email
+            }));
+          }
+
+          // Get email from the profile response for other API calls
+          const userEmail = personalRes.data?.email || user.email;
+          
+          if (userEmail) {
+            // Fetch certificates
+            const certsRes = await userServicesApi.get(`/guide/certificates`);
+            if (certsRes.status === 200 && Array.isArray(certsRes.data)) {
+              setGuideData(prev => ({ ...prev, certifications: certsRes.data }));
+            }
+
+            // Fetch languages
+            const langsRes = await userServicesApi.get(`/guide/languages?email=${userEmail}`);
+            if (langsRes.status === 200 && Array.isArray(langsRes.data)) {
+              // Map 'level' to 'proficiency' for UI compatibility
+              const mapped = langsRes.data.map(lang => ({ ...lang, proficiency: lang.level }));
+              setGuideData(prev => ({ ...prev, languages: mapped }));
+            }
+          }
+
+        } catch (err) {
+          console.error('Error fetching guide profile:', err);
+          
+          // Handle authentication errors specifically
+          if (err.response?.status === 401) {
+            showErrorToast('Session expired. Please log in again.');
+            // Redirect to login page
+            // window.location.href = '/login'; // or use your router
+          } else {
+            showErrorToast('Failed to load profile data');
+          }
         }
-        setGuideData(prev => ({ 
-          ...prev, 
-          ...personalRes.data, 
-          profilePicture, 
-          email: personalRes.data.email // Get email from response instead of localStorage
-        }));
       }
-
-      // Get email from the profile response for other API calls
-      const userEmail = personalRes.data?.email;
-      
-      if (userEmail) {
-        // Fetch certificates
-        const certsRes = await userServicesApi.get(`/guide/certificates`);
-        if (certsRes.status === 200 && Array.isArray(certsRes.data)) {
-          setGuideData(prev => ({ ...prev, certifications: certsRes.data }));
-        }
-
-        // Fetch languages
-        const langsRes = await userServicesApi.get(`/guide/languages?email=${userEmail}`);
-        if (langsRes.status === 200 && Array.isArray(langsRes.data)) {
-          // Map 'level' to 'proficiency' for UI compatibility
-          const mapped = langsRes.data.map(lang => ({ ...lang, proficiency: lang.level }));
-          setGuideData(prev => ({ ...prev, languages: mapped }));
-        }
-      }
-
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      
-      // Handle authentication errors specifically
-      if (err.response?.status === 401) {
-        showErrorToast('Session expired. Please log in again.');
-        // Redirect to login page
-        // window.location.href = '/login'; // or use your router
-      } else {
-        showErrorToast('Failed to load profile data');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  fetchAllData();
-  // eslint-disable-next-line
-}, []);
+      setLoadingProfile(false);
+    });
+    return () => unsubscribe && unsubscribe();
+    // eslint-disable-next-line
+  }, []);
   // PUT methods for each section
   const handleSavePersonal = async () => {
+    setIsLoading(true);
     try {
-      let profilePictureToSend = guideData.profilePicture;
-      if (profilePictureFile) {
-        // Convert file to base64 and strip data URL prefix
-        const toBase64 = file => new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => {
-            const result = reader.result;
-            // Remove data URL prefix if present
-            const base64 = result.split(',')[1] || result;
-            resolve(base64);
-          };
-          reader.onerror = error => reject(error);
-        });
-        profilePictureToSend = await toBase64(profilePictureFile);
-      }
-      const res = await userServicesApi.put('/guide/profile', {
-        email: guideData.email,
+      let payload = {
+        email: firebaseData.email,
         firstName: guideData.firstName,
         lastName: guideData.lastName,
         phoneNumber: guideData.phoneNumber,
@@ -165,16 +168,48 @@ const GuideProfile = () => {
         address: guideData.address,
         emergencyContactNumber: guideData.emergencyContactNumber,
         emergencyContactName: guideData.emergencyContactName,
-        profilePictureBase64: profilePictureToSend
-      });
+      };
+
+      // If a new profile picture is selected, convert it to base64
+      if (profilePictureFile) {
+        const base64ProfilePicture = await fileToBase64(profilePictureFile);
+        payload.profilePictureBase64 = base64ProfilePicture;
+        console.log('Adding profile picture to payload');
+      } else {
+        // Remove base64 prefix if it exists for consistency
+        payload.profilePictureBase64 = guideData.profilePicture && guideData.profilePicture.startsWith('data:image') 
+          ? guideData.profilePicture.split(',')[1] 
+          : guideData.profilePicture;
+      }
+
+      console.log('Sending payload:', { ...payload, profilePictureBase64: payload.profilePictureBase64 ? `[base64 data - ${payload.profilePictureBase64.length} chars]` : 'none' });
+
+      const res = await userServicesApi.put('/guide/profile', payload);
+
+      // Update Firebase display name if first name or last name changed
+      if (auth.currentUser && (guideData.firstName || guideData.lastName)) {
+        const displayName = `${guideData.firstName} ${guideData.lastName}`.trim();
+        try {
+          await updateProfile(auth.currentUser, {
+            displayName: displayName
+          });
+          console.log('Firebase display name updated to:', displayName);
+        } catch (firebaseErr) {
+          console.error('Error updating Firebase display name:', firebaseErr);
+          // Don't throw - this is not critical for the profile update
+        }
+      }
+
       if (res.status === 200) {
-        showSuccessToast('Personal info updated');
         setIsEditingPersonal(false);
-        setProfilePictureFile(null); // Reset after successful upload
+        setProfilePictureFile(null);
+        showSuccessToast('Personal info updated successfully!');
       }
     } catch (err) {
-      showErrorToast('Failed to update personal info');
+      console.error('Error saving profile:', err);
+      showErrorToast('Failed to update personal info. Please try again.');
     }
+    setIsLoading(false);
   };
 
   // const handleSaveCertificates = async () => {
@@ -304,55 +339,54 @@ const GuideProfile = () => {
   const tabs = [
     { key: 'personal', label: 'Personal Info', icon: User },
     { key: 'certifications', label: 'Certifications', icon: BadgeCheckIcon },
-    { key: 'languages', label: 'Languages & Skills', icon: Languages }
+    { key: 'languages', label: 'Languages & Skills', icon: Languages },
+    { key: 'preferences', label: 'Preferences', icon: Settings }
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto relative">
       {/* Loading Screen */}
-      {isLoading ? (
-        <div className="min-h-screen flex my-20 justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+      {(isLoading || loadingProfile) && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Guide Profile</h1>
+            <p className="text-gray-600 mt-1">Manage your professional guide information</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            {activeTab === 'personal' && !isEditingPersonal && (
+              <button
+                onClick={() => setIsEditingPersonal(true)}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />Edit Personal Info
+              </button>
+            )}
+            {activeTab === 'certifications' && !isEditingCerts && (
+              <button
+                onClick={() => setIsEditingCerts(true)}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />Edit Certificates
+              </button>
+            )}
+            {activeTab === 'languages' && !isEditingLangs && (
+              <button
+                onClick={() => setIsEditingLangs(true)}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />Edit Languages
+              </button>
+            )}
           </div>
         </div>
-      ) : (
-        <>
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Guide Profile</h1>
-                <p className="text-gray-600 mt-1">Manage your professional guide information</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                {activeTab === 'personal' && !isEditingPersonal && (
-                  <button
-                    onClick={() => setIsEditingPersonal(true)}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                  >
-                    <Edit3 className="h-4 w-4 mr-2 inline" />Edit Personal Info
-                  </button>
-                )}
-                {activeTab === 'certifications' && !isEditingCerts && (
-                  <button
-                    onClick={() => setIsEditingCerts(true)}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                  >
-                    <Edit3 className="h-4 w-4 mr-2 inline" />Edit Certificates
-                  </button>
-                )}
-                {activeTab === 'languages' && !isEditingLangs && (
-                  <button
-                    onClick={() => setIsEditingLangs(true)}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                  >
-                    <Edit3 className="h-4 w-4 mr-2 inline" />Edit Languages
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+      </div>
 
           {/* Profile Summary Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -362,6 +396,10 @@ const GuideProfile = () => {
                   src={guideData.profilePicture || '/default-avatar.png'}
                   alt="Profile"
                   className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                  onError={(e) => {
+                    console.log('Profile picture failed to load, using fallback');
+                    e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face';
+                  }}
                 />
                 {isEditingPersonal && (
                   <label className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors cursor-pointer">
@@ -389,7 +427,7 @@ const GuideProfile = () => {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {guideData.firstName} {guideData.lastName}
                 </h2>
-                <p className="text-gray-600">{guideData.email}</p>
+                <p className="text-gray-600">{firebaseData.email}</p>
                 <div className="flex items-center space-x-4 mt-2">
                   <div className="flex items-center">
                     <Star className="h-4 w-4 text-yellow-400 mr-1" />
@@ -402,7 +440,7 @@ const GuideProfile = () => {
                   </div>
                   <div className="flex items-center text-sm text-gray-500">
                     <Calendar className="h-4 w-4 mr-1" />
-                    Member since {guideData.memberSince ? new Date(guideData.memberSince).getFullYear() : 'N/A'}
+                    Member since {firebaseData.memberSince ? new Date(firebaseData.memberSince).getFullYear() : 'N/A'}
                   </div>
                 </div>
               </div>
@@ -475,7 +513,7 @@ const GuideProfile = () => {
                   </label>
                   <input
                     type="email"
-                    value={guideData.email}
+                    value={firebaseData.email}
                     disabled
                     className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                   />
@@ -805,10 +843,35 @@ const GuideProfile = () => {
               </div>
             </div>
           )}
+
+          {/* Preferences Tab */}
+          {activeTab === 'preferences' && (
+            <div className="space-y-8">
+              {/* Account Management */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Management</h3>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <button
+                    className="flex-1 px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-semibold"
+                  >
+                    Reset Password
+                  </button>
+                  <button
+                    className="flex-1 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors font-semibold"
+                  >
+                    Deactivate Account
+                  </button>
+                  <button
+                    className="flex-1 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors font-semibold"
+                  >
+                    Delete Account
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-        </>
-      )}
 
       {/* Certificate View Modal */}
       {certificateModalOpen && selectedCertificate && (

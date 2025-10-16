@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { auth } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { getUserUID, getUserData } from '../../utils/userStorage';
 import { 
   MessageCircle, 
   Phone, 
   Video, 
   Send, 
-  Image, 
-  Paperclip, 
   Search,
   MoreVertical,
   Star,
@@ -31,6 +31,7 @@ const DriverChat = () => {
   const [selectedGroupMessages, setSelectedGroupMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = React.useRef(null);
   const typingTimeoutRef = React.useRef(null);
 
@@ -43,10 +44,41 @@ const DriverChat = () => {
   const currentUserUID = getUserUID();
   console.log('Current User UID:', currentUserUID);
   const userData = getUserData();
-  const currentUserName = userData?.firstName ? `${userData.firstName} ${userData.lastName || ''}`.trim() : `Driver ${currentUserUID?.substring(0, 8) || 'User'}`;
+  console.log('User Data:', userData);
+  
+  // Use Firebase display name if available, otherwise fall back to stored data
+  const getDriverName = () => {
+    if (currentUser?.displayName) {
+      console.log('Using Firebase display name:', currentUser.displayName);
+      return `Driver - ${currentUser.displayName}`;
+    }
+    if (userData?.firstName) {
+      console.log('Using stored user data name:', userData.firstName, userData.lastName);
+      return `Driver - ${userData.firstName} ${userData.lastName || ''}`.trim();
+    }
+    console.log('Using fallback UID name');
+    return `Driver - ${currentUserUID?.substring(0, 8) || 'User'}`;
+  };
+  
+  const currentUserName = getDriverName();
 
   // Chat API base URL
   const CHAT_API_BASE = 'http://localhost:8090/api/v1';
+
+  // Listen to Firebase auth state changes to get updated user info
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('Firebase auth state changed:', user);
+      if (user) {
+        console.log('Current Firebase user display name:', user.displayName);
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -79,68 +111,68 @@ const DriverChat = () => {
   }, [selectedGroupMessages, currentUserUID]);
 
   // Fetch user's groups
-  useEffect(() => {
-    const fetchUserGroups = async () => {
-      if (!currentUserUID) {
-        setError('User not authenticated');
-        setLoading(false);
-        return;
-      }
+  const fetchUserGroups = async () => {
+    if (!currentUserUID) {
+      setError('User not authenticated');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError(null);
-        
-        console.log('Fetching groups for user:', currentUserUID);
-        const response = await axios.get(`${CHAT_API_BASE}/chat/group/user/${currentUserUID}`);
-        console.log('Groups response:', response);
-        console.log('Groups data:', response.data);
-        
-        if (response.data && Array.isArray(response.data)) {
-          console.log('Raw groups data:', response.data);
-          const transformedGroups = response.data.map((group, index) => {
-            console.log('Processing group:', group);
-            // Helper function to safely create dates
-            const safeDate = (dateValue) => {
-              if (!dateValue) return new Date();
-              const date = new Date(dateValue);
-              return isNaN(date.getTime()) ? new Date() : date;
-            };
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching groups for user:', currentUserUID);
+      const response = await axios.get(`${CHAT_API_BASE}/chat/group/user/${currentUserUID}`);
+      console.log('Groups response:', response);
+      console.log('Groups data:', response.data);
+      
+      if (response.data && Array.isArray(response.data)) {
+        console.log('Raw groups data:', response.data);
+        const transformedGroups = response.data.map((group, index) => {
+          console.log('Processing group:', group);
+          // Helper function to safely create dates
+          const safeDate = (dateValue) => {
+            if (!dateValue) return new Date();
+            const date = new Date(dateValue);
+            return isNaN(date.getTime()) ? new Date() : date;
+          };
 
-            return {
-              id: group.id || generateUniqueId(`group_${index}`),
-              groupName: group.groupName || 'Unnamed Group',
-              description: group.description || 'No description',
-              groupType: group.groupType || 'PRIVATE',
-              memberCount: group.memberIds ? group.memberIds.length : 0,
-              adminId: group.adminId,
-              createdAt: safeDate(group.createdAt),
-              lastActivity: safeDate(group.lastActivity || group.createdAt),
-              unreadCount: 0, // This would need to be calculated from messages
-              isAdmin: group.adminId === currentUserUID
-            };
-          });
-          
-          // Ensure unique IDs to prevent React key warnings
-          const uniqueGroups = transformedGroups.map((group, index) => ({
-            ...group,
-            id: group.id || generateUniqueId(`final_group_${index}`)
-          }));
-          
-          setGroups(uniqueGroups);
-          console.log('Fetched groups:', uniqueGroups);
-        } else {
-          setGroups([]);
-        }
-      } catch (err) {
-        console.error('Error fetching groups:', err);
-        setError('Failed to fetch groups: ' + (err.response?.data?.message || err.message));
+          return {
+            id: group.id || generateUniqueId(`group_${index}`),
+            groupName: group.groupName || 'Unnamed Group',
+            description: group.description || 'No description',
+            groupType: group.groupType || 'PRIVATE',
+            memberCount: group.memberIds ? group.memberIds.length : 0,
+            adminId: group.adminId,
+            createdAt: safeDate(group.createdAt),
+            lastActivity: safeDate(group.lastActivity || group.createdAt),
+            unreadCount: 0, // This would need to be calculated from messages
+            isAdmin: group.adminId === currentUserUID
+          };
+        });
+        
+        // Ensure unique IDs to prevent React key warnings
+        const uniqueGroups = transformedGroups.map((group, index) => ({
+          ...group,
+          id: group.id || generateUniqueId(`final_group_${index}`)
+        }));
+        
+        setGroups(uniqueGroups);
+        console.log('Fetched groups:', uniqueGroups);
+      } else {
         setGroups([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching groups:', err);
+      setError('Failed to fetch groups: ' + (err.response?.data?.message || err.message));
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserGroups();
   }, [currentUserUID]);
 
@@ -479,16 +511,14 @@ const DriverChat = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Group Chats</h1>
-                {currentUserUID && (
-                  <p className="text-sm text-gray-500">User: {currentUserUID.substring(0, 12)}...</p>
-                )}
               </div>
               <button
-                onClick={() => window.location.reload()}
+                onClick={fetchUserGroups}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Refresh groups"
+                disabled={loading}
               >
-                <Loader className="h-5 w-5" />
+                <Loader className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
             <div className="relative">
@@ -689,12 +719,6 @@ const DriverChat = () => {
               {/* Message Input */}
               <div className="bg-white border-t border-gray-200 p-4">
                 <div className="flex items-center space-x-3">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Paperclip className="h-5 w-5" />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Image className="h-5 w-5" />
-                  </button>
                   <div className="flex-1 relative">
                     <input
                       type="text"

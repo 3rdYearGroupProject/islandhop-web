@@ -22,8 +22,61 @@ const TripDurationPage = () => {
   console.log('📍 TripDurationPage received:', { tripName, userUid });
   console.log('📊 Current state - selectedDates:', selectedDates.length, 'userUid:', userUid, 'isCreatingTrip:', isCreatingTrip);
 
-  // Mock flight data
+  // Mock flight data - expanded for October and November
   const mockFlightData = {
+    // October 2025
+    '2025-10-15': [
+      { airline: 'SriLankan Airlines', price: '$420', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$485', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Qatar Airways', price: '$445', departure: '2:20 AM', arrival: '10:05 AM', duration: '7h 45m' }
+    ],
+    '2025-10-20': [
+      { airline: 'SriLankan Airlines', price: '$435', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$500', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Singapore Airlines', price: '$475', departure: '9:15 AM', arrival: '5:00 PM', duration: '7h 45m' }
+    ],
+    '2025-10-25': [
+      { airline: 'SriLankan Airlines', price: '$410', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$470', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Qatar Airways', price: '$440', departure: '2:20 AM', arrival: '10:05 AM', duration: '7h 45m' }
+    ],
+    '2025-10-30': [
+      { airline: 'SriLankan Airlines', price: '$425', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$490', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Turkish Airlines', price: '$455', departure: '1:10 PM', arrival: '8:55 PM', duration: '7h 45m' }
+    ],
+    // November 2025
+    '2025-11-05': [
+      { airline: 'SriLankan Airlines', price: '$395', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$455', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Qatar Airways', price: '$420', departure: '2:20 AM', arrival: '10:05 AM', duration: '7h 45m' }
+    ],
+    '2025-11-10': [
+      { airline: 'SriLankan Airlines', price: '$405', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$465', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Singapore Airlines', price: '$440', departure: '9:15 AM', arrival: '5:00 PM', duration: '7h 45m' }
+    ],
+    '2025-11-15': [
+      { airline: 'SriLankan Airlines', price: '$385', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$445', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Qatar Airways', price: '$410', departure: '2:20 AM', arrival: '10:05 AM', duration: '7h 45m' }
+    ],
+    '2025-11-20': [
+      { airline: 'SriLankan Airlines', price: '$415', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$475', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Turkish Airlines', price: '$435', departure: '1:10 PM', arrival: '8:55 PM', duration: '7h 45m' }
+    ],
+    '2025-11-25': [
+      { airline: 'SriLankan Airlines', price: '$430', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$495', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Qatar Airways', price: '$450', departure: '2:20 AM', arrival: '10:05 AM', duration: '7h 45m' }
+    ],
+    '2025-11-30': [
+      { airline: 'SriLankan Airlines', price: '$440', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
+      { airline: 'Emirates', price: '$505', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
+      { airline: 'Singapore Airlines', price: '$465', departure: '9:15 AM', arrival: '5:00 PM', duration: '7h 45m' }
+    ],
+    // Original July dates
     '2025-07-14': [
       { airline: 'SriLankan Airlines', price: '$450', departure: '6:30 AM', arrival: '2:15 PM', duration: '7h 45m' },
       { airline: 'Emirates', price: '$520', departure: '11:45 PM', arrival: '8:30 AM+1', duration: '8h 45m' },
@@ -55,7 +108,31 @@ const TripDurationPage = () => {
       
       // Simulate API call delay
       setTimeout(() => {
-        setFlightData(mockFlightData[dateKey] || []);
+        // Check if we have exact date match first
+        let flights = mockFlightData[dateKey];
+        
+        // If no exact match, try to find flights for nearby dates
+        if (!flights) {
+          const availableDates = Object.keys(mockFlightData);
+          const selectedTime = dateObj.getTime();
+          
+          // Find the closest available date within 7 days
+          let closestDate = null;
+          let closestDiff = Infinity;
+          
+          availableDates.forEach(availableDate => {
+            const availableTime = new Date(availableDate).getTime();
+            const diff = Math.abs(selectedTime - availableTime);
+            if (diff < closestDiff && diff <= 7 * 24 * 60 * 60 * 1000) { // Within 7 days
+              closestDiff = diff;
+              closestDate = availableDate;
+            }
+          });
+          
+          flights = closestDate ? mockFlightData[closestDate] : [];
+        }
+        
+        setFlightData(flights || []);
         setIsLoading(false);
       }, 1000);
     }
@@ -156,7 +233,7 @@ const TripDurationPage = () => {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Travel Dates</h2>
-                  <p className="text-gray-600">Choose when you'd like to travel to see available options</p>
+                  <p className="text-gray-600">Choose dates at least 14 days ahead to see available options</p>
                 </div>
                 <CalendarIcon className="h-8 w-8 text-blue-600" />
               </div>
@@ -167,7 +244,7 @@ const TripDurationPage = () => {
                   selectedDates={selectedDates}
                   onDateSelect={handleDateSelect}
                   mode="range"
-                  minDate={new Date()}
+                  minDate={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)} // 14 days from today
                   className="w-full"
                 />
               </div>
@@ -239,13 +316,8 @@ const TripDurationPage = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="text-gray-600">
-                          <span className="font-medium">{flight.departure}</span> → <span className="font-medium">{flight.arrival}</span>
-                        </div>
-                        <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium">
-                          Select
-                        </button>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{flight.departure}</span> → <span className="font-medium">{flight.arrival}</span>
                       </div>
                     </div>
                   ))}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import api from '../../api/axios';
 import { 
   User, 
@@ -222,6 +222,30 @@ const DriverProfile = () => {
       console.log('Sending payload:', { ...payload, profilePicture: payload.profilePicture ? `[base64 data - ${payload.profilePicture.length} chars]` : 'none' });
 
       await api.put('/driver/profile', payload);
+
+      // Update Firebase display name if first name or last name changed
+      if (auth.currentUser && (driverData.firstName || driverData.lastName)) {
+        try {
+          const newDisplayName = `${driverData.firstName} ${driverData.lastName}`.trim();
+          console.log('Updating Firebase display name to:', newDisplayName);
+          
+          await updateProfile(auth.currentUser, {
+            displayName: newDisplayName
+          });
+          
+          console.log('Firebase display name updated successfully');
+          
+          // Force reload of Firebase user to get updated display name
+          await auth.currentUser.reload();
+          console.log('Firebase user reloaded, new display name:', auth.currentUser.displayName);
+          
+        } catch (firebaseError) {
+          console.error('Error updating Firebase display name:', firebaseError);
+          // Don't fail the entire save operation if display name update fails
+          showErrorToast('Profile updated but display name sync failed. Please try again.');
+        }
+      }
+
       setIsEditing(false);
       setProfilePictureFile(null);
       showSuccessToast('Profile updated successfully!');
