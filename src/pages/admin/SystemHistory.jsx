@@ -260,17 +260,18 @@ const SystemHistory = () => {
           id: log.id || index + 1,
           timestamp: log.timestamp || log.createdAt || new Date().toISOString(),
           transactionId:
-            log.transactionId || log.transaction_id || `TXN_${log.id}`,
-          user: log.user || log.userEmail || "Unknown User",
-          amount: log.amount || 0,
-          currency: log.currency || "USD",
-          paymentMethod: log.paymentMethod || log.payment_method || "Unknown",
+            log._id || log.transaction_id || `TXN_${log.id}`,
+          user: log.user || log.driverEmail || "Unknown User",
+          amount: log.cost || 0,
+          currency: log.currency || "LKR",
+          paymentMethod: log.paymentMethod || log.payment_method || "Online",
           cardLast4: log.cardLast4 || log.card_last4 || null,
-          status: log.status || "unknown",
-          type: log.type || log.transactionType || "Payment",
+          status: log.status || " Card",
+          logType: log.logType || log.transactionType || "Payment",
           tripId: log.tripId || log.trip_id || "N/A",
           gatewayResponse: log.gatewayResponse || log.gateway_response || "N/A",
           processingFee: log.processingFee || log.processing_fee || 0,
+          updatedAt: log.updatedAt || "date error",
         }));
 
         setPaymentLogs(transformedLogs);
@@ -480,75 +481,145 @@ const SystemHistory = () => {
             })}
           </nav>
         </div>
-
         {/* Tab Content */}
         <div className="space-y-4">
           {activeTab === "payments" && (
             <div className="space-y-4">
-              {paymentLogs.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className="p-2 bg-info-100 dark:bg-info-900/20 rounded-lg">
-                        <CreditCardIcon className="h-5 w-5 text-info-600 dark:text-info-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {payment.type}
-                          </h3>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              payment.status
-                            )}`}
-                          >
-                            {payment.status}
-                          </span>
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
-                            ${payment.amount.toFixed(2)} {payment.currency}
-                          </span>
+              {paymentLogs.length > 0 ? (
+                paymentLogs.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            payment.status === "completed"
+                              ? "bg-success-100 dark:bg-success-900/20"
+                              : "bg-warning-100 dark:bg-warning-900/20"
+                          }`}
+                        >
+                          <CreditCardIcon
+                            className={`h-5 w-5 ${
+                              payment.status === "completed"
+                                ? "text-success-600 dark:text-success-400"
+                                : "text-warning-600 dark:text-warning-400"
+                            }`}
+                          />
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          Transaction ID: {payment.transactionId}
-                        </p>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <strong>User:</strong> {payment.user}
-                            </div>
-                            <div>
-                              <strong>Payment Method:</strong>{" "}
-                              {payment.paymentMethod}
-                            </div>
-                            {payment.cardLast4 && (
-                              <div>
-                                <strong>Card:</strong> •••• {payment.cardLast4}
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {payment.type}
+                            </h3>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                                payment.status
+                              )}`}
+                            >
+                              {payment.status}
+                            </span>
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">
+                              {payment.currency}{" "}
+                              {payment.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
+                            Transaction ID:{" "}
+                            <span className="font-mono">
+                              {payment.transactionId}
+                            </span>
+                          </p>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  User Email:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {payment.user}
+                                </span>
                               </div>
-                            )}
-                            <div>
-                              <strong>Processing Fee:</strong> $
-                              {Math.abs(payment.processingFee).toFixed(2)}
-                            </div>
-                            <div>
-                              <strong>Trip/Pool ID:</strong> {payment.tripId}
-                            </div>
-                            <div>
-                              <strong>Gateway Response:</strong>{" "}
-                              {payment.gatewayResponse}
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Trip ID:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300 font-mono">
+                                  {payment.tripId}
+                                </span>
+                              </div>
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Log Type:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300 capitalize">
+                                  {payment.logType}
+                                </span>
+                              </div>
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Payment Status:
+                                </strong>
+                                <span
+                                  className={`font-semibold ${
+                                    payment.paid === 1
+                                      ? "text-success-600 dark:text-success-400"
+                                      : "text-warning-600 dark:text-warning-400"
+                                  }`}
+                                >
+                                  {"Paid"}
+                                </span>
+                              </div>
+                              {payment.evidence && (
+                                <div className="flex items-start md:col-span-2">
+                                  <strong className="min-w-[120px]">
+                                    Evidence:
+                                  </strong>
+                                  <span className="text-primary-600 dark:text-primary-400 font-mono">
+                                    {payment.evidence}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Created:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {new Date(payment.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Updated:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {new Date(payment.updatedAt).toLocaleString()}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
+                      <div className="text-right ml-4">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                          {formatTimeAgo(payment.timestamp)}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTimeAgo(payment.timestamp)}
-                    </span>
                   </div>
+                ))
+              ) : (
+                <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
+                  <CreditCardIcon className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Payment Logs Found
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    There are no payment logs to display at this time.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           )}
 
