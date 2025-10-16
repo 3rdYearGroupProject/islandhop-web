@@ -12,8 +12,7 @@ import {
 
 const SystemHistory = () => {
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("activity");
-  const [activityLogs, setActivityLogs] = useState([]);
+  const [activeTab, setActiveTab] = useState("payments");
   const [paymentLogs, setPaymentLogs] = useState([]);
   const [auditTrails, setAuditTrails] = useState([]);
   const [changeHistory, setChangeHistory] = useState([]);
@@ -25,60 +24,6 @@ const SystemHistory = () => {
     user: "all",
   });
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Mock data for activity logs
-  const mockActivityLogs = [
-    {
-      id: 1,
-      timestamp: "2024-06-25T15:30:00Z",
-      user: "admin@islandhop.com",
-      action: "User Login",
-      details: "Admin user logged in successfully",
-      ip: "192.168.1.100",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      status: "success",
-    },
-    {
-      id: 2,
-      timestamp: "2024-06-25T15:25:00Z",
-      user: "john.doe@islandhop.com",
-      action: "Profile Update",
-      details: "Updated user profile information",
-      ip: "192.168.1.101",
-      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-      status: "success",
-    },
-    {
-      id: 3,
-      timestamp: "2024-06-25T15:20:00Z",
-      user: "support@islandhop.com",
-      action: "Password Reset",
-      details: "Password reset for user ID: 1247",
-      ip: "192.168.1.102",
-      userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
-      status: "success",
-    },
-    {
-      id: 4,
-      timestamp: "2024-06-25T15:15:00Z",
-      user: "unknown",
-      action: "Failed Login",
-      details: "Failed login attempt for admin@islandhop.com",
-      ip: "203.0.113.195",
-      userAgent: "curl/7.68.0",
-      status: "failed",
-    },
-    {
-      id: 5,
-      timestamp: "2024-06-25T15:10:00Z",
-      user: "system",
-      action: "Backup Created",
-      details: "Automated database backup completed",
-      ip: "127.0.0.1",
-      userAgent: "System Process",
-      status: "success",
-    },
-  ];
 
   // Mock data for payment logs
   const mockPaymentLogs = [
@@ -267,7 +212,6 @@ const SystemHistory = () => {
   useEffect(() => {
     // Simulate API calls
     setTimeout(() => {
-      setActivityLogs(mockActivityLogs);
       setPaymentLogs(mockPaymentLogs);
       setAuditTrails(mockAuditTrails);
       setChangeHistory(mockChangeHistory);
@@ -426,7 +370,6 @@ const SystemHistory = () => {
         <div className="mb-6">
           <nav className="flex space-x-8">
             {[
-              { id: "activity", label: "Activity Logs", icon: UserIcon },
               { id: "payments", label: "Payment Logs", icon: CreditCardIcon },
             ].map((tab) => {
               const IconComponent = tab.icon;
@@ -450,56 +393,6 @@ const SystemHistory = () => {
 
         {/* Tab Content */}
         <div className="space-y-4">
-          {activeTab === "activity" && (
-            <div className="space-y-4">
-              {activityLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                        <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {log.action}
-                          </h3>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              log.status
-                            )}`}
-                          >
-                            {log.status}
-                          </span>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          {log.details}
-                        </p>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                          <div>
-                            <strong>User:</strong> {log.user}
-                          </div>
-                          <div>
-                            <strong>IP:</strong> {log.ip}
-                          </div>
-                          <div>
-                            <strong>User Agent:</strong> {log.userAgent}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTimeAgo(log.timestamp)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
           {activeTab === "payments" && (
             <div className="space-y-4">
               {paymentLogs.map((payment) => (
