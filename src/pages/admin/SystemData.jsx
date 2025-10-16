@@ -18,6 +18,8 @@ import adminServicesApi from '../../api/axios';
 import VehiclePopup from '../../components/VehiclePopup';
 import DriverPopup from '../../components/DriverPopup';
 import GuidePopup from '../../components/GuidePopup';
+import axios from 'axios';
+import { auth } from '../../firebase';
 
 const SystemData = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -25,6 +27,7 @@ const SystemData = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [authToken, setAuthToken] = useState('');
   const [newVehicle, setNewVehicle] = useState({
     typeName: '',
     capacity: '',
@@ -50,31 +53,82 @@ const SystemData = () => {
   const [showCompanyForm, setShowCompanyForm] = useState(false);
 
   useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await adminServicesApi.get('http://localhost:8091/api/v1/admin/vehicle-types');
-
-        console.log('Fetched vehicles:', response.data);
-
-        if (response.status === 200 && response.data && response.data.data) {
-          setVehicles(response.data.data);
-        } else {
-          throw new Error('Failed to fetch vehicles');
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+          console.log("Retrieved auth token:", token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setAuthToken("");
         }
+      }
+    };
+    getToken();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!authToken) return; // Wait for auth token
+      
+      try {
+        // Fetch vehicles
+        // const vehiclesResponse = await axios.get('http://localhost:8091/api/admin/vehicle-types', {
+        //   headers: {
+        //     'Authorization': `Bearer ${authToken}`,
+        //     'Content-Type': 'application/json'
+        //   }
+        // });
+        // console.log('Fetched vehicles:', vehiclesResponse.data);
+
+        // if (vehiclesResponse.status === 200 && vehiclesResponse.data && vehiclesResponse.data.data) {
+        //   setVehicles(vehiclesResponse.data.data);
+        // } else {
+        //   setVehicles([]);
+        // }
+
+        // Fetch third party drivers
+        try {
+          console.log("Fetching third party drivers...");
+          const driversResponse = await axios.get('http://localhost:8070/api/admin/thirdparty/third-party-drivers', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          console.log('Fetched drivers:', driversResponse.data);
+
+          if (driversResponse.status === 200 && driversResponse.data && driversResponse.data.data) {
+            setThirdPartyCompanies(driversResponse.data.data);
+          } else {
+            setThirdPartyCompanies([]);
+          }
+        } catch (companyError) {
+          console.error('Error fetching drivers:', companyError);
+          setThirdPartyCompanies([]); // Keep empty array if fetch fails
+        }
+
       } catch (err) {
         console.error('Error fetching vehicles:', err);
-        setVehicles([]); // Ensure page loads with empty data
+        setVehicles([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVehicles();
-  }, []);
+    fetchData();
+  }, [authToken]); // Add authToken as dependency
 
   const addVehicle = async () => {
     try {
-      const response = await adminServicesApi.post('http://localhost:8091/api/v1/admin/vehicle-types', newVehicle);
+      const response = await axios.post('http://localhost:8091/api/v1/admin/vehicle-types', newVehicle, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 201 && response.data && response.data.data) {
         setVehicles((prev) => [...prev, response.data.data]);
@@ -108,7 +162,12 @@ const SystemData = () => {
 
       console.log('Sending update payload:', updatePayload);
 
-      const response = await adminServicesApi.put(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, updatePayload);
+      const response = await axios.put(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, updatePayload, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 200 && response.data && response.data.data) {
         setVehicles((prev) => prev.map((v) => (v.id === id ? response.data.data : v)));
@@ -126,7 +185,12 @@ const SystemData = () => {
 
   const deleteVehicle = async (id) => {
     try {
-      const response = await adminServicesApi.delete(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`);
+      const response = await axios.delete(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 200) {
         setVehicles((prev) => prev.filter((v) => v.id !== id));
@@ -162,60 +226,98 @@ const SystemData = () => {
     }
 
     try {
-      // TODO: Replace with actual API call
-      const newCompanyData = {
-        id: Date.now(), // Temporary ID generation
-        ...newCompany,
-        createdAt: new Date().toISOString(),
-        status: 'active'
-      };
-
-      setThirdPartyCompanies([...thirdPartyCompanies, newCompanyData]);
-      setNewCompany({
-        companyName: '',
-        companyEmail: '',
-        contactNumber1: '',
-        contactNumber2: '',
-        district: ''
+      // Call backend API to add driver
+      const response = await axios.post('http://localhost:8070/api/admin/thirdparty/third-party-drivers', newCompany, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
       });
-      setShowCompanyForm(false);
-      alert('Third party company added successfully!');
+      
+      if (response.status === 201 && response.data && response.data.data) {
+        // Add the new company to the state
+        setThirdPartyCompanies([...thirdPartyCompanies, response.data.data]);
+        
+        // Reset form
+        setNewCompany({
+          companyName: '',
+          companyEmail: '',
+          contactNumber1: '',
+          contactNumber2: '',
+          district: ''
+        });
+        setShowCompanyForm(false);
+        alert('Third party driver company added successfully!');
+      } else {
+        throw new Error('Failed to add driver company');
+      }
     } catch (error) {
-      console.error('Error adding company:', error);
-      alert('Failed to add company');
+      console.error('Error adding driver company:', error);
+      alert('Failed to add driver company: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const updateCompany = async (id, updatedData) => {
+    console.log('Update Company - ID:', id, 'Data:', updatedData); // Debug log
+    
+    if (!id) {
+      alert('No company ID provided for update');
+      return;
+    }
+    
     try {
-      // TODO: Replace with actual API call
-      setThirdPartyCompanies(thirdPartyCompanies.map(company => 
-        company.id === id ? { ...company, ...updatedData } : company
-      ));
-      setEditingCompany(null);
-      alert('Company updated successfully!');
+      // Call backend API to update driver company
+      const response = await axios.put(`http://localhost:8070/api/admin/thirdparty/third-party-drivers/${id}`, updatedData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 200 && response.data && response.data.data) {
+        // Update the company in the state
+        setThirdPartyCompanies(thirdPartyCompanies.map(company => 
+          (company._id || company.id) === id ? response.data.data : company
+        ));
+        setEditingCompany(null);
+        alert('Driver company updated successfully!');
+      } else {
+        throw new Error('Failed to update driver company');
+      }
     } catch (error) {
-      console.error('Error updating company:', error);
-      alert('Failed to update company');
+      console.error('Error updating driver company:', error);
+      alert('Failed to update driver company: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const deleteCompany = async (id) => {
-    if (window.confirm('Are you sure you want to delete this company?')) {
+    if (window.confirm('Are you sure you want to delete this driver company?')) {
       try {
-        // TODO: Replace with actual API call
-        setThirdPartyCompanies(thirdPartyCompanies.filter(company => company.id !== id));
-        alert('Company deleted successfully!');
+        // Call backend API to delete driver company
+        const response = await axios.delete(`http://localhost:8070/api/admin/thirdparty/third-party-drivers/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.status === 200) {
+          // Remove the company from state
+          setThirdPartyCompanies(thirdPartyCompanies.filter(company => (company._id || company.id) !== id));
+          alert('Driver company deleted successfully!');
+        } else {
+          throw new Error('Failed to delete driver company');
+        }
       } catch (error) {
-        console.error('Error deleting company:', error);
-        alert('Failed to delete company');
+        console.error('Error deleting driver company:', error);
+        alert('Failed to delete driver company: ' + (error.response?.data?.message || error.message));
       }
     }
   };
 
   const openEditCompanyModal = (company) => {
     setEditingCompany({
-      id: company.id,
+      _id: company._id || company.id, // Handle both _id and id
       companyName: company.companyName,
       companyEmail: company.companyEmail,
       contactNumber1: company.contactNumber1,
@@ -804,7 +906,7 @@ const SystemData = () => {
                     <button
                       onClick={() => {
                         if (editingCompany) {
-                          updateCompany(editingCompany.id, editingCompany);
+                          updateCompany(editingCompany._id, editingCompany);
                         } else {
                           addCompany();
                         }
@@ -842,9 +944,6 @@ const SystemData = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           District
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Status
-                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Actions
                         </th>
@@ -878,11 +977,6 @@ const SystemData = () => {
                               {company.district}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200">
-                              {company.status || 'Active'}
-                            </span>
-                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end space-x-2">
                               <button
@@ -892,7 +986,7 @@ const SystemData = () => {
                                 <PencilIcon className="h-4 w-4" />
                               </button>
                               <button
-                                onClick={() => deleteCompany(company.id)}
+                                onClick={() => deleteCompany(company._id)}
                                 className="text-danger-600 hover:text-danger-900 dark:text-danger-400 dark:hover:text-danger-300"
                               >
                                 <TrashIcon className="h-4 w-4" />
