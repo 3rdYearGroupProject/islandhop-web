@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   DollarSign, 
@@ -15,6 +15,13 @@ import {
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import PoolProgressBar from '../../components/PoolProgressBar';
+import { Share2, Plus, Users as UsersIcon, CheckCircle, AlertCircle, Timer } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import SharePoolModal from '../../components/SharePoolModal';
+import JoinPoolModal from '../../components/JoinPoolModal';
+import InviteUserModal from '../../components/InviteUserModal';
+import JoinRequestsManager from '../../components/JoinRequestsManager';
+import { poolsApi } from '../../api/poolsApi';
 
 const PoolDetailsPage = () => {
   const location = useLocation();
@@ -50,6 +57,37 @@ const PoolDetailsPage = () => {
     meetingPoint: '',
     additionalNotes: ''
   });
+
+  // Added states for pool actions similar to ViewPoolPage
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  
+  // Trip Confirmation State (from ViewPoolPage)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmationStatus, setConfirmationStatus] = useState('pending'); // 'pending', 'confirming', 'confirmed', 'failed'
+  const [confirmationLoading, setConfirmationLoading] = useState(false);
+
+  const { user } = useAuth();
+
+  // Helpers for capacity
+  const currentParticipants = location.state?.participants || 0;
+  const maxParticipants = location.state?.poolSize || 0;
+  const hasCapacity = currentParticipants < maxParticipants;
+
+  useEffect(() => {
+    // Determine role based on route state; infer creator/member from passed state
+    const creatorUid = location.state?.userUid || location.state?.creatorUid || null;
+    const members = location.state?.members || [];
+
+    if (user) {
+      setIsCreator(!!creatorUid && (user.uid === creatorUid || user.id === creatorUid));
+      setIsMember(Array.isArray(members) ? members.some(m => m.userId === user.uid || m.email === user.email) : false);
+    }
+  }, [location.state, user]);
   
   const [isCreatingPool, setIsCreatingPool] = useState(false);
 
@@ -134,6 +172,89 @@ const PoolDetailsPage = () => {
     });
   };
 
+  // Trip Confirmation Functions (from ViewPoolPage)
+  const handleInitiateTripConfirmation = async () => {
+    setConfirmationLoading(true);
+    try {
+      // Create a pool object from location state for API call
+      const poolData = {
+        id: location.state?.poolId || 'temp-pool-id',
+        tripId: location.state?.tripId || location.state?.poolId,
+        startDate: selectedDates?.[0]?.toISOString() || new Date().toISOString(),
+        endDate: selectedDates?.[1]?.toISOString() || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        destinations: destinations?.map(d => d.name).join(', ') || 'Sri Lanka',
+        budget: poolDetails.budget || 'mid-range',
+        totalCost: 40000, // Default cost
+        costPerPerson: 10000 // Default cost per person
+      };
+
+      // Prepare confirmation data object matching backend API spec
+      const confirmationData = {
+        groupId: poolData.id,
+        tripId: poolData.tripId,
+        userId: user?.uid || user?.id,
+        minMembers: 2,
+        maxMembers: poolSize || 6,
+        tripStartDate: poolData.startDate,
+        tripEndDate: poolData.endDate,
+        confirmationHours: 48,
+        totalAmount: poolData.totalCost,
+        pricePerPerson: poolData.costPerPerson,
+        currency: "LKR",
+        paymentDeadlineHours: 72,
+        tripDetails: {
+          destinations: Array.isArray(destinations) ? destinations.map(d => d.name) : [poolData.destinations],
+          activities: selectedActivities || ["sightseeing"],
+          accommodation: poolDetails.accommodation || "hotel",
+          transportation: poolDetails.transportation || "private_van"
+        }
+      };
+      
+      console.log('🎯 Sending confirmation data:', confirmationData);
+      const result = await poolsApi.initiateTripConfirmation(confirmationData);
+      console.log('Trip confirmation initiated:', result);
+      setConfirmationStatus('confirming');
+      setShowConfirmationModal(true);
+    } catch (error) {
+      console.error('Failed to initiate trip confirmation:', error);
+      alert('Failed to initiate trip confirmation. Please try again.');
+    } finally {
+      setConfirmationLoading(false);
+    }
+  };
+
+  const handleConfirmParticipation = async () => {
+    setConfirmationLoading(true);
+    try {
+      const poolId = location.state?.poolId || 'temp-pool-id';
+      const result = await poolsApi.confirmParticipation(poolId, user?.uid || user?.id);
+      console.log('Participation confirmed:', result);
+      setConfirmationStatus('confirmed');
+      // Navigate to pools page after confirmation
+      setTimeout(() => {
+        navigate('/pools', { state: { activeTab: 'confirmed' } });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to confirm participation:', error);
+      alert('Failed to confirm participation. Please try again.');
+    } finally {
+      setConfirmationLoading(false);
+    }
+  };
+
+  const handleShare = () => {
+    setShareModalOpen(true);
+  };
+
+  const handleInvite = (emails) => {
+    console.log('Inviting:', emails);
+  };
+
+  const handleRequestJoin = () => {
+    console.log('Request to join pool:', poolName);
+    setJoinModalOpen(false);
+  };
+
   const formatDateRange = () => {
     if (!selectedDates || selectedDates.length === 0) return 'No dates selected';
     if (selectedDates.length === 1) {
@@ -161,6 +282,91 @@ const PoolDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Trip Confirmation Modal */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl max-w-md w-full p-6">
+            <div className="text-center">
+              {confirmationStatus === 'confirming' ? (
+                <>
+                  <AlertCircle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Confirm Your Participation
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    The trip organizer has initiated trip confirmation. Please confirm your participation to proceed with this amazing journey!
+                  </p>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Trip Details:</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Destination:</strong> {destinations?.map(d => d.name).join(', ') || 'Sri Lanka'}<br/>
+                      <strong>Duration:</strong> {selectedDates?.length || 1} days<br/>
+                      <strong>Dates:</strong> {formatDateRange()}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleConfirmParticipation}
+                      disabled={confirmationLoading}
+                      className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                    >
+                      {confirmationLoading ? (
+                        <>
+                          <Timer className="w-4 h-4 mr-2 animate-spin" />
+                          Confirming...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Confirm Participation
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowConfirmationModal(false)}
+                      className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors"
+                    >
+                      Maybe Later
+                    </button>
+                  </div>
+                </>
+              ) : confirmationStatus === 'confirmed' ? (
+                <>
+                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Participation Confirmed!
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Great! Your participation has been confirmed. You'll be redirected to your confirmed trips shortly.
+                  </p>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg mb-6">
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      🎉 You're all set! Check your email for next steps and payment details.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Trip Confirmation Started
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Trip confirmation has been initiated! All participants will be notified and can now confirm their participation.
+                  </p>
+                  <button
+                    onClick={() => setShowConfirmationModal(false)}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Got it!
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Navbar />
       
       <PoolProgressBar poolName={poolName} onBack={handleBack} currentStep={5} completedSteps={[1, 2, 3, 4]} />
@@ -308,7 +514,109 @@ const PoolDetailsPage = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-24">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Pool Summary</h3>
-              
+              {/* Top action buttons (Share / Invite / Join Requests / Confirm / Join) */}
+              <div className="flex items-center gap-2 mb-4">
+                <button
+                  onClick={() => setShareModalOpen(true)}
+                  className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-md transition-colors"
+                >
+                  <Share2 className="w-4 h-4 mr-2" /> Share
+                </button>
+
+                {/* Invite and Join should only be shown if there is capacity */}
+                {hasCapacity && (
+                  <>
+                    <button
+                      onClick={() => setInviteModalOpen(true)}
+                      className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors"
+                    >
+                      <Plus className="w-4 h-4 mr-2" /> Invite
+                    </button>
+                    <button
+                      onClick={() => setJoinModalOpen(true)}
+                      disabled={isMember}
+                      className={`flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition-colors ${isMember ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <Plus className="w-4 h-4 mr-2" /> Join Pool
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => setJoinRequestsModalOpen(true)}
+                  className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-md transition-colors"
+                >
+                  <UsersIcon className="w-4 h-4 mr-2" /> Requests
+                </button>
+
+                {/* Confirm Trip shown only to creator */}
+                {isCreator && (
+                  <button
+                    onClick={handleInitiateTripConfirmation}
+                    disabled={confirmationLoading}
+                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition-colors ml-auto disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  >
+                    {confirmationLoading ? (
+                      <Timer className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
+                    {confirmationLoading ? 'Starting...' : 'Confirm Trip'}
+                  </button>
+                )}
+
+                {/* Confirm Participation shown only to participants who are not the creator */}
+                {isMember && !isCreator && (
+                  <button
+                    onClick={handleConfirmParticipation}
+                    disabled={confirmationLoading}
+                    className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-md transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  >
+                    {confirmationLoading ? (
+                      <Timer className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                    )}
+                    {confirmationLoading ? 'Confirming...' : 'Confirm Participation'}
+                  </button>
+                )}
+
+                {/* Render modals */}
+                <SharePoolModal 
+                  open={shareModalOpen} 
+                  onClose={() => setShareModalOpen(false)} 
+                  participants={[]} 
+                  currentCount={currentParticipants} 
+                  maxCount={maxParticipants} 
+                  onInvite={handleInvite} 
+                />
+                <JoinPoolModal 
+                  open={joinModalOpen} 
+                  onClose={() => setJoinModalOpen(false)} 
+                  poolData={{ name: poolName, id: location.state?.poolId }} 
+                  onSuccess={handleRequestJoin} 
+                />
+                <InviteUserModal 
+                  isOpen={inviteModalOpen} 
+                  onClose={() => setInviteModalOpen(false)} 
+                  groupData={{ name: poolName, id: location.state?.poolId }} 
+                  onSuccess={(result) => {
+                    console.log('Invitation sent:', result);
+                    alert('Invitation sent successfully!');
+                  }} 
+                />
+                <JoinRequestsManager
+                  groupId={location.state?.poolId || 'temp-pool-id'}
+                  isOpen={joinRequestsModalOpen}
+                  onClose={() => setJoinRequestsModalOpen(false)}
+                  onRequestUpdate={(result) => {
+                    console.log('Join request updated:', result);
+                    // Could refresh pool data here if needed
+                  }}
+                />
+
+              </div>
+
               <div className="space-y-4">
                 {/* Basic Info */}
                 <div>

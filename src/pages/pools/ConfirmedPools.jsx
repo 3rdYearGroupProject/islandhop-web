@@ -43,6 +43,36 @@ const ConfirmedPools = ({ currentUser }) => {
     }
   }, [currentUser]);
 
+  // Helper functions for data processing
+  const formatDateRange = (startDate, endDate) => {
+    if (!startDate || !endDate) return 'Dates TBD';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
+    const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const year = start.getFullYear();
+    
+    if (startMonth === endMonth) {
+      return `${startMonth} ${startDay} - ${endDay}, ${year}`;
+    } else {
+      return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+    }
+  };
+
+  const calculateDurationDays = (startDate, endDate) => {
+    if (!startDate || !endDate) return 1;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays || 1;
+  };
+
   // Load PayHere script
   useEffect(() => {
     const script = document.createElement('script');
@@ -88,97 +118,57 @@ const ConfirmedPools = ({ currentUser }) => {
 
     setLoading(true);
     try {
-      // Mock data for testing with specified trip ID
-      const mockTrip = {
-        confirmedTripId: "f8cbe64d-9df9-4d61-85aa-933fe56a8bc3",
-        groupId: "669e72aa-6ea3-4966-be1b-ae8bf75ea192",
-        tripId: "414ad9d2-7d24-466c-a829-9b88ab7ae6c9",
-        tripName: "test-pool-1",
-        groupName: "test-pool-1",
-        creatorUserId: "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
-        creatorName: "tourist test2",
-        members: [
-          {
-            userId: "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
-            name: "tourist test2",
-            email: "tourist.test2@example.com",
-            role: "leader",
-            joinedAt: "2025-09-12T13:52:48.521Z",
-            status: "active",
-            preferences: {
-              budgetLevel: "Medium",
-              preferredActivities: ["hiking", "photography"],
-              preferredTerrains: ["historical"],
-              activityPacing: "Normal"
-            }
-          }
-        ],
-        memberIds: ["qSUXJXYRncWpx6Y0Rjl5LIidPYr1"],
-        baseCity: "Colombo",
-        cities: ["Colombo", "Kandy"],
-        startDate: "2025-09-22",
-        endDate: "2025-09-23",
-        tripStartDate: "2025-09-22",
-        formattedDateRange: "Sep 22 - Sep 23, 2025",
-        tripDurationDays: 2,
-        visibility: "public",
-        memberCount: 1,
-        maxMembers: 3,
-        currentMemberCount: 1,
-        memberCountText: "1 participants / 3",
-        topAttractions: ["Temple of the Tooth", "Royal Botanical Gardens"],
-        budgetLevel: "Medium",
-        activityPacing: "Normal",
-        preferredActivities: ["hiking", "photography"],
-        preferredTerrains: ["historical"],
-        status: "confirmed",
-        createdAt: "2025-09-12T13:52:48.521Z",
-        compatibilityScore: 85,
-        confirmationDeadline: "2025-09-20",
-        userConfirmed: true,
-        userPaymentStatus: "pending",
-        isCreator: currentUser?.uid === "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
-        tripDetails: {
-          destinations: ["Colombo", "Kandy"],
-          accommodation: "3-star hotels",
-          transportation: "Private vehicle"
-        },
-        paymentInfo: {
-          pricePerPerson: 15000,
-          paymentDeadline: "2025-09-20",
-          memberPayments: [
-            {
-              userId: currentUser?.uid || "qSUXJXYRncWpx6Y0Rjl5LIidPYr1",
-              amount: 15000,
-              status: "pending",
-              name: "tourist test2"
-            }
-          ]
-        }
-      };
-
-      // Use mock data for testing, or fetch from API
-      if (process.env.NODE_ENV === 'development' || window.location.search.includes('mock=true')) {
-        console.log('🔧 Using mock confirmed trip data with trip ID:', mockTrip.confirmedTripId);
-        console.log('📋 Mock trip details:', mockTrip);
-        setConfirmedTrips([mockTrip]);
+      console.log('📋 Loading confirmed trips for user:', currentUser.uid);
+      
+      // Fetch user's confirmed trips from the real API
+      const response = await poolsApi.getUserConfirmedTrips(currentUser.uid, {
+        status: 'payment_pending,confirmed,completed', // Get all statuses
+        page: 1,
+        limit: 50 // Get more trips to show pagination later if needed
+      });
+      
+      console.log('📋 API response for confirmed trips:', response);
+      
+      if (response.success && response.data.trips && response.data.trips.length > 0) {
+        // Process the trips data to match UI expectations
+        const processedTrips = response.data.trips.map(trip => {
+          // Map API response to expected format
+          return {
+            ...trip,
+            // Ensure consistent field names
+            confirmedTripId: trip.confirmedTripId || trip._id,
+            tripStartDate: trip.tripStartDate,
+            tripEndDate: trip.tripEndDate,
+            // Add calculated fields for UI
+            formattedDateRange: formatDateRange(trip.tripStartDate, trip.tripEndDate),
+            tripDurationDays: calculateDurationDays(trip.tripStartDate, trip.tripEndDate),
+            memberCountText: `${trip.currentMemberCount} participants / ${trip.maxMembers}`,
+            // User-specific fields
+            isCreator: trip.creatorUserId === currentUser.uid,
+            userConfirmed: trip.userConfirmed || false,
+            userPaymentStatus: trip.userPaymentStatus || 'pending',
+            // Ensure destinations are formatted properly
+            cities: trip.tripDetails?.destinations || [],
+            topAttractions: trip.tripDetails?.activities || [],
+            // Payment info
+            pricePerPerson: trip.paymentInfo?.pricePerPerson || 0,
+            compatibilityScore: 85 // Default compatibility score
+          };
+        });
+        
+        setConfirmedTrips(processedTrips);
         setCurrentTripIndex(0);
         setError(null);
+        console.log('📋 Processed confirmed trips:', processedTrips);
       } else {
-        const response = await poolsApi.getUserConfirmedTrips(currentUser.uid);
-        
-        if (response.success && response.data.trips.length > 0) {
-          setConfirmedTrips(response.data.trips);
-          setCurrentTripIndex(0);
-          setError(null);
-        } else {
-          setConfirmedTrips([]);
-          setError(null);
-        }
+        console.log('📋 No confirmed trips found for user');
+        setConfirmedTrips([]);
+        setError(null);
       }
     } catch (err) {
-      console.error('Error loading confirmed trips:', err);
-      setError('Failed to load confirmed trips');
+      console.error('📋❌ Error loading confirmed trips:', err);
+      setError(`Failed to load confirmed trips: ${err.message}`);
+      setConfirmedTrips([]);
     } finally {
       setLoading(false);
     }
@@ -232,10 +222,30 @@ const ConfirmedPools = ({ currentUser }) => {
       date: `Day ${index + 1}`
     })) || [];
 
+    // Determine user payment status
+    let userPaymentStatus = 'pending';
+    const userPayment = trip.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid);
+    
+    if (userPayment) {
+      if (userPayment.upfrontPayment && userPayment.finalPayment) {
+        // Phased payment structure
+        if (userPayment.upfrontPayment.status === 'paid' && userPayment.finalPayment.status === 'paid') {
+          userPaymentStatus = 'completed';
+        } else if (userPayment.upfrontPayment.status === 'paid' || userPayment.finalPayment.status === 'paid') {
+          userPaymentStatus = 'partially_paid';
+        } else {
+          userPaymentStatus = 'pending';
+        }
+      } else {
+        // Single payment structure
+        userPaymentStatus = userPayment.status === 'paid' || userPayment.status === 'completed' ? 'completed' : 'pending';
+      }
+    }
+
     return {
-      id: trip.confirmedTripId,
+      id: trip.confirmedTripId || trip._id,
       name: trip.tripName || trip.groupName,
-      destinations: trip.tripDetails?.destinations?.join(', ') || 'Destinations TBD',
+      destinations: trip.tripDetails?.destinations?.join(', ') || trip.cities?.join(', ') || 'Destinations TBD',
       date: formatDate(trip.tripStartDate),
       status: getStatusText(trip.status),
       statusColor: getStatusColor(trip.status),
@@ -246,8 +256,8 @@ const ConfirmedPools = ({ currentUser }) => {
       pricePerPerson: trip.paymentInfo?.pricePerPerson,
       confirmationDeadline: trip.confirmationDeadline,
       isCreator: trip.creatorUserId === currentUser?.uid,
-      userConfirmed: trip.userConfirmed,
-      userPaymentStatus: trip.userPaymentStatus,
+      userConfirmed: trip.userConfirmed || false,
+      userPaymentStatus: userPaymentStatus,
       accommodation: trip.tripDetails?.accommodation,
       transportation: trip.tripDetails?.transportation,
       groupId: trip.groupId
@@ -311,12 +321,39 @@ const ConfirmedPools = ({ currentUser }) => {
       return false;
     }
     
-    // Check if payment amount is valid
+    // Check if payment amount is valid - handle different payment structures
     const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(
       payment => payment.userId === currentUser?.uid
     );
     
-    if (!userPayment || !userPayment.amount || userPayment.amount <= 0) {
+    if (!userPayment) {
+      setPaymentError('Payment information not found. Please contact support.');
+      return false;
+    }
+    
+    let paymentAmount = 0;
+    
+    if (userPayment.upfrontPayment && userPayment.finalPayment) {
+      // Phased payment structure - check if upfront payment is pending
+      if (userPayment.upfrontPayment.status === 'pending') {
+        paymentAmount = userPayment.upfrontPayment.amount;
+      } else if (userPayment.finalPayment.status === 'pending') {
+        paymentAmount = userPayment.finalPayment.amount;
+      } else {
+        setPaymentError('All payments for this trip have been completed.');
+        return false;
+      }
+    } else {
+      // Single payment structure
+      if (userPayment.status === 'pending') {
+        paymentAmount = userPayment.amount;
+      } else {
+        setPaymentError('Payment for this trip has already been completed.');
+        return false;
+      }
+    }
+    
+    if (!paymentAmount || paymentAmount <= 0) {
       setPaymentError('Invalid payment amount. Please contact support.');
       return false;
     }
@@ -326,12 +363,14 @@ const ConfirmedPools = ({ currentUser }) => {
 
   const completePayment = async (orderId, tripId) => {
     try {
-      console.log('Completing payment for trip:', tripId, 'Order:', orderId);
+      console.log('💳 Completing payment for confirmed trip ID:', tripId, 'Order:', orderId);
       
+      // Use the correct endpoint for completing pool trip payments
       const response = await axios.post(
         `http://localhost:8074/api/v1/pooling-confirm/${tripId}/complete-payment`,
         {
-          userId: currentUser.uid
+          userId: currentUser.uid,
+          orderId: orderId
         },
         {
           headers: {
@@ -340,7 +379,7 @@ const ConfirmedPools = ({ currentUser }) => {
         }
       );
 
-      console.log('Payment completion response:', response.data);
+      console.log('💳 Payment completion response:', response.data);
       
       if (response.data.status === 'success' || response.status === 200) {
         // Refresh the confirmed trips to update payment status
@@ -356,17 +395,14 @@ const ConfirmedPools = ({ currentUser }) => {
           country: 'Sri Lanka'
         });
         
-        // Show success message and reload data
+        // Show success message
         alert('Payment completed successfully! Your pool trip payment has been processed.');
-        setShowPaymentForm(false);
         
-        // Reload confirmed trips to reflect payment status
-        loadConfirmedTrips();
       } else {
         throw new Error(response.data.message || 'Failed to complete payment');
       }
     } catch (error) {
-      console.error('Error completing payment:', error);
+      console.error('💳❌ Error completing payment:', error);
       setPaymentError(error.response?.data?.message || error.message || 'Failed to complete payment');
     }
   };
@@ -413,23 +449,27 @@ const ConfirmedPools = ({ currentUser }) => {
     setPaymentError(null);
 
     try {
+      // Get user's payment details from the trip data
       const userPayment = currentTrip.paymentInfo?.memberPayments?.find(
         payment => payment.userId === currentUser.uid
       );
 
       if (!userPayment) {
-        throw new Error('Payment information not found');
+        throw new Error('Payment information not found for current user');
       }
 
-      const paymentAmount = userPayment.amount;
+      const paymentAmount = userPayment.amount || userPayment.upfrontPayment?.amount || currentTrip.paymentInfo?.pricePerPerson;
       
-      console.log('💰 Processing payment for trip ID:', currentTrip.confirmedTripId);
+      if (!paymentAmount || paymentAmount <= 0) {
+        throw new Error('Invalid payment amount');
+      }
+      
+      console.log('💰 Processing payment for confirmed trip ID:', currentTrip.confirmedTripId);
       console.log('💳 Payment amount:', paymentAmount);
       
       // Generate short order ID (max 50 characters)
-      // Format: POOL_[8-char-trip-id]_[8-char-timestamp] = ~22 characters total
-      const shortTripId = currentTrip.confirmedTripId.substring(0, 8); // First 8 chars of trip ID
-      const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
+      const shortTripId = currentTrip.confirmedTripId.substring(0, 8);
+      const timestamp = Date.now().toString().slice(-8);
       const orderId = `POOL_${shortTripId}_${timestamp}`;
       
       console.log('📝 Generated order ID:', orderId, `(${orderId.length} chars)`);
@@ -439,7 +479,7 @@ const ConfirmedPools = ({ currentUser }) => {
         amount: paymentAmount,
         currency: "LKR",
         orderId: orderId,
-        tripId: currentTrip.confirmedTripId,
+        tripId: currentTrip.confirmedTripId, // Use confirmedTripId for pool payments
         itemName: `Pool Trip Payment - ${currentTrip.tripName}`,
         customerDetails: {
           firstName: customerDetails.firstName,
@@ -452,34 +492,34 @@ const ConfirmedPools = ({ currentUser }) => {
         }
       };
 
-      console.log('Sending pool payment request to backend:', paymentRequest);
+      console.log('💳 Sending pool payment request to backend:', paymentRequest);
 
       // Call payment creation API
       const response = await axios.post('http://localhost:8088/api/v1/payments/create-payhere-payment', paymentRequest);
 
-      console.log('Backend payment response:', response.data);
+      console.log('💳 Backend payment response:', response.data);
       
       if (response.data && response.data.status === 'success') {
         const paymentData = response.data.payHereData;
 
         // Setup PayHere event handlers
         window.payhere.onCompleted = async function onCompleted(orderId) {
-          console.log("Pool payment completed. OrderID:" + orderId);
+          console.log("💳 Pool payment completed. OrderID:" + orderId);
           
-          // Complete payment on backend immediately
+          // Complete payment on backend using confirmedTripId
           await completePayment(orderId, currentTrip.confirmedTripId);
           
           setPaymentProcessing(false);
         };
 
         window.payhere.onDismissed = function onDismissed() {
-          console.log("Pool payment dismissed");
+          console.log("💳 Pool payment dismissed");
           setPaymentError("Payment was cancelled");
           setPaymentProcessing(false);
         };
 
         window.payhere.onError = function onError(error) {
-          console.log("Pool payment error:" + error);
+          console.log("💳 Pool payment error:" + error);
           setPaymentError("Payment failed: " + error);
           setPaymentProcessing(false);
         };
@@ -505,7 +545,7 @@ const ConfirmedPools = ({ currentUser }) => {
           country: paymentData.country,
         };
 
-        console.log('Initiating PayHere pool payment with details:', paymentDetails);
+        console.log('💳 Initiating PayHere pool payment with details:', paymentDetails);
         window.payhere.startPayment(paymentDetails);
 
       } else {
@@ -513,7 +553,7 @@ const ConfirmedPools = ({ currentUser }) => {
       }
 
     } catch (err) {
-      console.error('Pool payment creation error:', err);
+      console.error('💳❌ Pool payment creation error:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Payment failed. Please try again.';
       setPaymentError(errorMessage);
       setPaymentProcessing(false);
@@ -575,24 +615,39 @@ const ConfirmedPools = ({ currentUser }) => {
   if (!confirmedPool) return null;
 
   // Payment Status Data from real API
-  const paymentStatus = currentTrip.paymentInfo?.memberPayments?.map((payment) => {
+  const paymentStatus = currentTrip?.paymentInfo?.memberPayments?.map((payment) => {
     const memberConfirmation = currentTrip.memberConfirmations?.find(mc => mc.userId === payment.userId);
     const isCurrentUser = payment.userId === currentUser?.uid;
     const isCreator = payment.userId === currentTrip.creatorUserId;
     
+    // Handle different payment structures (single payment vs phased payments)
+    let amount, paid, status;
+    
+    if (payment.upfrontPayment && payment.finalPayment) {
+      // Phased payment structure
+      amount = payment.upfrontPayment.amount + payment.finalPayment.amount;
+      paid = payment.totalPaid || 0;
+      status = payment.overallPaymentStatus === 'paid' || payment.overallPaymentStatus === 'completed' ? 'Paid' : 'Pending';
+    } else {
+      // Single payment structure
+      amount = payment.amount;
+      paid = payment.status === 'completed' || payment.status === 'paid' ? payment.amount : 0;
+      status = payment.status === 'completed' || payment.status === 'paid' ? 'Paid' : 'Pending';
+    }
+    
     return {
       userId: payment.userId,
       name: isCurrentUser ? 'You' : (isCreator ? 'Trip Creator' : `Member ${payment.userId.slice(-4)}`),
-      amount: payment.amount,
-      paid: payment.status === 'completed' ? payment.amount : 0,
-      status: payment.status === 'completed' ? 'Paid' : 'Pending',
-      method: payment.paymentId ? 'Online Payment' : 'Pending',
+      amount: amount,
+      paid: paid,
+      status: status,
+      method: payment.paymentId || payment.paymentMethod ? 'Online Payment' : 'Pending',
       isCurrentUser
     };
   }) || [];
 
   // Participants Data from real API
-  const participants = currentTrip.memberIds?.map((memberId) => {
+  const participants = currentTrip?.memberIds?.map((memberId) => {
     const memberConfirmation = currentTrip.memberConfirmations?.find(mc => mc.userId === memberId);
     const isCreator = memberId === currentTrip.creatorUserId;
     const isCurrentUser = memberId === currentUser?.uid;
@@ -893,16 +948,35 @@ const ConfirmedPools = ({ currentUser }) => {
               <IdentificationIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               Trip Details
             </button>
-            {confirmedPool.userPaymentStatus === 'pending' && (
-              <button 
-                onClick={() => setShowPaymentForm(true)}
-                disabled={paymentProcessing}
-                className="flex-1 bg-green-100 text-green-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-200 transition-colors border border-green-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <CreditCardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                {paymentProcessing ? 'Processing...' : 'Make Payment'}
-              </button>
-            )}
+            {/* Show payment button only if user has pending payments */}
+            {(() => {
+              const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid);
+              if (!userPayment) return null;
+              
+              let hasPendingPayment = false;
+              
+              if (userPayment.upfrontPayment && userPayment.finalPayment) {
+                // Phased payment structure
+                hasPendingPayment = userPayment.upfrontPayment.status === 'pending' || userPayment.finalPayment.status === 'pending';
+              } else {
+                // Single payment structure
+                hasPendingPayment = userPayment.status === 'pending';
+              }
+              
+              if (hasPendingPayment) {
+                return (
+                  <button 
+                    onClick={() => setShowPaymentForm(true)}
+                    disabled={paymentProcessing}
+                    className="flex-1 bg-green-100 text-green-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-200 transition-colors border border-green-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CreditCardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    {paymentProcessing ? 'Processing...' : 'Make Payment'}
+                  </button>
+                );
+              }
+              return null;
+            })()}
           </div>
           
           {/* Trip Information */}
@@ -1036,12 +1110,42 @@ const ConfirmedPools = ({ currentUser }) => {
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-800">Amount Due:</span>
                   <span className="text-xl font-bold text-primary-600">
-                    LKR {currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid)?.amount?.toLocaleString() || '0'}
+                    LKR {(() => {
+                      const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid);
+                      if (!userPayment) return '0';
+                      
+                      // Handle different payment structures
+                      if (userPayment.upfrontPayment && userPayment.finalPayment) {
+                        // Phased payment - show pending amount
+                        if (userPayment.upfrontPayment.status === 'pending') {
+                          return userPayment.upfrontPayment.amount?.toLocaleString() || '0';
+                        } else if (userPayment.finalPayment.status === 'pending') {
+                          return userPayment.finalPayment.amount?.toLocaleString() || '0';
+                        }
+                        return '0'; // All paid
+                      } else {
+                        // Single payment
+                        return userPayment.amount?.toLocaleString() || '0';
+                      }
+                    })()}
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   Payment will be processed securely through PayHere
                 </p>
+                {(() => {
+                  const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid);
+                  if (userPayment?.upfrontPayment && userPayment?.finalPayment) {
+                    return (
+                      <p className="text-xs text-blue-600 mt-1">
+                        {userPayment.upfrontPayment.status === 'pending' 
+                          ? 'This is your upfront payment' 
+                          : 'This is your final payment'}
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {paymentError && (

@@ -75,8 +75,14 @@ const ViewPoolPage = () => {
   const [confirmationStatus, setConfirmationStatus] = useState('pending'); // 'pending', 'confirming', 'confirmed', 'failed'
   const [confirmationLoading, setConfirmationLoading] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [isMember, setIsMember] = useState(false);
   
   const { user } = useAuth();
+  
+  // Capacity helpers
+  const currentParticipants = pool?.participants || pool?.members?.length || 0;
+  const maxParticipants = pool?.maxParticipants || 0;
+  const hasCapacity = currentParticipants < maxParticipants;
   // Mock join requests data
   const mockJoinRequests = [
     {
@@ -175,11 +181,18 @@ const ViewPoolPage = () => {
   };
 
   const checkUserRole = () => {
-    // In a real app, check if current user is the pool creator
-    // For now, use mock logic
+    // In a real app, check if current user is the pool creator and member
     if (user && pool) {
       const creatorCheck = pool.creatorUserId === user.uid || pool.owner?.email === user.email;
       setIsCreator(creatorCheck);
+      
+      // Check if user is a member
+      const memberCheck = pool.members?.some(m => 
+        m.userId === user.uid || 
+        m.email === user.email ||
+        m.uid === user.uid
+      ) || creatorCheck; // Creator is automatically a member
+      setIsMember(memberCheck);
     }
   };
 
@@ -848,14 +861,17 @@ const ViewPoolPage = () => {
             {/* Share/Join Pool Button */}
             <div className="flex items-center gap-2">
               {sourcePage === 'findPools' ? (
-                <button
-                  onClick={() => setJoinModalOpen(true)}
-                  className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                  title="Join Pool"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Join Pool
-                </button>
+                // Show Join Pool only if user is not a member and there's capacity
+                !isMember && hasCapacity && (
+                  <button
+                    onClick={() => setJoinModalOpen(true)}
+                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                    title="Join Pool"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Join Pool
+                  </button>
+                )
               ) : (
                 <>
                   <button
@@ -866,14 +882,19 @@ const ViewPoolPage = () => {
                     <Share2 className="w-5 h-5 mr-2" />
                     Share Pool
                   </button>
-                  <button
-                    onClick={() => setInviteModalOpen(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
-                    title="Invite Users"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Invite Users
-                  </button>
+                  
+                  {/* Invite and Join Requests shown only if there's capacity */}
+                  {hasCapacity && (
+                    <button
+                      onClick={() => setInviteModalOpen(true)}
+                      className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
+                      title="Invite Users"
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Invite Users
+                    </button>
+                  )}
+                  
                   <button
                     onClick={() => setJoinRequestsModalOpen(true)}
                     className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
@@ -883,36 +904,42 @@ const ViewPoolPage = () => {
                     Join Requests
                   </button>
                   
-                  {/* Trip Confirmation Button */}
+                  {/* Trip Confirmation Buttons with proper visibility rules */}
                   {pool && pool.status !== 'completed' && (
                     <>
-                      <button
-                        onClick={handleInitiateTripConfirmation}
-                        disabled={confirmationLoading}
-                        className="flex items-center px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold rounded-full transition-colors border border-green-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
-                        title="Initiate Trip Confirmation"
-                      >
-                        {confirmationLoading ? (
-                          <Timer className="w-5 h-5 mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                        )}
-                        {confirmationLoading ? 'Starting...' : 'Confirm Trip'}
-                      </button>
+                      {/* Confirm Trip shown only to creator */}
+                      {isCreator && (
+                        <button
+                          onClick={handleInitiateTripConfirmation}
+                          disabled={confirmationLoading}
+                          className="flex items-center px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold rounded-full transition-colors border border-green-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                          title="Initiate Trip Confirmation"
+                        >
+                          {confirmationLoading ? (
+                            <Timer className="w-5 h-5 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                          )}
+                          {confirmationLoading ? 'Starting...' : 'Confirm Trip'}
+                        </button>
+                      )}
                       
-                      <button
-                        onClick={handleConfirmParticipation}
-                        disabled={confirmationLoading}
-                        className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors border border-orange-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
-                        title="Confirm Your Participation"
-                      >
-                        {confirmationLoading ? (
-                          <Timer className="w-5 h-5 mr-2 animate-spin" />
-                        ) : (
-                          <AlertCircle className="w-5 h-5 mr-2" />
-                        )}
-                        {confirmationLoading ? 'Confirming...' : 'Confirm Participation'}
-                      </button>
+                      {/* Confirm Participation shown only to participants who are not the creator */}
+                      {isMember && !isCreator && (
+                        <button
+                          onClick={handleConfirmParticipation}
+                          disabled={confirmationLoading}
+                          className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors border border-orange-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                          title="Confirm Your Participation"
+                        >
+                          {confirmationLoading ? (
+                            <Timer className="w-5 h-5 mr-2 animate-spin" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 mr-2" />
+                          )}
+                          {confirmationLoading ? 'Confirming...' : 'Confirm Participation'}
+                        </button>
+                      )}
                     </>
                   )}
                   {/* Join Requests Modal */}

@@ -1,4 +1,5 @@
-import { poolingServicesApi } from './axios';
+import { poolingServicesApi, userServicesApi } from './axios';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Pool API service for managing pool/group operations
@@ -113,12 +114,54 @@ export class PoolsApi {
    * @param {boolean} [groupData.requiresApproval] - Whether group requires approval to join
    * @param {Object} [groupData.additionalPreferences] - Additional preferences
    * @returns {Promise<Object>} Group creation response
+   * @note Email will be automatically fetched from the current logged-in user
    */
   static async createGroupWithTrip(groupData) {
     try {
       console.log('🏊‍♂️ Creating group with trip:', groupData);
       
-      const response = await poolingServicesApi.post('/groups/with-trip', groupData);
+      // Get current user's email from Firebase Auth and backend profile
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('No authenticated user found. Please log in to create a group.');
+      }
+      
+      let userEmail = currentUser.email;
+      console.log('🏊‍♂️ Firebase user email:', userEmail);
+      
+      // If no email from Firebase, try to fetch from backend profile
+      if (!userEmail && groupData.userId) {
+        try {
+          console.log('🏊‍♂️ Fetching email from user profile for userId:', groupData.userId);
+          const profileResponse = await userServicesApi.get('/tourist/profile', { 
+            params: { email: currentUser.email || groupData.userId } 
+          });
+          userEmail = profileResponse.data?.email || currentUser.email;
+          console.log('🏊‍♂️ Email from profile API:', userEmail);
+        } catch (profileError) {
+          console.warn('🏊‍♂️⚠️ Could not fetch email from profile, using Firebase email:', profileError.message);
+          userEmail = currentUser.email;
+        }
+      }
+      
+      if (!userEmail) {
+        throw new Error('Could not determine user email. Please ensure your profile is complete.');
+      }
+      
+      // Create the complete request payload with email
+      const completeGroupData = {
+        ...groupData,
+        email: userEmail // Automatically include the current user's email
+      };
+      
+      console.log('🏊‍♂️ Email automatically added to request:', userEmail);
+      console.log('🏊‍♂️ Complete request payload:', JSON.stringify(completeGroupData, null, 2));
+      console.log('🏊‍♂️ Email field specifically:', completeGroupData.email);
+      console.log('🏊‍♂️ UserId field:', completeGroupData.userId);
+      
+      const response = await poolingServicesApi.post('/groups/with-trip', completeGroupData);
 
       console.log('🏊‍♂️ Group created successfully:', response.data);
       console.log('🏊‍♂️ Response before navigation - Full response:', response);
@@ -131,6 +174,12 @@ export class PoolsApi {
       return response.data;
     } catch (error) {
       console.error('🏊‍♂️❌ Error creating group with trip:', error);
+      console.error('🏊‍♂️❌ Request data that failed:', groupData);
+      console.error('🏊‍♂️❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data
+      });
       throw new Error(`Failed to create group: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -289,15 +338,56 @@ export class PoolsApi {
    * @param {string} groupId - Group ID to join
    * @param {Object} joinData - Join request data
    * @param {string} joinData.userId - User ID joining the group
-   * @param {string} joinData.userEmail - User email
    * @param {string} joinData.userName - User name
    * @param {string} joinData.message - Personal message for join request
    * @param {Object} joinData.userProfile - User profile information
    * @returns {Promise<Object>} Join result
+   * @note Email will be automatically fetched from the current logged-in user
    */
   static async joinPool(groupId, joinData) {
     try {
       console.log('🏊‍♂️ Requesting to join pool:', { groupId, joinData });
+      
+      // Get current user's email from Firebase Auth and backend profile
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('No authenticated user found. Please log in to join a pool.');
+      }
+      
+      let userEmail = currentUser.email;
+      console.log('🏊‍♂️ Firebase user email:', userEmail);
+      
+      // If no email from Firebase, try to fetch from backend profile
+      if (!userEmail && joinData.userId) {
+        try {
+          console.log('🏊‍♂️ Fetching email from user profile for userId:', joinData.userId);
+          const profileResponse = await userServicesApi.get('/tourist/profile', { 
+            params: { email: currentUser.email || joinData.userId } 
+          });
+          userEmail = profileResponse.data?.email || currentUser.email;
+          console.log('🏊‍♂️ Email from profile API:', userEmail);
+        } catch (profileError) {
+          console.warn('🏊‍♂️⚠️ Could not fetch email from profile, using Firebase email:', profileError.message);
+          userEmail = currentUser.email;
+        }
+      }
+      
+      if (!userEmail) {
+        throw new Error('Could not determine user email. Please ensure your profile is complete.');
+      }
+      
+      // Create the complete request payload with email
+      const completeJoinData = {
+        ...joinData,
+        userEmail: userEmail // Automatically include the current user's email
+      };
+      
+      console.log('🏊‍♂️ Email automatically added to join request:', userEmail);
+      console.log('🏊‍♂️ Complete join request payload:', JSON.stringify(completeJoinData, null, 2));
+      console.log('🏊‍♂️ Email field specifically:', completeJoinData.userEmail);
+      console.log('🏊‍♂️ UserId field:', completeJoinData.userId);
       
       // Use the new API endpoint for joining groups
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
@@ -310,7 +400,7 @@ export class PoolsApi {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(joinData)
+        body: JSON.stringify(completeJoinData)
       });
 
       if (!response.ok) {
@@ -323,6 +413,12 @@ export class PoolsApi {
       return result;
     } catch (error) {
       console.error('🏊‍♂️❌ Error joining pool:', error);
+      console.error('🏊‍♂️❌ Join request data that failed:', joinData);
+      console.error('🏊‍♂️❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data
+      });
       throw new Error(`Failed to join pool: ${error.message}`);
     }
   }
@@ -1460,6 +1556,49 @@ export class PoolsApi {
     } catch (error) {
       console.error('📊❌ Error getting confirmation status:', error);
       throw new Error(`Failed to get confirmation status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get trip details by trip ID
+   * GET /api/v1/pooling-confirm/trip/{tripId}/status?userId={userId}
+   * @param {string} tripId - The trip ID
+   * @param {string} userId - User ID for context
+   * @returns {Promise<Object>} Trip details
+   */
+  static async getTripDetailsByTripId(tripId, userId) {
+    try {
+      console.log('🚀 Getting trip details by tripId:', { tripId, userId });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/trip/${tripId}/status?userId=${userId}`;
+      
+      console.log('🚀 Making trip details request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('🚀 Trip details response status:', response.status);
+      console.log('🚀 Trip details response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('🚀 Trip details error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🚀 Trip details retrieved:', result);
+      return result;
+    } catch (error) {
+      console.error('🚀❌ Error getting trip details by tripId:', error);
+      throw new Error(`Failed to get trip details: ${error.message}`);
     }
   }
 
