@@ -145,11 +145,40 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
         window.payhere.onCompleted = async function onCompleted(orderId) {
           console.log("Payment completed. OrderID:" + orderId);
           
-          // Create chat group after successful payment
-          await createChatGroup(orderId);
+          try {
+            // Create chat group after successful payment
+            await createChatGroup(orderId);
+            
+            // Activate the trip after successful payment
+            console.log("Activating trip with ID:", tripId);
+            const activateResponse = await axios.post('http://localhost:5006/api/new_activate_trip', {
+              tripId: tripId
+            }, {
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              timeout: 10000 // 10 second timeout
+            });
+            
+            console.log("Trip activation response:", activateResponse.data);
+            
+            if (activateResponse.data) {
+              console.log("Trip activated successfully");
+            }
+            
+          } catch (error) {
+            console.error("Error in post-payment processing:", error.response?.data || error.message);
+            // Continue with payment success flow even if post-processing fails
+          }
           
           setSubmitting(false);
           onPaymentSuccess(orderId);
+          
+          // Navigate to trips page after successful payment
+          console.log("Navigating to trips page");
+          setTimeout(() => {
+            window.location.href = 'http://localhost:3000/trips';
+          }, 2000); // 2 second delay to allow success message to be seen
         };
 
         window.payhere.onDismissed = function onDismissed() {
