@@ -1,36 +1,70 @@
 /* Hide Google Translate default elements */
 .goog-te-gadget {
   display: none !important;
+  visibility: hidden !important;
 }
 
 .goog-te-banner-frame {
   display: none !important;
+  visibility: hidden !important;
 }
 
 .goog-te-menu-frame {
   display: none !important;
+  visibility: hidden !important;
 }
 
 /* Prevent the Google Translate bar from pushing the page down */
 body {
   top: 0 !important;
+  position: static !important;
 }
 
 .skiptranslate {
   display: none !important;
+  visibility: hidden !important;
 }
 
 /* Hide the "Powered by Google Translate" text */
 .goog-logo-link {
   display: none !important;
+  visibility: hidden !important;
 }
 
 .goog-te-gadget > span > a {
   display: none !important;
+  visibility: hidden !important;
 }
 
 .goog-te-gadget .goog-te-combo {
   display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide all Google Translate elements */
+#google_translate_element_hidden {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+}
+
+/* Hide the spinner */
+.goog-te-spinner-pos {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide iframe elements */
+iframe.goog-te-menu-frame {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+iframe.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
 }
 
 /* Ensure dropdown is above other elements */
@@ -41,9 +75,36 @@ body {
 /* Style for when page is being translated */
 .goog-te-banner-frame.skiptranslate {
   display: none !important;
+  visibility: hidden !important;
 }
 
 /* Remove the translate notification bar */
 .goog-te-balloon-frame {
   display: none !important;
+  visibility: hidden !important;
+}
+
+/* Remove any Google Translate notification divs */
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-te-spinner-animation {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Prevent any layout shifts */
+html {
+  position: relative !important;
+}
+
+/* Clean up any extra Google elements */
+.VIpgJd-ZVi9od-ORHb-OEVmcd {
+  display: none !important;
+}
+
+/* Additional cleanup for Google Translate elements */
+body > .skiptranslate,
+body > iframe.skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
 }
