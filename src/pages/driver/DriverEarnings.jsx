@@ -119,7 +119,7 @@ const DriverEarnings = () => {
       setBankLoading(true);
       setBankError(null);
       
-      const response = await axios.get(`http://localhost:4021/bank/${driverEmail}`);
+      const response = await axios.get(`http://localhost:5001/api/drivers/${driverEmail}/bank-details`);
       
       if (response.data.success && response.data.data) {
         const bankData = response.data.data;
@@ -158,6 +158,11 @@ const DriverEarnings = () => {
       setBankLoading(true);
       setBankError(null);
       
+      // Note: Currently only GET endpoint is implemented in the microservice
+      // POST/PUT endpoints for saving bank details are not yet available
+      setBankError('Bank details saving is not yet implemented in the backend.');
+      
+      /* Future implementation when POST/PUT endpoints are available:
       const bankData = {
         email: driverEmail,
         accountHolderName: bankDetails.accountHolderName,
@@ -172,10 +177,10 @@ const DriverEarnings = () => {
         // Update existing bank details
         const updateData = { ...bankData };
         delete updateData.email; // Remove email from update payload
-        response = await axios.put(`http://localhost:4021/bank/update/${driverEmail}`, updateData);
+        response = await axios.put(`http://localhost:5001/api/drivers/${driverEmail}/bank-details`, updateData);
       } else {
         // Add new bank details
-        response = await axios.post('http://localhost:4021/bank/add', bankData);
+        response = await axios.post(`http://localhost:5001/api/drivers/${driverEmail}/bank-details`, bankData);
       }
       
       if (response.data.success) {
@@ -185,6 +190,7 @@ const DriverEarnings = () => {
       } else {
         throw new Error(response.data.message || 'Failed to save bank details');
       }
+      */
     } catch (err) {
       console.error('Failed to save bank details:', err);
       setBankError(err.response?.data?.message || 'Failed to save bank details. Please try again.');
