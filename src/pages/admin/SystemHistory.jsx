@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { auth } from "../../firebase";
 import {
   ClockIcon,
   UserIcon,
@@ -17,6 +19,8 @@ const SystemHistory = () => {
   const [auditTrails, setAuditTrails] = useState([]);
   const [changeHistory, setChangeHistory] = useState([]);
   const [systemEvents, setSystemEvents] = useState([]);
+  const [authToken, setAuthToken] = useState("");
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     dateRange: "7days",
     severity: "all",
@@ -209,16 +213,96 @@ const SystemHistory = () => {
     },
   ];
 
+  // Get Firebase auth token
   useEffect(() => {
-    // Simulate API calls
-    setTimeout(() => {
-      setPaymentLogs(mockPaymentLogs);
-      setAuditTrails(mockAuditTrails);
-      setChangeHistory(mockChangeHistory);
-      setSystemEvents(mockSystemEvents);
-      setLoading(false);
-    }, 1000);
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setError("Failed to get authentication token");
+          setAuthToken("");
+        }
+      } else {
+        setError("No authenticated user found");
+        setLoading(false);
+      }
+    };
+    getToken();
   }, []);
+
+  // Fetch payment logs from backend
+  const fetchPaymentLogs = async () => {
+    if (!authToken) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await axios.get(
+        "http://localhost:8070/api/admin/logs/all",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Payment logs response:", response.data);
+
+      if (response.data && response.data.data) {
+        // Transform backend data to match frontend format
+        const transformedLogs = response.data.data.map((log, index) => ({
+          id: log.id || index + 1,
+          timestamp: log.timestamp || log.createdAt || new Date().toISOString(),
+          transactionId:
+            log.transactionId || log.transaction_id || `TXN_${log.id}`,
+          user: log.user || log.userEmail || "Unknown User",
+          amount: log.amount || 0,
+          currency: log.currency || "USD",
+          paymentMethod: log.paymentMethod || log.payment_method || "Unknown",
+          cardLast4: log.cardLast4 || log.card_last4 || null,
+          status: log.status || "unknown",
+          type: log.type || log.transactionType || "Payment",
+          tripId: log.tripId || log.trip_id || "N/A",
+          gatewayResponse: log.gatewayResponse || log.gateway_response || "N/A",
+          processingFee: log.processingFee || log.processing_fee || 0,
+        }));
+
+        setPaymentLogs(transformedLogs);
+      } else {
+        // If no data, use mock data as fallback
+        console.warn("No payment logs data received, using mock data");
+        setPaymentLogs(mockPaymentLogs);
+      }
+    } catch (error) {
+      console.error("Error fetching payment logs:", error);
+      setError("Failed to fetch payment logs. Using sample data.");
+      // Use mock data as fallback on error
+      setPaymentLogs(mockPaymentLogs);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load mock data for other sections (audit trails, change history, system events)
+  const loadMockData = () => {
+    setAuditTrails(mockAuditTrails);
+    setChangeHistory(mockChangeHistory);
+    setSystemEvents(mockSystemEvents);
+  };
+
+  // Fetch data when auth token is available
+  useEffect(() => {
+    if (authToken) {
+      fetchPaymentLogs();
+      loadMockData();
+    }
+  }, [authToken]);
 
   const formatTimeAgo = (timestamp) => {
     const now = new Date();
@@ -301,6 +385,11 @@ const SystemHistory = () => {
               <p className="text-gray-600 dark:text-gray-400">
                 View system activity logs
               </p>
+              {error && (
+                <p className="text-warning-600 dark:text-warning-400 text-sm mt-2">
+                  ⚠️ {error}
+                </p>
+              )}
             </div>
             <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
               Export History
