@@ -252,11 +252,11 @@ const SystemHistory = () => {
         }
       );
 
-      console.log("Payment logs response:", response.data);
+      console.log("Payment logs response:", response.data.data.logs);
 
-      if (response.data && response.data.data) {
+      if (response.data && response.data.data.logs) {
         // Transform backend data to match frontend format
-        const transformedLogs = response.data.data.map((log, index) => ({
+        const transformedLogs = response.data.data.logs.map((log, index) => ({
           id: log.id || index + 1,
           timestamp: log.timestamp || log.createdAt || new Date().toISOString(),
           transactionId:
@@ -281,6 +281,7 @@ const SystemHistory = () => {
       }
     } catch (error) {
       console.error("Error fetching payment logs:", error);
+      console.log("tharushga");
       setError("Failed to fetch payment logs. Using sample data.");
       // Use mock data as fallback on error
       setPaymentLogs(mockPaymentLogs);
