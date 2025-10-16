@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users, CheckCircle, AlertCircle, Timer } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users, CheckCircle, AlertCircle, Timer, X } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SharePoolModal from '../components/SharePoolModal';
 import JoinPoolModal from '../components/JoinPoolModal';
 import InviteUserModal from '../components/InviteUserModal';
-import JoinRequestsManager from '../components/JoinRequestsManager';
 import { PoolsApi, poolsApi } from '../api/poolsApi';
 import { useAuth } from '../hooks/useAuth';
 
@@ -77,47 +76,134 @@ const ViewPoolPage = () => {
   const [isCreator, setIsCreator] = useState(false);
   const [isMember, setIsMember] = useState(false);
   
+  // Join Requests State
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  
   const { user } = useAuth();
   
   // Capacity helpers
   const currentParticipants = pool?.participants || pool?.members?.length || 0;
   const maxParticipants = pool?.maxParticipants || 0;
   const hasCapacity = currentParticipants < maxParticipants;
-  // Mock join requests data
-  const mockJoinRequests = [
-    {
-      name: 'Emily Carter',
-      avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-      email: 'emily.carter@email.com',
-      nationality: 'Australian',
-      languages: ['English'],
-      age: 29
-    },
-    {
-      name: 'David Brown',
-      avatar: 'https://randomuser.me/api/portraits/men/77.jpg',
-      email: 'david.brown@email.com',
-      nationality: 'Canadian',
-      languages: ['English', 'French'],
-      age: 35
-    }
-  ];
 
-  const handleAcceptRequest = (email, name) => {
-    // Implement accept logic here
-    console.log(`Accepting join request from ${name} (${email})`);
-    // In a real app, this would make an API call to accept the request
-    // For now, show a success message and remove from pending requests
-    alert(`✅ Accepted join request from ${name}!`);
-    // You could update the mockJoinRequests state here to remove the accepted request
+  const handleAcceptRequest = async (email, name) => {
+    try {
+      console.log(`Accepting join request from ${name} (${email})`);
+      
+      // Find the join request to get the requestId
+      const request = joinRequests.find(req => req.email === email);
+      if (!request) {
+        alert('❌ Could not find join request');
+        return;
+      }
+      
+      // Use correct API parameters based on poolsApi.js documentation
+      await PoolsApi.voteOnJoinRequest(pool.groupId, {
+        userId: user.uid,
+        joinRequestId: request.requestId,
+        action: 'approve'
+      });
+      
+      alert(`✅ Accepted join request from ${name}!`);
+      
+      // Refresh join requests
+      await loadJoinRequests();
+    } catch (error) {
+      console.error('Error accepting join request:', error);
+      alert(`❌ Failed to accept request: ${error.message}`);
+    }
   };
 
-  const handleRejectRequest = (email, name) => {
-    // Implement reject logic here
-    console.log(`Rejecting join request from ${name} (${email})`);
-    // In a real app, this would make an API call to reject the request
-    alert(`❌ Rejected join request from ${name}`);
-    // You could update the mockJoinRequests state here to remove the rejected request
+  const handleRejectRequest = async (email, name) => {
+    try {
+      console.log(`Rejecting join request from ${name} (${email})`);
+      
+      // Find the join request to get the requestId
+      const request = joinRequests.find(req => req.email === email);
+      if (!request) {
+        alert('❌ Could not find join request');
+        return;
+      }
+      
+      // Use correct API parameters based on poolsApi.js documentation
+      await PoolsApi.voteOnJoinRequest(pool.groupId, {
+        userId: user.uid,
+        joinRequestId: request.requestId,
+        action: 'reject'
+      });
+      
+      alert(`❌ Rejected join request from ${name}`);
+      
+      // Refresh join requests
+      await loadJoinRequests();
+    } catch (error) {
+      console.error('Error rejecting join request:', error);
+      alert(`❌ Failed to reject request: ${error.message}`);
+    }
+  };
+
+  // Function to load join requests separately
+  const loadJoinRequests = async () => {
+    if (!pool?.groupId || !user?.uid) {
+      return;
+    }
+    
+    try {
+      setJoinRequestsLoading(true);
+      console.log('📋 Loading join requests for group:', pool.groupId);
+      
+      const response = await PoolsApi.getPendingJoinRequests(pool.groupId, user.uid);
+      console.log('📋🔍 Full API response:', response);
+      
+      // Try multiple possible response structures
+      let requests = [];
+      if (response.pendingRequests) {
+        requests = response.pendingRequests;
+        console.log('📋🔍 Found pendingRequests:', requests);
+      } else if (response.joinRequests) {
+        requests = response.joinRequests;
+        console.log('📋🔍 Found joinRequests:', requests);
+      } else if (response.data?.joinRequests) {
+        requests = response.data.joinRequests;
+        console.log('📋🔍 Found data.joinRequests:', requests);
+      } else if (response.data?.pendingRequests) {
+        requests = response.data.pendingRequests;
+        console.log('📋🔍 Found data.pendingRequests:', requests);
+      } else if (Array.isArray(response)) {
+        requests = response;
+        console.log('📋🔍 Response is array:', requests);
+      } else {
+        console.log('📋⚠️ No requests found in response structure:', Object.keys(response));
+        requests = [];
+      }
+      
+      console.log('📋🔍 Extracted requests before transformation:', requests);
+      
+      // Transform requests to match the expected format
+      const transformedRequests = requests.map(req => {
+        console.log('📋🔍 Transforming request:', req);
+        return {
+          requestId: req.requestId || req.id || req.joinRequestId,
+          name: req.requesterName || req.name || req.userName || 'Unknown User',
+          email: req.requesterEmail || req.email || req.userEmail || 'unknown@email.com',
+          nationality: req.nationality || req.requesterNationality || 'Sri Lanka',
+          languages: req.languages && req.languages.length > 0 ? req.languages : ['English'],
+          age: req.age || req.requesterAge || 25,
+          message: req.message || req.requestMessage || 'Would like to join your trip!',
+          avatar: req.avatar || req.requesterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.requesterName || req.name || 'User')}&background=random&color=fff`
+        };
+      });
+      
+      console.log('📋🔍 Transformed requests:', transformedRequests);
+      setJoinRequests(transformedRequests);
+      console.log('📋✅ Join requests loaded:', transformedRequests.length, 'requests');
+    } catch (error) {
+      console.error('📋❌ Error loading join requests:', error);
+      // Keep existing requests on error
+    } finally {
+      setJoinRequestsLoading(false);
+    }
   };
 
   // Trip Confirmation Functions
@@ -181,18 +267,41 @@ const ViewPoolPage = () => {
   };
 
   const checkUserRole = () => {
-    // In a real app, check if current user is the pool creator and member
+    // Check if current user is the pool creator and member using the proper API structure
+    console.log('🔍🔑 checkUserRole called with:', { 
+      hasUser: !!user, 
+      hasPool: !!pool,
+      userId: user?.uid || user?.id,
+      userEmail: user?.email
+    });
+    
     if (user && pool) {
-      const creatorCheck = pool.creatorUserId === user.uid || pool.owner?.email === user.email;
+      // Check if user is the group leader (creator) using groupLeader from API
+      const creatorCheck = pool.groupInfo?.groupLeader === user.uid || 
+                          pool.groupInfo?.groupLeader === user.id ||
+                          pool.members?.some(m => m.userId === user.uid && m.role === 'leader') ||
+                          pool.members?.some(m => m.userId === user.id && m.role === 'leader');
       setIsCreator(creatorCheck);
       
       // Check if user is a member
       const memberCheck = pool.members?.some(m => 
         m.userId === user.uid || 
-        m.email === user.email ||
-        m.uid === user.uid
-      ) || creatorCheck; // Creator is automatically a member
+        m.userId === user.id ||
+        m.email === user.email
+      );
       setIsMember(memberCheck);
+      
+      console.log('🔍🔑 User role check result:', {
+        userId: user.uid || user.id,
+        userEmail: user.email,
+        groupLeader: pool.groupInfo?.groupLeader,
+        isCreator: creatorCheck,
+        isMember: memberCheck,
+        members: pool.members?.map(m => ({ userId: m.userId, role: m.role, email: m.email })),
+        poolGroupInfo: pool.groupInfo
+      });
+    } else {
+      console.log('🔍🔑 User or pool not available for role check');
     }
   };
 
@@ -351,11 +460,20 @@ const ViewPoolPage = () => {
     };
     const price = priceMap[tripDetails?.budgetLevel?.toLowerCase()] || 'Contact for pricing';
     
+    // Transform members with proper defaults
+    const transformedMembers = members?.map(member => ({
+      ...member,
+      nationality: member.nationality || 'Sri Lanka', // Default nationality
+      languages: member.languages && member.languages.length > 0 ? member.languages : ['English'], // Default language
+      age: member.age || 25, // Default age
+      avatar: member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&color=fff`
+    })) || [];
+    
     const transformedData = {
       id: tripDetails?.tripId || 'unknown',
       tripId: tripDetails?.tripId,
       groupId: groupInfo?.groupId,
-      name: tripDetails?.tripName || 'Trip Adventure',
+      name: groupInfo?.groupName || tripDetails?.tripName || 'Trip Adventure',
       owner: members?.find(m => m.role === 'leader')?.name || 'Trip Leader',
       destinations: uniqueDestinations.join(', '),
       destinationsArray: uniqueDestinations,
@@ -377,7 +495,7 @@ const ViewPoolPage = () => {
       
       // Group and member information
       groupInfo: groupInfo,
-      members: members || [],
+      members: transformedMembers,
       
       // Itinerary data
       itinerary: itinerary,
@@ -442,6 +560,25 @@ const ViewPoolPage = () => {
           console.log('🔍📋 Transformed trip data:', tripData);
           
           setPool(tripData);
+          
+          // Set initial join requests from comprehensive data
+          console.log('📋🔍 Checking comprehensive data for join requests:', comprehensiveData);
+          if (comprehensiveData.pendingJoinRequests) {
+            console.log('📋🔍 Found pendingJoinRequests in comprehensive data:', comprehensiveData.pendingJoinRequests);
+            const transformedRequests = comprehensiveData.pendingJoinRequests.map(req => ({
+              requestId: req.requestId || req.id,
+              name: req.requesterName || req.name || 'Unknown User',
+              email: req.requesterEmail || req.email || 'unknown@email.com',
+              nationality: req.nationality || 'Sri Lanka',
+              languages: req.languages && req.languages.length > 0 ? req.languages : ['English'],
+              age: req.age || 25,
+              message: req.message || 'Would like to join your trip!'
+            }));
+            console.log('📋🔍 Setting initial join requests:', transformedRequests);
+            setJoinRequests(transformedRequests);
+          } else {
+            console.log('📋🔍 No pendingJoinRequests found in comprehensive data');
+          }
           
           // Initialize expanded days - expand first few days by default
           const totalDays = tripData.totalDays || 5;
@@ -567,6 +704,38 @@ const ViewPoolPage = () => {
 
     loadPool();
   }, [poolFromState, poolId, user]);
+
+  // Load join requests when pool data is available and user is the creator
+  useEffect(() => {
+    console.log('📋🔍 useEffect for join requests triggered:', { 
+      hasPool: !!pool, 
+      hasUser: !!user, 
+      isCreator, 
+      groupId: pool?.groupId 
+    });
+    
+    if (pool && user && isCreator && pool.groupId) {
+      console.log('📋🔍 Conditions met, calling loadJoinRequests');
+      loadJoinRequests();
+    } else {
+      console.log('📋🔍 Conditions not met for loading join requests');
+    }
+  }, [pool, user, isCreator]);
+
+  // Load join requests when modal opens
+  useEffect(() => {
+    console.log('📋🔍 Modal useEffect triggered:', { 
+      joinRequestsModalOpen, 
+      groupId: pool?.groupId, 
+      userId: user?.uid, 
+      isCreator 
+    });
+    
+    if (joinRequestsModalOpen && pool?.groupId && user?.uid && isCreator) {
+      console.log('📋🔍 Modal opened and conditions met, calling loadJoinRequests');
+      loadJoinRequests();
+    }
+  }, [joinRequestsModalOpen, pool?.groupId, user?.uid, isCreator]);
 
   // Generate days array from pool dates
   const generateDays = () => {
@@ -738,96 +907,116 @@ const ViewPoolPage = () => {
           alert('Invitation sent successfully!');
         }}
       />
-      <JoinRequestsManager
-        groupId={pool?.groupInfo?.groupId || pool?.id}
-        isOpen={joinRequestsModalOpen}
-        onClose={() => setJoinRequestsModalOpen(false)}
-        onRequestUpdate={(result) => {
-          console.log('Join request updated:', result);
-          // Refresh pool data if needed
-        }}
-      />
 
       {/* Trip Confirmation Modal */}
       {showConfirmationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-secondary-800 rounded-xl max-w-md w-full p-6">
-            <div className="text-center">
-              {confirmationStatus === 'confirming' ? (
-                <>
-                  <AlertCircle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Confirm Your Participation
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    The trip organizer has initiated trip confirmation. Please confirm your participation to proceed with this amazing journey!
-                  </p>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Trip Details:</h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      <strong>Destination:</strong> {Array.isArray(pool?.destinations) ? pool.destinations.join(', ') : pool?.destinations || pool?.destination}<br/>
-                      <strong>Duration:</strong> {pool?.totalDays} days<br/>
-                      <strong>Dates:</strong> {pool?.dates ? `${formatDate(new Date(pool.dates[0]))} - ${formatDate(new Date(pool.dates[1]))}` : 'TBA'}
+        <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+          <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setShowConfirmationModal(false)}
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="text-center">
+                {confirmationStatus === 'confirming' ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-6 justify-center">
+                      <AlertCircle className="w-6 h-6 text-orange-500" />
+                      <h2 className="text-2xl font-bold text-gray-900">Confirm Your Participation</h2>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6 text-left">
+                      The trip organizer has initiated trip confirmation. Please confirm your participation to proceed with this amazing journey!
                     </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleConfirmParticipation}
-                      disabled={confirmationLoading}
-                      className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 flex items-center justify-center"
-                    >
-                      {confirmationLoading ? (
-                        <>
-                          <Timer className="w-4 h-4 mr-2 animate-spin" />
-                          Confirming...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Confirm Participation
-                        </>
-                      )}
-                    </button>
+                    
+                    <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
+                      <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Trip Details:
+                      </h4>
+                      <div className="space-y-2 text-sm text-blue-700">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Destination:</span>
+                          <span>{Array.isArray(pool?.destinations) ? pool.destinations.join(', ') : pool?.destinations || pool?.destination}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Duration:</span>
+                          <span>{pool?.totalDays} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Dates:</span>
+                          <span>{pool?.dates ? `${formatDate(new Date(pool.dates[0]))} - ${formatDate(new Date(pool.dates[1]))}` : 'TBA'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowConfirmationModal(false)}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-full text-sm font-medium transition-colors"
+                      >
+                        Maybe Later
+                      </button>
+                      <button
+                        onClick={handleConfirmParticipation}
+                        disabled={confirmationLoading}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-full text-sm font-medium transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                      >
+                        {confirmationLoading ? (
+                          <>
+                            <Timer className="w-4 h-4 mr-2 animate-spin" />
+                            Confirming...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Confirm Participation
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : confirmationStatus === 'confirmed' ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-6 justify-center">
+                      <CheckCircle className="w-6 h-6 text-green-500" />
+                      <h2 className="text-2xl font-bold text-gray-900">Participation Confirmed!</h2>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6">
+                      Great! Your participation has been confirmed. You'll be redirected to your confirmed trips shortly.
+                    </p>
+                    
+                    <div className="bg-green-50 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-green-700 flex items-center gap-2">
+                        🎉 You're all set! Check your email for next steps and payment details.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-6 justify-center">
+                      <CheckCircle className="w-6 h-6 text-blue-500" />
+                      <h2 className="text-2xl font-bold text-gray-900">Trip Confirmation Started</h2>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6">
+                      Trip confirmation has been initiated! All participants will be notified and can now confirm their participation.
+                    </p>
+                    
                     <button
                       onClick={() => setShowConfirmationModal(false)}
-                      className="flex-1 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-full text-sm font-medium transition-colors"
                     >
-                      Maybe Later
+                      Got it!
                     </button>
-                  </div>
-                </>
-              ) : confirmationStatus === 'confirmed' ? (
-                <>
-                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Participation Confirmed!
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Great! Your participation has been confirmed. You'll be redirected to your confirmed trips shortly.
-                  </p>
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg mb-6">
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      🎉 You're all set! Check your email for next steps and payment details.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Trip Confirmation Started
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Trip confirmation has been initiated! All participants will be notified and can now confirm their participation.
-                  </p>
-                  <button
-                    onClick={() => setShowConfirmationModal(false)}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Got it!
-                  </button>
-                </>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -901,7 +1090,7 @@ const ViewPoolPage = () => {
                     title="Join Requests"
                   >
                     <Users className="w-5 h-5 mr-2" />
-                    Join Requests
+                    Join Requests ({joinRequests.length})
                   </button>
                   
                   {/* Trip Confirmation Buttons with proper visibility rules */}
@@ -952,18 +1141,18 @@ const ViewPoolPage = () => {
                             onClick={() => setJoinRequestsModalOpen(false)}
                             aria-label="Close"
                           >
-                            <span className="text-2xl">×</span>
+                            <X className="w-5 h-5" />
                           </button>
                           
                           <div className="flex items-center gap-3 mb-6">
                             <Users className="w-6 h-6 text-primary-600" />
                             <h2 className="text-2xl font-bold text-gray-900">Join Requests</h2>
                             <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
-                              {mockJoinRequests.length} pending
+                              {joinRequests.length} pending
                             </span>
                           </div>
                           
-                          {mockJoinRequests.length === 0 ? (
+                          {joinRequests.length === 0 ? (
                             <div className="text-center py-12">
                               <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                               <p className="text-gray-500 text-lg mb-2">No join requests</p>
@@ -971,18 +1160,26 @@ const ViewPoolPage = () => {
                             </div>
                           ) : (
                             <div className="space-y-4 max-h-96 overflow-y-auto">
-                              {mockJoinRequests.map((req, idx) => (
-                                <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                              {joinRequests.map((req, idx) => {
+                                // Create avatar URL - use a placeholder if no avatar provided
+                                const avatarUrl = req.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.name || 'User')}&background=random&color=fff`;
+                                // Set defaults for missing data
+                                const nationality = req.nationality || 'Not specified';
+                                const languages = req.languages && req.languages.length > 0 ? req.languages : ['English'];
+                                const age = req.age && req.age > 0 ? req.age : 'Not specified';
+                                
+                                return (
+                                <div key={req.userId || req.email || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                   <div className="flex items-start gap-4">
                                     <img 
-                                      src={req.avatar} 
-                                      alt={req.name} 
+                                      src={avatarUrl} 
+                                      alt={req.name || 'User'} 
                                       className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
                                     />
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-start justify-between">
                                         <div>
-                                          <h3 className="font-semibold text-gray-900 text-lg">{req.name}</h3>
+                                          <h3 className="font-semibold text-gray-900 text-lg">{req.name || 'Unknown User'}</h3>
                                           <p className="text-gray-600 text-sm">{req.email}</p>
                                         </div>
                                         <div className="flex gap-2 ml-4">
@@ -1003,21 +1200,22 @@ const ViewPoolPage = () => {
                                       <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
                                         <div>
                                           <span className="text-gray-500 block">Nationality</span>
-                                          <span className="font-medium">{req.nationality}</span>
+                                          <span className="font-medium">{nationality}</span>
                                         </div>
                                         <div>
                                           <span className="text-gray-500 block">Languages</span>
-                                          <span className="font-medium">{req.languages.join(', ')}</span>
+                                          <span className="font-medium">{Array.isArray(languages) ? languages.join(', ') : languages}</span>
                                         </div>
                                         <div>
                                           <span className="text-gray-500 block">Age</span>
-                                          <span className="font-medium">{req.age} years</span>
+                                          <span className="font-medium">{age}{typeof age === 'number' ? ' years' : ''}</span>
                                         </div>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                           
@@ -1130,9 +1328,13 @@ const ViewPoolPage = () => {
                           <span className={isLeader ? "text-primary-700" : ""}>{member.name}</span>
                           {isLeader && <span className="text-xs text-gray-400 ml-1">(Organizer)</span>}
                         </td>
-                        <td className="px-3 py-2">{member.nationality || 'Not specified'}</td>
-                        <td className="px-3 py-2">{member.languages ? member.languages.join(', ') : 'Not specified'}</td>
-                        <td className="px-3 py-2">{member.age || 'Not specified'}</td>
+                        <td className="px-3 py-2">{member.nationality || 'Sri Lanka'}</td>
+                        <td className="px-3 py-2">{
+                          member.languages && member.languages.length > 0 
+                            ? member.languages.join(', ') 
+                            : 'English'
+                        }</td>
+                        <td className="px-3 py-2">{member.age || '25'}</td>
                       </tr>
                     );
                   })}

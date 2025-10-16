@@ -1078,6 +1078,112 @@ export class PoolsApi {
   }
 
   /**
+   * Paginate an array of pools (frontend-only pagination)
+   * @param {Array} pools - Array of pools to paginate
+   * @param {number} page - Current page number (1-based)
+   * @param {number} pageSize - Number of items per page
+   * @returns {Object} Pagination result with pools and metadata
+   */
+  static paginatePools(pools, page = 1, pageSize = 9) {
+    const totalPools = pools.length;
+    const totalPages = Math.ceil(totalPools / pageSize);
+    const currentPage = Math.max(1, Math.min(page, totalPages));
+    
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedPools = pools.slice(startIndex, endIndex);
+    
+    console.log('📄 Frontend pagination:', {
+      totalPools,
+      totalPages,
+      currentPage,
+      pageSize,
+      startIndex,
+      endIndex,
+      paginatedPoolsCount: paginatedPools.length
+    });
+    
+    return {
+      pools: paginatedPools,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalPools,
+        pageSize,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1,
+        startIndex: startIndex + 1, // 1-based for display
+        endIndex: Math.min(endIndex, totalPools) // Actual end index
+      }
+    };
+  }
+
+  /**
+   * Get paginated public pools for browsing (Find Pools page)
+   * @param {Object} options - Pagination and filter options
+   * @param {number} [options.page=1] - Page number (1-based)
+   * @param {number} [options.pageSize=9] - Number of pools per page
+   * @param {Object} [options.filters={}] - Filter options
+   * @param {Array} [options.allPools] - Optional pre-fetched pools data
+   * @returns {Promise<Object>} Paginated pools with metadata
+   */
+  static async getPaginatedPublicPools({ page = 1, pageSize = 9, filters = {}, allPools = null } = {}) {
+    try {
+      console.log('📄 Getting paginated public pools:', { page, pageSize, filters });
+      
+      // Get all filtered pools first
+      const filteredPools = await this.getPublicPools(filters, allPools);
+      
+      // Apply frontend pagination
+      const result = this.paginatePools(filteredPools, page, pageSize);
+      
+      console.log('📄 Paginated public pools result:', {
+        poolsCount: result.pools.length,
+        pagination: result.pagination
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('📄❌ Error getting paginated public pools:', error);
+      throw new Error(`Failed to get paginated pools: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get paginated user pools (My Pools page)
+   * @param {string} userId - User ID
+   * @param {Object} options - Pagination options
+   * @param {number} [options.pageSize=9] - Number of pools per page for each section
+   * @returns {Promise<Object>} Paginated user pools organized by status
+   */
+  static async getPaginatedUserPools(userId, { pageSize = 9 } = {}) {
+    try {
+      console.log('📄 Getting paginated user pools for:', userId, { pageSize });
+      
+      // Get all user pools first
+      const userPools = await this.getUserPools(userId);
+      
+      // Apply pagination to each section
+      const result = {
+        ongoing: this.paginatePools(userPools.ongoing, 1, pageSize),
+        upcoming: this.paginatePools(userPools.upcoming, 1, pageSize),
+        past: this.paginatePools(userPools.past, 1, pageSize)
+      };
+      
+      console.log('📄 Paginated user pools result:', {
+        ongoing: result.ongoing.pools.length,
+        upcoming: result.upcoming.pools.length,
+        past: result.past.pools.length
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('📄❌ Error getting paginated user pools:', error);
+      throw new Error(`Failed to get paginated user pools: ${error.message}`);
+    }
+  }
+
+  /**
    * Save trip and get similar group suggestions
    * @param {string} groupId - Group ID
    * @param {Object} tripData - Trip data to save

@@ -28,6 +28,17 @@ const FindPools = () => {
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [budgetLevel, setBudgetLevel] = useState('');
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(6); // Fixed at 9 pools per page (3x3 grid)
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalPools: 0,
+    hasNextPage: false,
+    hasPreviousPage: false
+  });
+  
   // API state
   const [pools, setPools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,11 +109,12 @@ const FindPools = () => {
     }, 500); // Debounce API calls
 
     return () => clearTimeout(timeoutId);
-  }, [selectedDestination, selectedSeats, startDate, endDate, selectedTerrains, selectedActivities, budgetLevel, currentUser]);
+  }, [selectedDestination, selectedSeats, startDate, endDate, selectedTerrains, selectedActivities, budgetLevel, currentUser, currentPage]);
 
-  // Debounced search query effect
+  // Debounced search query effect (reset to page 1 on new search)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page on search
       fetchPools(currentUser);
     }, 300); // Shorter debounce for search
 
@@ -110,14 +122,25 @@ const FindPools = () => {
   }, [searchQuery, currentUser]);
 
   /**
-   * Fetch pools from the API with current filters
+   * Fetch pools from the API with current filters and pagination
    */
   const fetchPools = async (userId) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🏊‍♂️ Fetching pools with filters applied on frontend');
+      console.log('🏊‍♂️ Fetching paginated pools with filters:', {
+        page: currentPage,
+        pageSize,
+        filters: {
+          searchQuery,
+          baseCity: selectedDestination,
+          startDate,
+          endDate,
+          budgetLevel,
+          preferredActivities: selectedActivities
+        }
+      });
       
       const filters = {
         searchQuery,
@@ -130,12 +153,12 @@ const FindPools = () => {
 
       // Use cached data to avoid multiple API calls
       const cachedPools = await PoolsApi.getCachedPools();
-      let filteredPools = await PoolsApi.getPublicPools(filters, cachedPools);
+      let allFilteredPools = await PoolsApi.getPublicPools(filters, cachedPools);
 
       // Apply seats filter
       if (selectedSeats) {
         const seatsNum = parseInt(selectedSeats);
-        filteredPools = filteredPools.filter(pool => {
+        allFilteredPools = allFilteredPools.filter(pool => {
           const availableSeats = pool.maxParticipants - pool.participants;
           if (seatsNum === 1) return availableSeats >= 1;
           if (seatsNum === 2) return availableSeats >= 2;
@@ -146,7 +169,7 @@ const FindPools = () => {
 
       // Apply terrain filter (frontend only since it's not in API yet)
       if (selectedTerrains.length > 0) {
-        filteredPools = filteredPools.filter(pool => {
+        allFilteredPools = allFilteredPools.filter(pool => {
           // For now, use basic matching against pool name and highlights
           const poolText = `${pool.name} ${pool.highlights.join(' ')}`.toLowerCase();
           return selectedTerrains.some(terrain => {
@@ -163,8 +186,18 @@ const FindPools = () => {
         });
       }
 
-      setPools(filteredPools);
-      console.log('🏊‍♂️ Pools loaded successfully:', filteredPools.length);
+      // Apply frontend pagination
+      const paginationResult = PoolsApi.paginatePools(allFilteredPools, currentPage, pageSize);
+      
+      setPools(paginationResult.pools);
+      setPagination(paginationResult.pagination);
+      
+      console.log('🏊‍♂️ Paginated pools loaded:', {
+        totalPools: paginationResult.pagination.totalPools,
+        currentPage: paginationResult.pagination.currentPage,
+        totalPages: paginationResult.pagination.totalPages,
+        poolsOnThisPage: paginationResult.pools.length
+      });
       
     } catch (error) {
       console.error('🏊‍♂️❌ Error fetching pools:', error);
@@ -205,6 +238,61 @@ const FindPools = () => {
   const hasActiveFilters = () => {
     return searchQuery || selectedDestination || selectedSeats || startDate || endDate || 
            selectedTerrains.length > 0 || selectedActivities.length > 0 || budgetLevel;
+  };
+
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPreviousPage) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const totalPages = pagination.totalPages;
+    const current = pagination.currentPage;
+    
+    // Always show first page
+    if (totalPages > 0) pages.push(1);
+    
+    // Calculate start and end of visible page range
+    let start = Math.max(2, current - 2);
+    let end = Math.min(totalPages - 1, current + 2);
+    
+    // Add ellipsis before visible range if needed
+    if (start > 2) {
+      pages.push('...');
+    }
+    
+    // Add visible page range
+    for (let i = start; i <= end; i++) {
+      if (i !== 1 && i !== totalPages) {
+        pages.push(i);
+      }
+    }
+    
+    // Add ellipsis after visible range if needed
+    if (end < totalPages - 1) {
+      pages.push('...');
+    }
+    
+    // Always show last page (if different from first)
+    if (totalPages > 1) pages.push(totalPages);
+    
+    return pages;
   };
 
   const handleJoinPool = async (pool) => {
@@ -559,23 +647,50 @@ const FindPools = () => {
         </div>
       )}
 
-      {/* Pagination - Only show if there are pools */}
-      {!loading && !error && pools.length > 0 && (
+      {/* Pagination - Only show if there are pools and multiple pages */}
+      {!loading && !error && pagination.totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <div className="flex space-x-2">
-            <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+            <button 
+              onClick={handlePreviousPage}
+              disabled={!pagination.hasPreviousPage}
+              className={`px-4 py-2 border rounded-full transition-colors ${
+                pagination.hasPreviousPage
+                  ? 'border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
+                  : 'border-gray-200 dark:border-secondary-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              }`}
+            >
               Previous
             </button>
-            <button className="w-10 h-10 bg-primary-600 text-white rounded-full font-medium flex items-center justify-center">
-              1
-            </button>
-            <button className="w-10 h-10 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors flex items-center justify-center">
-              2
-            </button>
-            <button className="w-10 h-10 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors flex items-center justify-center">
-              3
-            </button>
-            <button className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors">
+            
+            {/* Show up to 5 page numbers with current page in center */}
+            {getPageNumbers().map((pageNum, index) => (
+              pageNum === '...' ? (
+                <span key={`ellipsis-${index}`} className="w-10 h-10 flex items-center justify-center text-gray-500">...</span>
+              ) : (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`w-10 h-10 rounded-full font-medium flex items-center justify-center transition-colors ${
+                    pageNum === pagination.currentPage
+                      ? 'bg-primary-600 text-white'
+                      : 'border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            ))}
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={!pagination.hasNextPage}
+              className={`px-4 py-2 border rounded-full transition-colors ${
+                pagination.hasNextPage
+                  ? 'border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700'
+                  : 'border-gray-200 dark:border-secondary-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              }`}
+            >
               Next
             </button>
           </div>
