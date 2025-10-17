@@ -506,7 +506,7 @@ const SystemSettings = () => {
           </div>
 
           {/* Infrastructure Overview Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
               <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 Overall Health
@@ -539,22 +539,8 @@ const SystemSettings = () => {
                 {infrastructureMetrics.runningServers || 0}
               </div>
             </div>
-            <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Avg CPU Usage
-              </h4>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {infrastructureMetrics.avgCpuUsage || 0}%
-              </div>
-            </div>
-            <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Avg Memory Usage
-              </h4>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {infrastructureMetrics.avgMemoryUsage || 0}%
-              </div>
-            </div>
+            
+           
           </div>
 
           {/* Error Display */}
@@ -612,10 +598,7 @@ const SystemSettings = () => {
                   >
                     Refresh Status
                   </button>
-                  <button className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                    <RocketLaunchIcon className="h-4 w-4" />
-                    Deploy
-                  </button>
+                  
                 </div>
               </div>
             </div>
