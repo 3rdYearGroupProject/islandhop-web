@@ -789,8 +789,22 @@ const ViewPoolPage = () => {
     });
   };
 
-  const handleShare = () => {
-    setShareModalOpen(true);
+  const handleCopyLink = async () => {
+    try {
+      // Get the current pool URL
+      const poolUrl = `${window.location.origin}/pool/${poolId}`;
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(poolUrl);
+      
+      // Show success notification (you can replace this with a toast notification)
+      alert('Pool link copied to clipboard!');
+      
+      console.log('Pool link copied:', poolUrl);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      alert('Failed to copy link. Please try again.');
+    }
   };
 
   const handleInvite = (emails) => {
@@ -1047,191 +1061,192 @@ const ViewPoolPage = () => {
                 {formatDate(new Date(pool.dates[0]))} - {formatDate(new Date(pool.dates[1]))}
               </p>
             </div>
-            {/* Share/Join Pool Button */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              {sourcePage === 'findPools' ? (
-                // Show Join Pool only if user is not a member and there's capacity
-                !isMember && hasCapacity && (
-                  <button
-                    onClick={() => setJoinModalOpen(true)}
-                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                    title="Join Pool"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Join Pool
-                  </button>
-                )
-              ) : (
+              {/* Share button (Copy Link) - always visible to everyone */}
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                title="Copy pool link to share with anyone"
+              >
+                <Share2 className="w-5 h-5 mr-2" />
+                Share
+              </button>
+              
+              {/* Join Pool - shown if user is not a member and there's capacity */}
+              {!isMember && hasCapacity && (
+                <button
+                  onClick={() => setJoinModalOpen(true)}
+                  className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                  title="Join Pool"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Join Pool
+                </button>
+              )}
+              
+              {/* Invite Users - shown only for private pools if there's capacity and user is creator or member */}
+              {hasCapacity && (isCreator || isMember) && pool?.visibility !== 'public' && (
+                <button
+                  onClick={() => setInviteModalOpen(true)}
+                  className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
+                  title="Invite specific users to this pool"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Invite
+                </button>
+              )}
+              
+              {/* Join Requests - shown only to creator */}
+              {isCreator && (
+                <button
+                  onClick={() => setJoinRequestsModalOpen(true)}
+                  className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                  title="Join Requests"
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Join Requests ({joinRequests.length})
+                </button>
+              )}
+              
+              {/* Trip Confirmation Buttons with proper visibility rules */}
+              {pool && pool.status !== 'completed' && (
                 <>
-                  <button
-                    onClick={handleShare}
-                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                    title="Share Pool"
-                  >
-                    <Share2 className="w-5 h-5 mr-2" />
-                    Share Pool
-                  </button>
-                  
-                  {/* Invite and Join Requests shown only if there's capacity */}
-                  {hasCapacity && (
+                  {/* Confirm Trip shown only to creator */}
+                  {isCreator && (
                     <button
-                      onClick={() => setInviteModalOpen(true)}
-                      className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
-                      title="Invite Users"
+                      onClick={handleInitiateTripConfirmation}
+                      disabled={confirmationLoading}
+                      className="flex items-center px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold rounded-full transition-colors border border-green-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                      title="Initiate Trip Confirmation"
                     >
-                      <Plus className="w-5 h-5 mr-2" />
-                      Invite Users
+                      {confirmationLoading ? (
+                        <Timer className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                      )}
+                      {confirmationLoading ? 'Starting...' : 'Confirm Trip'}
                     </button>
                   )}
                   
-                  <button
-                    onClick={() => setJoinRequestsModalOpen(true)}
-                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                    title="Join Requests"
-                  >
-                    <Users className="w-5 h-5 mr-2" />
-                    Join Requests ({joinRequests.length})
-                  </button>
-                  
-                  {/* Trip Confirmation Buttons with proper visibility rules */}
-                  {pool && pool.status !== 'completed' && (
-                    <>
-                      {/* Confirm Trip shown only to creator */}
-                      {isCreator && (
-                        <button
-                          onClick={handleInitiateTripConfirmation}
-                          disabled={confirmationLoading}
-                          className="flex items-center px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold rounded-full transition-colors border border-green-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
-                          title="Initiate Trip Confirmation"
-                        >
-                          {confirmationLoading ? (
-                            <Timer className="w-5 h-5 mr-2 animate-spin" />
-                          ) : (
-                            <CheckCircle className="w-5 h-5 mr-2" />
-                          )}
-                          {confirmationLoading ? 'Starting...' : 'Confirm Trip'}
-                        </button>
+                  {/* Confirm Participation shown only to participants who are not the creator */}
+                  {isMember && !isCreator && (
+                    <button
+                      onClick={handleConfirmParticipation}
+                      disabled={confirmationLoading}
+                      className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors border border-orange-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                      title="Confirm Your Participation"
+                    >
+                      {confirmationLoading ? (
+                        <Timer className="w-5 h-5 mr-2 animate-spin" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 mr-2" />
                       )}
-                      
-                      {/* Confirm Participation shown only to participants who are not the creator */}
-                      {isMember && !isCreator && (
-                        <button
-                          onClick={handleConfirmParticipation}
-                          disabled={confirmationLoading}
-                          className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors border border-orange-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
-                          title="Confirm Your Participation"
-                        >
-                          {confirmationLoading ? (
-                            <Timer className="w-5 h-5 mr-2 animate-spin" />
-                          ) : (
-                            <AlertCircle className="w-5 h-5 mr-2" />
-                          )}
-                          {confirmationLoading ? 'Confirming...' : 'Confirm Participation'}
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {/* Join Requests Modal */}
-                  {joinRequestsModalOpen && (
-                    <div className="fixed inset-0" style={{ zIndex: 1000 }}>
-                      <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
-                        <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
-                          <button
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-                            onClick={() => setJoinRequestsModalOpen(false)}
-                            aria-label="Close"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                          
-                          <div className="flex items-center gap-3 mb-6">
-                            <Users className="w-6 h-6 text-primary-600" />
-                            <h2 className="text-2xl font-bold text-gray-900">Join Requests</h2>
-                            <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
-                              {joinRequests.length} pending
-                            </span>
-                          </div>
-                          
-                          {joinRequests.length === 0 ? (
-                            <div className="text-center py-12">
-                              <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                              <p className="text-gray-500 text-lg mb-2">No join requests</p>
-                              <p className="text-gray-400 text-sm">When people request to join your pool, they'll appear here.</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-4 max-h-96 overflow-y-auto">
-                              {joinRequests.map((req, idx) => {
-                                // Create avatar URL - use a placeholder if no avatar provided
-                                const avatarUrl = req.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.name || 'User')}&background=random&color=fff`;
-                                // Set defaults for missing data
-                                const nationality = req.nationality || 'Not specified';
-                                const languages = req.languages && req.languages.length > 0 ? req.languages : ['English'];
-                                const age = req.age && req.age > 0 ? req.age : 'Not specified';
-                                
-                                return (
-                                <div key={req.userId || req.email || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                  <div className="flex items-start gap-4">
-                                    <img 
-                                      src={avatarUrl} 
-                                      alt={req.name || 'User'} 
-                                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between">
-                                        <div>
-                                          <h3 className="font-semibold text-gray-900 text-lg">{req.name || 'Unknown User'}</h3>
-                                          <p className="text-gray-600 text-sm">{req.email}</p>
-                                        </div>
-                                        <div className="flex gap-2 ml-4">
-                                          <button
-                                            onClick={() => handleRejectRequest(req.email, req.name)}
-                                            className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-                                          >
-                                            Reject
-                                          </button>
-                                          <button
-                                            onClick={() => handleAcceptRequest(req.email, req.name)}
-                                            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
-                                          >
-                                            Accept
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
-                                        <div>
-                                          <span className="text-gray-500 block">Nationality</span>
-                                          <span className="font-medium">{nationality}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500 block">Languages</span>
-                                          <span className="font-medium">{Array.isArray(languages) ? languages.join(', ') : languages}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500 block">Age</span>
-                                          <span className="font-medium">{age}{typeof age === 'number' ? ' years' : ''}</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          
-                          <div className="mt-6 pt-4 border-t border-gray-200">
-                            <p className="text-sm text-gray-500 text-center">
-                              Pool capacity: {pool?.participants || 0}/{pool?.maxParticipants || 0} participants
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      {confirmationLoading ? 'Confirming...' : 'Confirm Participation'}
+                    </button>
                   )}
                 </>
               )}
             </div>
           </div>
+          
+          {/* Join Requests Modal */}
+          {joinRequestsModalOpen && (
+            <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+              <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+                <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
+                  <button
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => setJoinRequestsModalOpen(false)}
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex items-center gap-3 mb-6">
+                    <Users className="w-6 h-6 text-primary-600" />
+                    <h2 className="text-2xl font-bold text-gray-900">Join Requests</h2>
+                    <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
+                      {joinRequests.length} pending
+                    </span>
+                  </div>
+                  
+                  {joinRequests.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-gray-500 text-lg mb-2">No join requests</p>
+                      <p className="text-gray-400 text-sm">When people request to join your pool, they'll appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {joinRequests.map((req, idx) => {
+                        // Create avatar URL - use a placeholder if no avatar provided
+                        const avatarUrl = req.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.name || 'User')}&background=random&color=fff`;
+                        // Set defaults for missing data
+                        const nationality = req.nationality || 'Not specified';
+                        const languages = req.languages && req.languages.length > 0 ? req.languages : ['English'];
+                        const age = req.age && req.age > 0 ? req.age : 'Not specified';
+                        
+                        return (
+                        <div key={req.userId || req.email || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-start gap-4">
+                            <img 
+                              src={avatarUrl} 
+                              alt={req.name || 'User'} 
+                              className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 text-lg">{req.name || 'Unknown User'}</h3>
+                                  <p className="text-gray-600 text-sm">{req.email}</p>
+                                </div>
+                                <div className="flex gap-2 ml-4">
+                                  <button
+                                    onClick={() => handleRejectRequest(req.email, req.name)}
+                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                  <button
+                                    onClick={() => handleAcceptRequest(req.email, req.name)}
+                                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
+                                  >
+                                    Accept
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-500 block">Nationality</span>
+                                  <span className="font-medium">{nationality}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block">Languages</span>
+                                  <span className="font-medium">{Array.isArray(languages) ? languages.join(', ') : languages}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block">Age</span>
+                                  <span className="font-medium">{age}{typeof age === 'number' ? ' years' : ''}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <p className="text-sm text-gray-500 text-center">
+                      Pool capacity: {pool?.participants || 0}/{pool?.maxParticipants || 0} participants
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1661,40 +1676,6 @@ const ViewPoolPage = () => {
             </div>
           </div>
           {/* Right: Actions Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
-            <div className="w-full mt-10">
-              <div
-                className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200 flex flex-col justify-center"
-                id="actions-card"
-                style={{ boxShadow: 'none', border: '1px solid #e5e7eb' }}
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Actions</h3>
-                <div className="flex flex-row gap-4 w-full mb-4">
-                  <button
-                    onClick={handleBack}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-full transition-colors border border-gray-200"
-                  >
-                    Back
-                  </button>
-                  {/* Delete button removed as requested */}
-                <button
-                  onClick={sourcePage === 'findPools' ? undefined : handleProceed}
-                  className={`flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-full transition-colors border border-blue-200 ${sourcePage === 'findPools' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={sourcePage === 'findPools'}
-                >
-                  Join Pool
-                </button>
-                </div>
-                {/* Disclaimers and info */}
-                <div className="text-xs text-gray-500 mt-2 space-y-1">
-                  <p>By joining, you agree to our <a href="#" className="underline hover:text-primary-600">Terms & Conditions</a> and <a href="#" className="underline hover:text-primary-600">Privacy Policy</a>.</p>
-                  <p>Payments are processed securely. You will be able to contact the organizer after joining.</p>
-                  {/* Delete disclaimer removed as requested */}
-                  <p>For support, contact <a href="mailto:support@islandhop.com" className="underline hover:text-primary-600">support@islandhop.com</a>.</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       {/* Footer at the very bottom */}

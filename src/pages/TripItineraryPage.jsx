@@ -158,9 +158,28 @@ const getPhotoUrl = (photo, maxWidth = 400) => {
 const TripItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
-  const { tripName, selectedDates, selectedTerrains, selectedActivities, tripId, trip, userUid } = location.state || {};
+  const { 
+    tripName, 
+    selectedDates, 
+    selectedTerrains, 
+    selectedActivities, 
+    tripId, 
+    trip, 
+    userUid,
+    editMode,
+    existingItinerary,
+    existingDestinations
+  } = location.state || {};
   
-  console.log('📍 TripItineraryPage received:', { tripName, selectedDates, tripId, userUid });
+  console.log('📍 TripItineraryPage received:', { 
+    tripName, 
+    selectedDates, 
+    tripId, 
+    userUid, 
+    editMode,
+    hasExistingItinerary: !!existingItinerary,
+    hasExistingDestinations: !!existingDestinations
+  });
   
   const [currentDay, setCurrentDay] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -453,20 +472,40 @@ const TripItineraryPage = () => {
     // Initialize empty itinerary for each day and expand first few days
     const initialItinerary = {};
     const initialExpanded = {};
+    
     days.forEach((day, index) => {
-      initialItinerary[index] = {
-        date: day,
-        activities: [],
-        places: [],
-        food: [],
-        transportation: []
-      };
+      // If in edit mode and we have existing itinerary data, use it
+      if (editMode && existingItinerary && existingItinerary[index]) {
+        initialItinerary[index] = {
+          date: day,
+          activities: existingItinerary[index].activities || [],
+          places: existingItinerary[index].places || [],
+          food: existingItinerary[index].food || [],
+          transportation: existingItinerary[index].transportation || []
+        };
+      } else {
+        // Otherwise create empty structure
+        initialItinerary[index] = {
+          date: day,
+          activities: [],
+          places: [],
+          food: [],
+          transportation: []
+        };
+      }
       // Expand first 3 days by default
-      initialExpanded[index] = index < 1;
+      initialExpanded[index] = index < 3;
     });
+    
     setItinerary(initialItinerary);
     setExpandedDays(initialExpanded);
-  }, [days.length]);
+    
+    // If in edit mode, also set the destinations
+    if (editMode && existingDestinations) {
+      console.log('🏙️ Pre-populating destinations from existing trip:', existingDestinations);
+      setDestinations(existingDestinations);
+    }
+  }, [days.length, editMode]);
 
   // Remove all backend integration functions
   // (searchActivities, searchAccommodation, searchDining, addPlaceToDay, addCityToDay, updateTripCities, getTripDetails)
@@ -734,6 +773,113 @@ const TripItineraryPage = () => {
     }
   };
 
+  // API call function to remove place from itinerary backend
+  const removePlaceFromItineraryBackend = async (placeName, dayIndex, category) => {
+    if (!tripId || !userUid) {
+      console.warn('⚠️ No tripId or userUid available for removing place from backend:', { tripId, userUid });
+      alert('Unable to remove place: Missing trip or user information');
+      return false;
+    }
+
+    // Map frontend categories to API endpoint types
+    const categoryTypeMap = {
+      'activities': 'attractions',
+      'places': 'hotels', 
+      'food': 'restaurants',
+      'transportation': 'transportation'
+    };
+
+    const apiType = categoryTypeMap[category];
+    if (!apiType) {
+      console.warn('⚠️ Unknown category for API:', category);
+      alert('Unable to remove place: Unknown category');
+      return false;
+    }
+
+    // Calculate day number (1-based)
+    const dayNumber = (dayIndex || 0) + 1;
+
+    try {
+      console.log('🗑️ Removing place from backend itinerary:', {
+        placeName,
+        category,
+        apiType,
+        dayNumber,
+        tripId,
+        userUid
+      });
+      
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary/${tripId}/day/${dayNumber}/${apiType}?placeName=${encodeURIComponent(placeName)}&userId=${userUid}`;
+      
+      console.log('📡 DELETE API URL:', apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Place removed from backend successfully:', result);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Error removing place from backend:', error);
+      alert(`Error removing place: ${error.message}`);
+      return false;
+    }
+  };
+
+  // Handler to remove item from itinerary
+  const handleRemoveItem = async (item, dayIndex, category) => {
+    console.log('🗑️ Remove item clicked:', { item, dayIndex, category });
+
+    // Confirm deletion
+    const confirmDelete = window.confirm(
+      `Are you sure you want to remove "${item.name}" from Day ${dayIndex + 1}?`
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    // Remove from backend first (if tripId and userUid are available)
+    if (tripId && userUid && ['activities', 'places', 'food'].includes(category)) {
+      const success = await removePlaceFromItineraryBackend(item.name, dayIndex, category);
+      if (!success) {
+        // If backend removal fails, ask user if they want to continue with local removal
+        const continueLocal = window.confirm(
+          'Failed to remove from server. Do you want to remove it locally only?'
+        );
+        if (!continueLocal) {
+          return;
+        }
+      }
+    }
+
+    // Remove from local state
+    setItinerary(prev => {
+      const updated = { ...prev };
+      if (updated[dayIndex] && updated[dayIndex][category]) {
+        // Filter out the item to remove
+        updated[dayIndex][category] = updated[dayIndex][category].filter(
+          existingItem => existingItem.name !== item.name
+        );
+      }
+      return updated;
+    });
+
+    console.log('✅ Item removed successfully from local state');
+  };
+
   // Simple function for destination and transportation modals
   const getFilteredSuggestions = () => {
     // For destination modal - used for Google Places API cities
@@ -779,7 +925,8 @@ const TripItineraryPage = () => {
   };
 
   const handleSaveTrip = async () => {
-    console.log('💾 Starting comprehensive trip creation process...');
+    console.log('💾 Starting comprehensive trip save process...');
+    console.log('📝 Edit mode:', editMode);
     
     setIsSavingTrip(true);
     // Validate required data
@@ -790,23 +937,42 @@ const TripItineraryPage = () => {
       return;
     }
 
-    console.log('🚀 Trip already created in preferences, saving itinerary locally...');
-
-    // Trip was already created in TripPreferencesPage, just save locally and navigate
-    navigate('/trips', {
-      state: {
-        newTrip: {
-          id: tripId || Date.now(), // Use tripId from backend or generate one
-          name: tripName,
-          dates: selectedDates,
-          terrains: selectedTerrains,
-          activities: selectedActivities,
-          itinerary: itinerary,
-          createdAt: new Date()
-        },
-        message: 'Trip itinerary saved successfully!'
-      }
-    });
+    if (editMode) {
+      console.log('✏️ Edit mode - Trip already exists, saving changes...');
+      // In edit mode, trip already exists, just save the updated itinerary
+      // The backend endpoints are already being called when items are added via addPlaceToItineraryBackend
+      navigate('/trips', {
+        state: {
+          updatedTrip: {
+            id: tripId,
+            name: tripName,
+            dates: selectedDates,
+            terrains: selectedTerrains,
+            activities: selectedActivities,
+            itinerary: itinerary,
+            updatedAt: new Date()
+          },
+          message: 'Trip updated successfully!'
+        }
+      });
+    } else {
+      console.log('🚀 Create mode - Trip already created in preferences, saving itinerary locally...');
+      // Trip was already created in TripPreferencesPage, just save locally and navigate
+      navigate('/trips', {
+        state: {
+          newTrip: {
+            id: tripId || Date.now(), // Use tripId from backend or generate one
+            name: tripName,
+            dates: selectedDates,
+            terrains: selectedTerrains,
+            activities: selectedActivities,
+            itinerary: itinerary,
+            createdAt: new Date()
+          },
+          message: 'Trip itinerary saved successfully!'
+        }
+      });
+    }
     
     setIsSavingTrip(false);
   };
@@ -952,7 +1118,11 @@ const TripItineraryPage = () => {
                                       {item.rating && (
                                         <p className="text-xs text-yellow-600 mb-2">★ {item.rating}</p>
                                       )}
-                                      <button className="text-gray-400 hover:text-gray-600">
+                                      <button 
+                                        onClick={() => handleRemoveItem(item, dayIndex, category)}
+                                        className="text-gray-400 hover:text-red-600 transition-colors"
+                                        title="Remove this item"
+                                      >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
@@ -1082,7 +1252,7 @@ const TripItineraryPage = () => {
               onClick={handleSaveTrip}
               className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors"
             >
-              Save Trip
+              {editMode ? 'Update Trip' : 'Save Trip'}
             </button>
           </div>
         </div>

@@ -798,6 +798,20 @@ const ViewTripPage = () => {
   };
 
   const handleEdit = () => {
+    // Extract destinations from itinerary for each day
+    const destinationsMap = {};
+    Object.keys(trip.itinerary || {}).forEach(dayIndex => {
+      const dayData = trip.itinerary[dayIndex];
+      // Try to get destination from activities, places, or food locations
+      if (dayData.activities && dayData.activities.length > 0) {
+        destinationsMap[dayIndex] = { name: dayData.activities[0].location };
+      } else if (dayData.places && dayData.places.length > 0) {
+        destinationsMap[dayIndex] = { name: dayData.places[0].location };
+      } else if (dayData.food && dayData.food.length > 0) {
+        destinationsMap[dayIndex] = { name: dayData.food[0].location };
+      }
+    });
+
     navigate('/trip-itinerary', {
       state: {
         tripName: trip.name,
@@ -805,9 +819,62 @@ const ViewTripPage = () => {
         selectedTerrains: trip.terrains,
         selectedActivities: trip.activities,
         tripId: trip.id,
-        editMode: true
+        userUid: currentUserId,
+        editMode: true,
+        existingItinerary: trip.itinerary,
+        existingDestinations: destinationsMap
       }
     });
+  };
+
+  const handleDelete = async () => {
+    // Confirm deletion with user
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${trip.name}"?\n\nThis action cannot be undone and all trip data will be permanently removed.`
+    );
+    
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Deleting trip:', tripId, 'for user:', currentUserId);
+      
+      // Call the delete endpoint
+      const response = await tripPlanningApi.delete(`/itinerary/${tripId}?userId=${currentUserId}`);
+      
+      console.log('✅ Trip deleted successfully:', response.data);
+      
+      // Show success message
+      alert('Trip deleted successfully!');
+      
+      // Navigate back to trips page
+      navigate('/trips', {
+        state: {
+          message: 'Trip deleted successfully!',
+          deletedTripId: tripId
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error deleting trip:', error);
+      
+      // Handle specific error cases
+      if (error.response) {
+        if (error.response.status === 404) {
+          alert('Trip not found. It may have already been deleted.');
+        } else if (error.response.status === 403) {
+          alert('You do not have permission to delete this trip.');
+        } else if (error.response.status === 400) {
+          alert(`Invalid request: ${error.response.data?.message || 'Please check your request.'}`);
+        } else {
+          alert(`Failed to delete trip: ${error.response.data?.message || 'Unknown error occurred.'}`);
+        }
+      } else if (error.request) {
+        alert('Network error: Unable to connect to server. Please check your connection and try again.');
+      } else {
+        alert(`Error: ${error.message}`);
+      }
+    }
   };
 
   const handleShare = () => {
@@ -1229,6 +1296,13 @@ const ViewTripPage = () => {
                     Back
                   </button>
                   <button
+                    onClick={handleEdit}
+                    className="flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold py-2 px-4 rounded-full transition-colors border border-yellow-400"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={handleDelete}
                     className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded-full transition-colors border border-red-400"
                   >
                     Delete
@@ -1243,6 +1317,7 @@ const ViewTripPage = () => {
                 {/* Disclaimers and info */}
                 <div className="text-xs text-gray-500 mt-2 space-y-1">
                   <p>By proceeding, you agree to our <a href="#" className="underline hover:text-primary-600">Terms & Conditions</a> and <a href="#" className="underline hover:text-primary-600">Privacy Policy</a>.</p>
+                  <p>Click <strong>Edit</strong> to modify your trip itinerary, add or remove destinations, activities, accommodations, and dining options.</p>
                   <p>Payments are processed securely. You will be able to select your preferred driver and guide after payment.</p>
                   <p>If you delete this trip, it cannot be recovered.</p>
                   <p>For support, contact <a href="mailto:support@islandhop.com" className="underline hover:text-primary-600">support@islandhop.com</a>.</p>

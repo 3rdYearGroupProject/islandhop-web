@@ -349,16 +349,16 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
                       </span>
                     ))}
                   </div>
-                </div>
-              </div>
 
-              {/* Approval Notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-                <div className="flex items-start space-x-2">
-                  <FiInfo className="text-amber-600 mt-0.5" size={16} />
-                  <div className="text-sm text-amber-800">
-                    <strong>Approval Required:</strong> All existing group members must approve your request before you can join the pool.
+                  {/* Disclaimers and info */}
+                  <div className="text-xs text-gray-500 mt-2 space-y-1">
+                    <p>By joining, you agree to our <a href="#" className="underline hover:text-primary-600">Terms & Conditions</a> and <a href="#" className="underline hover:text-primary-600">Privacy Policy</a>.</p>
+                    <p>Payments are processed securely. You will be able to contact the organizer after joining.</p>
+                    {/* Delete disclaimer removed as requested */}
+                    <p>For support, contact <a href="mailto:support@islandhop.com" className="underline hover:text-primary-600">support@islandhop.com</a>.</p>
+                    <p className="italic">Note: Submitting a join request does not guarantee acceptance into the pool.</p>
                   </div>
+
                 </div>
               </div>
 

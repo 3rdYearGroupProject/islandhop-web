@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { FiX, FiSend, FiMail, FiUser, FiCalendar } from 'react-icons/fi';
+import { FiX, FiSend, FiMail, FiCalendar } from 'react-icons/fi';
 import { PoolsApi } from '../api/poolsApi';
 import { useAuth } from '../hooks/useAuth';
 
 const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
-  const [inviteMethod, setInviteMethod] = useState('email'); // 'email' or 'userId'
   const [invitedEmail, setInvitedEmail] = useState('');
-  const [invitedUserId, setInvitedUserId] = useState('');
   const [message, setMessage] = useState('');
   const [expirationDays, setExpirationDays] = useState(7);
   const [loading, setLoading] = useState(false);
@@ -14,10 +12,23 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
   const [success, setSuccess] = useState(false);
   const { user } = useAuth();
 
+  // Auto-generate default message with trip details
+  React.useEffect(() => {
+    if (isOpen && groupData) {
+      const poolName = groupData?.name || groupData?.title || 'Travel Pool';
+      const destination = Array.isArray(groupData?.destinations) 
+        ? groupData.destinations.join(', ') 
+        : groupData?.destination || groupData?.destinations || 'Sri Lanka';
+      const duration = groupData?.totalDays || groupData?.duration || 'several days';
+      
+      const defaultMessage = `Hi! I'd love for you to join our travel pool "${poolName}".\n\nWe're planning an amazing trip to ${destination} for ${duration}. I think you'd be a great addition to our group!\n\nLooking forward to traveling together! 🌏✈️`;
+      
+      setMessage(defaultMessage);
+    }
+  }, [isOpen, groupData]);
+
   const handleReset = () => {
-    setInviteMethod('email');
     setInvitedEmail('');
-    setInvitedUserId('');
     setMessage('');
     setExpirationDays(7);
     setError(null);
@@ -35,13 +46,15 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
       return;
     }
 
-    if (inviteMethod === 'email' && !invitedEmail.trim()) {
+    if (!invitedEmail.trim()) {
       setError('Please enter an email address');
       return;
     }
 
-    if (inviteMethod === 'userId' && !invitedUserId.trim()) {
-      setError('Please enter a user ID');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(invitedEmail.trim())) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -54,23 +67,24 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
     setError(null);
 
     try {
+      // Hardcoded to use email method
       const inviteData = {
         userId: user.uid,
+        invitedEmail: invitedEmail.trim(),
         message: message.trim(),
-        expirationDays: parseInt(expirationDays)
+        expirationDays: parseInt(expirationDays),
+        method: 'email' // Explicitly set method as email
       };
 
-      if (inviteMethod === 'email') {
-        inviteData.invitedEmail = invitedEmail.trim();
-      } else {
-        inviteData.invitedUserId = invitedUserId.trim();
-      }
+      console.log('📧 Sending invitation with data:', inviteData);
 
       // Use the correct groupId from groupData structure
       const groupId = groupData?.groupInfo?.groupId || groupData?.id;
       if (!groupId) {
         throw new Error('Group ID not found in group data');
       }
+
+      console.log('📧 Inviting to group:', groupId);
 
       const result = await PoolsApi.inviteUserToGroup(groupId, inviteData);
       
@@ -124,116 +138,115 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
             </div>
           ) : (
             <>
-              {/* Group Info */}
-              <div className="bg-blue-50 rounded-lg p-4 mb-6">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Inviting to: {groupData?.title || groupData?.name || 'Group'}
+              {/* Trip Details - Auto-populated */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 mb-6 border border-blue-100">
+                <h4 className="font-bold text-gray-900 mb-3 text-lg flex items-center gap-2">
+                  <FiCalendar className="text-blue-600" size={18} />
+                  Trip Details
                 </h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p><strong>Destination:</strong> {groupData?.destination || 'N/A'}</p>
-                  <p><strong>Duration:</strong> {groupData?.duration || 'N/A'}</p>
-                  <p><strong>Current Members:</strong> {groupData?.members?.length || 0}/{groupData?.maxMembers || 'N/A'}</p>
+                <div className="space-y-2.5">
+                  <div className="flex items-start">
+                    <span className="text-sm font-semibold text-gray-700 w-32">Trip Name:</span>
+                    <span className="text-sm text-gray-900 font-medium flex-1">
+                      {groupData?.title || groupData?.name || 'Untitled Trip'}
+                    </span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="text-sm font-semibold text-gray-700 w-32">Destination:</span>
+                    <span className="text-sm text-gray-900 flex-1">
+                      {Array.isArray(groupData?.destinations) 
+                        ? groupData.destinations.join(', ') 
+                        : groupData?.destination || groupData?.destinations || 'Sri Lanka'}
+                    </span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="text-sm font-semibold text-gray-700 w-32">Duration:</span>
+                    <span className="text-sm text-gray-900">
+                      {groupData?.totalDays 
+                        ? `${groupData.totalDays} days` 
+                        : groupData?.duration || 'N/A'}
+                    </span>
+                  </div>
+                  {groupData?.dates && groupData.dates.length >= 2 && (
+                    <div className="flex items-start">
+                      <span className="text-sm font-semibold text-gray-700 w-32">Dates:</span>
+                      <span className="text-sm text-gray-900">
+                        {new Date(groupData.dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {' - '}
+                        {new Date(groupData.dates[1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-start">
+                    <span className="text-sm font-semibold text-gray-700 w-32">Participants:</span>
+                    <span className="text-sm text-gray-900">
+                      {groupData?.participants || groupData?.members?.length || 0}/{groupData?.maxParticipants || groupData?.maxMembers || 'N/A'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Invite Method Selection */}
+              {/* Email Input */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  How would you like to invite them?
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FiMail className="text-gray-600" size={16} />
+                  Recipient Email Address <span className="text-red-500">*</span>
                 </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="inviteMethod"
-                      value="email"
-                      checked={inviteMethod === 'email'}
-                      onChange={(e) => setInviteMethod(e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <FiMail className="text-gray-600" size={16} />
-                    <span className="text-sm text-gray-700">Email Address</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="inviteMethod"
-                      value="userId"
-                      checked={inviteMethod === 'userId'}
-                      onChange={(e) => setInviteMethod(e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <FiUser className="text-gray-600" size={16} />
-                    <span className="text-sm text-gray-700">User ID</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Invite Input */}
-              <div className="mb-6">
-                {inviteMethod === 'email' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={invitedEmail}
-                      onChange={(e) => setInvitedEmail(e.target.value)}
-                      placeholder="friend@example.com"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      User ID <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={invitedUserId}
-                      onChange={(e) => setInvitedUserId(e.target.value)}
-                      placeholder="user_123"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                )}
+                <input
+                  type="email"
+                  value={invitedEmail}
+                  onChange={(e) => setInvitedEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">
+                  Enter the email address of the person you'd like to invite to this trip.
+                </p>
               </div>
 
               {/* Personal Message */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FiSend className="text-gray-600" size={16} />
                   Personal Message <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Hey! I'd love for you to join our travel group. We're planning an amazing trip and think you'd be a great addition to our adventure..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  rows={4}
+                  placeholder="Add your personal message here..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
+                  rows={5}
                   maxLength={500}
                 />
-                <div className="text-right text-xs text-gray-500 mt-1">
-                  {message.length}/500 characters
+                <div className="flex justify-between items-center mt-1.5">
+                  <p className="text-xs text-gray-500">
+                    Customize the invitation message for your friend
+                  </p>
+                  <span className="text-xs text-gray-500">
+                    {message.length}/500
+                  </span>
                 </div>
               </div>
 
               {/* Expiration Days */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FiCalendar className="inline mr-1" size={14} />
-                  Invitation Expires After
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FiCalendar className="text-gray-600" size={16} />
+                  Invitation Expires After <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={expirationDays}
                   onChange={(e) => setExpirationDays(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                 >
                   <option value={3}>3 days</option>
-                  <option value={7}>7 days</option>
+                  <option value={7}>7 days (Recommended)</option>
                   <option value={14}>14 days</option>
                   <option value={30}>30 days</option>
                 </select>
+                <p className="text-xs text-gray-500 mt-1.5">
+                  The recipient must accept the invitation within this time period.
+                </p>
               </div>
 
               {/* Error Message */}
@@ -247,20 +260,23 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex space-x-3">
+              <div className="flex space-x-3 pt-2">
                 <button
                   onClick={handleClose}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium transition-colors"
+                  className="flex-1 px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-semibold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSendInvitation}
-                  disabled={loading || !message.trim() || (!invitedEmail.trim() && !invitedUserId.trim())}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                  disabled={loading || !message.trim() || !invitedEmail.trim()}
+                  className="flex-1 px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm font-semibold transition-colors flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
                 >
                   {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span>Sending...</span>
+                    </>
                   ) : (
                     <>
                       <FiSend size={16} />

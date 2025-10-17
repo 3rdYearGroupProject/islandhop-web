@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal, MapPin, Calendar, Users, Star, Camera, Share2, Edit3 } from 'lucide-react';
+import { MoreHorizontal, MapPin, Calendar, Users, Star, Camera, Share2 } from 'lucide-react';
 import { placeholderImage, getCityImageUrl, logImageError } from '../../utils/imageUtils';
 
 const TripCard = ({ trip, getStatusColor, onClick }) => {
@@ -161,9 +161,6 @@ const TripCard = ({ trip, getStatusColor, onClick }) => {
           <div className="flex items-center space-x-1 sm:space-x-2">
             <button className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
               <Share2 className="h-3 w-3 sm:h-4 sm:w-4" />
-            </button>
-            <button className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-              <Edit3 className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>

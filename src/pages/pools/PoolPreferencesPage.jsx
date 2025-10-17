@@ -305,21 +305,31 @@ const PoolPreferencesPage = () => {
       }
       
       // Get user information from the auth hook's displayInfo
-      const userEmail = user?.email || displayInfo?.email || 'user@example.com';
-      const userName = user?.displayName || displayInfo?.displayName || 'Anonymous User';
+      const currentUserData = getUserData();
+      const userEmail = user?.email || displayInfo?.email || currentUserData?.email;
+      const userName = user?.displayName || displayInfo?.displayName || currentUserData?.displayName || 'Anonymous User';
       
       console.log('👤 User data extraction debug:', {
         user: user,
         displayInfo: displayInfo,
+        currentUserData: currentUserData,
         extractedEmail: userEmail,
-        extractedName: userName
+        extractedName: userName,
+        poolPrivacy: poolPrivacy
       });
+      
+      // For private pools, email is required - validate it
+      if (poolPrivacy === 'private' && (!userEmail || userEmail === 'user@example.com')) {
+        console.error('❌ Email is required for private pools but not found');
+        alert('Your email address is required to create a private pool. Please ensure you are logged in properly.');
+        return;
+      }
       
       // Prepare request data according to CreateGroupWithTripRequest schema
       const requestData = {
         // Required fields
         userId: userId,
-        userEmail: userEmail, // Properly extracted user email
+        email: userEmail, // Backend expects 'email' not 'userEmail'
         userName: userName, // Add user display name
         tripName: poolName, // Trip name from the modal
         startDate: startDate,
