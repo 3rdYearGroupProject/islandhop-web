@@ -18,6 +18,8 @@ import {
   CpuChipIcon,
   CloudIcon,
   RocketLaunchIcon,
+  CircleStackIcon,
+  CommandLineIcon,
 } from "@heroicons/react/24/outline";
 
 const SystemSettings = () => {
@@ -673,114 +675,206 @@ const SystemSettings = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {servers.map((server) => {
                     const StatusIcon = getStatusIcon(server.status);
+                    const isDatabaseServer = server.type === "database";
+                    const isMongoDb = server.name.includes("MongoDB");
+                    const isSupabase = server.name.includes("Supabase");
+
                     return (
                       <div
                         key={server.id}
-                        className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700 hover:shadow-md transition-shadow"
+                        className="bg-white dark:bg-secondary-800 rounded-xl p-8 shadow-sm border border-gray-200 dark:border-secondary-700 hover:shadow-md transition-shadow"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gray-100 dark:bg-secondary-700 rounded-lg">
-                              <ServerIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        {isDatabaseServer ? (
+                          /* Database Server Cards with Large Icons */
+                          <div className="space-y-6">
+                            {/* Large Icon and Status */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                {isMongoDb ? (
+                                  <div className="p-4 bg-green-100 dark:bg-green-900/20 rounded-2xl">
+                                    <CircleStackIcon className="h-16 w-16 text-green-600 dark:text-green-400" />
+                                  </div>
+                                ) : isSupabase ? (
+                                  <div className="p-4 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl">
+                                    <CommandLineIcon className="h-16 w-16 text-emerald-600 dark:text-emerald-400" />
+                                  </div>
+                                ) : (
+                                  <div className="p-4 bg-gray-100 dark:bg-secondary-700 rounded-2xl">
+                                    <ServerIcon className="h-16 w-16 text-gray-600 dark:text-gray-400" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                    {isMongoDb
+                                      ? "MongoDB"
+                                      : isSupabase
+                                      ? "Supabase"
+                                      : server.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {server.version}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {server.name}
-                              </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {server.ip} • {server.location}
-                              </p>
+
+                            {/* Status Badge */}
+                            <div className="flex items-center justify-center py-4">
+                              <span
+                                className={`inline-flex items-center gap-2 px-6 py-3 rounded-full text-base font-semibold ${getStatusColor(
+                                  server.status
+                                )}`}
+                              >
+                                <StatusIcon className="h-5 w-5" />
+                                {server.status === "running"
+                                  ? "Connected & Healthy"
+                                  : "Disconnected"}
+                              </span>
+                            </div>
+
+                            {/* Database Details */}
+                            <div className="bg-gray-50 dark:bg-secondary-900 rounded-lg p-6 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Status Message
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {server.message || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Response Time
+                                </span>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    server.responseTime &&
+                                    parseInt(server.responseTime) < 500
+                                      ? "text-success-600 dark:text-success-400"
+                                      : "text-warning-600 dark:text-warning-400"
+                                  }`}
+                                >
+                                  {server.responseTime || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Location
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {server.location}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Connection
+                                </span>
+                                <span
+                                  className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]"
+                                  title={server.ip}
+                                >
+                                  {server.ip}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              server.status
-                            )}`}
-                          >
-                            <StatusIcon className="h-3 w-3" />
-                            {server.status}
-                          </span>
-                        </div>
-
-                        {/* Resource Usage */}
-                        <div className="space-y-3 mb-4">
-                          {[
-                            { label: "CPU", value: server.cpu },
-                            { label: "Memory", value: server.memory },
-                            { label: "Disk", value: server.disk },
-                          ].map((resource) => (
-                            <div key={resource.label}>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {resource.label}
-                                </span>
-                                <span className="font-medium text-gray-900 dark:text-white">
-                                  {resource.value}%
-                                </span>
+                        ) : (
+                          /* Regular Server Cards */
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-100 dark:bg-secondary-700 rounded-lg">
+                                  <ServerIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    {server.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {server.ip} • {server.location}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
-                                <div
-                                  className={`h-2 rounded-full ${getResourceBarColor(
-                                    resource.value
-                                  )}`}
-                                  style={{ width: `${resource.value}%` }}
-                                />
-                              </div>
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                  server.status
+                                )}`}
+                              >
+                                <StatusIcon className="h-3 w-3" />
+                                {server.status}
+                              </span>
                             </div>
-                          ))}
-                        </div>
 
-                        {/* Server Details */}
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          <p>
-                            <strong>Uptime:</strong> {server.uptime}
-                          </p>
-                          <p>
-                            <strong>Version:</strong> {server.version}
-                          </p>
-                          {server.responseTime && (
-                            <p>
-                              <strong>Response Time:</strong>{" "}
-                              {server.responseTime}
-                            </p>
-                          )}
-                          {server.message && (
-                            <p>
-                              <strong>Status:</strong> {server.message}
-                            </p>
-                          )}
-                        </div>
+                            {/* Resource Usage for non-database servers */}
+                            <div className="space-y-3 mb-4">
+                              {[
+                                { label: "CPU", value: server.cpu },
+                                { label: "Memory", value: server.memory },
+                                { label: "Disk", value: server.disk },
+                              ].map((resource) => (
+                                <div key={resource.label}>
+                                  <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      {resource.label}
+                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                      {resource.value}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
+                                    <div
+                                      className={`h-2 rounded-full ${getResourceBarColor(
+                                        resource.value
+                                      )}`}
+                                      style={{ width: `${resource.value}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          {server.status === "stopped" ? (
-                            <button
-                              onClick={() =>
-                                handleServerAction(server.id, "start")
-                              }
-                              className="px-3 py-1.5 text-sm font-medium text-success-700 bg-success-100 hover:bg-success-200 rounded-lg transition-colors"
-                            >
-                              Start
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                handleServerAction(server.id, "stop")
-                              }
-                              className="px-3 py-1.5 text-sm font-medium text-danger-700 bg-danger-100 hover:bg-danger-200 rounded-lg transition-colors"
-                            >
-                              Stop
-                            </button>
-                          )}
-                          <button
-                            onClick={() =>
-                              handleServerAction(server.id, "restart")
-                            }
-                            className="px-3 py-1.5 text-sm font-medium text-warning-700 bg-warning-100 hover:bg-warning-200 rounded-lg transition-colors"
-                          >
-                            Restart
-                          </button>
-                        </div>
+                            {/* Server Details */}
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                              <p>
+                                <strong>Uptime:</strong> {server.uptime}
+                              </p>
+                              <p>
+                                <strong>Version:</strong> {server.version}
+                              </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2">
+                              {server.status === "stopped" ? (
+                                <button
+                                  onClick={() =>
+                                    handleServerAction(server.id, "start")
+                                  }
+                                  className="px-3 py-1.5 text-sm font-medium text-success-700 bg-success-100 hover:bg-success-200 rounded-lg transition-colors"
+                                >
+                                  Start
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() =>
+                                    handleServerAction(server.id, "stop")
+                                  }
+                                  className="px-3 py-1.5 text-sm font-medium text-danger-700 bg-danger-100 hover:bg-danger-200 rounded-lg transition-colors"
+                                >
+                                  Stop
+                                </button>
+                              )}
+                              <button
+                                onClick={() =>
+                                  handleServerAction(server.id, "restart")
+                                }
+                                className="px-3 py-1.5 text-sm font-medium text-warning-700 bg-warning-100 hover:bg-warning-200 rounded-lg transition-colors"
+                              >
+                                Restart
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
