@@ -65,22 +65,28 @@ const InvitationsAndRequests = () => {
     try {
       console.log('📮 Responding to invitation:', { invitationId, groupId, action, message });
       
+      // Get user email from user or displayInfo
+      const userEmail = user?.email || displayInfo?.email;
+      
       const responseData = {
-        userId: user.uid,
         invitationId: invitationId,
+        userId: user.uid,
+        userEmail: userEmail,
         action: action,
-        message: message
+        message: message || null
       };
+      
+      console.log('📮 Request data:', responseData);
       
       const result = await PoolsApi.respondToInvitation(responseData);
       console.log('📮 Invitation response result:', result);
       
-      alert(`✅ Invitation ${action}ed successfully!`);
+      await window.alert(`✅ Invitation ${action}ed successfully!`);
       fetchData(); // Refresh data
       
     } catch (error) {
       console.error('❌ Error responding to invitation:', error);
-      alert(`❌ Failed to respond to invitation: ${error.message}`);
+      await window.alert(`❌ Failed to respond to invitation: ${error.message}`);
     }
   };
 
@@ -213,57 +219,131 @@ const InvitationsAndRequests = () => {
                   {invitations.map((invitation, idx) => {
                     const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(invitation.inviterName || 'User')}&background=random&color=fff`;
                     
+                    // Format dates
+                    const formatDate = (dateString) => {
+                      if (!dateString) return 'Not specified';
+                      const date = new Date(dateString);
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    };
+                    
+                    // Calculate urgency styling using system colors
+                    const getUrgencyStyles = (urgencyLevel) => {
+                      switch(urgencyLevel?.toLowerCase()) {
+                        case 'high':
+                          return 'bg-red-50 text-red-800 border-red-300';
+                        case 'medium':
+                          return 'bg-yellow-50 text-yellow-800 border-yellow-300';
+                        case 'low':
+                          return 'bg-success-50 text-success-800 border-success-300';
+                        default:
+                          return 'bg-secondary-50 text-secondary-800 border-secondary-300';
+                      }
+                    };
+                    
                     return (
-                      <div key={invitation.invitationId || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div key={invitation.invitationId || idx} className="bg-white rounded-lg p-5 border-2 border-secondary-200 hover:border-primary-400 transition-all shadow-sm hover:shadow-md">
+                        {/* Urgency Banner */}
+                        {invitation.urgencyLevel && invitation.daysRemaining !== undefined && (
+                          <div className={`mb-4 px-3 py-2 rounded-lg flex items-center justify-between border ${getUrgencyStyles(invitation.urgencyLevel)}`}>
+                            <div className="flex items-center gap-2">
+                              <ClockIcon className="w-4 h-4" />
+                              <span className="text-sm font-medium">
+                                {invitation.urgencyLevel === 'high' && '⚠️ Expires soon'}
+                                {invitation.urgencyLevel === 'medium' && '⏰ Moderate urgency'}
+                                {invitation.urgencyLevel === 'low' && '✓ Plenty of time'}
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold">
+                              {invitation.daysRemaining} {invitation.daysRemaining === 1 ? 'day' : 'days'} remaining
+                            </span>
+                          </div>
+                        )}
+
                         <div className="flex items-start gap-4">
                           <img 
                             src={avatarUrl} 
                             alt={invitation.inviterName || 'User'} 
-                            className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
+                            className="w-14 h-14 rounded-full object-cover border-3 border-primary-500 shadow-md" 
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-semibold text-gray-900 text-lg">{invitation.groupName}</h3>
-                                <p className="text-gray-600 text-sm">
-                                  Invited by {invitation.inviterName} • {invitation.currentMembers}/{invitation.maxMembers} members
-                                </p>
+                            {/* Header with actions */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <h3 className="font-bold text-secondary-900 text-xl mb-1">{invitation.groupName}</h3>
                                 {invitation.tripName && (
-                                  <p className="text-sm font-medium text-blue-600">{invitation.tripName}</p>
+                                  <p className="text-sm font-medium text-primary-600 mb-1">📍 {invitation.tripName}</p>
                                 )}
+                                <div className="flex items-center gap-3 text-sm text-secondary-600">
+                                  <span className="flex items-center gap-1">
+                                    <span className="font-medium text-secondary-700">{invitation.inviterName}</span>
+                                    {invitation.inviterEmail && (
+                                      <span className="text-xs text-secondary-500">({invitation.inviterEmail})</span>
+                                    )}
+                                  </span>
+                                  <span className="text-secondary-400">•</span>
+                                  <span className="flex items-center gap-1">
+                                    <UserGroupIcon className="w-4 h-4" />
+                                    {invitation.currentMembers}/{invitation.maxMembers} members
+                                  </span>
+                                </div>
                               </div>
+                              
+                              {/* Action Buttons */}
                               <div className="flex gap-2 ml-4">
                                 <button
                                   onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'reject', 'Thank you for the invitation, but I cannot join this trip.')}
-                                  className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition-all border border-red-300 hover:shadow-sm flex items-center gap-1"
                                 >
+                                  <XMarkIcon className="w-4 h-4" />
                                   Decline
                                 </button>
                                 <button
                                   onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'accept', '')}
-                                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
+                                  className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md flex items-center gap-1"
                                 >
+                                  <CheckIcon className="w-4 h-4" />
                                   Accept
                                 </button>
                               </div>
                             </div>
-                            <div className="mt-3">
-                              <p className="text-sm text-gray-700 mb-3">"{invitation.message}"</p>
-                            </div>
-                            <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-500 block">Trip Dates</span>
-                                <span className="font-medium">
-                                  {new Date(invitation.tripStartDate).toLocaleDateString()} - {new Date(invitation.tripEndDate).toLocaleDateString()}
-                                </span>
+                            
+                            {/* Invitation Message */}
+                            {invitation.message && (
+                              <div className="bg-primary-50 border-l-4 border-primary-500 p-3 rounded-r-lg mb-4">
+                                <p className="text-sm text-secondary-700 italic">"{invitation.message}"</p>
                               </div>
-                              <div>
-                                <span className="text-gray-500 block">Base City</span>
-                                <span className="font-medium">{invitation.baseCity}</span>
+                            )}
+                            
+                            {/* Trip Details Grid - 3 columns instead of 4 */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {/* Trip Dates */}
+                              <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-3 rounded-lg border border-primary-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <CalendarIcon className="w-4 h-4 text-primary-600" />
+                                  <span className="text-xs font-semibold text-primary-700 uppercase">Trip Dates</span>
+                                </div>
+                                <p className="text-xs text-secondary-700">Start: {formatDate(invitation.tripStartDate)}</p>
+                                <p className="text-xs text-secondary-700">End: {formatDate(invitation.tripEndDate)}</p>
                               </div>
-                              <div>
-                                <span className="text-gray-500 block">Activities</span>
-                                <span className="font-medium">{invitation.preferredActivities?.join(', ') || 'Various'}</span>
+                              
+                              {/* Activities */}
+                              <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 p-3 rounded-lg border border-secondary-200">
+                                <span className="text-xs font-semibold text-secondary-700 uppercase block mb-1">Activities</span>
+                                <p className="text-sm font-medium text-secondary-900">
+                                  {invitation.preferredActivities && invitation.preferredActivities.length > 0 
+                                    ? invitation.preferredActivities.join(', ') 
+                                    : 'Various activities'}
+                                </p>
+                              </div>
+                              
+                              {/* Invitation Timeline */}
+                              <div className="bg-gradient-to-br from-success-50 to-success-100 p-3 rounded-lg border border-success-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <ClockIcon className="w-4 h-4 text-success-700" />
+                                  <span className="text-xs font-semibold text-success-700 uppercase">Invitation</span>
+                                </div>
+                                <p className="text-xs text-secondary-700">Sent: {formatDate(invitation.invitedAt)}</p>
+                                <p className="text-xs text-secondary-700">Expires: {formatDate(invitation.expiresAt)}</p>
                               </div>
                             </div>
                           </div>

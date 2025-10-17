@@ -1,6 +1,7 @@
 import OngoingTripPage from './pages/OngoingTripPage';
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from './components/ToastProvider'
+import { ConfirmDialogProvider } from './context/ConfirmDialogContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import DevTools from './components/DevTools'
 
@@ -35,30 +36,32 @@ function App() {
   console.log("user from app.jsx", user);
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <DevTools />
-        {/* Quick Actions Button always visible for logged in users */}
-        <QuickActionsButton isLoggedIn={isAuthenticated} />
-       
-        <Routes>
-          {/* General/Public and Tourist Routes */}
-          <Route path="/*" element={<GeneralRoutes />} />
-          {/* Ongoing Trip Page */}
-          <Route path="/ongoing-trip" element={<OngoingTripPage />} />
-          {/* Admin Dashboard */}
-          <Route path="/admin/*" element={<AdminRoutes />} />
-          {/* Support Dashboard */}
-          <Route path="/support/*" element={<SupportRoutes />} />
-          {/* Tourist Dashboard */}
-          <Route path="/tourist/*" element={<TouristRoutes />} /> 
-          {/* Driver Dashboard */}
-          <Route path="/driver/*" element={<DriverRoutes />} />
-          {/* Guide Dashboard */}
-          <Route path="/guide/*" element={<GuideRoutes />} />
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </ToastProvider>
+      <ConfirmDialogProvider>
+        <ToastProvider>
+          <DevTools />
+          {/* Quick Actions Button always visible for logged in users */}
+          <QuickActionsButton isLoggedIn={isAuthenticated} />
+         
+          <Routes>
+            {/* General/Public and Tourist Routes */}
+            <Route path="/*" element={<GeneralRoutes />} />
+            {/* Ongoing Trip Page */}
+            <Route path="/ongoing-trip" element={<OngoingTripPage />} />
+            {/* Admin Dashboard */}
+            <Route path="/admin/*" element={<AdminRoutes />} />
+            {/* Support Dashboard */}
+            <Route path="/support/*" element={<SupportRoutes />} />
+            {/* Tourist Dashboard */}
+            <Route path="/tourist/*" element={<TouristRoutes />} /> 
+            {/* Driver Dashboard */}
+            <Route path="/driver/*" element={<DriverRoutes />} />
+            {/* Guide Dashboard */}
+            <Route path="/guide/*" element={<GuideRoutes />} />
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </ToastProvider>
+      </ConfirmDialogProvider>
     </ErrorBoundary>
   )
 }

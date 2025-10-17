@@ -700,23 +700,37 @@ export class PoolsApi {
   }
 
   /**
-   * Respond to an invitation
+   * Respond to an invitation (accept or reject)
    * @param {Object} responseData - Response data
-   * @param {string} responseData.userId - Current user ID
-   * @param {string} responseData.invitationId - Invitation ID
-   * @param {string} responseData.action - 'accept' or 'reject'
-   * @param {string} [responseData.message] - Optional message for rejection
+   * @param {string} responseData.invitationId - The ID of the invitation
+   * @param {string} responseData.userId - Firebase UID of the responding user
+   * @param {string} responseData.userEmail - Email of the responding user
+   * @param {string} responseData.action - "accept" or "reject"
+   * @param {string|null} [responseData.message] - Optional message when rejecting (null if not provided)
    * @returns {Promise<Object>} Response result
    */
   static async respondToInvitation(responseData) {
     try {
       console.log('📮 Starting respondToInvitation with data:', responseData);
       
-      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1/';
-      const fullUrl = `${baseUrl}groups/invitations/respond`;
+      // Ensure the request body matches backend requirements exactly
+      const requestBody = {
+        invitationId: responseData.invitationId,
+        userId: responseData.userId,
+        userEmail: responseData.userEmail,
+        action: responseData.action,  // "accept" or "reject"
+        message: responseData.message || null // Optional, only for reject
+      };
+      
+      console.log('📮 Structured request body:', requestBody);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      // Ensure proper URL construction - add /api/v1 if not already present
+      const apiBaseUrl = baseUrl.includes('/api/v1') ? baseUrl : `${baseUrl}/api/v1`;
+      const fullUrl = `${apiBaseUrl}/groups/invitations/respond`;
       
       console.log('📮 Making request to URL:', fullUrl);
-      console.log('📮 Request body:', JSON.stringify(responseData, null, 2));
+      console.log('📮 Request payload:', JSON.stringify(requestBody, null, 2));
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -725,7 +739,7 @@ export class PoolsApi {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(responseData)
+        body: JSON.stringify(requestBody)
       });
 
       console.log('📮 Response status:', response.status);
@@ -739,12 +753,12 @@ export class PoolsApi {
       }
 
       const result = await response.json();
-      console.log('📮 Invitation response sent successfully:', result);
+      console.log('✅ Successfully responded to invitation:', result);
       console.log('📮 Result type:', typeof result);
       console.log('📮 Result keys:', Object.keys(result || {}));
       return result;
     } catch (error) {
-      console.error('📮❌ Error responding to invitation:', error);
+      console.error('❌ Error responding to invitation:', error);
       console.error('📮❌ Error name:', error.name);
       console.error('📮❌ Error message:', error.message);
       console.error('📮❌ Error stack:', error.stack);
