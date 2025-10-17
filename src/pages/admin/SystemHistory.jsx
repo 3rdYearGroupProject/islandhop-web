@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { auth } from "../../firebase";
 import {
   ClockIcon,
   UserIcon,
@@ -12,12 +14,13 @@ import {
 
 const SystemHistory = () => {
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("activity");
-  const [activityLogs, setActivityLogs] = useState([]);
+  const [activeTab, setActiveTab] = useState("payments");
   const [paymentLogs, setPaymentLogs] = useState([]);
   const [auditTrails, setAuditTrails] = useState([]);
   const [changeHistory, setChangeHistory] = useState([]);
   const [systemEvents, setSystemEvents] = useState([]);
+  const [authToken, setAuthToken] = useState("");
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     dateRange: "7days",
     severity: "all",
@@ -25,60 +28,6 @@ const SystemHistory = () => {
     user: "all",
   });
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Mock data for activity logs
-  const mockActivityLogs = [
-    {
-      id: 1,
-      timestamp: "2024-06-25T15:30:00Z",
-      user: "admin@islandhop.com",
-      action: "User Login",
-      details: "Admin user logged in successfully",
-      ip: "192.168.1.100",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      status: "success",
-    },
-    {
-      id: 2,
-      timestamp: "2024-06-25T15:25:00Z",
-      user: "john.doe@islandhop.com",
-      action: "Profile Update",
-      details: "Updated user profile information",
-      ip: "192.168.1.101",
-      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-      status: "success",
-    },
-    {
-      id: 3,
-      timestamp: "2024-06-25T15:20:00Z",
-      user: "support@islandhop.com",
-      action: "Password Reset",
-      details: "Password reset for user ID: 1247",
-      ip: "192.168.1.102",
-      userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
-      status: "success",
-    },
-    {
-      id: 4,
-      timestamp: "2024-06-25T15:15:00Z",
-      user: "unknown",
-      action: "Failed Login",
-      details: "Failed login attempt for admin@islandhop.com",
-      ip: "203.0.113.195",
-      userAgent: "curl/7.68.0",
-      status: "failed",
-    },
-    {
-      id: 5,
-      timestamp: "2024-06-25T15:10:00Z",
-      user: "system",
-      action: "Backup Created",
-      details: "Automated database backup completed",
-      ip: "127.0.0.1",
-      userAgent: "System Process",
-      status: "success",
-    },
-  ];
 
   // Mock data for payment logs
   const mockPaymentLogs = [
@@ -264,17 +213,98 @@ const SystemHistory = () => {
     },
   ];
 
+  // Get Firebase auth token
   useEffect(() => {
-    // Simulate API calls
-    setTimeout(() => {
-      setActivityLogs(mockActivityLogs);
-      setPaymentLogs(mockPaymentLogs);
-      setAuditTrails(mockAuditTrails);
-      setChangeHistory(mockChangeHistory);
-      setSystemEvents(mockSystemEvents);
-      setLoading(false);
-    }, 1000);
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setError("Failed to get authentication token");
+          setAuthToken("");
+        }
+      } else {
+        setError("No authenticated user found");
+        setLoading(false);
+      }
+    };
+    getToken();
   }, []);
+
+  // Fetch payment logs from backend
+  const fetchPaymentLogs = async () => {
+    if (!authToken) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await axios.get(
+        "http://localhost:8070/api/admin/logs/all",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Payment logs response:", response.data.data.logs);
+
+      if (response.data && response.data.data.logs) {
+        // Transform backend data to match frontend format
+        const transformedLogs = response.data.data.logs.map((log, index) => ({
+          id: log.id || index + 1,
+          timestamp: log.timestamp || log.createdAt || new Date().toISOString(),
+          transactionId:
+            log._id || log.transaction_id || `TXN_${log.id}`,
+          user: log.user || log.driverEmail || "Unknown User",
+          amount: log.cost || 0,
+          currency: log.currency || "LKR",
+          paymentMethod: log.paymentMethod || log.payment_method || "Online",
+          cardLast4: log.cardLast4 || log.card_last4 || null,
+          status: log.status || " Card",
+          logType: log.logType || log.transactionType || "Payment",
+          tripId: log.tripId || log.trip_id || "N/A",
+          gatewayResponse: log.gatewayResponse || log.gateway_response || "N/A",
+          processingFee: log.processingFee || log.processing_fee || 0,
+          updatedAt: log.updatedAt || "date error",
+        }));
+
+        setPaymentLogs(transformedLogs);
+      } else {
+        // If no data, use mock data as fallback
+        console.warn("No payment logs data received, using mock data");
+        setPaymentLogs(mockPaymentLogs);
+      }
+    } catch (error) {
+      console.error("Error fetching payment logs:", error);
+      console.log("tharushga");
+      setError("Failed to fetch payment logs. Using sample data.");
+      // Use mock data as fallback on error
+      setPaymentLogs(mockPaymentLogs);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load mock data for other sections (audit trails, change history, system events)
+  const loadMockData = () => {
+    setAuditTrails(mockAuditTrails);
+    setChangeHistory(mockChangeHistory);
+    setSystemEvents(mockSystemEvents);
+  };
+
+  // Fetch data when auth token is available
+  useEffect(() => {
+    if (authToken) {
+      fetchPaymentLogs();
+      loadMockData();
+    }
+  }, [authToken]);
 
   const formatTimeAgo = (timestamp) => {
     const now = new Date();
@@ -357,6 +387,11 @@ const SystemHistory = () => {
               <p className="text-gray-600 dark:text-gray-400">
                 View system activity logs
               </p>
+              {error && (
+                <p className="text-warning-600 dark:text-warning-400 text-sm mt-2">
+                  ⚠️ {error}
+                </p>
+              )}
             </div>
             <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
               Export History
@@ -426,7 +461,6 @@ const SystemHistory = () => {
         <div className="mb-6">
           <nav className="flex space-x-8">
             {[
-              { id: "activity", label: "Activity Logs", icon: UserIcon },
               { id: "payments", label: "Payment Logs", icon: CreditCardIcon },
             ].map((tab) => {
               const IconComponent = tab.icon;
@@ -447,125 +481,145 @@ const SystemHistory = () => {
             })}
           </nav>
         </div>
-
         {/* Tab Content */}
         <div className="space-y-4">
-          {activeTab === "activity" && (
-            <div className="space-y-4">
-              {activityLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                        <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {log.action}
-                          </h3>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              log.status
-                            )}`}
-                          >
-                            {log.status}
-                          </span>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          {log.details}
-                        </p>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                          <div>
-                            <strong>User:</strong> {log.user}
-                          </div>
-                          <div>
-                            <strong>IP:</strong> {log.ip}
-                          </div>
-                          <div>
-                            <strong>User Agent:</strong> {log.userAgent}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTimeAgo(log.timestamp)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
           {activeTab === "payments" && (
             <div className="space-y-4">
-              {paymentLogs.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className="p-2 bg-info-100 dark:bg-info-900/20 rounded-lg">
-                        <CreditCardIcon className="h-5 w-5 text-info-600 dark:text-info-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {payment.type}
-                          </h3>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              payment.status
-                            )}`}
-                          >
-                            {payment.status}
-                          </span>
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
-                            ${payment.amount.toFixed(2)} {payment.currency}
-                          </span>
+              {paymentLogs.length > 0 ? (
+                paymentLogs.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            payment.status === "completed"
+                              ? "bg-success-100 dark:bg-success-900/20"
+                              : "bg-warning-100 dark:bg-warning-900/20"
+                          }`}
+                        >
+                          <CreditCardIcon
+                            className={`h-5 w-5 ${
+                              payment.status === "completed"
+                                ? "text-success-600 dark:text-success-400"
+                                : "text-warning-600 dark:text-warning-400"
+                            }`}
+                          />
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          Transaction ID: {payment.transactionId}
-                        </p>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <strong>User:</strong> {payment.user}
-                            </div>
-                            <div>
-                              <strong>Payment Method:</strong>{" "}
-                              {payment.paymentMethod}
-                            </div>
-                            {payment.cardLast4 && (
-                              <div>
-                                <strong>Card:</strong> •••• {payment.cardLast4}
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              {payment.type}
+                            </h3>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                                payment.status
+                              )}`}
+                            >
+                              {payment.status}
+                            </span>
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">
+                              {payment.currency}{" "}
+                              {payment.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
+                            Transaction ID:{" "}
+                            <span className="font-mono">
+                              {payment.transactionId}
+                            </span>
+                          </p>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  User Email:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {payment.user}
+                                </span>
                               </div>
-                            )}
-                            <div>
-                              <strong>Processing Fee:</strong> $
-                              {Math.abs(payment.processingFee).toFixed(2)}
-                            </div>
-                            <div>
-                              <strong>Trip/Pool ID:</strong> {payment.tripId}
-                            </div>
-                            <div>
-                              <strong>Gateway Response:</strong>{" "}
-                              {payment.gatewayResponse}
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Trip ID:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300 font-mono">
+                                  {payment.tripId}
+                                </span>
+                              </div>
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Log Type:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300 capitalize">
+                                  {payment.logType}
+                                </span>
+                              </div>
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Payment Status:
+                                </strong>
+                                <span
+                                  className={`font-semibold ${
+                                    payment.paid === 1
+                                      ? "text-success-600 dark:text-success-400"
+                                      : "text-warning-600 dark:text-warning-400"
+                                  }`}
+                                >
+                                  {"Paid"}
+                                </span>
+                              </div>
+                              {payment.evidence && (
+                                <div className="flex items-start md:col-span-2">
+                                  <strong className="min-w-[120px]">
+                                    Evidence:
+                                  </strong>
+                                  <span className="text-primary-600 dark:text-primary-400 font-mono">
+                                    {payment.evidence}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Created:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {new Date(payment.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex items-start">
+                                <strong className="min-w-[120px]">
+                                  Updated:
+                                </strong>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {new Date(payment.updatedAt).toLocaleString()}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
+                      <div className="text-right ml-4">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                          {formatTimeAgo(payment.timestamp)}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTimeAgo(payment.timestamp)}
-                    </span>
                   </div>
+                ))
+              ) : (
+                <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
+                  <CreditCardIcon className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Payment Logs Found
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    There are no payment logs to display at this time.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           )}
 

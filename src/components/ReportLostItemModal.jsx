@@ -137,7 +137,7 @@ const ReportLostItemModal = ({ onClose }) => {
               const reportData = {
                 description: lostItem,
                 dateLost: lostDate,
-                tripId: selectedTripData.tripId,
+                tripId: selectedTripData.originalTripId,
                 userId: user?.uid,
                 email: user?.email
               };
