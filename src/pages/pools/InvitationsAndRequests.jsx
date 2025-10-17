@@ -16,7 +16,7 @@ import {
 
 const InvitationsAndRequests = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, displayInfo } = useAuth(); // Get displayInfo for user email
   const [activeTab, setActiveTab] = useState('invitations');
   const [invitationsCount, setInvitationsCount] = useState(0);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
@@ -36,7 +36,11 @@ const InvitationsAndRequests = () => {
       console.log('🔄 Starting fetchData for user:', user.uid);
       setLoading(true);
       
-      const comprehensiveResponse = await PoolsApi.getAllPendingItems(user.uid);
+      // Get user email from user or displayInfo
+      const userEmail = user?.email || displayInfo?.email;
+      console.log('🔄 User email:', userEmail);
+      
+      const comprehensiveResponse = await PoolsApi.getAllPendingItems(user.uid, userEmail);
       console.log('📋 Response received:', comprehensiveResponse);
       
       setTotalPendingItems(comprehensiveResponse.totalPendingItems || 0);

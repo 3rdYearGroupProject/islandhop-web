@@ -507,14 +507,15 @@ export class PoolsApi {
    * 2. Join requests that need the user's vote (for groups they're a member of)
    * 
    * @param {string} userId - The ID of the current user
+   * @param {string} userEmail - The email of the current user
    * @returns {Promise<Object>} ComprehensivePendingItemsResponse with all pending items requiring user attention
    */
-  static async getAllPendingItems(userId) {
+  static async getAllPendingItems(userId, userEmail) {
     try {
-      console.log('📋🔔 Starting getAllPendingItems for userId:', userId);
+      console.log('📋🔔 Starting getAllPendingItems for userId:', userId, 'userEmail:', userEmail);
       
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
-      const fullUrl = `${baseUrl}/groups/all-pending-items?userId=${userId}`;
+      const fullUrl = `${baseUrl}/groups/all-pending-items?userId=${userId}&email=${encodeURIComponent(userEmail)}`;
       
       console.log('📋🔔 Making request to URL:', fullUrl);
       console.log('📋🔔 Base URL from env:', process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE);

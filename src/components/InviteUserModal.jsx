@@ -10,7 +10,7 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const { user } = useAuth();
+  const { user, displayInfo } = useAuth(); // Get displayInfo for user details
 
   // Auto-generate default message with trip details
   React.useEffect(() => {
@@ -67,16 +67,27 @@ const InviteUserModal = ({ isOpen, onClose, groupData, onSuccess }) => {
     setError(null);
 
     try {
+      // Get inviter information from user and displayInfo
+      const inviterEmail = user?.email || displayInfo?.email;
+      const inviterDisplayName = user?.displayName || displayInfo?.displayName || user?.email?.split('@')[0] || 'User';
+      
       // Hardcoded to use email method
       const inviteData = {
         userId: user.uid,
         invitedEmail: invitedEmail.trim(),
+        inviterEmail: inviterEmail, // Add inviter email
+        inviterDisplayName: inviterDisplayName, // Add inviter display name
         message: message.trim(),
         expirationDays: parseInt(expirationDays),
         method: 'email' // Explicitly set method as email
       };
 
       console.log('📧 Sending invitation with data:', inviteData);
+      console.log('📧 Inviter details:', {
+        inviterEmail,
+        inviterDisplayName,
+        userId: user.uid
+      });
 
       // Use the correct groupId from groupData structure
       const groupId = groupData?.groupInfo?.groupId || groupData?.id;
