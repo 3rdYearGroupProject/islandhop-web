@@ -33,7 +33,7 @@ import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import Footer from '../components/Footer';
-import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
+import { getCityImageUrl, placeholderImage, logImageError, getRandomCityImage } from '../utils/imageUtils';
 
 const placeholder = placeholderImage;
 
@@ -201,15 +201,15 @@ const MyTripsPage = () => {
     }
   };
 
-  // Mock data as fallback - updated to use getCityImageUrl consistently
+  // Mock data as fallback - updated to use random images
   const mockTrips = [
     // Trip History (mostly expired, some completed)
     {
       id: 1,
       name: 'Summer Adventure in Sri Lanka',
       dates: 'Jun 11 → Jun 21, 2025',
-      destination: 'Sri Lanka',
-      image: getCityImageUrl('Sigiriya'),
+      destination: 'Sigiriya, Kandy, Galle',
+      image: getRandomCityImage('1'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -224,8 +224,8 @@ const MyTripsPage = () => {
       id: 4,
       name: 'Wildlife Safari',
       dates: 'May 2 → May 10, 2025',
-      destination: 'Yala National Park',
-      image: getCityImageUrl('Yala'),
+      destination: 'Yala, Ella',
+      image: getRandomCityImage('4'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -240,8 +240,8 @@ const MyTripsPage = () => {
       id: 5,
       name: 'Hill Country Escape',
       dates: 'Apr 10 → Apr 18, 2025',
-      destination: 'Nuwara Eliya',
-      image: getCityImageUrl('Nuwara Eliya'),
+      destination: 'Nuwara Eliya, Kandy',
+      image: getRandomCityImage('5'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -256,8 +256,8 @@ const MyTripsPage = () => {
       id: 6,
       name: 'Historic Wonders',
       dates: 'Mar 1 → Mar 7, 2025',
-      destination: 'Anuradhapura',
-      image: getCityImageUrl('Anuradhapura'),
+      destination: 'Anuradhapura, Polonnaruwa',
+      image: getRandomCityImage('6'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -272,8 +272,8 @@ const MyTripsPage = () => {
       id: 10,
       name: 'City Lights',
       dates: 'Feb 1 → Feb 5, 2025',
-      destination: 'Colombo',
-      image: getCityImageUrl('Colombo'),
+      destination: 'Colombo, Negombo',
+      image: getRandomCityImage('10'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -289,7 +289,7 @@ const MyTripsPage = () => {
       name: 'Solo Explorer',
       dates: 'Jan 10 → Jan 15, 2025',
       destination: 'Jaffna',
-      image: getCityImageUrl('Jaffna'),
+      image: getRandomCityImage('11'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -304,8 +304,8 @@ const MyTripsPage = () => {
       id: 12,
       name: 'Expired Beach Bash',
       dates: 'Dec 1 → Dec 7, 2024',
-      destination: 'Mirissa',
-      image: getCityImageUrl('Mirissa'),
+      destination: 'Mirissa, Weligama',
+      image: getRandomCityImage('12'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -321,8 +321,8 @@ const MyTripsPage = () => {
       id: 13,
       name: 'Wellness Getaway',
       dates: 'Nov 10 → Nov 15, 2024',
-      destination: 'Kandy',
-      image: getCityImageUrl('Kandy'),
+      destination: 'Kandy, Matale',
+      image: getRandomCityImage('13'),
       status: 'completed',
       progress: 100,
       daysLeft: 0,
@@ -338,8 +338,8 @@ const MyTripsPage = () => {
       id: 2,
       name: 'Cultural Heritage Tour',
       dates: 'Aug 15 → Aug 25, 2025',
-      destination: 'Central Province',
-      image: getCityImageUrl('Kandy'),
+      destination: 'Kandy, Nuwara Eliya, Ella',
+      image: getRandomCityImage('2'),
       status: 'active',
       progress: 65,
       daysLeft: 12,
@@ -355,8 +355,8 @@ const MyTripsPage = () => {
       id: 3,
       name: 'Beach Retreat',
       dates: 'Not set',
-      destination: 'Southern Coast',
-      image: getCityImageUrl('Mirissa'),
+      destination: 'Mirissa, Galle, Unawatuna',
+      image: getRandomCityImage('3'),
       status: 'draft',
       progress: 25,
       daysLeft: null,
@@ -371,8 +371,8 @@ const MyTripsPage = () => {
       id: 7,
       name: 'Family Fun Trip',
       dates: 'Dec 20 → Dec 28, 2025',
-      destination: 'Colombo',
-      image: getCityImageUrl('Colombo'),
+      destination: 'Colombo, Kandy',
+      image: getRandomCityImage('7'),
       status: 'upcoming',
       progress: 10,
       daysLeft: 5,
@@ -701,23 +701,38 @@ const MyTripsPage = () => {
     };
 
     const status = calculateTripStatus(tripSummary);
-    const cityImage = getCityImageUrl(tripSummary.destination || 'Sri Lanka');
     
+    // Use random city image based on tripId for consistency
+    const cityImage = getRandomCityImage(tripSummary.tripId);
+    
+    // Build highlights array from cities and activities
     let highlights = [];
+    let cities = [];
+    
+    // Collect all city names
     if (tripSummary.destination) {
-      highlights.push(tripSummary.destination);
+      cities.push(tripSummary.destination);
     }
     if (tripSummary.cities && Array.isArray(tripSummary.cities)) {
-      highlights = [...highlights, ...tripSummary.cities];
+      cities = [...cities, ...tripSummary.cities];
     }
+    
+    // Remove duplicates from cities
+    cities = [...new Set(cities)];
+    
+    // Add cities to highlights
+    highlights = [...cities];
+    
+    // Add activities to highlights (limited to keep card clean)
     if (tripSummary.activities && Array.isArray(tripSummary.activities)) {
       const activityNames = tripSummary.activities
         .filter(a => a && a.name)
         .map(a => a.name)
-        .slice(0, 3);
+        .slice(0, 2); // Limit activities to make room for cities
       highlights = [...highlights, ...activityNames];
     }
     
+    // Remove duplicates from final highlights
     highlights = [...new Set(highlights)];
     
     return {
@@ -725,7 +740,8 @@ const MyTripsPage = () => {
       tripId: tripSummary.tripId, // Explicitly preserve the backend trip ID
       name: tripSummary.tripName || 'Untitled Trip',
       dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
-      destination: tripSummary.destination || 'Sri Lanka',
+      destination: cities.length > 0 ? cities.join(', ') : 'Sri Lanka', // Show all cities
+      cities: cities, // Store cities separately
       image: cityImage,
       status: status,
       progress: status === 'completed' ? 100 : status === 'active' ? 50 : 10,
@@ -791,7 +807,7 @@ const MyTripsPage = () => {
     const tripName = activeTrip.tripName || activeTrip.name || activeTrip.title || 'Untitled Trip';
     const startDate = activeTrip.startDate;
     const endDate = activeTrip.endDate;
-    const destination = activeTrip.baseCity || activeTrip.destination || activeTrip.location || 'Sri Lanka';
+    const baseCity = activeTrip.baseCity || activeTrip.destination || activeTrip.location || 'Sri Lanka';
     
     // Calculate budget from the cost fields
     const driverCost = activeTrip.averageDriverCost || 0;
@@ -799,16 +815,30 @@ const MyTripsPage = () => {
     const totalBudget = driverCost + guideCost;
     const spent = parseFloat(activeTrip.payedAmount) || 0;
 
-    // Get city image for the destination
-    const cityImage = getCityImageUrl(destination);
+    // Use random city image based on tripId for consistency
+    const cityImage = getRandomCityImage(tripId);
     
-    // Build highlights array from dailyPlans, preferredTerrains, and preferredActivities
-    let highlights = [];
+    // Build cities array from daily plans
+    let cities = [];
     
-    // Add destination
-    if (destination) {
-      highlights.push(destination);
+    // Add base city
+    if (baseCity) {
+      cities.push(baseCity);
     }
+    
+    // Add cities from daily plans
+    if (activeTrip.dailyPlans && Array.isArray(activeTrip.dailyPlans)) {
+      const planCities = activeTrip.dailyPlans
+        .map(plan => plan.city)
+        .filter(city => city);
+      cities = [...cities, ...planCities];
+    }
+    
+    // Remove duplicate cities
+    cities = [...new Set(cities)];
+    
+    // Build highlights array from cities, terrains, and activities
+    let highlights = [...cities]; // Start with all cities
     
     // Add preferred terrains
     if (activeTrip.preferredTerrains && Array.isArray(activeTrip.preferredTerrains)) {
@@ -820,17 +850,8 @@ const MyTripsPage = () => {
       highlights = [...highlights, ...activeTrip.preferredActivities.slice(0, 2)];
     }
     
-    // Add cities from daily plans
-    if (activeTrip.dailyPlans && Array.isArray(activeTrip.dailyPlans)) {
-      const cities = activeTrip.dailyPlans
-        .map(plan => plan.city)
-        .filter(city => city && city !== destination)
-        .slice(0, 2);
-      highlights = [...highlights, ...cities];
-    }
-    
-    // Remove duplicates and limit to 5 highlights
-    highlights = [...new Set(highlights)].slice(0, 5);
+    // Remove duplicates from highlights
+    highlights = [...new Set(highlights)];
     
     // Calculate number of days
     const numberOfDays = activeTrip.dailyPlans ? activeTrip.dailyPlans.length : 
@@ -841,7 +862,8 @@ const MyTripsPage = () => {
       tripId: tripId, // Explicitly preserve the backend trip ID
       name: tripName,
       dates: formatTripDates(startDate, endDate),
-      destination: destination,
+      destination: cities.length > 0 ? cities.join(', ') : 'Sri Lanka', // Show all cities
+      cities: cities, // Store cities separately
       image: cityImage,
       status: 'active', // All trips from this API are active
       progress: 50, // Default progress for active trips
@@ -895,7 +917,7 @@ const MyTripsPage = () => {
     const tripName = completedTrip.tripName || completedTrip.name || completedTrip.title || 'Untitled Trip';
     const startDate = completedTrip.startDate;
     const endDate = completedTrip.endDate;
-    const destination = completedTrip.baseCity || completedTrip.destination || completedTrip.location || 'Sri Lanka';
+    const baseCity = completedTrip.baseCity || completedTrip.destination || completedTrip.location || 'Sri Lanka';
     
     // Calculate budget and spent from the cost fields
     const averageDriverCost = completedTrip.averageDriverCost || 0;
@@ -903,16 +925,30 @@ const MyTripsPage = () => {
     const totalBudget = averageDriverCost + averageGuideCost;
     const spent = parseFloat(completedTrip.payedAmount) || 0;
 
-    // Get city image for the destination
-    const cityImage = getCityImageUrl(destination);
+    // Use random city image based on tripId for consistency
+    const cityImage = getRandomCityImage(tripId);
     
-    // Build highlights array from dailyPlans, preferredTerrains, and preferredActivities
-    let highlights = [];
+    // Build cities array from daily plans
+    let cities = [];
     
-    // Add destination
-    if (destination) {
-      highlights.push(destination);
+    // Add base city
+    if (baseCity) {
+      cities.push(baseCity);
     }
+    
+    // Add cities from daily plans
+    if (completedTrip.dailyPlans && Array.isArray(completedTrip.dailyPlans)) {
+      const planCities = completedTrip.dailyPlans
+        .map(plan => plan.city)
+        .filter(city => city);
+      cities = [...cities, ...planCities];
+    }
+    
+    // Remove duplicate cities
+    cities = [...new Set(cities)];
+    
+    // Build highlights array from cities, terrains, and activities
+    let highlights = [...cities]; // Start with all cities
     
     // Add preferred terrains
     if (completedTrip.preferredTerrains && Array.isArray(completedTrip.preferredTerrains)) {
@@ -924,17 +960,8 @@ const MyTripsPage = () => {
       highlights = [...highlights, ...completedTrip.preferredActivities.slice(0, 2)];
     }
     
-    // Add cities from daily plans
-    if (completedTrip.dailyPlans && Array.isArray(completedTrip.dailyPlans)) {
-      const cities = completedTrip.dailyPlans
-        .map(plan => plan.city)
-        .filter(city => city && city !== destination)
-        .slice(0, 2);
-      highlights = [...highlights, ...cities];
-    }
-    
-    // Remove duplicates and limit to 5 highlights
-    highlights = [...new Set(highlights)].slice(0, 5);
+    // Remove duplicates from highlights
+    highlights = [...new Set(highlights)];
     
     // Calculate number of days
     const numberOfDays = completedTrip.dailyPlans ? completedTrip.dailyPlans.length : 
@@ -966,7 +993,8 @@ const MyTripsPage = () => {
       tripId: tripId, // Explicitly preserve the backend trip ID
       name: tripName,
       dates: formatTripDates(startDate, endDate),
-      destination: destination,
+      destination: cities.length > 0 ? cities.join(', ') : 'Sri Lanka', // Show all cities
+      cities: cities, // Store cities separately
       image: cityImage,
       status: 'completed', // All trips from this API are completed
       progress: 100, // Completed trips have 100% progress
@@ -1419,7 +1447,7 @@ const MyTripsPage = () => {
                             <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Other Active Trips</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                               {otherTrips.map((trip) => (
-                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                <div key={trip.id} className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
                                   <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                                 </div>
                               ))}
@@ -1439,7 +1467,7 @@ const MyTripsPage = () => {
                             <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Upcoming Trips</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                               {upcoming.map((trip) => (
-                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                <div key={trip.id} className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
                                   <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                                 </div>
                               ))}
@@ -1451,7 +1479,7 @@ const MyTripsPage = () => {
                             <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-6">Trip History</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                               {history.map((trip) => (
-                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                <div key={trip.id} className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
                                   <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                                 </div>
                               ))}

@@ -13,12 +13,24 @@ import nuwaraEliyaImg from '../assets/destinations/nuwara-eliya.jpg';
 import mirissaImg from '../assets/destinations/mirissa.jpg';
 import anuradhapuraImg from '../assets/destinations/anuradhapura.jpg';
 
+// Import 10 additional city images (matching actual filenames)
+import trincomaleeImg from '../assets/destinations/trincomaleeImg.jpg';
+import jaffnaImg from '../assets/destinations/jaffnaImg.jpg';
+import bentotaImg from '../assets/destinations/bentotaImg.jpg';
+import hikkaduwaImg from '../assets/destinations/hikkaduwaImg.jpg';
+import polonnaruwaImg from '../assets/destinations/polonnaruwaImg.jpg';
+import dambullaImg from '../assets/destinations/dambullaImg.jpg';
+import arugamBayImg from '../assets/destinations/arugamBayImg.jpg';
+import unawatunaImg from '../assets/destinations/unawatunaImg.jpg';
+import yalaImg from '../assets/destinations/yalaImg.jpg';
+import negomboImg from '../assets/destinations/negomboImg.jpg';
+
 // Default placeholder image - use a local asset
 export const placeholderImage = colomboImg; // Fallback to colomboImg as default
 
 // Map all our local image assets for easy access by city name
 const cityImagesMap = {
-  // Primary destinations with direct image matches
+  // Primary destinations with direct image matches (8 original)
   'colombo': colomboImg,
   'kandy': kandyImg,
   'galle': galleImg,
@@ -28,28 +40,32 @@ const cityImagesMap = {
   'mirissa': mirissaImg,
   'anuradhapura': anuradhapuraImg,
   
+  // 10 additional cities with dedicated images
+  'trincomalee': trincomaleeImg,
+  'jaffna': jaffnaImg,
+  'bentota': bentotaImg,
+  'hikkaduwa': hikkaduwaImg,
+  'polonnaruwa': polonnaruwaImg,
+  'dambulla': dambullaImg,
+  'arugam bay': arugamBayImg,
+  'arugambay': arugamBayImg,
+  'unawatuna': unawatunaImg,
+  'yala': yalaImg,
+  'negombo': negomboImg,
+  
   // Common alternate spellings or city nicknames
   'nuwara-eliya': nuwaraEliyaImg,
   'nuwaraeliya': nuwaraEliyaImg,
+  'arugam-bay': arugamBayImg,
   
   // Cities without dedicated images - map to closest match or by region
-  'jaffna': anuradhapuraImg,
-  'trincomalee': mirissaImg,
-  'batticaloa': mirissaImg,
-  'negombo': colomboImg,
-  'hikkaduwa': galleImg,
+  'batticaloa': trincomaleeImg,
   'matara': galleImg,
-  'polonnaruwa': anuradhapuraImg,
-  'dambulla': sigiriyaImg,
-  'yala': anuradhapuraImg,
-  'unawatuna': galleImg,
-  'bentota': galleImg,
   'tangalle': mirissaImg,
   'matale': kandyImg,
   'haputale': ellaImg,
   'badulla': ellaImg,
-  'arugam bay': mirissaImg,
-  'kalpitiya': colomboImg,
+  'kalpitiya': negomboImg,
   'weligama': mirissaImg,
   
   // Regions/provinces
@@ -59,14 +75,14 @@ const cityImagesMap = {
   'southern': galleImg,
   'western province': colomboImg,
   'western': colomboImg,
-  'northern province': anuradhapuraImg,
-  'northern': anuradhapuraImg,
-  'eastern province': mirissaImg,
-  'eastern': mirissaImg,
-  'north western province': colomboImg,
-  'north western': colomboImg,
-  'north central province': anuradhapuraImg,
-  'north central': anuradhapuraImg,
+  'northern province': jaffnaImg,
+  'northern': jaffnaImg,
+  'eastern province': trincomaleeImg,
+  'eastern': trincomaleeImg,
+  'north western province': negomboImg,
+  'north western': negomboImg,
+  'north central province': polonnaruwaImg,
+  'north central': polonnaruwaImg,
   'uva province': ellaImg,
   'uva': ellaImg,
   'sabaragamuwa province': kandyImg,
@@ -156,6 +172,7 @@ export const getCityImageUrl = (city) => {
     // This ensures the same city always gets the same image, even if not explicitly mapped
     const cityNameSum = normalizedCity.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const localImages = [
+      // Original 8 images
       colomboImg, 
       kandyImg, 
       galleImg, 
@@ -163,7 +180,18 @@ export const getCityImageUrl = (city) => {
       sigiriyaImg, 
       nuwaraEliyaImg, 
       mirissaImg, 
-      anuradhapuraImg
+      anuradhapuraImg,
+      // 10 additional images
+      trincomaleeImg,
+      jaffnaImg,
+      bentotaImg,
+      hikkaduwaImg,
+      polonnaruwaImg,
+      dambullaImg,
+      arugamBayImg,
+      unawatunaImg,
+      yalaImg,
+      negomboImg
     ];
     
     const index = cityNameSum % localImages.length;
@@ -173,6 +201,49 @@ export const getCityImageUrl = (city) => {
     console.error("Error getting city image:", error);
     return placeholderImage;
   }
+};
+
+/**
+ * Get a random image from the 18 available city images
+ * Uses a seed (like tripId) to ensure consistent image for the same trip
+ * 
+ * @param {string} seed - Optional seed for consistent randomization (e.g., tripId)
+ * @returns {string|Object} - Random local image import
+ */
+export const getRandomCityImage = (seed) => {
+  const localImages = [
+    // Original 8 images
+    colomboImg, 
+    kandyImg, 
+    galleImg, 
+    ellaImg, 
+    sigiriyaImg, 
+    nuwaraEliyaImg, 
+    mirissaImg, 
+    anuradhapuraImg,
+    // 10 additional images
+    trincomaleeImg,
+    jaffnaImg,
+    bentotaImg,
+    hikkaduwaImg,
+    polonnaruwaImg,
+    dambullaImg,
+    arugamBayImg,
+    unawatunaImg,
+    yalaImg,
+    negomboImg
+  ];
+  
+  if (seed) {
+    // Use seed to get consistent "random" image for the same trip
+    const seedSum = seed.toString().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const index = seedSum % localImages.length;
+    return localImages[index];
+  }
+  
+  // True random if no seed provided
+  const randomIndex = Math.floor(Math.random() * localImages.length);
+  return localImages[randomIndex];
 };
 
 /**
