@@ -601,21 +601,17 @@ const Navbar = () => {
           
           {/* Desktop User/Currency/Language - Right */}
           <div className="hidden lg:flex items-center space-x-2 lg:space-x-4 desktop-only">
-            {/* Currency Display */}
-            <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center text-sm lg:text-base transition-colors">
-              {currentCurrency}
-            </button>
-            
             {/* Language Switcher */}
             <div className="relative" ref={translateRef}>
               <button
                 onClick={toggleLanguageDropdown}
-                className="text-gray-700 hover:text-primary-600 font-medium flex items-center px-2 lg:px-3 py-2 border rounded-lg transition-colors text-sm lg:text-base"
+                className="text-gray-700 hover:bg-gray-100 font-medium flex items-center px-3 lg:px-4 py-2 lg:py-2.5 rounded-full transition-all duration-200 text-sm lg:text-base border border-gray-200 hover:border-gray-300"
                 aria-label="Change language"
               >
-                🌐 <span className="hidden sm:inline ml-1">{currentLang}</span>
+                <span className="text-lg mr-2">🌐</span>
+                <span className="hidden sm:inline">{currentLang}</span>
                 <svg 
-                  className={`ml-1 h-3 w-3 lg:h-4 lg:w-4 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                  className={`ml-2 h-3 w-3 lg:h-4 lg:w-4 transition-transform duration-200 ${showLang ? 'rotate-180' : ''}`} 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -624,15 +620,17 @@ const Navbar = () => {
                 </svg>
               </button>
               {showLang && (
-                <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-h-64 overflow-y-auto">
+                <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2 min-w-[180px] max-h-64 overflow-y-auto">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => handleLanguageChange(lang.code, lang.name)}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                      className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center space-x-3 transition-colors ${
+                        currentLang === lang.name ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      }`}
                     >
                       <span className="text-lg">{lang.flag}</span>
-                      <span className="text-gray-700">{lang.name}</span>
+                      <span className={currentLang === lang.name ? 'font-semibold' : ''}>{lang.name}</span>
                     </button>
                   ))}
                 </div>
@@ -1011,19 +1009,20 @@ const Navbar = () => {
                 </div>
               )}
 
-              {/* Mobile Language & Currency */}
-              <div className="border-t border-gray-200 pt-4 space-y-3">
+              {/* Mobile Language */}
+              <div className="border-t border-gray-200 pt-4">
                 {/* Language Switcher for Mobile */}
                 <div className="flex items-center justify-between px-4 py-2">
                   <span className="text-gray-700 font-medium">Language</span>
                   <div className="relative" ref={translateRef}>
                     <button
                       onClick={toggleLanguageDropdown}
-                      className="flex items-center px-3 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-center px-3 py-2 border border-gray-200 rounded-full text-sm bg-white hover:bg-gray-50 transition-all duration-200"
                     >
-                      🌐 <span className="ml-1">{currentLang}</span>
+                      <span className="text-base mr-1.5">🌐</span>
+                      <span>{currentLang}</span>
                       <svg 
-                        className={`ml-1 h-3 w-3 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                        className={`ml-1.5 h-3 w-3 transition-transform duration-200 ${showLang ? 'rotate-180' : ''}`} 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -1032,24 +1031,22 @@ const Navbar = () => {
                       </svg>
                     </button>
                     {showLang && (
-                      <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-w-[220px] max-h-64 overflow-y-auto">
+                      <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2 min-w-[180px] max-w-[220px] max-h-64 overflow-y-auto">
                         {languages.map((lang) => (
                           <button
                             key={lang.code}
                             onClick={() => handleLanguageChange(lang.code, lang.name)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                            className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center space-x-3 transition-colors ${
+                              currentLang === lang.name ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                            }`}
                           >
                             <span className="text-lg">{lang.flag}</span>
-                            <span className="text-gray-700 truncate">{lang.name}</span>
+                            <span className={`truncate ${currentLang === lang.name ? 'font-semibold' : ''}`}>{lang.name}</span>
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center justify-between px-4 py-2">
-                  <span className="text-gray-700 font-medium">Currency</span>
-                  <span className="text-gray-600 font-medium">{currentCurrency}</span>
                 </div>
               </div>
             </div>
