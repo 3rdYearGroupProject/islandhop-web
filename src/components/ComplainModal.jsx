@@ -14,6 +14,7 @@ const ComplainModal = ({ onClose }) => {
   // Complaint type options
   const complaintTypes = [
     { value: 'transportation', label: 'Transportation Issues' },
+    { value: 'Driver_didnt_show_up', label: 'Driver didn\'t show up' },
     { value: 'accommodation', label: 'Accommodation Problems' },
     { value: 'tour_guide', label: 'Tour Guide Issues' },
     { value: 'billing', label: 'Billing & Payment' },
