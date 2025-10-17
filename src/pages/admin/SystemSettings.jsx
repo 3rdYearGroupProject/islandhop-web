@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { auth } from "../../firebase";
 import {
   CogIcon,
   ShieldCheckIcon,
@@ -25,6 +27,8 @@ const SystemSettings = () => {
   const [databaseStatus, setDatabaseStatus] = useState({});
   const [hostingLoading, setHostingLoading] = useState(true);
   const [activeHostingTab, setActiveHostingTab] = useState("servers");
+  const [authToken, setAuthToken] = useState("");
+  const [error, setError] = useState(null);
   const [settings, setSettings] = useState({
     systemName: "IslandHop Platform",
     darkMode: false,
@@ -223,36 +227,90 @@ const SystemSettings = () => {
     return "bg-success-500";
   };
 
-  // Fetch database status
+  // Get Firebase auth token
+  useEffect(() => {
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setError("Failed to get authentication token");
+          setAuthToken("");
+        }
+      } else {
+        setError("No authenticated user found");
+        setHostingLoading(false);
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch database status using axios
   useEffect(() => {
     const fetchDatabaseStatus = async () => {
+      if (!authToken) return;
+
       try {
-        const response = await fetch(
-          "http://localhost:8090/api/v1/admin/status"
+        const response = await axios.get(
+          "http://localhost:8070/api/admin/database/status",
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
-        if (response.ok) {
-          const statusData = await response.json();
-          setDatabaseStatus(statusData);
+
+        console.log("Database status response:", response.data);
+
+        if (response.data && response.data.success && response.data.data) {
+          const dbData = response.data.data.databases;
+
+          // Transform the API response to match our expected format
+          const transformedStatus = {
+            overall: response.data.data.overall,
+            timestamp: response.data.data.timestamp,
+            mongodb: {
+              status: dbData.mongodb?.status || "unhealthy",
+              type: dbData.mongodb?.type || "MongoDB",
+              message: dbData.mongodb?.message || "No data",
+              details: dbData.mongodb?.details || {},
+            },
+            supabase: {
+              status: dbData.supabase?.status || "unhealthy",
+              type: dbData.supabase?.type || "Supabase/PostgreSQL",
+              message: dbData.supabase?.message || "No data",
+              details: dbData.supabase?.details || {},
+            },
+          };
+
+          setDatabaseStatus(transformedStatus);
+          setError(null);
         } else {
-          console.error("Failed to fetch database status");
+          console.error("Invalid response format");
+          setError("Invalid database status response");
           setDatabaseStatus({
-            redis: "DOWN",
-            firebase: "DOWN",
-            mongodb: "DOWN",
+            overall: "unhealthy",
+            mongodb: { status: "unhealthy" },
+            supabase: { status: "unhealthy" },
           });
         }
       } catch (error) {
         console.error("Error fetching database status:", error);
+        setError("Failed to fetch database status");
         setDatabaseStatus({
-          redis: "DOWN",
-          firebase: "DOWN",
-          mongodb: "DOWN",
+          overall: "unhealthy",
+          mongodb: { status: "unhealthy" },
+          supabase: { status: "unhealthy" },
         });
       }
     };
 
     fetchDatabaseStatus();
-  }, []);
+  }, [authToken]);
 
   // Update servers and other data after database status is fetched
   useEffect(() => {
@@ -276,19 +334,48 @@ const SystemSettings = () => {
           id: 2,
           name: "Database Server (MongoDB)",
           type: "database",
-          status: databaseStatus.mongodb === "UP" ? "running" : "stopped",
-          ip: "192.168.1.20",
-          location: "US East",
-          cpu: databaseStatus.mongodb === "UP" ? 78 : 0,
-          memory: databaseStatus.mongodb === "UP" ? 85 : 0,
+          status:
+            databaseStatus.mongodb?.status === "healthy"
+              ? "running"
+              : "stopped",
+          ip: databaseStatus.mongodb?.details?.host || "N/A",
+          location: "Cloud",
+          cpu: databaseStatus.mongodb?.status === "healthy" ? 78 : 0,
+          memory: databaseStatus.mongodb?.status === "healthy" ? 85 : 0,
           disk: 56,
           uptime:
-            databaseStatus.mongodb === "UP" ? "23 days, 12 hours" : "0 minutes",
-          lastRestart: "2024-06-02T14:15:00Z",
-          version: "MongoDB",
+            databaseStatus.mongodb?.status === "healthy"
+              ? "Cloud Service"
+              : "0 minutes",
+          lastRestart: "N/A",
+          version: databaseStatus.mongodb?.type || "MongoDB",
+          responseTime: databaseStatus.mongodb?.details?.responseTime || "N/A",
+          message: databaseStatus.mongodb?.message || "No data",
         },
         {
           id: 3,
+          name: "Database Server (Supabase)",
+          type: "database",
+          status:
+            databaseStatus.supabase?.status === "healthy"
+              ? "running"
+              : "stopped",
+          ip: databaseStatus.supabase?.details?.url || "N/A",
+          location: "Cloud",
+          cpu: databaseStatus.supabase?.status === "healthy" ? 65 : 0,
+          memory: databaseStatus.supabase?.status === "healthy" ? 72 : 0,
+          disk: 48,
+          uptime:
+            databaseStatus.supabase?.status === "healthy"
+              ? "Cloud Service"
+              : "0 minutes",
+          lastRestart: "N/A",
+          version: databaseStatus.supabase?.type || "Supabase/PostgreSQL",
+          responseTime: databaseStatus.supabase?.details?.responseTime || "N/A",
+          message: databaseStatus.supabase?.message || "No data",
+        },
+        {
+          id: 4,
           name: "API Server 1",
           type: "api",
           status: "warning",
@@ -302,7 +389,7 @@ const SystemSettings = () => {
           version: "v2.1.3",
         },
         {
-          id: 4,
+          id: 5,
           name: "Load Balancer",
           type: "loadbalancer",
           status: "running",
@@ -314,36 +401,6 @@ const SystemSettings = () => {
           uptime: "45 days, 8 hours",
           lastRestart: "2024-05-11T16:45:00Z",
           version: "Nginx 1.20",
-        },
-        {
-          id: 5,
-          name: "Redis Cache Server",
-          type: "cache",
-          status: databaseStatus.redis === "UP" ? "running" : "stopped",
-          ip: "192.168.1.40",
-          location: "US East",
-          cpu: databaseStatus.redis === "UP" ? 34 : 0,
-          memory: databaseStatus.redis === "UP" ? 45 : 0,
-          disk: 28,
-          uptime:
-            databaseStatus.redis === "UP" ? "12 days, 6 hours" : "0 minutes",
-          lastRestart: "2024-06-25T09:00:00Z",
-          version: "Redis",
-        },
-        {
-          id: 6,
-          name: "Firebase Server",
-          type: "firebase",
-          status: databaseStatus.firebase === "UP" ? "running" : "stopped",
-          ip: "Cloud Service",
-          location: "Global",
-          cpu: databaseStatus.firebase === "UP" ? 25 : 0,
-          memory: databaseStatus.firebase === "UP" ? 30 : 0,
-          disk: databaseStatus.firebase === "UP" ? 15 : 0,
-          uptime:
-            databaseStatus.firebase === "UP" ? "Cloud Service" : "0 minutes",
-          lastRestart: "N/A",
-          version: "Firebase",
         },
       ];
 
@@ -361,6 +418,7 @@ const SystemSettings = () => {
           updatedServers.reduce((acc, s) => acc + s.memory, 0) /
             updatedServers.length
         ),
+        overallHealth: databaseStatus.overall || "unknown",
       });
       setHostingLoading(false);
     }
@@ -372,15 +430,52 @@ const SystemSettings = () => {
   };
 
   const refreshStatus = async () => {
+    if (!authToken) {
+      console.error("No auth token available");
+      return;
+    }
+
     setHostingLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch("http://localhost:8090/api/v1/admin/status");
-      if (response.ok) {
-        const statusData = await response.json();
-        setDatabaseStatus(statusData);
+      const response = await axios.get(
+        "http://localhost:8070/api/admin/database/status",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.success && response.data.data) {
+        const dbData = response.data.data.databases;
+
+        const transformedStatus = {
+          overall: response.data.data.overall,
+          timestamp: response.data.data.timestamp,
+          mongodb: {
+            status: dbData.mongodb?.status || "unhealthy",
+            type: dbData.mongodb?.type || "MongoDB",
+            message: dbData.mongodb?.message || "No data",
+            details: dbData.mongodb?.details || {},
+          },
+          supabase: {
+            status: dbData.supabase?.status || "unhealthy",
+            type: dbData.supabase?.type || "Supabase/PostgreSQL",
+            message: dbData.supabase?.message || "No data",
+            details: dbData.supabase?.details || {},
+          },
+        };
+
+        setDatabaseStatus(transformedStatus);
       }
     } catch (error) {
       console.error("Error refreshing status:", error);
+      setError("Failed to refresh database status");
+    } finally {
+      setHostingLoading(false);
     }
   };
 
@@ -451,7 +546,23 @@ const SystemSettings = () => {
           </div>
 
           {/* Infrastructure Overview Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                Overall Health
+              </h4>
+              <div
+                className={`text-2xl font-bold ${
+                  infrastructureMetrics.overallHealth === "healthy"
+                    ? "text-success-600"
+                    : "text-danger-600"
+                }`}
+              >
+                {infrastructureMetrics.overallHealth === "healthy"
+                  ? "✓ Healthy"
+                  : "✗ Unhealthy"}
+              </div>
+            </div>
             <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
               <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 Total Servers
@@ -485,6 +596,15 @@ const SystemSettings = () => {
               </div>
             </div>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-danger-50 dark:bg-danger-900/10 border border-danger-200 dark:border-danger-800 rounded-lg">
+              <p className="text-danger-800 dark:text-danger-300 text-sm">
+                ⚠️ {error}
+              </p>
+            </div>
+          )}
 
           {/* Hosting Tab Navigation */}
           <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 mb-6">
@@ -618,6 +738,17 @@ const SystemSettings = () => {
                           <p>
                             <strong>Version:</strong> {server.version}
                           </p>
+                          {server.responseTime && (
+                            <p>
+                              <strong>Response Time:</strong>{" "}
+                              {server.responseTime}
+                            </p>
+                          )}
+                          {server.message && (
+                            <p>
+                              <strong>Status:</strong> {server.message}
+                            </p>
+                          )}
                         </div>
 
                         {/* Actions */}
