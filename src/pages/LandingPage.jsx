@@ -241,8 +241,14 @@ const PlaceModal = ({ place, isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[61]">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+      onTouchMove={(e) => e.stopPropagation()}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-[61]"
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         <div className="relative">
           {/* Main image */}
           <img 
@@ -456,16 +462,50 @@ const LandingPage = () => {
   // Effect to handle body scroll lock when modal is open
   React.useEffect(() => {
     if (isModalOpen) {
-      // Disable body scroll
+      // Store the current scroll position
+      const scrollY = window.scrollY;
+      
+      // Disable body scroll and prevent scroll-through on mobile
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      
+      // Prevent touch-based scrolling on mobile
+      const preventScroll = (e) => {
+        e.preventDefault();
+      };
+      
+      // Add touch event listeners for mobile
+      document.addEventListener('touchmove', preventScroll, { passive: false });
+      
+      return () => {
+        // Re-enable body scroll and restore position
+        document.body.style.overflow = 'unset';
+        document.body.style.position = 'static';
+        document.body.style.top = 'auto';
+        document.body.style.width = 'auto';
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+        
+        // Remove touch event listeners
+        document.removeEventListener('touchmove', preventScroll);
+      };
     } else {
       // Re-enable body scroll
       document.body.style.overflow = 'unset';
+      document.body.style.position = 'static';
+      document.body.style.top = 'auto';
+      document.body.style.width = 'auto';
     }
 
     // Cleanup function to ensure scroll is re-enabled when component unmounts
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.style.position = 'static';
+      document.body.style.top = 'auto';
+      document.body.style.width = 'auto';
     };
   }, [isModalOpen]);
 

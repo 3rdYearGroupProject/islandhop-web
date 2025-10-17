@@ -1,0 +1,74 @@
+Create a Node.js/Express microservice for the driver earnings dashboard.
+Implement only the GET endpoints required by the DriverEarnings React page.
+
+Endpoints to implement:
+
+1. GET /api/drivers/:email/earnings?period=week|month|year
+   Returns summary earnings data for the driver.
+   Response format:
+   {
+     "success": true,
+     "data": {
+       "total": 125000,
+       "trips": 28,
+       "change": 3.75,
+       "daily": [
+         { "day": "Mon", "earnings": 1200 },
+         { "day": "Tue", "earnings": 1500 },
+         { "day": "Wed", "earnings": 800 },
+         { "day": "Thu", "earnings": 2100 },
+         { "day": "Fri", "earnings": 1800 },
+         { "day": "Sat", "earnings": 2200 },
+         { "day": "Sun", "earnings": 1100 }
+       ],
+       "weekly": [
+         { "week": "Week 36", "earnings": 8500 },
+         { "week": "Week 37", "earnings": 9200 }
+       ]
+     }
+   }
+
+2. GET /api/drivers/:email/transactions?limit=10
+   Returns recent transaction history for the driver.
+   Response format:
+   {
+     "success": true,
+     "data": [
+       {
+         "id": "txn123",
+         "amount": 3500,
+         "date": "2025-09-10T12:00:00Z",
+         "type": "trip",
+         "description": "Trip fare"
+       },
+       {
+         "id": "txn124",
+         "amount": 500,
+         "date": "2025-09-11T09:00:00Z",
+         "type": "tip",
+         "description": "Passenger tip"
+       }
+       // ...more transactions
+     ]
+   }
+
+3. GET /api/drivers/:email/bank-details
+   Returns the driver’s bank details.
+   Response format:
+   {
+     "success": true,
+     "data": {
+       "accountHolderName": "John Doe",
+       "bankName": "Bank of Ceylon",
+       "accountNumber": "1234567890",
+       "branchCode": "123",
+       "branchName": "Colombo Main Branch"
+     }
+   }
+
+Requirements:
+- Use Express.js
+- Always return mock data in the format shown above
+- Only implement GET endpoints (no POST/PUT/DELETE)
+- Each endpoint should validate the :email param and return success: false if not found
+- For all endpoints, "success": true and "data" must always be present and match the expected type (object or array)

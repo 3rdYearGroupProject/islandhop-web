@@ -30,6 +30,7 @@ import InvitationsAndRequests from '../pages/pools/InvitationsAndRequests';
 import AITripDurationPage from '../pages/AITripDurationPage';
 import AITripPreferencesPage from '../pages/AITripPreferencesPage';
 import AITripView from '../pages/AITripView';
+import TranslationTest from '../pages/TranslationTest';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -181,6 +182,11 @@ const GeneralRoutes = () => (
     <Route path="/ai-trip-view" element={
       <PublicRoute>
         <AITripView />
+      </PublicRoute>
+    } />
+    <Route path="/translation-test" element={
+      <PublicRoute>
+        <TranslationTest />
       </PublicRoute>
     } />
 

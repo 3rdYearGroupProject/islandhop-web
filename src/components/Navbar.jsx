@@ -77,50 +77,103 @@ const Navbar = () => {
 
   // Load Google Translate script and initialize
   useEffect(() => {
-    const initializeGoogleTranslate = () => {
-      if (!document.querySelector('#google-translate-styles')) {
-        const style = document.createElement('style');
-        style.id = 'google-translate-styles';
-        style.textContent = `
-          .goog-te-gadget { display: none !important; }
-          .goog-te-banner-frame { display: none !important; }
-          .goog-te-menu-value { color: #374151 !important; }
-          body { top: 0 !important; }
-          .skiptranslate { display: none !important; }
-          .goog-te-balloon-frame { display: none !important; }
-        `;
-        document.head.appendChild(style);
-      }
+    // Add styles to hide Google Translate elements
+    if (!document.querySelector('#google-translate-styles')) {
+      const style = document.createElement('style');
+      style.id = 'google-translate-styles';
+      style.textContent = `
+        .goog-te-gadget { display: none !important; }
+        .goog-te-banner-frame { display: none !important; }
+        .goog-te-menu-value { color: #374151 !important; }
+        body { top: 0 !important; }
+        .skiptranslate { display: none !important; }
+        .goog-te-balloon-frame { display: none !important; }
+        #google_translate_element { display: none !important; }
+        .goog-te-spinner-pos { display: none !important; }
+        iframe.goog-te-menu-frame { display: none !important; }
+        .goog-logo-link { display: none !important; }
+        .goog-te-gadget-icon { display: none !important; }
+      `;
+      document.head.appendChild(style);
+    }
 
-      if (!window.googleTranslateElementInit && !document.querySelector('#google_translate_element_hidden')) {
-        const hiddenDiv = document.createElement('div');
-        hiddenDiv.id = 'google_translate_element_hidden';
-        hiddenDiv.style.display = 'none';
-        document.body.appendChild(hiddenDiv);
+    // Create visible element for Google Translate widget (but hide with CSS)
+    if (!document.querySelector('#google_translate_element')) {
+      const translateDiv = document.createElement('div');
+      translateDiv.id = 'google_translate_element';
+      translateDiv.style.cssText = 'position: absolute; left: -9999px; top: -9999px;';
+      document.body.appendChild(translateDiv);
+    }
 
-        window.googleTranslateElementInit = function () {
-          if (window.google && window.google.translate) {
-            new window.google.translate.TranslateElement({
-              pageLanguage: 'en',
-              includedLanguages: 'en,si,ta,hi,zh,fr,de,es,ja,ko,ar',
-              layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
-              autoDisplay: false,
-              multilanguagePage: true
-            }, 'google_translate_element_hidden');
+    // Initialize Google Translate
+    window.googleTranslateElementInit = function () {
+      try {
+        if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,si,ta,hi,zh-CN,fr,de,es,ja,ko,ar',
+            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false,
+            multilanguagePage: true
+          }, 'google_translate_element');
+          
+          console.log('Google Translate initialized successfully');
+          
+          // Restore previous language selection after a delay
+          const savedLang = localStorage.getItem('selectedLanguage');
+          if (savedLang && savedLang !== 'en') {
+            setTimeout(() => {
+              const langCode = savedLang === 'zh' ? 'zh-CN' : savedLang;
+              triggerGoogleTranslate(langCode);
+            }, 1500);
           }
-        };
-
-        const script = document.createElement('script');
-        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-        script.async = true;
-        script.onerror = () => {
-          console.warn('Failed to load Google Translate script');
-        };
-        document.body.appendChild(script);
+        }
+      } catch (error) {
+        console.error('Error initializing Google Translate:', error);
       }
     };
 
-    initializeGoogleTranslate();
+    // Helper function to trigger Google Translate
+    const triggerGoogleTranslate = (langCode) => {
+      const translateSelect = document.querySelector('.goog-te-combo');
+      if (translateSelect) {
+        const hasOptions = translateSelect.options.length > 1;
+        console.log('Google Translate dropdown found. Options available:', hasOptions);
+        
+        if (hasOptions) {
+          translateSelect.value = langCode;
+          translateSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log('Translation triggered for language:', langCode);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Load Google Translate script if not already loaded
+    if (!document.querySelector('script[src*="translate.google.com"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      script.onerror = () => {
+        console.error('Failed to load Google Translate script');
+      };
+      script.onload = () => {
+        console.log('Google Translate script loaded successfully');
+      };
+      document.body.appendChild(script);
+    } else if (window.google && window.google.translate) {
+      // Script already loaded, just initialize
+      window.googleTranslateElementInit();
+    }
+
+    // Cleanup function
+    return () => {
+      const frame = document.querySelector('.goog-te-banner-frame');
+      if (frame) {
+        frame.style.display = 'none';
+      }
+    };
   }, []);
 
   // Language options
@@ -129,7 +182,7 @@ const Navbar = () => {
     { code: 'si', name: 'සිංහල', flag: '🇱🇰' },
     { code: 'ta', name: 'தமிழ்', flag: '🇱🇰' },
     { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'zh-CN', name: '中文', flag: '🇨🇳' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
     { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
@@ -140,27 +193,52 @@ const Navbar = () => {
 
   // Handle language change
   const handleLanguageChange = (langCode, langName) => {
+    console.log('🌐 Language change requested:', langCode, langName);
+    
     setCurrentLang(langName);
     setShowLang(false);
     
-    const attemptTranslation = (attempts = 0) => {
-      const translateSelect = document.querySelector('.goog-te-combo');
-      
-      if (translateSelect && translateSelect.options.length > 1) {
-        for (let i = 0; i < translateSelect.options.length; i++) {
-          if (translateSelect.options[i].value === langCode) {
-            translateSelect.selectedIndex = i;
-            translateSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            return;
-          }
-        }
-      } else if (attempts < 10) {
-        setTimeout(() => attemptTranslation(attempts + 1), 500);
-      }
-    };
-
-    setTimeout(() => attemptTranslation(), 100);
+    // Save language preference
+    localStorage.setItem('selectedLanguage', langCode);
+    localStorage.setItem('selectedLanguageName', langName);
+    
+    if (langCode === 'en') {
+      // Reset to English - clear cookies and reload
+      console.log('↺ Resetting to English...');
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+      localStorage.removeItem('googtrans');
+      setTimeout(() => window.location.reload(), 100);
+      return;
+    }
+    
+    // Set the cookie that Google Translate uses for automatic translation
+    const googleTransValue = `/en/${langCode}`;
+    
+    // Clear old cookies first
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+    
+    // Set new translation cookie
+    document.cookie = `googtrans=${googleTransValue}; path=/;`;
+    document.cookie = `googtrans=${googleTransValue}; path=/; domain=${window.location.hostname}`;
+    
+    console.log('✓ Set googtrans cookie:', googleTransValue);
+    console.log('↺ Reloading page to apply translation...');
+    
+    // Reload page immediately - Google Translate will read the cookie and translate automatically
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
+
+  // Restore saved language preference
+  useEffect(() => {
+    const savedLangName = localStorage.getItem('selectedLanguageName');
+    if (savedLangName) {
+      setCurrentLang(savedLangName);
+    }
+  }, []);
 
   // Toggle language dropdown
   const toggleLanguageDropdown = () => {
@@ -523,21 +601,17 @@ const Navbar = () => {
           
           {/* Desktop User/Currency/Language - Right */}
           <div className="hidden lg:flex items-center space-x-2 lg:space-x-4 desktop-only">
-            {/* Currency Display */}
-            <button className="text-gray-700 hover:text-primary-600 font-medium flex items-center text-sm lg:text-base transition-colors">
-              {currentCurrency}
-            </button>
-            
             {/* Language Switcher */}
             <div className="relative" ref={translateRef}>
               <button
                 onClick={toggleLanguageDropdown}
-                className="text-gray-700 hover:text-primary-600 font-medium flex items-center px-2 lg:px-3 py-2 border rounded-lg transition-colors text-sm lg:text-base"
+                className="text-gray-700 hover:bg-gray-100 font-medium flex items-center px-3 lg:px-4 py-2 lg:py-2.5 rounded-full transition-all duration-200 text-sm lg:text-base border border-gray-200 hover:border-gray-300"
                 aria-label="Change language"
               >
-                🌐 <span className="hidden sm:inline ml-1">{currentLang}</span>
+                <span className="text-lg mr-2">🌐</span>
+                <span className="hidden sm:inline">{currentLang}</span>
                 <svg 
-                  className={`ml-1 h-3 w-3 lg:h-4 lg:w-4 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                  className={`ml-2 h-3 w-3 lg:h-4 lg:w-4 transition-transform duration-200 ${showLang ? 'rotate-180' : ''}`} 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -546,15 +620,17 @@ const Navbar = () => {
                 </svg>
               </button>
               {showLang && (
-                <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-h-64 overflow-y-auto">
+                <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2 min-w-[180px] max-h-64 overflow-y-auto">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => handleLanguageChange(lang.code, lang.name)}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                      className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center space-x-3 transition-colors ${
+                        currentLang === lang.name ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      }`}
                     >
                       <span className="text-lg">{lang.flag}</span>
-                      <span className="text-gray-700">{lang.name}</span>
+                      <span className={currentLang === lang.name ? 'font-semibold' : ''}>{lang.name}</span>
                     </button>
                   ))}
                 </div>
@@ -933,19 +1009,20 @@ const Navbar = () => {
                 </div>
               )}
 
-              {/* Mobile Language & Currency */}
-              <div className="border-t border-gray-200 pt-4 space-y-3">
+              {/* Mobile Language */}
+              <div className="border-t border-gray-200 pt-4">
                 {/* Language Switcher for Mobile */}
                 <div className="flex items-center justify-between px-4 py-2">
                   <span className="text-gray-700 font-medium">Language</span>
                   <div className="relative" ref={translateRef}>
                     <button
                       onClick={toggleLanguageDropdown}
-                      className="flex items-center px-3 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-center px-3 py-2 border border-gray-200 rounded-full text-sm bg-white hover:bg-gray-50 transition-all duration-200"
                     >
-                      🌐 <span className="ml-1">{currentLang}</span>
+                      <span className="text-base mr-1.5">🌐</span>
+                      <span>{currentLang}</span>
                       <svg 
-                        className={`ml-1 h-3 w-3 transition-transform ${showLang ? 'rotate-180' : ''}`} 
+                        className={`ml-1.5 h-3 w-3 transition-transform duration-200 ${showLang ? 'rotate-180' : ''}`} 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -954,24 +1031,22 @@ const Navbar = () => {
                       </svg>
                     </button>
                     {showLang && (
-                      <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 py-2 min-w-[180px] max-w-[220px] max-h-64 overflow-y-auto">
+                      <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-2 min-w-[180px] max-w-[220px] max-h-64 overflow-y-auto">
                         {languages.map((lang) => (
                           <button
                             key={lang.code}
                             onClick={() => handleLanguageChange(lang.code, lang.name)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-3 transition-colors"
+                            className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center space-x-3 transition-colors ${
+                              currentLang === lang.name ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                            }`}
                           >
                             <span className="text-lg">{lang.flag}</span>
-                            <span className="text-gray-700 truncate">{lang.name}</span>
+                            <span className={`truncate ${currentLang === lang.name ? 'font-semibold' : ''}`}>{lang.name}</span>
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center justify-between px-4 py-2">
-                  <span className="text-gray-700 font-medium">Currency</span>
-                  <span className="text-gray-600 font-medium">{currentCurrency}</span>
                 </div>
               </div>
             </div>
