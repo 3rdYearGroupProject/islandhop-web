@@ -24,10 +24,12 @@ import {
 
 const SystemSettings = () => {
   const [servers, setServers] = useState([]);
-  const [deployments, setDeployments] = useState([]);
+  const [microservices, setMicroservices] = useState([]);
+  const [microservicesSummary, setMicroservicesSummary] = useState({});
   const [infrastructureMetrics, setInfrastructureMetrics] = useState({});
   const [databaseStatus, setDatabaseStatus] = useState({});
   const [hostingLoading, setHostingLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(true);
   const [activeHostingTab, setActiveHostingTab] = useState("servers");
   const [authToken, setAuthToken] = useState("");
   const [error, setError] = useState(null);
@@ -153,42 +155,7 @@ const SystemSettings = () => {
     );
   };
 
-  // Mock deployment data
-  const mockDeployments = [
-    {
-      id: 1,
-      name: "Frontend v2.1.4",
-      status: "completed",
-      startTime: "2024-06-25T14:30:00Z",
-      endTime: "2024-06-25T14:35:00Z",
-      duration: "5 minutes",
-      branch: "main",
-      commit: "a1b2c3d",
-      environment: "production",
-    },
-    {
-      id: 2,
-      name: "API v2.1.3",
-      status: "progress",
-      startTime: "2024-06-25T15:00:00Z",
-      endTime: null,
-      duration: "2 minutes",
-      branch: "release",
-      commit: "e4f5g6h",
-      environment: "production",
-    },
-    {
-      id: 3,
-      name: "Database Migration",
-      status: "failed",
-      startTime: "2024-06-25T13:15:00Z",
-      endTime: "2024-06-25T13:20:00Z",
-      duration: "5 minutes",
-      branch: "main",
-      commit: "i7j8k9l",
-      environment: "staging",
-    },
-  ];
+  // Mock deployment data - REMOVED
 
   // Hosting helper functions
   const getStatusColor = (status) => {
@@ -314,6 +281,66 @@ const SystemSettings = () => {
     fetchDatabaseStatus();
   }, [authToken]);
 
+  // Fetch microservices health status
+  useEffect(() => {
+    const fetchMicroservicesHealth = async () => {
+      if (!authToken) {
+        console.log("No auth token available for microservices fetch");
+        return;
+      }
+
+      try {
+        setServicesLoading(true);
+        console.log("Fetching microservices health...");
+
+        const response = await axios.get(
+          "http://localhost:8070/api/admin/microservices/health",
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Microservices health response:", response);
+        console.log("Response data:", response.data);
+
+        if (response.data && response.data.success && response.data.data) {
+          console.log("Services:", response.data.data.services);
+          console.log("Summary:", response.data.data.summary);
+
+          setMicroservices(response.data.data.services || []);
+          setMicroservicesSummary({
+            overall: response.data.data.overall,
+            total: response.data.data.summary?.total || 0,
+            healthy: response.data.data.summary?.healthy || 0,
+            unhealthy: response.data.data.summary?.unhealthy || 0,
+            unreachable: response.data.data.summary?.unreachable || 0,
+            healthPercentage:
+              response.data.data.summary?.healthPercentage || "0",
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error fetching microservices health:");
+        console.error("Error message:", error.message);
+        console.error("Error response:", error.response);
+        console.error("Error status:", error.response?.status);
+        console.error("Error data:", error.response?.data);
+        setMicroservices([]);
+        setError(
+          error.response?.data?.message ||
+            error.message ||
+            "Failed to fetch microservices"
+        );
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchMicroservicesHealth();
+  }, [authToken]);
+
   // Update servers and other data after database status is fetched
   useEffect(() => {
     if (Object.keys(databaseStatus).length > 0) {
@@ -365,7 +392,6 @@ const SystemSettings = () => {
       ];
 
       setServers(updatedServers);
-      setDeployments(mockDeployments);
       setInfrastructureMetrics({
         totalServers: updatedServers.length,
         runningServers: updatedServers.filter((s) => s.status === "running")
@@ -436,6 +462,57 @@ const SystemSettings = () => {
       setError("Failed to refresh database status");
     } finally {
       setHostingLoading(false);
+    }
+  };
+
+  const refreshMicroservicesStatus = async () => {
+    if (!authToken) {
+      console.error("No auth token available for refresh");
+      return;
+    }
+
+    try {
+      setServicesLoading(true);
+      setError(null);
+      console.log("Refreshing microservices status...");
+
+      const response = await axios.get(
+        "http://localhost:8070/api/admin/microservices/health",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Microservices refresh response:", response);
+      console.log("Response data:", response.data);
+
+      if (response.data && response.data.success && response.data.data) {
+        setMicroservices(response.data.data.services || []);
+        setMicroservicesSummary({
+          overall: response.data.data.overall,
+          total: response.data.data.summary?.total || 0,
+          healthy: response.data.data.summary?.healthy || 0,
+          unhealthy: response.data.data.summary?.unhealthy || 0,
+          unreachable: response.data.data.summary?.unreachable || 0,
+          healthPercentage: response.data.data.summary?.healthPercentage || "0",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error refreshing microservices:");
+      console.error("Error message:", error.message);
+      console.error("Error response:", error.response);
+      console.error("Error status:", error.response?.status);
+      console.error("Error data:", error.response?.data);
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to refresh microservices"
+      );
+    } finally {
+      setServicesLoading(false);
     }
   };
 
@@ -539,8 +616,6 @@ const SystemSettings = () => {
                 {infrastructureMetrics.runningServers || 0}
               </div>
             </div>
-            
-           
           </div>
 
           {/* Error Display */}
@@ -579,7 +654,7 @@ const SystemSettings = () => {
                 >
                   <div className="flex items-center space-x-2">
                     <RocketLaunchIcon className="h-5 w-5" />
-                    <span>Deployments</span>
+                    <span>Microservices</span>
                   </div>
                 </button>
               </nav>
@@ -589,21 +664,23 @@ const SystemSettings = () => {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   {activeHostingTab === "servers"
                     ? "Server Management"
-                    : "Deployment History"}
+                    : "Microservices Health"}
                 </h3>
                 <div className="flex gap-3">
                   <button
-                    onClick={refreshStatus}
+                    onClick={
+                      activeHostingTab === "servers"
+                        ? refreshStatus
+                        : refreshMicroservicesStatus
+                    }
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-secondary-700 hover:bg-gray-200 dark:hover:bg-secondary-600 rounded-lg transition-colors"
                   >
                     Refresh Status
                   </button>
-                  
                 </div>
               </div>
             </div>
           </div>
-
           {/* Hosting Tab Content */}
           {hostingLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -822,53 +899,193 @@ const SystemSettings = () => {
                 </div>
               )}
 
-              {/* Deployments Tab */}
+              {/* Microservices Tab */}
               {activeHostingTab === "deployments" && (
-                <div className="space-y-4">
-                  {deployments.map((deployment) => {
-                    const StatusIcon = getStatusIcon(deployment.status);
-                    return (
-                      <div
-                        key={deployment.id}
-                        className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-white">
-                              {deployment.name}
-                            </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {deployment.environment} • {deployment.branch} •{" "}
-                              {deployment.commit}
-                            </p>
+                <div>
+                  {servicesLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Overall Status
+                              </p>
+                              <p
+                                className={`text-xl font-bold mt-1 ${
+                                  microservicesSummary.overall === "healthy"
+                                    ? "text-success-600"
+                                    : microservicesSummary.overall ===
+                                      "degraded"
+                                    ? "text-warning-600"
+                                    : "text-danger-600"
+                                }`}
+                              >
+                                {microservicesSummary.overall?.toUpperCase() ||
+                                  "UNKNOWN"}
+                              </p>
+                            </div>
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              deployment.status
-                            )}`}
-                          >
-                            <StatusIcon className="h-3 w-3" />
-                            {deployment.status}
-                          </span>
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          <p>
-                            <strong>Started:</strong>{" "}
-                            {new Date(deployment.startTime).toLocaleString()}
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Total Services
                           </p>
-                          {deployment.endTime && (
-                            <p>
-                              <strong>Completed:</strong>{" "}
-                              {new Date(deployment.endTime).toLocaleString()}
-                            </p>
-                          )}
-                          <p>
-                            <strong>Duration:</strong> {deployment.duration}
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {microservicesSummary.total || 0}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Healthy
+                          </p>
+                          <p className="text-2xl font-bold text-success-600 mt-1">
+                            {microservicesSummary.healthy || 0}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Unhealthy
+                          </p>
+                          <p className="text-2xl font-bold text-danger-600 mt-1">
+                            {microservicesSummary.unhealthy || 0}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Health Rate
+                          </p>
+                          <p className="text-2xl font-bold text-primary-600 mt-1">
+                            {microservicesSummary.healthPercentage || 0}%
                           </p>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      {/* Services Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {microservices.map((service, index) => {
+                          const getServiceStatusColor = (status) => {
+                            switch (status) {
+                              case "healthy":
+                                return "border-success-300 bg-success-50 dark:bg-success-900/10 dark:border-success-700";
+                              case "unhealthy":
+                                return "border-danger-300 bg-danger-50 dark:bg-danger-900/10 dark:border-danger-700";
+                              case "unreachable":
+                                return "border-gray-300 bg-gray-50 dark:bg-gray-900/10 dark:border-gray-700";
+                              default:
+                                return "border-gray-200 bg-white dark:bg-secondary-800 dark:border-secondary-700";
+                            }
+                          };
+
+                          const getStatusBadgeColor = (status) => {
+                            switch (status) {
+                              case "healthy":
+                                return "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-400";
+                              case "unhealthy":
+                                return "bg-danger-100 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400";
+                              case "unreachable":
+                                return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
+                              default:
+                                return "bg-gray-100 text-gray-700";
+                            }
+                          };
+
+                          return (
+                            <div
+                              key={index}
+                              className={`rounded-lg p-5 border-2 transition-all hover:shadow-md ${getServiceStatusColor(
+                                service.status
+                              )}`}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                                    {service.name}
+                                  </h4>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                                    Port: {service.port}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
+                                    service.status
+                                  )}`}
+                                >
+                                  {service.status?.toUpperCase()}
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {service.statusCode && (
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Status Code:
+                                    </span>
+                                    <span
+                                      className={`font-semibold ${
+                                        service.statusCode === 200
+                                          ? "text-success-600"
+                                          : "text-danger-600"
+                                      }`}
+                                    >
+                                      {service.statusCode}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Response Time:
+                                  </span>
+                                  <span
+                                    className={`font-semibold ${
+                                      parseInt(service.responseTime) < 100
+                                        ? "text-success-600"
+                                        : parseInt(service.responseTime) < 500
+                                        ? "text-warning-600"
+                                        : "text-danger-600"
+                                    }`}
+                                  >
+                                    {service.responseTime}
+                                  </span>
+                                </div>
+
+                                {service.error && (
+                                  <div className="mt-2 p-2 bg-danger-100 dark:bg-danger-900/20 rounded text-xs">
+                                    <p className="text-danger-700 dark:text-danger-400 font-medium">
+                                      Error: {service.error}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {service.details && service.details.message && (
+                                  <div className="mt-2 p-2 bg-gray-100 dark:bg-secondary-900 rounded text-xs">
+                                    <p className="text-gray-700 dark:text-gray-300">
+                                      {service.details.message}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {microservices.length === 0 && (
+                        <div className="text-center py-12">
+                          <ServerIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-500 dark:text-gray-400">
+                            No microservices data available
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </>
