@@ -76,12 +76,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       icon: ServerIcon,
       description: "Manage System Data",
     },
-    {
-      name: "APIs",
-      path: "/admin/apis",
-      icon: CircleStackIcon,
-      description: "API Management",
-    },
+    // {
+    //   name: "APIs",
+    //   path: "/admin/apis",
+    //   icon: CircleStackIcon,
+    //   description: "API Management",
+    // },
     {
       name: "System History",
       path: "/admin/history",

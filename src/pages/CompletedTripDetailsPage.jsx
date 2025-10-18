@@ -71,13 +71,26 @@ const CompletedTripDetailsPage = () => {
       
       try {
         setLoading(true);
-        // You would typically fetch the specific trip data here
-        // For now, we'll use the originalData from the trip object
-        const response = await fetch(`http://localhost:4015/api/trip-details/${tripId}`);
+        console.log('Fetching trip data for ID:', tripId);
+        const response = await fetch(`http://localhost:4015/api/payed-trips/${tripId}`);
+        
         if (response.ok) {
-          const data = await response.json();
-          setTripData(data);
+          const result = await response.json();
+          console.log('Fetched trip data:', result);
+          
+          // Extract data from the response structure
+          if (result.data) {
+            // Set the trip data with _originalData for compatibility
+            setTripData({
+              ...result.data,
+              _originalData: result.data
+            });
+          } else {
+            setError('Invalid response format');
+          }
         } else {
+          const errorText = await response.text();
+          console.error('Failed to fetch trip details:', response.status, errorText);
           setError('Failed to fetch trip details');
         }
       } catch (err) {
@@ -95,13 +108,20 @@ const CompletedTripDetailsPage = () => {
   useEffect(() => {
     if (tripData) {
       const originalData = tripData._originalData || tripData;
+      console.log('Initializing review states:', {
+        driver_reviewed: originalData.driver_reviewed,
+        guide_reviewed: originalData.guide_reviewed,
+        driver_review: originalData.driver_review,
+        guide_review: originalData.guide_review
+      });
+      
       setDriverReviewText(originalData.driver_review || '');
       setGuideReviewText(originalData.guide_review || '');
       // Set default ratings for new reviews (only used when creating new reviews)
-      if (!originalData.driver_reviewed) {
+      if (originalData.driver_reviewed !== 1) {
         setDriverRating(0);
       }
-      if (!originalData.guide_reviewed) {
+      if (originalData.guide_reviewed !== 1) {
         setGuideRating(0);
       }
     }
@@ -213,7 +233,7 @@ const CompletedTripDetailsPage = () => {
       };
       
       const tripSpecificReviewData = {
-        tripId: originalData._id || originalData.id,
+        tripId: originalData._id || originalData.originalTripId || originalData.id,
         review: reviewText
       };
       
@@ -357,6 +377,18 @@ const CompletedTripDetailsPage = () => {
   const originalData = tripData._originalData || tripData;
   const totalDistance = calculateTotalDistance(originalData.dailyPlans);
   const cityImage = getCityImageUrl(originalData.baseCity || 'Sri Lanka');
+  
+  // Log trip data for debugging
+  console.log('Rendering trip details:', {
+    tripId: originalData._id,
+    tripName: originalData.tripName,
+    baseCity: originalData.baseCity,
+    totalDistance,
+    dailyPlansCount: originalData.dailyPlans?.length,
+    driverNeeded: originalData.driverNeeded,
+    guideNeeded: originalData.guideNeeded,
+    payedAmount: originalData.payedAmount
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -485,26 +517,7 @@ const CompletedTripDetailsPage = () => {
                     <p className="text-sm text-gray-600">End Time</p>
                     <p className="font-medium">{formatDateTime(day.end)}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Start Odometer</p>
-                    <p className="font-medium">{day.start_meter_read || 0} km</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">End Odometer</p>
-                    <p className="font-medium">{day.end_meter_read || 0} km</p>
-                  </div>
                 </div>
-
-                {day.deduct_amount > 0 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Deduction:</strong> {formatCurrency(day.deduct_amount)}
-                      {day.additional_note && (
-                        <span className="block mt-1">{day.additional_note}</span>
-                      )}
-                    </p>
-                  </div>
-                )}
 
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Attractions Visited</h4>
@@ -513,12 +526,6 @@ const CompletedTripDetailsPage = () => {
                       <div key={i} className="flex items-center gap-3">
                         <MapPin className="h-4 w-4 text-blue-500" />
                         <span className="text-gray-700">{attraction.name}</span>
-                        {attraction.rating && (
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span className="text-sm text-gray-600">{attraction.rating}</span>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -644,7 +651,7 @@ const CompletedTripDetailsPage = () => {
                   </button>
                   <button
                     onClick={() => submitReview('driver')}
-                    disabled={driverRating === 0 || submittingReview || !currentUser || !driverReviewText.trim()}
+                    disabled={driverRating === 0 || submittingReview || !currentUser}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submittingReview ? 'Submitting...' : 'Submit Review'}
@@ -692,7 +699,7 @@ const CompletedTripDetailsPage = () => {
                   </button>
                   <button
                     onClick={() => submitReview('guide')}
-                    disabled={guideRating === 0 || submittingReview || !currentUser || !guideReviewText.trim()}
+                    disabled={guideRating === 0 || submittingReview || !currentUser}
                     className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submittingReview ? 'Submitting...' : 'Submit Review'}
