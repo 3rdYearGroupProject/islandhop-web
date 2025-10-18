@@ -1,22 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Star, Clock, User, Car, Map } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Star, Clock, User, Car, Map, Coins } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getCityImageUrl } from '../utils/imageUtils';
+import { useToast } from '../components/ToastProvider';
 
 const CompletedTripDetailsPage = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   
   // Get trip data from location state or fetch it
   const [tripData, setTripData] = useState(location.state?.trip || null);
   const [loading, setLoading] = useState(!location.state?.trip);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // Currency state - default to LKR since fetched data is in LKR
+  const [selectedCurrency, setSelectedCurrency] = useState('LKR');
+  
+  // Currency conversion rates (base: LKR)
+  const currencyRates = {
+    'LKR': 1,
+    'USD': 0.0031,
+    'EUR': 0.0028,
+    'GBP': 0.0024,
+    'AUD': 0.0047,
+    'CAD': 0.0042,
+    'JPY': 0.45,
+    'INR': 0.26
+  };
+  
+  // Currency symbols
+  const currencySymbols = {
+    'LKR': 'Rs.',
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'AUD': 'A$',
+    'CAD': 'C$',
+    'JPY': '¥',
+    'INR': '₹'
+  };
   
   // Review states
   const [showDriverReview, setShowDriverReview] = useState(false);
@@ -118,12 +147,32 @@ const CompletedTripDetailsPage = () => {
     }, 0);
   };
 
+  // Convert LKR amount to selected currency
+  const convertCurrency = (amountInLKR) => {
+    if (!amountInLKR) return 0;
+    const rate = currencyRates[selectedCurrency] || 1;
+    return (amountInLKR * rate).toFixed(2);
+  };
+
+  // Format currency with symbol
+  const formatCurrency = (amountInLKR) => {
+    const convertedAmount = convertCurrency(amountInLKR);
+    const symbol = currencySymbols[selectedCurrency] || '';
+    return `${symbol}${parseFloat(convertedAmount).toLocaleString()}`;
+  };
+
+  // Get currency icon component
+  const getCurrencyIcon = () => {
+    // Return Coins icon for all currencies to represent money
+    return <Coins className="h-8 w-8 text-green-500" />;
+  };
+
   const submitReview = async (type) => {
     const originalData = tripData._originalData || tripData;
     
     // Check if user is authenticated
     if (!currentUser) {
-      alert('Please log in to submit a review.');
+      toast.error('Please log in to submit a review.');
       return;
     }
     
@@ -136,17 +185,20 @@ const CompletedTripDetailsPage = () => {
       
       // Validate inputs
       if (!reviewText.trim()) {
-        alert('Please write a review before submitting.');
+        toast.error('Please write a review before submitting.');
+        setSubmittingReview(false);
         return;
       }
       
       if (rating === 0) {
-        alert('Please provide a rating before submitting.');
+        toast.error('Please provide a rating before submitting.');
+        setSubmittingReview(false);
         return;
       }
       
       if (!email) {
-        alert(`No ${type} email found for this trip.`);
+        toast.error(`No ${type} email found for this trip.`);
+        setSubmittingReview(false);
         return;
       }
       
@@ -222,7 +274,7 @@ const CompletedTripDetailsPage = () => {
         updatedTripData._originalData = updatedOriginalData;
         setTripData(updatedTripData);
         
-        alert(`${type.charAt(0).toUpperCase() + type.slice(1)} review submitted successfully!`);
+        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} review submitted successfully!`);
       } else {
         let errorMessage = `Failed to submit ${type} review. `;
         if (!generalResponse.ok) {
@@ -235,7 +287,7 @@ const CompletedTripDetailsPage = () => {
       }
     } catch (err) {
       console.error(`Error submitting ${type} review:`, err);
-      alert(`Failed to submit ${type} review. Please try again.`);
+      toast.error(`Failed to submit ${type} review. Please try again.`);
     } finally {
       setSubmittingReview(false);
     }
@@ -313,22 +365,35 @@ const CompletedTripDetailsPage = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/trips')}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors mb-4"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to My Trips
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate('/trips')}
+              className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to My Trips
+            </button>
+            
+            {/* Currency Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Currency:</span>
+              <select
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm font-medium"
+              >
+                {Object.keys(currencyRates).map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currencySymbols[currency]} {currency}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="relative h-64 md:h-80">
-              <img
-                src={cityImage}
-                alt={originalData.baseCity}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40" />
+            <div className="relative h-64 md:h-80 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700">
+              <div className="absolute inset-0 bg-blue-900/10" />
               <div className="absolute bottom-6 left-6 text-white">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full font-semibold">
@@ -358,10 +423,10 @@ const CompletedTripDetailsPage = () => {
               <div>
                 <p className="text-sm text-gray-600">Total Paid</p>
                 <p className="text-2xl font-bold text-green-600">
-                  ${originalData.payedAmount?.toLocaleString() || '0'}
+                  {formatCurrency(originalData.payedAmount || 0)}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+              {getCurrencyIcon()}
             </div>
           </div>
 
@@ -433,7 +498,7 @@ const CompletedTripDetailsPage = () => {
                 {day.deduct_amount > 0 && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-yellow-800">
-                      <strong>Deduction:</strong> ${day.deduct_amount}
+                      <strong>Deduction:</strong> {formatCurrency(day.deduct_amount)}
                       {day.additional_note && (
                         <span className="block mt-1">{day.additional_note}</span>
                       )}
