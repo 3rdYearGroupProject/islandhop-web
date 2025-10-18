@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Card, { CardBody } from '../../components/Card';
 import GroupChat from '../../components/GroupChat';
 import Footer from '../../components/Footer';
+import { getUserData } from '../../utils/userStorage';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { 
   MapPinIcon,
   UserGroupIcon,
@@ -15,41 +18,163 @@ import {
 
 const OngoingPools = () => {
   const [isGroupChatOpen, setIsGroupChatOpen] = useState(false);
-  // Ongoing Pool Data
-  const ongoingPool = {
-    id: 'ongoing',
-    name: 'Highlands Adventure',
-    destinations: 'Kandy, Nuwara Eliya, Ella',
-    date: '2025-07-15',
-    status: 'Ongoing',
-    participants: '4/6',
-    owner: 'John Doe',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=320&q=80',
-    itinerary: ['Kandy', 'Nuwara Eliya', 'Ella'],
-    currentLocation: 'Nuwara Eliya',
-    notes: 'Please be ready at the pickup point in Kandy by 7:30 AM. Bring your hiking gear and water bottles. Contact the owner for any questions.',
-    nextDestination: 'Ella',
-    estimatedArrival: '3:30 PM'
+  const [ongoingPools, setOngoingPools] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedPool, setSelectedPool] = useState(null);
+
+  // Fetch ongoing pools on component mount
+  useEffect(() => {
+    const fetchOngoingPools = async () => {
+      try {
+        setIsLoading(true);
+        const userData = getUserData();
+        
+        if (!userData || !userData.uid) {
+          setError('User not authenticated');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5006/api/pools/user/${userData.uid}`);
+        
+        if (response.data.success) {
+          const trips = response.data.data.trips || [];
+          setOngoingPools(trips);
+          // Select the first pool by default
+          if (trips.length > 0) {
+            setSelectedPool(trips[0]);
+          }
+        } else {
+          setError('Failed to fetch ongoing pools');
+        }
+      } catch (err) {
+        console.error('Error fetching ongoing pools:', err);
+        setError(err.response?.data?.message || 'Failed to load ongoing pools');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOngoingPools();
+  }, []);
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  // Participants Data
-  const participants = [
-    { name: 'John Doe', role: 'Owner', img: 'https://randomuser.me/api/portraits/men/32.jpg', status: 'active' },
-    { name: 'Jane Smith', role: 'Traveler', img: 'https://randomuser.me/api/portraits/women/44.jpg', status: 'active' },
-    { name: 'Sam Perera', role: 'Traveler', img: 'https://randomuser.me/api/portraits/men/45.jpg', status: 'active' },
-    { name: 'Ayesha Fernando', role: 'Traveler', img: 'https://randomuser.me/api/portraits/women/46.jpg', status: 'active' }
-  ];
+  // Get current location from trip
+  const getCurrentLocation = (trip) => {
+    if (!trip?.tripDetails?.destinations || trip.tripDetails.destinations.length === 0) {
+      return 'Unknown';
+    }
+    
+    const today = new Date();
+    const startDate = new Date(trip.tripStartDate);
+    const endDate = new Date(trip.tripEndDate);
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+    
+    const destinations = trip.tripDetails.destinations;
+    
+    // Calculate which destination based on progress
+    if (daysPassed < 0) return destinations[0]; // Not started yet
+    if (daysPassed >= totalDays) return destinations[destinations.length - 1]; // Ended
+    
+    const progressRatio = daysPassed / totalDays;
+    const currentDestIndex = Math.min(
+      Math.floor(progressRatio * destinations.length),
+      destinations.length - 1
+    );
+    
+    return destinations[currentDestIndex];
+  };
 
-  // Live Updates Data
-  const liveUpdates = [
-    { time: '2:15 PM', message: 'Just arrived in Nuwara Eliya! Beautiful tea plantations everywhere 🌿', author: 'John Doe' },
-    { time: '1:45 PM', message: 'Taking a break at a local tea factory. Amazing views!', author: 'Jane Smith' },
-    { time: '12:30 PM', message: 'Lunch stop at a traditional Sri Lankan restaurant', author: 'Sam Perera' },
-    { time: '10:00 AM', message: 'Started our journey from Kandy. Weather is perfect!', author: 'John Doe' }
-  ];
+  // Get next destination
+  const getNextDestination = (trip) => {
+    if (!trip?.tripDetails?.destinations || trip.tripDetails.destinations.length === 0) {
+      return 'Unknown';
+    }
+    
+    const currentLoc = getCurrentLocation(trip);
+    const destinations = trip.tripDetails.destinations;
+    const currentIndex = destinations.indexOf(currentLoc);
+    
+    if (currentIndex === -1 || currentIndex === destinations.length - 1) {
+      return 'Final Destination';
+    }
+    
+    return destinations[currentIndex + 1];
+  };
+
+  // Get participants from trip members
+  const getParticipants = (trip) => {
+    if (!trip?.memberIds) return [];
+    
+    return trip.memberIds.map((memberId, index) => {
+      const memberPayment = trip.paymentInfo?.memberPayments?.find(p => p.userId === memberId);
+      const isCreator = memberId === trip.creatorUserId;
+      
+      return {
+        name: memberPayment?.userName || memberPayment?.userEmail || `Member ${index + 1}`,
+        role: isCreator ? 'Owner' : 'Traveler',
+        img: `https://ui-avatars.com/api/?name=${encodeURIComponent(memberPayment?.userName || `Member${index + 1}`)}&background=random`,
+        status: 'active',
+        email: memberPayment?.userEmail || '',
+        userId: memberId,
+        paymentStatus: memberPayment?.overallPaymentStatus || 'pending'
+      };
+    });
+  };
+
+  // Get destinations string
+  const getDestinationsString = (trip) => {
+    const destinations = trip?.tripDetails?.destinations || [];
+    return destinations.join(', ') || 'No destinations';
+  };
+
+  // Get itinerary array
+  const getItineraryArray = (trip) => {
+    const destinations = trip?.tripDetails?.destinations || [];
+    return destinations;
+  };
+
+  // Get pool image
+  const getPoolImage = (trip) => {
+    // Default image based on destination
+    const destinations = trip?.tripDetails?.destinations || [];
+    const firstDest = destinations[0]?.toLowerCase() || '';
+    
+    if (firstDest.includes('galle')) {
+      return 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&w=320&q=80';
+    } else if (firstDest.includes('kandy')) {
+      return 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=320&q=80';
+    } else if (firstDest.includes('colombo')) {
+      return 'https://images.unsplash.com/photo-1561536542-e6389d6d5e2f?auto=format&fit=crop&w=320&q=80';
+    }
+    
+    // Default Sri Lanka image
+    return 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=320&q=80';
+  };
+
+  // Get trip status badge
+  const getStatusInfo = (status) => {
+    const statusMap = {
+      'payment_pending': { label: 'Payment Pending', color: 'yellow' },
+      'confirmed': { label: 'Confirmed', color: 'green' },
+      'ongoing': { label: 'Ongoing', color: 'blue' },
+      'completed': { label: 'Completed', color: 'gray' },
+      'cancelled': { label: 'Cancelled', color: 'red' }
+    };
+    
+    return statusMap[status] || { label: status, color: 'gray' };
+  };
 
   // Prevent background scroll when GroupChat is open
-  React.useEffect(() => {
+  useEffect(() => {
     if (isGroupChatOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -60,8 +185,178 @@ const OngoingPools = () => {
     };
   }, [isGroupChatOpen]);
 
+  // If loading, show spinner
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  // If error, show error message
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardBody>
+            <div className="text-center">
+              <ExclamationCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Error Loading Pools
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">{error}</p>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  // If no pools, show empty state
+  if (ongoingPools.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardBody>
+            <div className="text-center">
+              <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                No Ongoing Pools
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                You don't have any ongoing pools at the moment.
+              </p>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  // Use selected pool or first pool
+  const currentTrip = selectedPool || ongoingPools[0];
+  const participants = getParticipants(currentTrip);
+  const currentLocation = getCurrentLocation(currentTrip);
+  const nextDestination = getNextDestination(currentTrip);
+  const statusInfo = getStatusInfo(currentTrip.status);
+  
+  // Create ongoingPool object from real data
+  const ongoingPool = {
+    id: currentTrip.confirmedTripId || currentTrip._id,
+    name: currentTrip.tripName || currentTrip.groupName,
+    destinations: getDestinationsString(currentTrip),
+    date: formatDate(currentTrip.tripStartDate),
+    endDate: formatDate(currentTrip.tripEndDate),
+    status: statusInfo.label,
+    statusColor: statusInfo.color,
+    participants: `${currentTrip.currentMemberCount || currentTrip.memberCount}/${currentTrip.maxMembers}`,
+    owner: currentTrip.creatorUserId,
+    image: getPoolImage(currentTrip),
+    itinerary: getItineraryArray(currentTrip),
+    currentLocation: currentLocation,
+    notes: `Vehicle: ${currentTrip.vehicleType || 'TBD'}. ${currentTrip.driverNeeded ? 'Driver included.' : ''} ${currentTrip.guideNeeded ? 'Guide included.' : ''}`,
+    nextDestination: nextDestination,
+    estimatedArrival: '3:30 PM', // You can calculate this based on itinerary data
+    vehicleType: currentTrip.vehicleType || 'Not specified',
+    totalAmount: currentTrip.paymentInfo?.totalAmount || 0,
+    pricePerPerson: currentTrip.pricePerPerson || currentTrip.paymentInfo?.pricePerPerson || 0,
+    currency: currentTrip.paymentInfo?.currency || 'LKR',
+    paymentStatus: currentTrip.userPaymentStatus || 'pending',
+    userPayment: currentTrip.userPayment
+  };
+  
+  // Generate live updates from trip actions
+  const liveUpdates = (currentTrip.actions || [])
+    .slice(0, 4) // Get last 4 actions
+    .reverse() // Most recent first
+    .map(action => {
+      const time = new Date(action.timestamp).toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit' 
+      });
+      
+      let message = '';
+      let author = 'System';
+      
+      switch (action.action) {
+        case 'TRIP_FULLY_CONFIRMED':
+          message = `🎉 Trip confirmed! All ${action.details?.confirmedMemberCount} members are ready!`;
+          break;
+        case 'UPFRONT_PAYMENT_COMPLETED':
+          message = `💰 Upfront payment of ${currentTrip.paymentInfo?.currency} ${action.details?.amount} completed`;
+          author = participants.find(p => p.userId === action.userId)?.name || 'Member';
+          break;
+        case 'PAYMENT_PROCESS_INITIATED':
+          message = `💳 Payment process started for ${action.details?.memberCount} members`;
+          break;
+        case 'CONFIRM_PARTICIPATION':
+          message = `✅ Confirmed participation in the trip`;
+          author = participants.find(p => p.userId === action.userId)?.name || 'Member';
+          break;
+        case 'INITIATE_CONFIRMATION':
+          message = `🚀 Trip confirmation initiated`;
+          author = participants.find(p => p.userId === action.userId)?.name || 'Trip Creator';
+          break;
+        default:
+          message = action.action.replace(/_/g, ' ').toLowerCase();
+      }
+      
+      return { time, message, author };
+    });
+
+  // If no updates, show default message
+  if (liveUpdates.length === 0) {
+    liveUpdates.push({ 
+      time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), 
+      message: 'Trip in progress...', 
+      author: participants[0]?.name || 'Pool Member' 
+    });
+  }
+
   return (
     <div className="space-y-8">
+      {/* Trip Selector - Show if multiple trips */}
+      {ongoingPools.length > 1 && (
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200">
+          <CardBody className="p-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              You have {ongoingPools.length} ongoing trips - Select one to view details:
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {ongoingPools.map((trip) => (
+                <button
+                  key={trip._id}
+                  onClick={() => setSelectedPool(trip)}
+                  className={`p-3 rounded-lg border-2 transition-all text-left ${
+                    selectedPool?._id === trip._id
+                      ? 'border-blue-500 bg-blue-100 dark:bg-blue-800/50'
+                      : 'border-gray-200 hover:border-blue-300 bg-white dark:bg-secondary-800'
+                  }`}
+                >
+                  <div className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {trip.tripName || trip.groupName}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    {formatDate(trip.tripStartDate)} • {trip.currentMemberCount}/{trip.maxMembers} members
+                  </div>
+                  <div className="mt-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      getStatusInfo(trip.status).color === 'green' ? 'bg-green-100 text-green-700' :
+                      getStatusInfo(trip.status).color === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
+                      getStatusInfo(trip.status).color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {getStatusInfo(trip.status).label}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Trip Summary - ConfirmedPools style, but with Ongoing details */}
       <div className="mb-12">
         <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl border border-green-400 hover:border-green-600 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex flex-col lg:flex-row h-full max-w-4xl mx-auto">
@@ -74,7 +369,13 @@ const OngoingPools = () => {
               style={{ borderTopLeftRadius: 'inherit', borderBottomLeftRadius: 'inherit' }}
             />
             <div className="absolute top-4 left-4">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                ongoingPool.statusColor === 'green' ? 'bg-green-100 text-green-800 border-green-200' :
+                ongoingPool.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                ongoingPool.statusColor === 'blue' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                ongoingPool.statusColor === 'red' ? 'bg-red-100 text-red-800 border-red-200' :
+                'bg-gray-100 text-gray-800 border-gray-200'
+              }`}>
                 {ongoingPool.status}
               </span>
             </div>
@@ -112,6 +413,20 @@ const OngoingPools = () => {
                 <div className="flex items-center text-gray-600">
                   <MapPinIcon className="h-4 w-4 mr-2 text-blue-500" />
                   <span className="text-sm">Current: {ongoingPool.currentLocation}</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <span className="text-sm">💰 Price: {ongoingPool.currency} {ongoingPool.pricePerPerson}/person</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <span className={`text-sm font-semibold ${
+                    ongoingPool.paymentStatus === 'paid' ? 'text-green-600' :
+                    ongoingPool.paymentStatus === 'partial' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    Payment: {ongoingPool.paymentStatus === 'paid' ? '✓ Paid' : 
+                              ongoingPool.paymentStatus === 'partial' ? '⚠ Partial' : 
+                              '✗ Pending'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -278,7 +593,7 @@ const OngoingPools = () => {
             </h3>
             <div className="space-y-3">
               {participants.map((participant) => (
-                <div key={participant.name} className="flex items-center gap-3 bg-white dark:bg-secondary-800 rounded-lg p-3 border border-gray-200 dark:border-secondary-600">
+                <div key={participant.userId} className="flex items-center gap-3 bg-white dark:bg-secondary-800 rounded-lg p-3 border border-gray-200 dark:border-secondary-600">
                   <div className="relative">
                     <img
                       src={participant.img}
@@ -293,6 +608,15 @@ const OngoingPools = () => {
                     </div>
                     <div className="text-sm text-green-600 font-medium">
                       {participant.role} • Online
+                    </div>
+                    <div className={`text-xs mt-0.5 ${
+                      participant.paymentStatus === 'paid' ? 'text-green-600' :
+                      participant.paymentStatus === 'partial' ? 'text-yellow-600' :
+                      'text-gray-500'
+                    }`}>
+                      {participant.paymentStatus === 'paid' ? '✓ Fully Paid' :
+                       participant.paymentStatus === 'partial' ? '⚠ Partial Payment' :
+                       '○ Payment Pending'}
                     </div>
                   </div>
                   <button className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm hover:bg-green-300 transition-colors border border-green-400">

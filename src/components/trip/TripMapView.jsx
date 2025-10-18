@@ -9,7 +9,8 @@ const TripMapView = ({
   selectedMarker, 
   setSelectedMarker,
   setShowTravelersModal,
-  setSelectedDestination 
+  setSelectedDestination,
+  setSelectedLocationData 
 }) => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -36,14 +37,15 @@ const TripMapView = ({
     window.open(url, '_blank');
   };
 
-  const handleImHere = (placeName) => {
-    console.log(`User marked as present at: ${placeName}`);
-    // Here you could implement check-in functionality
-    alert(`Checked in at ${placeName}!`);
+  const handleImHere = (placeName, location) => {
+    setSelectedDestination(placeName);
+    setSelectedLocationData(location);
+    setShowTravelersModal(true);
   };
 
-  const handleSeeWhoElseIsComing = (destinationName) => {
+  const handleSeeWhoElseIsComing = (destinationName, location) => {
     setSelectedDestination(destinationName);
+    setSelectedLocationData(location);
     setShowTravelersModal(true);
   };
 
@@ -146,19 +148,10 @@ const TripMapView = ({
                               </svg>
                               Navigate
                             </button>
-                            <button
-                              onClick={() => handleImHere(selectedMarker.name)}
-                              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-1"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              I'm Here
-                            </button>
+                            
                           </div>
                           <button
-                            onClick={() => handleSeeWhoElseIsComing(selectedMarker.name)}
+                            onClick={() => handleSeeWhoElseIsComing(selectedMarker.name, selectedMarker.location)}
                             className="w-full bg-blue-800 hover:bg-blue-900 text-white text-sm px-3 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                           >
                             <Users className="w-4 h-4" />
