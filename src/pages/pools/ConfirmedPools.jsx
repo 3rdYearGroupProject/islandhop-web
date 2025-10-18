@@ -37,6 +37,55 @@ const ConfirmedPools = ({ currentUser }) => {
   });
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
+  // Vehicle types state and lookup
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [vehicleTypeLookup, setVehicleTypeLookup] = useState({});
+  // Fetch vehicle types on mount
+  useEffect(() => {
+    const fetchVehicleTypes = async () => {
+      try {
+        const response = await axios.get('http://localhost:8091/api/v1/admin/vehicle-types');
+        if (response.data?.status === 'success' && Array.isArray(response.data.data)) {
+          setVehicleTypes(response.data.data);
+          // Create lookup: typeName -> id
+          const lookup = {};
+          response.data.data.forEach(vt => {
+            lookup[vt.typeName] = vt.id;
+          });
+          setVehicleTypeLookup(lookup);
+        } else {
+          setVehicleTypes([]);
+          setVehicleTypeLookup({});
+        }
+      } catch (err) {
+        console.error('Error fetching vehicle types:', err);
+        setVehicleTypes([]);
+        setVehicleTypeLookup({});
+      }
+    };
+    fetchVehicleTypes();
+  }, []);
+
+  // Auto-populate customer details from current user
+  useEffect(() => {
+    if (currentUser) {
+      const displayName = currentUser.displayName || '';
+      const nameParts = displayName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      setCustomerDetails({
+        firstName: firstName,
+        lastName: lastName,
+        email: currentUser.email || '',
+        phone: currentUser.phoneNumber || '',
+        address: '',
+        city: '',
+        country: 'Sri Lanka'
+      });
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (currentUser?.uid) {
       loadConfirmedTrips();
@@ -136,7 +185,7 @@ const ConfirmedPools = ({ currentUser }) => {
           return {
             ...trip,
             // Ensure consistent field names
-            confirmedTripId: trip.confirmedTripId || trip._id,
+            confirmedTripId: trip.confirmedTripId,
             tripStartDate: trip.tripStartDate,
             tripEndDate: trip.tripEndDate,
             // Add calculated fields for UI
@@ -363,27 +412,144 @@ const ConfirmedPools = ({ currentUser }) => {
 
   const completePayment = async (orderId, tripId) => {
     try {
-      console.log('💳 Completing payment for confirmed trip ID:', tripId, 'Order:', orderId);
+      console.log('💳 Completing payment for trip ID:', tripId, 'Order:', orderId);
+      console.log('💳 Current trip data:', currentTrip);
       
-      // Use the correct endpoint for completing pool trip payments
-      const response = await axios.post(
-        `http://localhost:8074/api/v1/pooling-confirm/${tripId}/complete-payment`,
-        {
-          userId: currentUser.uid,
-          orderId: orderId
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
+      // Try with the provided tripId first
+      let response;
+      try {
+        response = await axios.post(
+          `http://localhost:8074/api/v1/pooling-confirm/${tripId}/complete-payment`,
+          {
+            userId: currentUser.uid,
+            orderId: orderId
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
           }
-        }
-      );
+        );
+      } catch (firstError) {
+        console.log('💳 First attempt failed with tripId, trying with confirmedTripId...');
+        // If it fails, try with confirmedTripId as fallback
+        response = await axios.post(
+          `http://localhost:8074/api/v1/pooling-confirm/${currentTrip.confirmedTripId}/complete-payment`,
+          {
+            userId: currentUser.uid,
+            orderId: orderId
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      }
 
       console.log('💳 Payment completion response:', response.data);
       
       if (response.data.status === 'success' || response.status === 200) {
         // Refresh the confirmed trips to update payment status
         await loadConfirmedTrips();
+        
+        // Check if all participants have completed their payments
+        try {
+          console.log('🔍 Checking if all participants have paid...');
+          
+          // Fetch updated trip data to check payment status
+          const updatedTripsResponse = await poolsApi.getUserConfirmedTrips(currentUser.uid, {
+            status: 'payment_pending,confirmed,completed',
+            page: 1,
+            limit: 50
+          });
+          
+          if (updatedTripsResponse.success && updatedTripsResponse.data.trips) {
+            const updatedTrip = updatedTripsResponse.data.trips.find(
+              t => t.tripId === currentTrip.tripId || t.confirmedTripId === currentTrip.confirmedTripId
+            );
+            
+            if (updatedTrip) {
+              console.log('📊 Updated trip payment info:', updatedTrip.paymentInfo);
+              
+              // Check if all members have paid
+              const allMemberPayments = updatedTrip.paymentInfo?.memberPayments || [];
+              const totalMembers = allMemberPayments.length;
+              
+              let allPaid = true;
+              let paidCount = 0;
+              
+              for (const payment of allMemberPayments) {
+                let memberPaid = false;
+                
+                if (payment.upfrontPayment && payment.finalPayment) {
+                  // Phased payment: check if upfront is paid (for now we only check upfront)
+                  memberPaid = payment.upfrontPayment.status === 'paid' || payment.upfrontPayment.status === 'completed';
+                } else {
+                  // Single payment
+                  memberPaid = payment.status === 'paid' || payment.status === 'completed';
+                }
+                
+                if (memberPaid) {
+                  paidCount++;
+                } else {
+                  allPaid = false;
+                }
+              }
+              
+              console.log(`💰 Payment status: ${paidCount}/${totalMembers} members paid`);
+              
+              // If all members paid AND trip is at full capacity, activate the trip
+              if (allPaid && totalMembers === updatedTrip.maxMembers) {
+                console.log('✅ All participants have paid! Activating trip...');
+
+                // Prepare activation payload
+                const vehicleTypeString = updatedTrip.vehicleType || updatedTrip.tripDetails?.vehicleType;
+                const preferredVehicleTypeId = vehicleTypeLookup[vehicleTypeString] || null;
+                const activationPayload = {
+                  userId: updatedTrip.initiatedTripCreatorUserId,
+                  tripId: updatedTrip.tripId,
+                  preferredVehicleTypeId,
+                  setGuide: updatedTrip.guideNeeded,
+                  setDriver: updatedTrip.driverNeeded
+                };
+                console.log('🚗 Activation payload:', activationPayload);
+
+                try {
+                  const activateResponse = await axios.post(
+                    'http://localhost:5006/api/new_activate_trip',
+                    activationPayload,
+                    {
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      timeout: 10000
+                    }
+                  );
+
+                  console.log('🎉 Trip activation response:', activateResponse.data);
+
+                  if (activateResponse.data) {
+                    console.log('🎉 Trip activated successfully!');
+                    alert('Payment completed! All participants have paid. Your trip is now fully activated! 🎉');
+                  }
+                } catch (activateError) {
+                  console.error('❌ Failed to activate trip:', activateError);
+                  // Don't fail the payment if activation fails
+                  alert('Payment completed successfully! Trip activation will be processed shortly.');
+                }
+              } else {
+                console.log(`⏳ Waiting for remaining payments (${paidCount}/${totalMembers} paid, max: ${updatedTrip.maxMembers})`);
+                alert('Payment completed successfully! Waiting for other participants to complete their payments.');
+              }
+            }
+          }
+        } catch (checkError) {
+          console.error('❌ Error checking payment status:', checkError);
+          // Continue with normal flow even if check fails
+          alert('Payment completed successfully! Your pool trip payment has been processed.');
+        }
+        
         setShowPaymentForm(false);
         setCustomerDetails({
           firstName: '',
@@ -394,9 +560,6 @@ const ConfirmedPools = ({ currentUser }) => {
           city: '',
           country: 'Sri Lanka'
         });
-        
-        // Show success message
-        alert('Payment completed successfully! Your pool trip payment has been processed.');
         
       } else {
         throw new Error(response.data.message || 'Failed to complete payment');
@@ -464,11 +627,12 @@ const ConfirmedPools = ({ currentUser }) => {
         throw new Error('Invalid payment amount');
       }
       
-      console.log('💰 Processing payment for confirmed trip ID:', currentTrip.confirmedTripId);
+      console.log('💰 Processing payment for trip ID:', currentTrip.tripId);
+      console.log('💰 Confirmed trip MongoDB ID:', currentTrip.confirmedTripId);
       console.log('💳 Payment amount:', paymentAmount);
       
       // Generate short order ID (max 50 characters)
-      const shortTripId = currentTrip.confirmedTripId.substring(0, 8);
+      const shortTripId = currentTrip.tripId.substring(0, 8);
       const timestamp = Date.now().toString().slice(-8);
       const orderId = `POOL_${shortTripId}_${timestamp}`;
       
@@ -479,7 +643,7 @@ const ConfirmedPools = ({ currentUser }) => {
         amount: paymentAmount,
         currency: "LKR",
         orderId: orderId,
-        tripId: currentTrip.confirmedTripId, // Use confirmedTripId for pool payments
+        tripId: currentTrip.tripId, // Use original tripId from pooling service
         itemName: `Pool Trip Payment - ${currentTrip.tripName}`,
         customerDetails: {
           firstName: customerDetails.firstName,
@@ -506,8 +670,8 @@ const ConfirmedPools = ({ currentUser }) => {
         window.payhere.onCompleted = async function onCompleted(orderId) {
           console.log("💳 Pool payment completed. OrderID:" + orderId);
           
-          // Complete payment on backend using confirmedTripId
-          await completePayment(orderId, currentTrip.confirmedTripId);
+          // Complete payment on backend using original tripId from pooling service
+          await completePayment(orderId, currentTrip.tripId);
           
           setPaymentProcessing(false);
         };
@@ -1022,6 +1186,12 @@ const ConfirmedPools = ({ currentUser }) => {
             )}
 
             <div className="space-y-4">
+              {/* Info message */}
+              <div className="text-sm text-primary-600 bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
+                <p className="font-medium mb-1">Your Information</p>
+                <p className="text-xs">Your name and email have been automatically filled from your profile. You can update them if needed.</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-800 mb-1">First Name *</label>
@@ -1030,7 +1200,7 @@ const ConfirmedPools = ({ currentUser }) => {
                     name="firstName"
                     value={customerDetails.firstName}
                     onChange={handleCustomerDetailsChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50"
                     required
                   />
                 </div>
@@ -1041,7 +1211,7 @@ const ConfirmedPools = ({ currentUser }) => {
                     name="lastName"
                     value={customerDetails.lastName}
                     onChange={handleCustomerDetailsChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50"
                     required
                   />
                 </div>
@@ -1054,7 +1224,7 @@ const ConfirmedPools = ({ currentUser }) => {
                   name="email"
                   value={customerDetails.email}
                   onChange={handleCustomerDetailsChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50"
                   required
                 />
               </div>
@@ -1066,6 +1236,7 @@ const ConfirmedPools = ({ currentUser }) => {
                   name="phone"
                   value={customerDetails.phone}
                   onChange={handleCustomerDetailsChange}
+                  placeholder="e.g., +94771234567"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   required
                 />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { getUserUID } from '../utils/userStorage';
 
-const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting, tripId, tripData }) => {
+const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting, setSubmitting, tripId, tripData, isPoolPayment = false }) => {
   const [paymentError, setPaymentError] = useState(null);
   const [payHereLoaded, setPayHereLoaded] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
@@ -149,21 +149,26 @@ const PaymentForm = ({ totalAmount, onPaymentSuccess, onPaymentError, submitting
             // Create chat group after successful payment
             await createChatGroup(orderId);
             
-            // Activate the trip after successful payment
-            console.log("Activating trip with ID:", tripId);
-            const activateResponse = await axios.post('http://localhost:5006/api/new_activate_trip', {
-              tripId: tripId
-            }, {
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              timeout: 10000 // 10 second timeout
-            });
-            
-            console.log("Trip activation response:", activateResponse.data);
-            
-            if (activateResponse.data) {
-              console.log("Trip activated successfully");
+            // Only activate trip for individual bookings, not pool payments
+            // Pool payments are activated when ALL participants have paid
+            if (!isPoolPayment) {
+              console.log("Activating trip with ID:", tripId);
+              const activateResponse = await axios.post('http://localhost:5006/api/new_activate_trip', {
+                tripId: tripId
+              }, {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                timeout: 10000 // 10 second timeout
+              });
+              
+              console.log("Trip activation response:", activateResponse.data);
+              
+              if (activateResponse.data) {
+                console.log("Trip activated successfully");
+              }
+            } else {
+              console.log("Pool payment detected - skipping individual trip activation. Activation will occur when all participants have paid.");
             }
             
           } catch (error) {
