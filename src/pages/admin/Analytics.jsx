@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { auth } from "../../firebase";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,6 +26,7 @@ import {
   UserIcon,
   BuildingOfficeIcon,
   SparklesIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 
 ChartJS.register(
@@ -119,9 +122,9 @@ const Analytics = () => {
       monthlyBreakdown.forEach((monthData) => {
         const monthIndex = monthData.month - 1; // Convert to 0-based index
         if (monthIndex >= 0 && monthIndex < 12) {
-          processedMonthlyData.bookings[monthIndex] =
-            monthData.totalTrips || 0;
-          processedMonthlyData.users[monthIndex] = userCountResponse.data.data.totalUsers || 0;
+          processedMonthlyData.bookings[monthIndex] = monthData.totalTrips || 0;
+          processedMonthlyData.users[monthIndex] =
+            userCountResponse.data.data.totalUsers || 0;
           processedMonthlyData.revenue[monthIndex] =
             monthData.totalRevenue || 0;
           processedMonthlyData.conversion[monthIndex] =
@@ -133,8 +136,7 @@ const Analytics = () => {
       setApiData({
         totalUsers:
           userCountResponse.data.data.totalUsers || userCountResponse.data || 0,
-        totalBookings:
-          revenueResponse.data.data.yearlyTotal.totalTrips || 0,
+        totalBookings: revenueResponse.data.data.yearlyTotal.totalTrips || 0,
         totalRevenue: revenueResponse.data.data.yearlyTotal.totalRevenue || 0,
         conversionRate:
           revenueResponse.data.data.yearlyTotal.conversionRate || 0,
@@ -203,7 +205,7 @@ const Analytics = () => {
       bgColor: "rgba(16, 185, 129, 0.1)",
     },
     revenue: {
-      label: "Revenue ($)",
+      label: "Revenue (LKR)",
       color: "#f59e0b",
       bgColor: "rgba(245, 158, 11, 0.1)",
     },
@@ -338,7 +340,6 @@ const Analytics = () => {
         ? "Loading..."
         : apiData.totalBookings ||
           currentData.bookings[currentData.bookings.length - 1],
-      change: "+12.5%",
       changeType: "positive",
       icon: ChartBarIcon,
       color: "primary",
@@ -348,7 +349,6 @@ const Analytics = () => {
       value: loading
         ? "Loading..."
         : apiData.totalUsers || currentData.users[currentData.users.length - 1],
-      change: "+8.3%",
       changeType: "positive",
       icon: UsersIcon,
       color: "primary",
@@ -358,11 +358,10 @@ const Analytics = () => {
       value: loading
         ? "Loading..."
         : apiData.totalRevenue
-        ? `$${(apiData.totalRevenue / 1000).toFixed(1)}k`
+        ? `RS. ${(apiData.totalRevenue / 1000).toFixed(1)}k`
         : `$${(
             currentData.revenue[currentData.revenue.length - 1] / 1000
           ).toFixed(1)}k`,
-      change: "+15.2%",
       changeType: "positive",
       icon: CurrencyDollarIcon,
       color: "primary",
@@ -374,7 +373,6 @@ const Analytics = () => {
         : apiData.conversionRate
         ? `${apiData.conversionRate}%`
         : `${currentData.conversion[currentData.conversion.length - 1]}%`,
-      change: "+2.1%",
       changeType: "positive",
       icon: ArrowTrendingUpIcon,
       color: "info",
@@ -456,17 +454,300 @@ const Analytics = () => {
     return colors[color] || colors.primary;
   };
 
+  // Export analytics to PDF
+  const exportAnalyticsToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Add title
+      doc.setFontSize(22);
+      doc.setTextColor(40);
+      doc.text("IslandHop Analytics Report", pageWidth / 2, 22, {
+        align: "center",
+      });
+
+      // Add generation date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Generated on: ${new Date().toLocaleString()}`,
+        pageWidth / 2,
+        30,
+        { align: "center" }
+      );
+
+      // Add key metrics summary
+      doc.setFontSize(14);
+      doc.setTextColor(40);
+      doc.text("Key Metrics Summary", 14, 45);
+
+      // Create metrics table
+      const metricsData = [
+        ["Total Bookings", apiData.totalBookings.toLocaleString()],
+        ["Active Users", apiData.totalUsers.toLocaleString()],
+        [
+          "Total Revenue",
+          `LKR ${apiData.totalRevenue.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
+        ],
+        ["Conversion Rate", `${apiData.conversionRate}%`],
+      ];
+
+      autoTable(doc, {
+        startY: 50,
+        head: [["Metric", "Value"]],
+        body: metricsData,
+        theme: "grid",
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 11,
+        },
+        bodyStyles: {
+          fontSize: 10,
+        },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 100, halign: "right", fontStyle: "bold" },
+        },
+        margin: { left: 14 },
+      });
+
+      // Monthly data section
+      let currentY = doc.lastAutoTable.finalY + 15;
+      doc.setFontSize(14);
+      doc.setTextColor(40);
+      doc.text("Monthly Performance Data", 14, currentY);
+
+      // Prepare monthly data for table
+      const monthlyTableData = months.map((month, index) => [
+        month,
+        currentChartData.bookings[index]?.toLocaleString() || "0",
+        currentChartData.users[index]?.toLocaleString() || "0",
+        currentChartData.revenue[index]?.toLocaleString() || "0",
+        currentChartData.conversion[index]?.toFixed(2) || "0.00",
+      ]);
+
+      autoTable(doc, {
+        startY: currentY + 5,
+        head: [["Month", "Bookings", "Users", "Revenue", "Conv. Rate (%)"]],
+        body: monthlyTableData,
+        theme: "striped",
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 9,
+        },
+        bodyStyles: {
+          fontSize: 8,
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 30, halign: "right" },
+          2: { cellWidth: 30, halign: "right" },
+          3: { cellWidth: 40, halign: "right" },
+          4: { cellWidth: 35, halign: "right" },
+        },
+        margin: { left: 14 },
+      });
+
+      // Add new page for visual chart representation
+      doc.addPage();
+
+      // Chart visualization section
+      doc.setFontSize(16);
+      doc.setTextColor(40);
+      doc.text("Revenue Trend Chart", pageWidth / 2, 20, { align: "center" });
+
+      // Draw simple line chart for revenue
+      const chartStartY = 35;
+      const chartHeight = 80;
+      const chartWidth = pageWidth - 40;
+      const chartStartX = 20;
+
+      // Draw chart border
+      doc.setDrawColor(200);
+      doc.rect(chartStartX, chartStartY, chartWidth, chartHeight);
+
+      // Calculate max value for scaling
+      const maxRevenue = Math.max(...currentChartData.revenue);
+      const maxBookings = Math.max(...currentChartData.bookings);
+      const maxUsers = Math.max(...currentChartData.users);
+
+      // Draw revenue line (blue)
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(1.5);
+      for (let i = 0; i < months.length - 1; i++) {
+        const x1 = chartStartX + (chartWidth / (months.length - 1)) * i;
+        const y1 =
+          chartStartY +
+          chartHeight -
+          (currentChartData.revenue[i] / maxRevenue) * chartHeight;
+        const x2 = chartStartX + (chartWidth / (months.length - 1)) * (i + 1);
+        const y2 =
+          chartStartY +
+          chartHeight -
+          (currentChartData.revenue[i + 1] / maxRevenue) * chartHeight;
+        doc.line(x1, y1, x2, y2);
+      }
+
+      // Add month labels for revenue chart (X-axis)
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      for (let i = 0; i < months.length; i++) {
+        const x = chartStartX + (chartWidth / (months.length - 1)) * i;
+        doc.text(months[i], x - 3, chartStartY + chartHeight + 5, {
+          angle: 0,
+        });
+      }
+
+      // Add Y-axis label for revenue chart
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Revenue", 5, chartStartY + chartHeight / 2, {
+        angle: 90,
+      });
+
+      // Add max and min values on Y-axis
+      doc.setFontSize(7);
+      doc.text(maxRevenue.toLocaleString(), chartStartX - 2, chartStartY + 3, {
+        align: "right",
+      });
+      doc.text("0", chartStartX - 2, chartStartY + chartHeight + 3, {
+        align: "right",
+      });
+
+      // Add chart legend
+      doc.setFontSize(9);
+      doc.setFillColor(59, 130, 246);
+      doc.rect(chartStartX, chartStartY + chartHeight + 10, 10, 4, "F");
+      doc.setTextColor(40);
+      doc.text("Revenue", chartStartX + 12, chartStartY + chartHeight + 13);
+
+      // Bookings chart
+      doc.setFontSize(16);
+      doc.setTextColor(40);
+      doc.text(
+        "Bookings Trend Chart",
+        pageWidth / 2,
+        chartStartY + chartHeight + 35,
+        {
+          align: "center",
+        }
+      );
+
+      const chartStartY2 = chartStartY + chartHeight + 45;
+
+      // Draw chart border
+      doc.setDrawColor(200);
+      doc.rect(chartStartX, chartStartY2, chartWidth, chartHeight);
+
+      // Draw bookings line (green)
+      doc.setDrawColor(16, 185, 129);
+      doc.setLineWidth(1.5);
+      for (let i = 0; i < months.length - 1; i++) {
+        const x1 = chartStartX + (chartWidth / (months.length - 1)) * i;
+        const y1 =
+          chartStartY2 +
+          chartHeight -
+          (currentChartData.bookings[i] / maxBookings) * chartHeight;
+        const x2 = chartStartX + (chartWidth / (months.length - 1)) * (i + 1);
+        const y2 =
+          chartStartY2 +
+          chartHeight -
+          (currentChartData.bookings[i + 1] / maxBookings) * chartHeight;
+        doc.line(x1, y1, x2, y2);
+      }
+
+      // Add month labels for bookings chart (X-axis)
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      for (let i = 0; i < months.length; i++) {
+        const x = chartStartX + (chartWidth / (months.length - 1)) * i;
+        doc.text(months[i], x - 3, chartStartY2 + chartHeight + 5, {
+          angle: 0,
+        });
+      }
+
+      // Add Y-axis label for bookings chart
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Bookings", 5, chartStartY2 + chartHeight / 2, {
+        angle: 90,
+      });
+
+      // Add max and min values on Y-axis
+      doc.setFontSize(7);
+      doc.text(
+        maxBookings.toLocaleString(),
+        chartStartX - 2,
+        chartStartY2 + 3,
+        { align: "right" }
+      );
+      doc.text("0", chartStartX - 2, chartStartY2 + chartHeight + 3, {
+        align: "right",
+      });
+
+      // Add legend
+      doc.setFillColor(16, 185, 129);
+      doc.rect(chartStartX, chartStartY2 + chartHeight + 10, 10, 4, "F");
+      doc.setTextColor(40);
+      doc.text("Bookings", chartStartX + 12, chartStartY2 + chartHeight + 13);
+
+      // Add footer to all pages
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`IslandHop Analytics - Confidential`, 14, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 30, pageHeight - 10);
+      }
+
+      // Save the PDF
+      doc.save(
+        `IslandHop_Analytics_Report_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`
+      );
+
+      console.log("PDF export successful");
+    } catch (error) {
+      console.error("Error exporting analytics to PDF:", error);
+      alert("Failed to export PDF. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Analytics Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Monitor platform performance and user engagement
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Analytics Dashboard
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Monitor platform performance and user engagement
+              </p>
+            </div>
+            <button
+              onClick={exportAnalyticsToPDF}
+              disabled={loading || !apiData.monthlyData}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              title="Export analytics report as PDF"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              Export Report
+            </button>
+          </div>
         </div>
 
         {/* Bento Grid Layout */}
@@ -485,7 +766,7 @@ const Analytics = () => {
 
               {/* User Selector */}
               <div className="flex space-x-2">
-                {["user1", "user2", "user3"].map((user) => (
+                {["user1"].map((user) => (
                   <button
                     key={user}
                     onClick={() => setSelectedUser(user)}
@@ -495,11 +776,7 @@ const Analytics = () => {
                         : "bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-secondary-600"
                     }`}
                   >
-                    {user === "user1"
-                      ? "Overall"
-                      : user === "user2"
-                      ? "Travelers"
-                      : "Providers"}
+                    {user === "user1" ? "Overall" : user === "user2"}
                   </button>
                 ))}
               </div>
