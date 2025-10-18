@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { auth } from "../../firebase";
 import {
   CogIcon,
   ShieldCheckIcon,
@@ -16,15 +18,21 @@ import {
   CpuChipIcon,
   CloudIcon,
   RocketLaunchIcon,
+  CircleStackIcon,
+  CommandLineIcon,
 } from "@heroicons/react/24/outline";
 
 const SystemSettings = () => {
   const [servers, setServers] = useState([]);
-  const [deployments, setDeployments] = useState([]);
+  const [microservices, setMicroservices] = useState([]);
+  const [microservicesSummary, setMicroservicesSummary] = useState({});
   const [infrastructureMetrics, setInfrastructureMetrics] = useState({});
   const [databaseStatus, setDatabaseStatus] = useState({});
   const [hostingLoading, setHostingLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(true);
   const [activeHostingTab, setActiveHostingTab] = useState("servers");
+  const [authToken, setAuthToken] = useState("");
+  const [error, setError] = useState(null);
   const [settings, setSettings] = useState({
     systemName: "IslandHop Platform",
     darkMode: false,
@@ -147,42 +155,7 @@ const SystemSettings = () => {
     );
   };
 
-  // Mock deployment data
-  const mockDeployments = [
-    {
-      id: 1,
-      name: "Frontend v2.1.4",
-      status: "completed",
-      startTime: "2024-06-25T14:30:00Z",
-      endTime: "2024-06-25T14:35:00Z",
-      duration: "5 minutes",
-      branch: "main",
-      commit: "a1b2c3d",
-      environment: "production",
-    },
-    {
-      id: 2,
-      name: "API v2.1.3",
-      status: "progress",
-      startTime: "2024-06-25T15:00:00Z",
-      endTime: null,
-      duration: "2 minutes",
-      branch: "release",
-      commit: "e4f5g6h",
-      environment: "production",
-    },
-    {
-      id: 3,
-      name: "Database Migration",
-      status: "failed",
-      startTime: "2024-06-25T13:15:00Z",
-      endTime: "2024-06-25T13:20:00Z",
-      duration: "5 minutes",
-      branch: "main",
-      commit: "i7j8k9l",
-      environment: "staging",
-    },
-  ];
+  // Mock deployment data - REMOVED
 
   // Hosting helper functions
   const getStatusColor = (status) => {
@@ -223,132 +196,202 @@ const SystemSettings = () => {
     return "bg-success-500";
   };
 
-  // Fetch database status
+  // Get Firebase auth token
+  useEffect(() => {
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setError("Failed to get authentication token");
+          setAuthToken("");
+        }
+      } else {
+        setError("No authenticated user found");
+        setHostingLoading(false);
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch database status using axios
   useEffect(() => {
     const fetchDatabaseStatus = async () => {
+      if (!authToken) return;
+
       try {
-        const response = await fetch(
-          "http://localhost:8090/api/v1/admin/status"
+        const response = await axios.get(
+          "http://localhost:8070/api/admin/database/status",
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
-        if (response.ok) {
-          const statusData = await response.json();
-          setDatabaseStatus(statusData);
+
+        console.log("Database status response:", response.data);
+
+        if (response.data && response.data.success && response.data.data) {
+          const dbData = response.data.data.databases;
+
+          // Transform the API response to match our expected format
+          const transformedStatus = {
+            overall: response.data.data.overall,
+            timestamp: response.data.data.timestamp,
+            mongodb: {
+              status: dbData.mongodb?.status || "unhealthy",
+              type: dbData.mongodb?.type || "MongoDB",
+              message: dbData.mongodb?.message || "No data",
+              details: dbData.mongodb?.details || {},
+            },
+            supabase: {
+              status: dbData.supabase?.status || "unhealthy",
+              type: dbData.supabase?.type || "Supabase/PostgreSQL",
+              message: dbData.supabase?.message || "No data",
+              details: dbData.supabase?.details || {},
+            },
+          };
+
+          setDatabaseStatus(transformedStatus);
+          setError(null);
         } else {
-          console.error("Failed to fetch database status");
+          console.error("Invalid response format");
+          setError("Invalid database status response");
           setDatabaseStatus({
-            redis: "DOWN",
-            firebase: "DOWN",
-            mongodb: "DOWN",
+            overall: "unhealthy",
+            mongodb: { status: "unhealthy" },
+            supabase: { status: "unhealthy" },
           });
         }
       } catch (error) {
         console.error("Error fetching database status:", error);
+        setError("Failed to fetch database status");
         setDatabaseStatus({
-          redis: "DOWN",
-          firebase: "DOWN",
-          mongodb: "DOWN",
+          overall: "unhealthy",
+          mongodb: { status: "unhealthy" },
+          supabase: { status: "unhealthy" },
         });
       }
     };
 
     fetchDatabaseStatus();
-  }, []);
+  }, [authToken]);
+
+  // Fetch microservices health status
+  useEffect(() => {
+    const fetchMicroservicesHealth = async () => {
+      if (!authToken) {
+        console.log("No auth token available for microservices fetch");
+        return;
+      }
+
+      try {
+        setServicesLoading(true);
+        console.log("Fetching microservices health...");
+
+        const response = await axios.get(
+          "http://localhost:8070/api/admin/microservices/health",
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Microservices health response:", response);
+        console.log("Response data:", response.data);
+
+        if (response.data && response.data.success && response.data.data) {
+          console.log("Services:", response.data.data.services);
+          console.log("Summary:", response.data.data.summary);
+
+          setMicroservices(response.data.data.services || []);
+          setMicroservicesSummary({
+            overall: response.data.data.overall,
+            total: response.data.data.summary?.total || 0,
+            healthy: response.data.data.summary?.healthy || 0,
+            unhealthy: response.data.data.summary?.unhealthy || 0,
+            unreachable: response.data.data.summary?.unreachable || 0,
+            healthPercentage:
+              response.data.data.summary?.healthPercentage || "0",
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error fetching microservices health:");
+        console.error("Error message:", error.message);
+        console.error("Error response:", error.response);
+        console.error("Error status:", error.response?.status);
+        console.error("Error data:", error.response?.data);
+        setMicroservices([]);
+        setError(
+          error.response?.data?.message ||
+            error.message ||
+            "Failed to fetch microservices"
+        );
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchMicroservicesHealth();
+  }, [authToken]);
 
   // Update servers and other data after database status is fetched
   useEffect(() => {
     if (Object.keys(databaseStatus).length > 0) {
       const updatedServers = [
         {
-          id: 1,
-          name: "Web Server 1",
-          type: "web",
-          status: "running",
-          ip: "192.168.1.10",
-          location: "US East",
-          cpu: 45,
-          memory: 68,
-          disk: 32,
-          uptime: "15 days, 4 hours",
-          lastRestart: "2024-06-10T08:30:00Z",
-          version: "v2.1.3",
-        },
-        {
           id: 2,
           name: "Database Server (MongoDB)",
           type: "database",
-          status: databaseStatus.mongodb === "UP" ? "running" : "stopped",
-          ip: "192.168.1.20",
-          location: "US East",
-          cpu: databaseStatus.mongodb === "UP" ? 78 : 0,
-          memory: databaseStatus.mongodb === "UP" ? 85 : 0,
+          status:
+            databaseStatus.mongodb?.status === "healthy"
+              ? "running"
+              : "stopped",
+          ip: databaseStatus.mongodb?.details?.host || "N/A",
+          location: "Cloud",
+          cpu: databaseStatus.mongodb?.status === "healthy" ? 78 : 0,
+          memory: databaseStatus.mongodb?.status === "healthy" ? 85 : 0,
           disk: 56,
           uptime:
-            databaseStatus.mongodb === "UP" ? "23 days, 12 hours" : "0 minutes",
-          lastRestart: "2024-06-02T14:15:00Z",
-          version: "MongoDB",
+            databaseStatus.mongodb?.status === "healthy"
+              ? "Cloud Service"
+              : "0 minutes",
+          lastRestart: "N/A",
+          version: databaseStatus.mongodb?.type || "MongoDB",
+          responseTime: databaseStatus.mongodb?.details?.responseTime || "N/A",
+          message: databaseStatus.mongodb?.message || "No data",
         },
         {
           id: 3,
-          name: "API Server 1",
-          type: "api",
-          status: "warning",
-          ip: "192.168.1.30",
-          location: "US West",
-          cpu: 92,
-          memory: 76,
-          disk: 41,
-          uptime: "8 days, 2 hours",
-          lastRestart: "2024-06-17T10:20:00Z",
-          version: "v2.1.3",
-        },
-        {
-          id: 4,
-          name: "Load Balancer",
-          type: "loadbalancer",
-          status: "running",
-          ip: "192.168.1.5",
-          location: "US Central",
-          cpu: 23,
-          memory: 34,
-          disk: 15,
-          uptime: "45 days, 8 hours",
-          lastRestart: "2024-05-11T16:45:00Z",
-          version: "Nginx 1.20",
-        },
-        {
-          id: 5,
-          name: "Redis Cache Server",
-          type: "cache",
-          status: databaseStatus.redis === "UP" ? "running" : "stopped",
-          ip: "192.168.1.40",
-          location: "US East",
-          cpu: databaseStatus.redis === "UP" ? 34 : 0,
-          memory: databaseStatus.redis === "UP" ? 45 : 0,
-          disk: 28,
+          name: "Database Server (Supabase)",
+          type: "database",
+          status:
+            databaseStatus.supabase?.status === "healthy"
+              ? "running"
+              : "stopped",
+          ip: databaseStatus.supabase?.details?.url || "N/A",
+          location: "Cloud",
+          cpu: databaseStatus.supabase?.status === "healthy" ? 65 : 0,
+          memory: databaseStatus.supabase?.status === "healthy" ? 72 : 0,
+          disk: 48,
           uptime:
-            databaseStatus.redis === "UP" ? "12 days, 6 hours" : "0 minutes",
-          lastRestart: "2024-06-25T09:00:00Z",
-          version: "Redis",
-        },
-        {
-          id: 6,
-          name: "Firebase Server",
-          type: "firebase",
-          status: databaseStatus.firebase === "UP" ? "running" : "stopped",
-          ip: "Cloud Service",
-          location: "Global",
-          cpu: databaseStatus.firebase === "UP" ? 25 : 0,
-          memory: databaseStatus.firebase === "UP" ? 30 : 0,
-          disk: databaseStatus.firebase === "UP" ? 15 : 0,
-          uptime:
-            databaseStatus.firebase === "UP" ? "Cloud Service" : "0 minutes",
+            databaseStatus.supabase?.status === "healthy"
+              ? "Cloud Service"
+              : "0 minutes",
           lastRestart: "N/A",
-          version: "Firebase",
+          version: databaseStatus.supabase?.type || "Supabase/PostgreSQL",
+          responseTime: databaseStatus.supabase?.details?.responseTime || "N/A",
+          message: databaseStatus.supabase?.message || "No data",
         },
       ];
 
       setServers(updatedServers);
-      setDeployments(mockDeployments);
       setInfrastructureMetrics({
         totalServers: updatedServers.length,
         runningServers: updatedServers.filter((s) => s.status === "running")
@@ -361,6 +404,7 @@ const SystemSettings = () => {
           updatedServers.reduce((acc, s) => acc + s.memory, 0) /
             updatedServers.length
         ),
+        overallHealth: databaseStatus.overall || "unknown",
       });
       setHostingLoading(false);
     }
@@ -372,15 +416,103 @@ const SystemSettings = () => {
   };
 
   const refreshStatus = async () => {
+    if (!authToken) {
+      console.error("No auth token available");
+      return;
+    }
+
     setHostingLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch("http://localhost:8090/api/v1/admin/status");
-      if (response.ok) {
-        const statusData = await response.json();
-        setDatabaseStatus(statusData);
+      const response = await axios.get(
+        "http://localhost:8070/api/admin/database/status",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.success && response.data.data) {
+        const dbData = response.data.data.databases;
+
+        const transformedStatus = {
+          overall: response.data.data.overall,
+          timestamp: response.data.data.timestamp,
+          mongodb: {
+            status: dbData.mongodb?.status || "unhealthy",
+            type: dbData.mongodb?.type || "MongoDB",
+            message: dbData.mongodb?.message || "No data",
+            details: dbData.mongodb?.details || {},
+          },
+          supabase: {
+            status: dbData.supabase?.status || "unhealthy",
+            type: dbData.supabase?.type || "Supabase/PostgreSQL",
+            message: dbData.supabase?.message || "No data",
+            details: dbData.supabase?.details || {},
+          },
+        };
+
+        setDatabaseStatus(transformedStatus);
       }
     } catch (error) {
       console.error("Error refreshing status:", error);
+      setError("Failed to refresh database status");
+    } finally {
+      setHostingLoading(false);
+    }
+  };
+
+  const refreshMicroservicesStatus = async () => {
+    if (!authToken) {
+      console.error("No auth token available for refresh");
+      return;
+    }
+
+    try {
+      setServicesLoading(true);
+      setError(null);
+      console.log("Refreshing microservices status...");
+
+      const response = await axios.get(
+        "http://localhost:8070/api/admin/microservices/health",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Microservices refresh response:", response);
+      console.log("Response data:", response.data);
+
+      if (response.data && response.data.success && response.data.data) {
+        setMicroservices(response.data.data.services || []);
+        setMicroservicesSummary({
+          overall: response.data.data.overall,
+          total: response.data.data.summary?.total || 0,
+          healthy: response.data.data.summary?.healthy || 0,
+          unhealthy: response.data.data.summary?.unhealthy || 0,
+          unreachable: response.data.data.summary?.unreachable || 0,
+          healthPercentage: response.data.data.summary?.healthPercentage || "0",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error refreshing microservices:");
+      console.error("Error message:", error.message);
+      console.error("Error response:", error.response);
+      console.error("Error status:", error.response?.status);
+      console.error("Error data:", error.response?.data);
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to refresh microservices"
+      );
+    } finally {
+      setServicesLoading(false);
     }
   };
 
@@ -435,335 +567,12 @@ const SystemSettings = () => {
             System Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Configure platform preferences and security settings
+            Monitor and manage server infrastructure and deployments
           </p>
         </div>
 
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-          {/* AI Model Status - 3 columns wide */}
-          <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                <ChartBarIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                AI Model Status
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-              {Object.entries(modelStatus).map(([key, status]) => (
-                <div
-                  key={key}
-                  className="bg-gray-50 dark:bg-secondary-900 rounded-lg p-4"
-                >
-                  <h4 className="font-medium text-gray-900 dark:text-white capitalize mb-2">
-                    {key.replace(/([A-Z])/g, " $1").trim()} Model
-                  </h4>
-                  {getStatusBadge(status)}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* AI Features - 3 columns wide */}
-          <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                <WrenchScrewdriverIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                AI Features
-              </h2>
-            </div>
-            <div className="space-y-4">
-              {[
-                {
-                  key: "routeOptimization",
-                  label: "Route Optimization",
-                  description: "AI-powered route planning",
-                },
-                {
-                  key: "priceOptimization",
-                  label: "Price Optimization",
-                  description: "Dynamic pricing based on demand",
-                },
-                {
-                  key: "demandPrediction",
-                  label: "Demand Prediction",
-                  description: "Predict travel demand patterns",
-                },
-                {
-                  key: "smartMatching",
-                  label: "Smart Matching",
-                  description: "AI-powered user matching",
-                },
-                {
-                  key: "fraudDetection",
-                  label: "Fraud Detection",
-                  description: "AI-powered fraud prevention",
-                },
-                {
-                  key: "sentimentAnalysis",
-                  label: "Sentiment Analysis",
-                  description: "Analyze user sentiment",
-                },
-              ].map((feature) => (
-                <div
-                  key={feature.key}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-secondary-900 rounded-lg"
-                >
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {feature.label}
-                    </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {feature.description}
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings[feature.key]}
-                    onChange={() => handleToggle(feature.key)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* AI Configuration - 3 columns wide */}
-          <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                <CogIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                AI Configuration
-              </h2>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Recommendation Model
-                </label>
-                <select
-                  value={settings.recommendationModel}
-                  onChange={(e) =>
-                    handleSelectChange("recommendationModel", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="basic">Basic</option>
-                  <option value="standard">Standard</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Training Frequency
-                </label>
-                <select
-                  value={settings.trainingFrequency}
-                  onChange={(e) =>
-                    handleSelectChange("trainingFrequency", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="hourly">Hourly</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-
-              <SliderInput
-                label="Confidence Threshold"
-                value={Math.round(settings.confidenceThreshold * 10)}
-                min={1}
-                max={10}
-                onChange={(value) =>
-                  handleSliderChange("confidenceThreshold", value / 10)
-                }
-                description="AI model confidence threshold"
-              />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Debug Mode
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Enable AI debugging
-                  </p>
-                </div>
-                <ToggleSwitch
-                  enabled={settings.debugMode}
-                  onChange={() => handleToggle("debugMode")}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* AI Advanced Settings - 3 columns wide */}
-          <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-warning-100 dark:bg-warning-900/20 rounded-lg">
-                <ExclamationTriangleIcon className="h-6 w-6 text-warning-600 dark:text-warning-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Advanced AI Settings
-              </h2>
-            </div>
-            <div className="space-y-4">
-              <div className="p-4 bg-warning-50 dark:bg-warning-900/10 border border-warning-200 dark:border-warning-800 rounded-lg">
-                <h4 className="text-sm font-medium text-warning-800 dark:text-warning-300 mb-2">
-                  ⚠️ Advanced AI Settings
-                </h4>
-                <p className="text-xs text-warning-700 dark:text-warning-400">
-                  These settings affect AI model performance. Change with
-                  caution.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Learning Rate
-                  </label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={settings.learningRate}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "learningRate",
-                        parseFloat(e.target.value)
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Batch Size
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.batchSize}
-                    onChange={(e) =>
-                      handleInputChange("batchSize", parseInt(e.target.value))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Epochs
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.epochs}
-                    onChange={(e) =>
-                      handleInputChange("epochs", parseInt(e.target.value))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Security Settings - 2 columns wide */}
-          <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-primary-100 dark:bg-warning-900/20 rounded-lg">
-                <ShieldCheckIcon className="h-6 w-6 text-primary-600 dark:text-warning-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Security
-              </h2>
-            </div>
-
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Password Complexity
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Enforce strong passwords
-                  </p>
-                </div>
-                <ToggleSwitch
-                  enabled={settings.passwordComplexity}
-                  onChange={() => handleToggle("passwordComplexity")}
-                />
-              </div>
-
-              <SliderInput
-                label="Session Timeout (minutes)"
-                value={settings.sessionTimeout}
-                min={30}
-                max={480}
-                onChange={(value) =>
-                  handleSliderChange("sessionTimeout", value)
-                }
-                description="Auto-logout after inactivity"
-              />
-
-              <SliderInput
-                label="Max Login Attempts"
-                value={settings.loginAttempts}
-                min={3}
-                max={10}
-                onChange={(value) => handleSliderChange("loginAttempts", value)}
-                description="Before account lockout"
-              />
-            </div>
-          </div>
-
-          {/* Advanced Settings - 2 columns wide (bottom row) */}
-          <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-primary-100 dark:bg-danger-900/20 rounded-lg">
-                <ClockIcon className="h-6 w-6 text-primary-600 dark:text-danger-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Advanced
-              </h2>
-            </div>
-
-            <div className="space-y-6">
-              <div className="p-4 bg-warning-50 dark:bg-warning-900/10 border border-warning-200 dark:border-warning-800 rounded-lg">
-                <h4 className="text-sm font-medium text-warning-800 dark:text-warning-300 mb-2">
-                  ⚠️ Advanced Settings
-                </h4>
-                <p className="text-xs text-warning-700 dark:text-warning-400">
-                  These settings can affect system performance and security.
-                  Change with caution.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-600 transition-colors">
-                  Clear System Cache
-                </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-600 transition-colors">
-                  Rebuild Search Index
-                </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-600 transition-colors">
-                  Export System Logs
-                </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/10 rounded-lg border border-danger-200 dark:border-danger-800 transition-colors">
-                  Reset to Defaults
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Hosting & Infrastructure Section */}
-        <div className="mt-12">
+        <div>
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Hosting & Infrastructure
@@ -774,7 +583,23 @@ const SystemSettings = () => {
           </div>
 
           {/* Infrastructure Overview Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                Overall Health
+              </h4>
+              <div
+                className={`text-2xl font-bold ${
+                  infrastructureMetrics.overallHealth === "healthy"
+                    ? "text-success-600"
+                    : "text-danger-600"
+                }`}
+              >
+                {infrastructureMetrics.overallHealth === "healthy"
+                  ? "✓ Healthy"
+                  : "✗ Unhealthy"}
+              </div>
+            </div>
             <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
               <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 Total Servers
@@ -791,23 +616,16 @@ const SystemSettings = () => {
                 {infrastructureMetrics.runningServers || 0}
               </div>
             </div>
-            <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Avg CPU Usage
-              </h4>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {infrastructureMetrics.avgCpuUsage || 0}%
-              </div>
-            </div>
-            <div className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                Avg Memory Usage
-              </h4>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {infrastructureMetrics.avgMemoryUsage || 0}%
-              </div>
-            </div>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-danger-50 dark:bg-danger-900/10 border border-danger-200 dark:border-danger-800 rounded-lg">
+              <p className="text-danger-800 dark:text-danger-300 text-sm">
+                ⚠️ {error}
+              </p>
+            </div>
+          )}
 
           {/* Hosting Tab Navigation */}
           <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 mb-6">
@@ -836,7 +654,7 @@ const SystemSettings = () => {
                 >
                   <div className="flex items-center space-x-2">
                     <RocketLaunchIcon className="h-5 w-5" />
-                    <span>Deployments</span>
+                    <span>Microservices</span>
                   </div>
                 </button>
               </nav>
@@ -846,24 +664,23 @@ const SystemSettings = () => {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   {activeHostingTab === "servers"
                     ? "Server Management"
-                    : "Deployment History"}
+                    : "Microservices Health"}
                 </h3>
                 <div className="flex gap-3">
                   <button
-                    onClick={refreshStatus}
+                    onClick={
+                      activeHostingTab === "servers"
+                        ? refreshStatus
+                        : refreshMicroservicesStatus
+                    }
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-secondary-700 hover:bg-gray-200 dark:hover:bg-secondary-600 rounded-lg transition-colors"
                   >
                     Refresh Status
-                  </button>
-                  <button className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2">
-                    <RocketLaunchIcon className="h-4 w-4" />
-                    Deploy
                   </button>
                 </div>
               </div>
             </div>
           </div>
-
           {/* Hosting Tab Content */}
           {hostingLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -876,167 +693,403 @@ const SystemSettings = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {servers.map((server) => {
                     const StatusIcon = getStatusIcon(server.status);
+                    const isDatabaseServer = server.type === "database";
+                    const isMongoDb = server.name.includes("MongoDB");
+                    const isSupabase = server.name.includes("Supabase");
+
                     return (
                       <div
                         key={server.id}
-                        className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700 hover:shadow-md transition-shadow"
+                        className="bg-white dark:bg-secondary-800 rounded-xl p-8 shadow-sm border border-gray-200 dark:border-secondary-700 hover:shadow-md transition-shadow"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gray-100 dark:bg-secondary-700 rounded-lg">
-                              <ServerIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        {isDatabaseServer ? (
+                          /* Database Server Cards with Large Icons */
+                          <div className="space-y-6">
+                            {/* Large Icon and Status */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                {isMongoDb ? (
+                                  <div className="p-4 bg-green-100 dark:bg-green-900/20 rounded-2xl">
+                                    <CircleStackIcon className="h-16 w-16 text-green-600 dark:text-green-400" />
+                                  </div>
+                                ) : isSupabase ? (
+                                  <div className="p-4 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl">
+                                    <CommandLineIcon className="h-16 w-16 text-emerald-600 dark:text-emerald-400" />
+                                  </div>
+                                ) : (
+                                  <div className="p-4 bg-gray-100 dark:bg-secondary-700 rounded-2xl">
+                                    <ServerIcon className="h-16 w-16 text-gray-600 dark:text-gray-400" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                    {isMongoDb
+                                      ? "MongoDB"
+                                      : isSupabase
+                                      ? "Supabase"
+                                      : server.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {server.version}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {server.name}
-                              </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {server.ip} • {server.location}
-                              </p>
+
+                            {/* Status Badge */}
+                            <div className="flex items-center justify-center py-4">
+                              <span
+                                className={`inline-flex items-center gap-2 px-6 py-3 rounded-full text-base font-semibold ${getStatusColor(
+                                  server.status
+                                )}`}
+                              >
+                                <StatusIcon className="h-5 w-5" />
+                                {server.status === "running"
+                                  ? "Connected & Healthy"
+                                  : "Disconnected"}
+                              </span>
+                            </div>
+
+                            {/* Database Details */}
+                            <div className="bg-gray-50 dark:bg-secondary-900 rounded-lg p-6 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Status Message
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {server.message || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Response Time
+                                </span>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    server.responseTime &&
+                                    parseInt(server.responseTime) < 500
+                                      ? "text-success-600 dark:text-success-400"
+                                      : "text-warning-600 dark:text-warning-400"
+                                  }`}
+                                >
+                                  {server.responseTime || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Location
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {server.location}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Connection
+                                </span>
+                                <span
+                                  className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]"
+                                  title={server.ip}
+                                >
+                                  {server.ip}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              server.status
-                            )}`}
-                          >
-                            <StatusIcon className="h-3 w-3" />
-                            {server.status}
-                          </span>
-                        </div>
-
-                        {/* Resource Usage */}
-                        <div className="space-y-3 mb-4">
-                          {[
-                            { label: "CPU", value: server.cpu },
-                            { label: "Memory", value: server.memory },
-                            { label: "Disk", value: server.disk },
-                          ].map((resource) => (
-                            <div key={resource.label}>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {resource.label}
-                                </span>
-                                <span className="font-medium text-gray-900 dark:text-white">
-                                  {resource.value}%
-                                </span>
+                        ) : (
+                          /* Regular Server Cards */
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-100 dark:bg-secondary-700 rounded-lg">
+                                  <ServerIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    {server.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {server.ip} • {server.location}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
-                                <div
-                                  className={`h-2 rounded-full ${getResourceBarColor(
-                                    resource.value
-                                  )}`}
-                                  style={{ width: `${resource.value}%` }}
-                                />
-                              </div>
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                  server.status
+                                )}`}
+                              >
+                                <StatusIcon className="h-3 w-3" />
+                                {server.status}
+                              </span>
                             </div>
-                          ))}
-                        </div>
 
-                        {/* Server Details */}
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          <p>
-                            <strong>Uptime:</strong> {server.uptime}
-                          </p>
-                          <p>
-                            <strong>Version:</strong> {server.version}
-                          </p>
-                        </div>
+                            {/* Resource Usage for non-database servers */}
+                            <div className="space-y-3 mb-4">
+                              {[
+                                { label: "CPU", value: server.cpu },
+                                { label: "Memory", value: server.memory },
+                                { label: "Disk", value: server.disk },
+                              ].map((resource) => (
+                                <div key={resource.label}>
+                                  <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      {resource.label}
+                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                      {resource.value}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 dark:bg-secondary-700 rounded-full h-2">
+                                    <div
+                                      className={`h-2 rounded-full ${getResourceBarColor(
+                                        resource.value
+                                      )}`}
+                                      style={{ width: `${resource.value}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          {server.status === "stopped" ? (
-                            <button
-                              onClick={() =>
-                                handleServerAction(server.id, "start")
-                              }
-                              className="px-3 py-1.5 text-sm font-medium text-success-700 bg-success-100 hover:bg-success-200 rounded-lg transition-colors"
-                            >
-                              Start
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                handleServerAction(server.id, "stop")
-                              }
-                              className="px-3 py-1.5 text-sm font-medium text-danger-700 bg-danger-100 hover:bg-danger-200 rounded-lg transition-colors"
-                            >
-                              Stop
-                            </button>
-                          )}
-                          <button
-                            onClick={() =>
-                              handleServerAction(server.id, "restart")
-                            }
-                            className="px-3 py-1.5 text-sm font-medium text-warning-700 bg-warning-100 hover:bg-warning-200 rounded-lg transition-colors"
-                          >
-                            Restart
-                          </button>
-                        </div>
+                            {/* Server Details */}
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                              <p>
+                                <strong>Uptime:</strong> {server.uptime}
+                              </p>
+                              <p>
+                                <strong>Version:</strong> {server.version}
+                              </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2">
+                              {server.status === "stopped" ? (
+                                <button
+                                  onClick={() =>
+                                    handleServerAction(server.id, "start")
+                                  }
+                                  className="px-3 py-1.5 text-sm font-medium text-success-700 bg-success-100 hover:bg-success-200 rounded-lg transition-colors"
+                                >
+                                  Start
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() =>
+                                    handleServerAction(server.id, "stop")
+                                  }
+                                  className="px-3 py-1.5 text-sm font-medium text-danger-700 bg-danger-100 hover:bg-danger-200 rounded-lg transition-colors"
+                                >
+                                  Stop
+                                </button>
+                              )}
+                              <button
+                                onClick={() =>
+                                  handleServerAction(server.id, "restart")
+                                }
+                                className="px-3 py-1.5 text-sm font-medium text-warning-700 bg-warning-100 hover:bg-warning-200 rounded-lg transition-colors"
+                              >
+                                Restart
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               )}
 
-              {/* Deployments Tab */}
+              {/* Microservices Tab */}
               {activeHostingTab === "deployments" && (
-                <div className="space-y-4">
-                  {deployments.map((deployment) => {
-                    const StatusIcon = getStatusIcon(deployment.status);
-                    return (
-                      <div
-                        key={deployment.id}
-                        className="bg-white dark:bg-secondary-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-secondary-700"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-white">
-                              {deployment.name}
-                            </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {deployment.environment} • {deployment.branch} •{" "}
-                              {deployment.commit}
-                            </p>
+                <div>
+                  {servicesLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Overall Status
+                              </p>
+                              <p
+                                className={`text-xl font-bold mt-1 ${
+                                  microservicesSummary.overall === "healthy"
+                                    ? "text-success-600"
+                                    : microservicesSummary.overall ===
+                                      "degraded"
+                                    ? "text-warning-600"
+                                    : "text-danger-600"
+                                }`}
+                              >
+                                {microservicesSummary.overall?.toUpperCase() ||
+                                  "UNKNOWN"}
+                              </p>
+                            </div>
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              deployment.status
-                            )}`}
-                          >
-                            <StatusIcon className="h-3 w-3" />
-                            {deployment.status}
-                          </span>
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          <p>
-                            <strong>Started:</strong>{" "}
-                            {new Date(deployment.startTime).toLocaleString()}
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Total Services
                           </p>
-                          {deployment.endTime && (
-                            <p>
-                              <strong>Completed:</strong>{" "}
-                              {new Date(deployment.endTime).toLocaleString()}
-                            </p>
-                          )}
-                          <p>
-                            <strong>Duration:</strong> {deployment.duration}
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {microservicesSummary.total || 0}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Healthy
+                          </p>
+                          <p className="text-2xl font-bold text-success-600 mt-1">
+                            {microservicesSummary.healthy || 0}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Unhealthy
+                          </p>
+                          <p className="text-2xl font-bold text-danger-600 mt-1">
+                            {microservicesSummary.unhealthy || 0}
+                          </p>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg p-4 border border-gray-200 dark:border-secondary-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Health Rate
+                          </p>
+                          <p className="text-2xl font-bold text-primary-600 mt-1">
+                            {microservicesSummary.healthPercentage || 0}%
                           </p>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      {/* Services Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {microservices.map((service, index) => {
+                          const getServiceStatusColor = (status) => {
+                            switch (status) {
+                              case "healthy":
+                                return "border-success-300 bg-success-50 dark:bg-success-900/10 dark:border-success-700";
+                              case "unhealthy":
+                                return "border-danger-300 bg-danger-50 dark:bg-danger-900/10 dark:border-danger-700";
+                              case "unreachable":
+                                return "border-gray-300 bg-gray-50 dark:bg-gray-900/10 dark:border-gray-700";
+                              default:
+                                return "border-gray-200 bg-white dark:bg-secondary-800 dark:border-secondary-700";
+                            }
+                          };
+
+                          const getStatusBadgeColor = (status) => {
+                            switch (status) {
+                              case "healthy":
+                                return "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-400";
+                              case "unhealthy":
+                                return "bg-danger-100 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400";
+                              case "unreachable":
+                                return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
+                              default:
+                                return "bg-gray-100 text-gray-700";
+                            }
+                          };
+
+                          return (
+                            <div
+                              key={index}
+                              className={`rounded-lg p-5 border-2 transition-all hover:shadow-md ${getServiceStatusColor(
+                                service.status
+                              )}`}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                                    {service.name}
+                                  </h4>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                                    Port: {service.port}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
+                                    service.status
+                                  )}`}
+                                >
+                                  {service.status?.toUpperCase()}
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {service.statusCode && (
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Status Code:
+                                    </span>
+                                    <span
+                                      className={`font-semibold ${
+                                        service.statusCode === 200
+                                          ? "text-success-600"
+                                          : "text-danger-600"
+                                      }`}
+                                    >
+                                      {service.statusCode}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Response Time:
+                                  </span>
+                                  <span
+                                    className={`font-semibold ${
+                                      parseInt(service.responseTime) < 100
+                                        ? "text-success-600"
+                                        : parseInt(service.responseTime) < 500
+                                        ? "text-warning-600"
+                                        : "text-danger-600"
+                                    }`}
+                                  >
+                                    {service.responseTime}
+                                  </span>
+                                </div>
+
+                                {service.error && (
+                                  <div className="mt-2 p-2 bg-danger-100 dark:bg-danger-900/20 rounded text-xs">
+                                    <p className="text-danger-700 dark:text-danger-400 font-medium">
+                                      Error: {service.error}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {service.details && service.details.message && (
+                                  <div className="mt-2 p-2 bg-gray-100 dark:bg-secondary-900 rounded text-xs">
+                                    <p className="text-gray-700 dark:text-gray-300">
+                                      {service.details.message}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {microservices.length === 0 && (
+                        <div className="text-center py-12">
+                          <ServerIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-500 dark:text-gray-400">
+                            No microservices data available
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </>
           )}
-        </div>
-
-        {/* Save Button */}
-        <div className="mt-8 flex justify-center">
-          <button className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">
-            Save Settings
-          </button>
         </div>
       </div>
     </div>
