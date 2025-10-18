@@ -60,7 +60,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     if (routeData && isLoaded) {
       calculateRoute();
     }
-  }, [routeData, isLoaded]);
+  }, [routeData, isLoaded]); // calculateRoute is stable via useCallback
 
   // Helper functions for day management
   const canStartDay = (dayNumber) => {
@@ -283,33 +283,97 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     try {
       setLoading(true);
       
-      // Get DirectionsService request parameters from backend
-      const response = await fetch(`${BASE_URL}/trips/${tripId}/directions-request`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch directions request: ${response.status}`);
-      }
-      
-      const { directionsRequest } = await response.json();
-      
-      // Use Google Maps DirectionsService (proper way)
-      const directionsService = new window.google.maps.DirectionsService();
-      
-      const result = await new Promise((resolve, reject) => {
-        directionsService.route(directionsRequest, (result, status) => {
-          if (status == 'OK') {
-            resolve(result);
-          } else {
-            reject(new Error(`Directions request failed: ${status}`));
+      // If we have routeData (from tripData), build directions request from it
+      if (routeData && routeData.optimizedRoute && routeData.optimizedRoute.length > 0) {
+        // Build waypoints from the optimized route
+        const waypoints = [];
+        const allCoordinates = [];
+        
+        routeData.optimizedRoute.forEach((day) => {
+          if (day.destinations && Array.isArray(day.destinations)) {
+            day.destinations.forEach((destination) => {
+              if (destination.coordinates && destination.coordinates.lat && destination.coordinates.lng) {
+                allCoordinates.push({
+                  location: new window.google.maps.LatLng(
+                    destination.coordinates.lat,
+                    destination.coordinates.lng
+                  ),
+                  stopover: true
+                });
+              }
+            });
           }
         });
-      });
-      
-      setDirectionsResponse(result);
-      setLastUpdated(new Date().toLocaleTimeString());
-      
-      console.log('✅ Google Maps DirectionsService route loaded successfully');
-      console.log('Route summary:', result.routes[0].summary);
-      console.log('Total distance:', result.routes[0].legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000 + ' km');
+        
+        if (allCoordinates.length === 0) {
+          throw new Error('No valid coordinates found in trip data');
+        }
+        
+        // Use first location as origin and last as destination
+        const origin = allCoordinates[0].location;
+        const destination = allCoordinates[allCoordinates.length - 1].location;
+        
+        // Middle points as waypoints (max 25 waypoints for Google Maps API)
+        const intermediateWaypoints = allCoordinates.slice(1, -1).slice(0, 25);
+        
+        const directionsRequest = {
+          origin: origin,
+          destination: destination,
+          waypoints: intermediateWaypoints,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false // Keep the order as planned
+        };
+        
+        // Use Google Maps DirectionsService
+        const directionsService = new window.google.maps.DirectionsService();
+        
+        const result = await new Promise((resolve, reject) => {
+          directionsService.route(directionsRequest, (result, status) => {
+            if (status === 'OK') {
+              resolve(result);
+            } else {
+              reject(new Error(`Directions request failed: ${status}`));
+            }
+          });
+        });
+        
+        setDirectionsResponse(result);
+        setLastUpdated(new Date().toLocaleTimeString());
+        
+        console.log('✅ Route calculated from trip data successfully');
+        console.log('Route summary:', result.routes[0].summary);
+        console.log('Total distance:', result.routes[0].legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000 + ' km');
+        
+      } else if (tripId) {
+        // Fallback: Get DirectionsService request parameters from backend
+        const response = await fetch(`${BASE_URL}/trips/${tripId}/directions-request`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch directions request: ${response.status}`);
+        }
+        
+        const { directionsRequest } = await response.json();
+        
+        // Use Google Maps DirectionsService
+        const directionsService = new window.google.maps.DirectionsService();
+        
+        const result = await new Promise((resolve, reject) => {
+          directionsService.route(directionsRequest, (result, status) => {
+            if (status === 'OK') {
+              resolve(result);
+            } else {
+              reject(new Error(`Directions request failed: ${status}`));
+            }
+          });
+        });
+        
+        setDirectionsResponse(result);
+        setLastUpdated(new Date().toLocaleTimeString());
+        
+        console.log('✅ Route calculated from backend API successfully');
+        console.log('Route summary:', result.routes[0].summary);
+      } else {
+        throw new Error('No trip data or trip ID available to calculate route');
+      }
       
     } catch (err) {
       setError(err.message);
@@ -317,7 +381,7 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, tripId]);
+  }, [isLoaded, tripId, routeData]);
 
   // Transform trip data from active trip API to route data format
   const transformTripDataToRouteData = (tripData) => {
