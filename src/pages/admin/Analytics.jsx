@@ -485,7 +485,7 @@ const Analytics = () => {
 
               {/* User Selector */}
               <div className="flex space-x-2">
-                {["user1", "user2", "user3"].map((user) => (
+                {["user1"].map((user) => (
                   <button
                     key={user}
                     onClick={() => setSelectedUser(user)}
@@ -498,8 +498,7 @@ const Analytics = () => {
                     {user === "user1"
                       ? "Overall"
                       : user === "user2"
-                      ? "Travelers"
-                      : "Providers"}
+                      }
                   </button>
                 ))}
               </div>

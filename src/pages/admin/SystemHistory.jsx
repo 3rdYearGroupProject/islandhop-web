@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { auth } from "../../firebase";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   ClockIcon,
   UserIcon,
@@ -10,6 +12,7 @@ import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
   CreditCardIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 
 const SystemHistory = () => {
@@ -259,8 +262,7 @@ const SystemHistory = () => {
         const transformedLogs = response.data.data.logs.map((log, index) => ({
           id: log.id || index + 1,
           timestamp: log.timestamp || log.createdAt || new Date().toISOString(),
-          transactionId:
-            log._id || log.transaction_id || `TXN_${log.id}`,
+          transactionId: log._id || log.transaction_id || `TXN_${log.id}`,
           user: log.user || log.driverEmail || "Unknown User",
           amount: log.cost || 0,
           currency: log.currency || "LKR",
@@ -296,6 +298,119 @@ const SystemHistory = () => {
     setAuditTrails(mockAuditTrails);
     setChangeHistory(mockChangeHistory);
     setSystemEvents(mockSystemEvents);
+  };
+
+  // Export payment logs to PDF
+  const exportToPDF = () => {
+    try {
+      // Create new PDF document
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFontSize(20);
+      doc.setTextColor(40);
+      doc.text("IslandHop Payment History Report", 14, 22);
+
+      // Add generation date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+      // Add summary statistics
+      const totalTransactions = paymentLogs.length;
+      const completedTransactions = paymentLogs.filter(
+        (log) => log.status === "completed"
+      ).length;
+      const totalAmount = paymentLogs.reduce((sum, log) => sum + log.amount, 0);
+
+      doc.setFontSize(12);
+      doc.setTextColor(40);
+      doc.text("Summary Statistics:", 14, 40);
+      doc.setFontSize(10);
+      doc.text(`Total Transactions: ${totalTransactions}`, 14, 47);
+      doc.text(`Completed Transactions: ${completedTransactions}`, 14, 52);
+      doc.text(`Total Amount: LKR ${totalAmount.toLocaleString()}`, 14, 57);
+
+      // Prepare table data
+      const tableData = paymentLogs.map((log) => [
+        new Date(log.timestamp).toLocaleDateString(),
+        log.transactionId.substring(0, 20) + "...",
+        log.user.substring(0, 25) + "...",
+        log.logType || "N/A",
+        `${log.currency} ${log.amount.toLocaleString()}`,
+        log.status,
+        log.tripId,
+      ]);
+
+      // Add table
+      autoTable(doc, {
+        startY: 65,
+        head: [
+          [
+            "Date",
+            "Transaction ID",
+            "User",
+            "Type",
+            "Amount",
+            "Status",
+            "Trip ID",
+          ],
+        ],
+        body: tableData,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [59, 130, 246], // Primary blue color
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: {
+          fillColor: [245, 247, 250],
+        },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 20 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 25 },
+        },
+      });
+
+      // Add footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          doc.internal.pageSize.getWidth() / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: "center" }
+        );
+        doc.text(
+          "IslandHop - Confidential",
+          14,
+          doc.internal.pageSize.getHeight() - 10
+        );
+      }
+
+      // Save the PDF
+      doc.save(
+        `IslandHop_Payment_History_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`
+      );
+
+      console.log("PDF export successful");
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      alert("Failed to export PDF. Please try again.");
+    }
   };
 
   // Fetch data when auth token is available
@@ -393,7 +508,12 @@ const SystemHistory = () => {
                 </p>
               )}
             </div>
-            <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+            <button
+              onClick={exportToPDF}
+              disabled={paymentLogs.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
               Export History
             </button>
           </div>
