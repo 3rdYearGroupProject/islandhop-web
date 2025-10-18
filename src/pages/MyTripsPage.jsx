@@ -1428,9 +1428,6 @@ const MyTripsPage = () => {
                               <span className="font-semibold text-sm sm:text-lg text-gray-700">{ongoingTrip.memories} memories</span>
                             </div>
                           )}
-                          <div className="flex items-center">
-                            <span className="font-semibold text-sm sm:text-lg text-gray-700">Budget: ${ongoingTrip.budget}</span>
-                          </div>
                         </div>
                       </div>
                     </div>
