@@ -552,7 +552,6 @@ const DriverDashboard = () => {
                       )}
                     </div>
                   </div>
-                 
                 </div>
 
                 <div className="space-y-1 mb-3">

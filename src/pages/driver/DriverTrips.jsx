@@ -471,13 +471,7 @@ const DriverTrips = () => {
             onClick={() => { setSelectedTrip(trip); setModalOpen(true); }}
           >
             <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4 flex-1">
-                <img
-                  src={trip.passengerAvatar}
-                  alt={trip.passenger}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                
+              <div className="flex items-start flex-1">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <div>
@@ -609,7 +603,7 @@ const DriverTrips = () => {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <div className="flex space-x-2">
                       {trip.status === 'pending' && (
                         <>
@@ -668,23 +662,6 @@ const DriverTrips = () => {
                         </button>
                       )}
                     </div>
-
-                    {(trip.status === 'active' || trip.status === 'completed') && (
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
                   </div>
 
                   {trip.status === 'completed' && trip.driverRating && (
