@@ -18,6 +18,8 @@ import adminServicesApi from '../../api/axios';
 import VehiclePopup from '../../components/VehiclePopup';
 import DriverPopup from '../../components/DriverPopup';
 import GuidePopup from '../../components/GuidePopup';
+import axios from 'axios';
+import { auth } from '../../firebase';
 
 const SystemData = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -25,6 +27,7 @@ const SystemData = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [authToken, setAuthToken] = useState('');
   const [newVehicle, setNewVehicle] = useState({
     typeName: '',
     capacity: '',
@@ -36,33 +39,96 @@ const SystemData = () => {
   const [newDriver, setNewDriver] = useState({ name: '', license: '', contact: '' });
   const [newGuide, setNewGuide] = useState({ name: '', expertise: '', contact: '' });
   const [activeTab, setActiveTab] = useState('vehicles'); // Default to vehicles tab
+  
+  // Third Party Driver Companies state
+  const [thirdPartyCompanies, setThirdPartyCompanies] = useState([]);
+  const [newCompany, setNewCompany] = useState({
+    companyName: '',
+    companyEmail: '',
+    contactNumber1: '',
+    contactNumber2: '',
+    district: ''
+  });
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [showCompanyForm, setShowCompanyForm] = useState(false);
 
   useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await adminServicesApi.get('http://localhost:8091/api/v1/admin/vehicle-types');
-
-        console.log('Fetched vehicles:', response.data);
-
-        if (response.status === 200 && response.data && response.data.data) {
-          setVehicles(response.data.data);
-        } else {
-          throw new Error('Failed to fetch vehicles');
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+          console.log("Retrieved auth token:", token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setAuthToken("");
         }
+      }
+    };
+    getToken();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!authToken) return; // Wait for auth token
+      
+      try {
+        // Fetch vehicles
+        // const vehiclesResponse = await axios.get('http://localhost:8091/api/admin/vehicle-types', {
+        //   headers: {
+        //     'Authorization': `Bearer ${authToken}`,
+        //     'Content-Type': 'application/json'
+        //   }
+        // });
+        // console.log('Fetched vehicles:', vehiclesResponse.data);
+
+        // if (vehiclesResponse.status === 200 && vehiclesResponse.data && vehiclesResponse.data.data) {
+        //   setVehicles(vehiclesResponse.data.data);
+        // } else {
+        //   setVehicles([]);
+        // }
+
+        // Fetch third party drivers
+        try {
+          console.log("Fetching third party drivers...");
+          const driversResponse = await axios.get('http://localhost:8070/api/admin/thirdparty/third-party-drivers', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          console.log('Fetched drivers:', driversResponse.data);
+
+          if (driversResponse.status === 200 && driversResponse.data && driversResponse.data.data) {
+            setThirdPartyCompanies(driversResponse.data.data);
+          } else {
+            setThirdPartyCompanies([]);
+          }
+        } catch (companyError) {
+          console.error('Error fetching drivers:', companyError);
+          setThirdPartyCompanies([]); // Keep empty array if fetch fails
+        }
+
       } catch (err) {
         console.error('Error fetching vehicles:', err);
-        setVehicles([]); // Ensure page loads with empty data
+        setVehicles([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVehicles();
-  }, []);
+    fetchData();
+  }, [authToken]); // Add authToken as dependency
 
   const addVehicle = async () => {
     try {
-      const response = await adminServicesApi.post('http://localhost:8091/api/v1/admin/vehicle-types', newVehicle);
+      const response = await axios.post('http://localhost:8091/api/v1/admin/vehicle-types', newVehicle, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 201 && response.data && response.data.data) {
         setVehicles((prev) => [...prev, response.data.data]);
@@ -96,7 +162,12 @@ const SystemData = () => {
 
       console.log('Sending update payload:', updatePayload);
 
-      const response = await adminServicesApi.put(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, updatePayload);
+      const response = await axios.put(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, updatePayload, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 200 && response.data && response.data.data) {
         setVehicles((prev) => prev.map((v) => (v.id === id ? response.data.data : v)));
@@ -114,7 +185,12 @@ const SystemData = () => {
 
   const deleteVehicle = async (id) => {
     try {
-      const response = await adminServicesApi.delete(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`);
+      const response = await axios.delete(`http://localhost:8091/api/v1/admin/vehicle-types/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 200) {
         setVehicles((prev) => prev.filter((v) => v.id !== id));
@@ -132,6 +208,122 @@ const SystemData = () => {
 
   const addGuide = async () => {
     // Logic for adding a guide
+  };
+
+  // Districts in Sri Lanka
+  const sriLankanDistricts = [
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha', 
+    'Hambantota', 'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 
+    'Mannar', 'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya', 
+    'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+  ];
+
+  // Third Party Company Management Functions
+  const addCompany = async () => {
+    if (!newCompany.companyName || !newCompany.companyEmail || !newCompany.contactNumber1 || !newCompany.district) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      // Call backend API to add driver
+      const response = await axios.post('http://localhost:8070/api/admin/thirdparty/third-party-drivers', newCompany, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 201 && response.data && response.data.data) {
+        // Add the new company to the state
+        setThirdPartyCompanies([...thirdPartyCompanies, response.data.data]);
+        
+        // Reset form
+        setNewCompany({
+          companyName: '',
+          companyEmail: '',
+          contactNumber1: '',
+          contactNumber2: '',
+          district: ''
+        });
+        setShowCompanyForm(false);
+        alert('Third party driver company added successfully!');
+      } else {
+        throw new Error('Failed to add driver company');
+      }
+    } catch (error) {
+      console.error('Error adding driver company:', error);
+      alert('Failed to add driver company: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const updateCompany = async (id, updatedData) => {
+    console.log('Update Company - ID:', id, 'Data:', updatedData); // Debug log
+    
+    if (!id) {
+      alert('No company ID provided for update');
+      return;
+    }
+    
+    try {
+      // Call backend API to update driver company
+      const response = await axios.put(`http://localhost:8070/api/admin/thirdparty/third-party-drivers/${id}`, updatedData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status === 200 && response.data && response.data.data) {
+        // Update the company in the state
+        setThirdPartyCompanies(thirdPartyCompanies.map(company => 
+          (company._id || company.id) === id ? response.data.data : company
+        ));
+        setEditingCompany(null);
+        alert('Driver company updated successfully!');
+      } else {
+        throw new Error('Failed to update driver company');
+      }
+    } catch (error) {
+      console.error('Error updating driver company:', error);
+      alert('Failed to update driver company: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const deleteCompany = async (id) => {
+    if (window.confirm('Are you sure you want to delete this driver company?')) {
+      try {
+        // Call backend API to delete driver company
+        const response = await axios.delete(`http://localhost:8070/api/admin/thirdparty/third-party-drivers/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.status === 200) {
+          // Remove the company from state
+          setThirdPartyCompanies(thirdPartyCompanies.filter(company => (company._id || company.id) !== id));
+          alert('Driver company deleted successfully!');
+        } else {
+          throw new Error('Failed to delete driver company');
+        }
+      } catch (error) {
+        console.error('Error deleting driver company:', error);
+        alert('Failed to delete driver company: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
+  const openEditCompanyModal = (company) => {
+    setEditingCompany({
+      _id: company._id || company.id, // Handle both _id and id
+      companyName: company.companyName,
+      companyEmail: company.companyEmail,
+      contactNumber1: company.contactNumber1,
+      contactNumber2: company.contactNumber2,
+      district: company.district
+    });
   };
 
   const openEditModal = (vehicle) => {
@@ -569,15 +761,244 @@ const SystemData = () => {
               </div>
             </div>
 
-            {/* Placeholder for drivers table */}
-            <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
-              <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                Driver management coming soon
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Driver registration and management features will be available here.
-              </p>
+            {/* Third Party Driver Companies Management */}
+            <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700">
+              <div className="p-6 border-b border-gray-200 dark:border-secondary-600">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Third Party Driver Companies
+                  </h3>
+                  <button
+                    onClick={() => setShowCompanyForm(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Add Company
+                  </button>
+                </div>
+              </div>
+
+              {/* Add/Edit Company Form */}
+              {(showCompanyForm || editingCompany) && (
+                <div className="p-6 border-b border-gray-200 dark:border-secondary-600 bg-gray-50 dark:bg-secondary-700">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                    {editingCompany ? 'Edit Company' : 'Add New Company'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Company Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={editingCompany ? editingCompany.companyName : newCompany.companyName}
+                        onChange={(e) => {
+                          if (editingCompany) {
+                            setEditingCompany({...editingCompany, companyName: e.target.value});
+                          } else {
+                            setNewCompany({...newCompany, companyName: e.target.value});
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-secondary-800 dark:text-white"
+                        placeholder="Enter company name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Company Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={editingCompany ? editingCompany.companyEmail : newCompany.companyEmail}
+                        onChange={(e) => {
+                          if (editingCompany) {
+                            setEditingCompany({...editingCompany, companyEmail: e.target.value});
+                          } else {
+                            setNewCompany({...newCompany, companyEmail: e.target.value});
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-secondary-800 dark:text-white"
+                        placeholder="Enter company email"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Contact Number 1 *
+                      </label>
+                      <input
+                        type="tel"
+                        value={editingCompany ? editingCompany.contactNumber1 : newCompany.contactNumber1}
+                        onChange={(e) => {
+                          if (editingCompany) {
+                            setEditingCompany({...editingCompany, contactNumber1: e.target.value});
+                          } else {
+                            setNewCompany({...newCompany, contactNumber1: e.target.value});
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-secondary-800 dark:text-white"
+                        placeholder="Enter primary contact number"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Contact Number 2
+                      </label>
+                      <input
+                        type="tel"
+                        value={editingCompany ? editingCompany.contactNumber2 : newCompany.contactNumber2}
+                        onChange={(e) => {
+                          if (editingCompany) {
+                            setEditingCompany({...editingCompany, contactNumber2: e.target.value});
+                          } else {
+                            setNewCompany({...newCompany, contactNumber2: e.target.value});
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-secondary-800 dark:text-white"
+                        placeholder="Enter secondary contact number"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        District *
+                      </label>
+                      <select
+                        value={editingCompany ? editingCompany.district : newCompany.district}
+                        onChange={(e) => {
+                          if (editingCompany) {
+                            setEditingCompany({...editingCompany, district: e.target.value});
+                          } else {
+                            setNewCompany({...newCompany, district: e.target.value});
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-secondary-800 dark:text-white"
+                      >
+                        <option value="">Select a district</option>
+                        {sriLankanDistricts.map((district) => (
+                          <option key={district} value={district}>
+                            {district}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-4 mt-4">
+                    <button
+                      onClick={() => {
+                        setShowCompanyForm(false);
+                        setEditingCompany(null);
+                        setNewCompany({
+                          companyName: '',
+                          companyEmail: '',
+                          contactNumber1: '',
+                          contactNumber2: '',
+                          district: ''
+                        });
+                      }}
+                      className="px-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-secondary-800 hover:bg-gray-50 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (editingCompany) {
+                          updateCompany(editingCompany._id, editingCompany);
+                        } else {
+                          addCompany();
+                        }
+                      }}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    >
+                      {editingCompany ? 'Update Company' : 'Add Company'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Companies Table */}
+              <div className="overflow-x-auto">
+                {thirdPartyCompanies.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <TruckIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                      No third party companies
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Get started by adding a new third party driver company.
+                    </p>
+                  </div>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-secondary-600">
+                    <thead className="bg-gray-50 dark:bg-secondary-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Company
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Contact Numbers
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          District
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-secondary-800 divide-y divide-gray-200 dark:divide-secondary-600">
+                      {thirdPartyCompanies.map((company) => (
+                        <tr key={company.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {company.companyName}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {company.companyEmail}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {company.contactNumber1}
+                            </div>
+                            {company.contactNumber2 && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {company.contactNumber2}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {company.district}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-2">
+                              <button
+                                onClick={() => openEditCompanyModal(company)}
+                                className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteCompany(company._id)}
+                                className="text-danger-600 hover:text-danger-900 dark:text-danger-400 dark:hover:text-danger-300"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         )}

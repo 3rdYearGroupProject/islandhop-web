@@ -4,11 +4,27 @@ import { useToast } from './ToastProvider';
 
 const ComplainModal = ({ onClose }) => {
   const [complaint, setComplaint] = useState('');
+  const [complaintType, setComplaintType] = useState('');
   const [selectedTrip, setSelectedTrip] = useState('');
   const [completedTrips, setCompletedTrips] = useState([]);
   const [isLoadingTrips, setIsLoadingTrips] = useState(false);
   const { user } = useAuth();
   const { success, error } = useToast();
+
+  // Complaint type options
+  const complaintTypes = [
+    { value: 'transportation', label: 'Transportation Issues' },
+    { value: 'Driver_didnt_show_up', label: 'Driver didn\'t show up' },
+    { value: 'accommodation', label: 'Accommodation Problems' },
+    { value: 'tour_guide', label: 'Tour Guide Issues' },
+    { value: 'billing', label: 'Billing & Payment' },
+    { value: 'customer_service', label: 'Customer Service' },
+    { value: 'safety_security', label: 'Safety & Security' },
+    { value: 'itinerary', label: 'Itinerary Changes' },
+    { value: 'facility', label: 'Facility Issues' },
+    { value: 'food_beverage', label: 'Food & Beverage' },
+    { value: 'other', label: 'Other' }
+  ];
 
   // Fetch completed trips when component mounts
   useEffect(() => {
@@ -72,13 +88,37 @@ const ComplainModal = ({ onClose }) => {
           Complain
         </h2>
         <div className="space-y-4">
-          <textarea
-            className="w-full border border-yellow-100 bg-yellow-50 focus:bg-white focus:border-yellow-400 rounded-xl p-4 min-h-[96px] text-base mb-1 transition placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-100"
-            rows={4}
-            placeholder="Describe your complaint..."
-            value={complaint}
-            onChange={(e) => setComplaint(e.target.value)}
-          ></textarea>
+          <div>
+            <label className="block text-gray-600 font-medium mb-1" htmlFor="complaint-type">
+              Complaint Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="complaint-type"
+              className="w-full border border-yellow-100 bg-yellow-50 focus:bg-white focus:border-yellow-400 rounded-xl p-3 text-base transition focus:outline-none focus:ring-2 focus:ring-yellow-100"
+              value={complaintType}
+              onChange={(e) => setComplaintType(e.target.value)}
+            >
+              <option value="">Select complaint type...</option>
+              {complaintTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-600 font-medium mb-1" htmlFor="complaint-description">
+              Complaint Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              id="complaint-description"
+              className="w-full border border-yellow-100 bg-yellow-50 focus:bg-white focus:border-yellow-400 rounded-xl p-4 min-h-[96px] text-base mb-1 transition placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-100"
+              rows={4}
+              placeholder="Describe your complaint in detail..."
+              value={complaint}
+              onChange={(e) => setComplaint(e.target.value)}
+            ></textarea>
+          </div>
           <div>
             <label className="block text-gray-600 font-medium mb-1" htmlFor="trip-select">
               Select Trip <span className="text-gray-400 font-normal">(related to complaint)</span>
@@ -117,11 +157,12 @@ const ComplainModal = ({ onClose }) => {
         </div>
         <button
           className="w-full mt-6 bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-full font-semibold text-lg shadow transition focus:outline-none focus:ring-2 focus:ring-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!complaint.trim()}
+          disabled={!complaint.trim() || !complaintType}
           onClick={async () => {
             try {
               const selectedTripData = completedTrips.find(trip => trip._id === selectedTrip);
               const complaintData = {
+                complaintType: complaintType,
                 description: complaint,
                 tripId: selectedTripData?.originalTripId || null,
                 userId: user?.uid,
