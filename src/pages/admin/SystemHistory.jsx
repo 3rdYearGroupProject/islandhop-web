@@ -395,7 +395,7 @@ const SystemHistory = () => {
     try {
       // Use filtered logs for export
       const logsToExport = filteredLogs.length > 0 ? filteredLogs : paymentLogs;
-      
+
       // Create new PDF document
       const doc = new jsPDF();
 
@@ -425,14 +425,29 @@ const SystemHistory = () => {
       const completedTransactions = logsToExport.filter(
         (log) => log.status === "completed"
       ).length;
-      const totalAmount = logsToExport.reduce((sum, log) => sum + log.amount, 0);
+      const totalAmount = logsToExport.reduce(
+        (sum, log) => sum + log.amount,
+        0
+      );
 
       doc.setFontSize(12);
       doc.setTextColor(40);
-      doc.text("Summary Statistics:", 14, filteredLogs.length < paymentLogs.length ? 44 : 40);
+      doc.text(
+        "Summary Statistics:",
+        14,
+        filteredLogs.length < paymentLogs.length ? 44 : 40
+      );
       doc.setFontSize(10);
-      doc.text(`Total Transactions: ${totalTransactions}`, 14, filteredLogs.length < paymentLogs.length ? 51 : 47);
-      doc.text(`Completed Transactions: ${completedTransactions}`, 14, filteredLogs.length < paymentLogs.length ? 56 : 52);
+      doc.text(
+        `Total Transactions: ${totalTransactions}`,
+        14,
+        filteredLogs.length < paymentLogs.length ? 51 : 47
+      );
+      doc.text(
+        `Completed Transactions: ${completedTransactions}`,
+        14,
+        filteredLogs.length < paymentLogs.length ? 56 : 52
+      );
       doc.text(
         `Total Amount: LKR ${totalAmount.toLocaleString()}`,
         14,
@@ -620,7 +635,9 @@ const SystemHistory = () => {
               onClick={exportToPDF}
               disabled={filteredLogs.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              title={`Export ${filteredLogs.length} ${filteredLogs.length === 1 ? 'record' : 'records'}`}
+              title={`Export ${filteredLogs.length} ${
+                filteredLogs.length === 1 ? "record" : "records"
+              }`}
             >
               <ArrowDownTrayIcon className="h-5 w-5" />
               Export {filteredLogs.length > 0 && `(${filteredLogs.length})`}
@@ -713,7 +730,9 @@ const SystemHistory = () => {
                 placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
                 value={filters.minAmount}
-                onChange={(e) => handleFilterChange("minAmount", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("minAmount", e.target.value)
+                }
               />
             </div>
             <div>
@@ -725,7 +744,9 @@ const SystemHistory = () => {
                 placeholder="999999"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
                 value={filters.maxAmount}
-                onChange={(e) => handleFilterChange("maxAmount", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("maxAmount", e.target.value)
+                }
               />
             </div>
           </div>
@@ -733,11 +754,19 @@ const SystemHistory = () => {
           {/* Results Count */}
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-secondary-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Showing <span className="font-semibold text-gray-900 dark:text-white">{currentLogs.length}</span> of{" "}
-              <span className="font-semibold text-gray-900 dark:text-white">{filteredLogs.length}</span> results
+              Showing{" "}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {currentLogs.length}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {filteredLogs.length}
+              </span>{" "}
+              results
               {filteredLogs.length !== paymentLogs.length && (
                 <span className="text-primary-600 dark:text-primary-400">
-                  {" "}(filtered from {paymentLogs.length} total)
+                  {" "}
+                  (filtered from {paymentLogs.length} total)
                 </span>
               )}
             </p>
@@ -808,193 +837,201 @@ const SystemHistory = () => {
               {currentLogs.length > 0 ? (
                 <>
                   {currentLogs.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
-                        <div
-                          className={`p-2 rounded-lg ${
-                            payment.status === "completed"
-                              ? "bg-success-100 dark:bg-success-900/20"
-                              : "bg-warning-100 dark:bg-warning-900/20"
-                          }`}
-                        >
-                          <CreditCardIcon
-                            className={`h-5 w-5 ${
+                    <div
+                      key={payment.id}
+                      className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-4 flex-1">
+                          <div
+                            className={`p-2 rounded-lg ${
                               payment.status === "completed"
-                                ? "text-success-600 dark:text-success-400"
-                                : "text-warning-600 dark:text-warning-400"
+                                ? "bg-success-100 dark:bg-success-900/20"
+                                : "bg-warning-100 dark:bg-warning-900/20"
                             }`}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="font-semibold text-gray-900 dark:text-white">
-                              {payment.type}
-                            </h3>
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                                payment.status
-                              )}`}
-                            >
-                              {payment.status}
-                            </span>
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              {payment.currency}{" "}
-                              {payment.amount.toLocaleString()}
-                            </span>
+                          >
+                            <CreditCardIcon
+                              className={`h-5 w-5 ${
+                                payment.status === "completed"
+                                  ? "text-success-600 dark:text-success-400"
+                                  : "text-warning-600 dark:text-warning-400"
+                              }`}
+                            />
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
-                            Transaction ID:{" "}
-                            <span className="font-mono">
-                              {payment.transactionId}
-                            </span>
-                          </p>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div className="flex items-start">
-                                <strong className="min-w-[120px]">
-                                  User Email:
-                                </strong>
-                                <span className="text-gray-700 dark:text-gray-300">
-                                  {payment.user}
-                                </span>
-                              </div>
-                              <div className="flex items-start">
-                                <strong className="min-w-[120px]">
-                                  Trip ID:
-                                </strong>
-                                <span className="text-gray-700 dark:text-gray-300 font-mono">
-                                  {payment.tripId}
-                                </span>
-                              </div>
-                              <div className="flex items-start">
-                                <strong className="min-w-[120px]">
-                                  Log Type:
-                                </strong>
-                                <span className="text-gray-700 dark:text-gray-300 capitalize">
-                                  {payment.logType}
-                                </span>
-                              </div>
-                              <div className="flex items-start">
-                                <strong className="min-w-[120px]">
-                                  Payment Status:
-                                </strong>
-                                <span
-                                  className={`font-semibold ${
-                                    payment.paid === 1
-                                      ? "text-success-600 dark:text-success-400"
-                                      : "text-warning-600 dark:text-warning-400"
-                                  }`}
-                                >
-                                  {"Paid"}
-                                </span>
-                              </div>
-                              {payment.evidence && (
-                                <div className="flex items-start md:col-span-2">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h3 className="font-semibold text-gray-900 dark:text-white">
+                                {payment.type}
+                              </h3>
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                                  payment.status
+                                )}`}
+                              >
+                                {payment.status}
+                              </span>
+                              <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                {payment.currency}{" "}
+                                {payment.amount.toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
+                              Transaction ID:{" "}
+                              <span className="font-mono">
+                                {payment.transactionId}
+                              </span>
+                            </p>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="flex items-start">
                                   <strong className="min-w-[120px]">
-                                    Evidence:
+                                    User Email:
                                   </strong>
-                                  <span className="text-primary-600 dark:text-primary-400 font-mono">
-                                    {payment.evidence}
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {payment.user}
                                   </span>
                                 </div>
-                              )}
-                              <div className="flex items-start">
-                                <strong className="min-w-[120px]">
-                                  Created:
-                                </strong>
-                                <span className="text-gray-700 dark:text-gray-300">
-                                  {new Date(payment.timestamp).toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex items-start">
-                                <strong className="min-w-[120px]">
-                                  Updated:
-                                </strong>
-                                <span className="text-gray-700 dark:text-gray-300">
-                                  {new Date(payment.updatedAt).toLocaleString()}
-                                </span>
+                                <div className="flex items-start">
+                                  <strong className="min-w-[120px]">
+                                    Trip ID:
+                                  </strong>
+                                  <span className="text-gray-700 dark:text-gray-300 font-mono">
+                                    {payment.tripId}
+                                  </span>
+                                </div>
+                                <div className="flex items-start">
+                                  <strong className="min-w-[120px]">
+                                    Log Type:
+                                  </strong>
+                                  <span className="text-gray-700 dark:text-gray-300 capitalize">
+                                    {payment.logType}
+                                  </span>
+                                </div>
+                                <div className="flex items-start">
+                                  <strong className="min-w-[120px]">
+                                    Payment Status:
+                                  </strong>
+                                  <span
+                                    className={`font-semibold ${
+                                      payment.paid === 1
+                                        ? "text-success-600 dark:text-success-400"
+                                        : "text-warning-600 dark:text-warning-400"
+                                    }`}
+                                  >
+                                    {"Paid"}
+                                  </span>
+                                </div>
+                                {payment.evidence && (
+                                  <div className="flex items-start md:col-span-2">
+                                    <strong className="min-w-[120px]">
+                                      Evidence:
+                                    </strong>
+                                    <span className="text-primary-600 dark:text-primary-400 font-mono">
+                                      {payment.evidence}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex items-start">
+                                  <strong className="min-w-[120px]">
+                                    Created:
+                                  </strong>
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {new Date(
+                                      payment.timestamp
+                                    ).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-start">
+                                  <strong className="min-w-[120px]">
+                                    Updated:
+                                  </strong>
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {new Date(
+                                      payment.updatedAt
+                                    ).toLocaleString()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right ml-4">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
-                          {formatTimeAgo(payment.timestamp)}
-                        </span>
+                        <div className="text-right ml-4">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                            {formatTimeAgo(payment.timestamp)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                
-                {/* Pagination */}
-                {filteredLogs.length > itemsPerPage && (
-                  <div className="mt-6 flex items-center justify-between bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing {indexOfFirstItem + 1} to{" "}
-                      {Math.min(indexOfLastItem, filteredLogs.length)} of{" "}
-                      {filteredLogs.length} results
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 rounded-lg border border-gray-300 dark:border-secondary-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Previous
-                      </button>
-                      
-                      {/* Page numbers */}
-                      <div className="flex gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                          .filter((page) => {
-                            // Show first page, last page, current page, and pages around current
-                            return (
-                              page === 1 ||
-                              page === totalPages ||
-                              (page >= currentPage - 1 && page <= currentPage + 1)
-                            );
-                          })
-                          .map((page, index, array) => {
-                            // Add ellipsis
-                            const prevPage = array[index - 1];
-                            const showEllipsis = prevPage && page - prevPage > 1;
-                            
-                            return (
-                              <React.Fragment key={page}>
-                                {showEllipsis && (
-                                  <span className="px-3 py-1 text-gray-500">...</span>
-                                )}
-                                <button
-                                  onClick={() => handlePageChange(page)}
-                                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                    currentPage === page
-                                      ? "bg-primary-600 text-white"
-                                      : "border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700"
-                                  }`}
-                                >
-                                  {page}
-                                </button>
-                              </React.Fragment>
-                            );
-                          })}
+                  ))}
+
+                  {/* Pagination */}
+                  {filteredLogs.length > itemsPerPage && (
+                    <div className="mt-6 flex items-center justify-between bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
+                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                        Showing {indexOfFirstItem + 1} to{" "}
+                        {Math.min(indexOfLastItem, filteredLogs.length)} of{" "}
+                        {filteredLogs.length} results
                       </div>
-                      
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1 rounded-lg border border-gray-300 dark:border-secondary-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1 rounded-lg border border-gray-300 dark:border-secondary-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+
+                        {/* Page numbers */}
+                        <div className="flex gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter((page) => {
+                              // Show first page, last page, current page, and pages around current
+                              return (
+                                page === 1 ||
+                                page === totalPages ||
+                                (page >= currentPage - 1 &&
+                                  page <= currentPage + 1)
+                              );
+                            })
+                            .map((page, index, array) => {
+                              // Add ellipsis
+                              const prevPage = array[index - 1];
+                              const showEllipsis =
+                                prevPage && page - prevPage > 1;
+
+                              return (
+                                <React.Fragment key={page}>
+                                  {showEllipsis && (
+                                    <span className="px-3 py-1 text-gray-500">
+                                      ...
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={() => handlePageChange(page)}
+                                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                      currentPage === page
+                                        ? "bg-primary-600 text-white"
+                                        : "border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700"
+                                    }`}
+                                  >
+                                    {page}
+                                  </button>
+                                </React.Fragment>
+                              );
+                            })}
+                        </div>
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1 rounded-lg border border-gray-300 dark:border-secondary-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
+                  )}
+                </>
               ) : (
                 <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
                   <CreditCardIcon className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
