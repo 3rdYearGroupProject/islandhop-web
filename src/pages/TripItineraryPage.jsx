@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock } from 'lucide-react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import AddDestinationModal from '../components/AddDestinationModal';
 import AddThingsToDoModal from '../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../components/AddTransportationModal';
+import { useToast } from '../components/ToastProvider';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
+
+// Google Maps libraries
+const GOOGLE_MAPS_LIBRARIES = ['places'];
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -158,6 +163,7 @@ const getPhotoUrl = (photo, maxWidth = 400) => {
 const TripItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
+  const toast = useToast();
   const { 
     tripName, 
     selectedDates, 
@@ -194,6 +200,19 @@ const TripItineraryPage = () => {
   const [availableCities, setAvailableCities] = useState([]);
   const [isSearchingCities, setIsSearchingCities] = useState(false);
   const [isSavingTrip, setIsSavingTrip] = useState(false);
+  
+  // Map state
+  const [mapPlaces, setMapPlaces] = useState([]);
+  const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Center of Sri Lanka
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  
+  // Google Maps API loading
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    preventGoogleFontsLoading: true
+  });
   
   // Mock data for trip planning
   const mockSuggestions = {
@@ -507,6 +526,68 @@ const TripItineraryPage = () => {
     }
   }, [days.length, editMode]);
 
+  // Update map when itinerary changes
+  useEffect(() => {
+    const places = [];
+    
+    // Extract all places from itinerary with location data
+    Object.entries(itinerary).forEach(([dayIndex, dayData]) => {
+      const dayNum = parseInt(dayIndex) + 1;
+      
+      // Add activities
+      if (dayData.activities && Array.isArray(dayData.activities)) {
+        dayData.activities.forEach(item => {
+          if ((item.latitude && item.longitude) || item.coords) {
+            places.push({
+              ...item,
+              dayNumber: dayNum,
+              placeType: 'activity',
+              location: item.coords || { lat: item.latitude, lng: item.longitude }
+            });
+          }
+        });
+      }
+      
+      // Add places (hotels)
+      if (dayData.places && Array.isArray(dayData.places)) {
+        dayData.places.forEach(item => {
+          if ((item.latitude && item.longitude) || item.coords) {
+            places.push({
+              ...item,
+              dayNumber: dayNum,
+              placeType: 'hotel',
+              location: item.coords || { lat: item.latitude, lng: item.longitude }
+            });
+          }
+        });
+      }
+      
+      // Add food (restaurants)
+      if (dayData.food && Array.isArray(dayData.food)) {
+        dayData.food.forEach(item => {
+          if ((item.latitude && item.longitude) || item.coords) {
+            places.push({
+              ...item,
+              dayNumber: dayNum,
+              placeType: 'restaurant',
+              location: item.coords || { lat: item.latitude, lng: item.longitude }
+            });
+          }
+        });
+      }
+    });
+    
+    setMapPlaces(places);
+    
+    // Center map on first place with valid coordinates
+    if (places.length > 0 && places[0].location) {
+      setMapCenter({
+        lat: places[0].location.lat,
+        lng: places[0].location.lng
+      });
+    }
+  }, [itinerary]);
+
   // Remove all backend integration functions
   // (searchActivities, searchAccommodation, searchDining, addPlaceToDay, addCityToDay, updateTripCities, getTripDetails)
 
@@ -528,7 +609,7 @@ const TripItineraryPage = () => {
     } else {
       // Check if destination is required for this day
       if (!dayHasDestination(dayIndex)) {
-        alert('Please add a destination for this day first before adding other activities.');
+        toast.error('Please add a destination for this day first before adding other activities.');
         return;
       }
       
@@ -696,7 +777,7 @@ const TripItineraryPage = () => {
   const addPlaceToItineraryBackend = async (place, dayIndex, category) => {
     if (!tripId || !userUid) {
       console.warn('⚠️ No tripId or userUid available for adding place to backend:', { tripId, userUid });
-      alert('Unable to add place: Missing trip or user information');
+      toast.error('Unable to add place: Missing trip or user information');
       return false;
     }
 
@@ -710,7 +791,7 @@ const TripItineraryPage = () => {
     const apiType = categoryTypeMap[category];
     if (!apiType) {
       console.warn('⚠️ Unknown category for API:', category);
-      alert('Unable to add place: Unknown category');
+      toast.error('Unable to add place: Unknown category');
       return false;
     }
 
@@ -764,11 +845,11 @@ const TripItineraryPage = () => {
       const result = await response.json();
       console.log('✅ Place added to backend successfully:', result);
       
-      alert(result.message || 'Place added to itinerary successfully!');
+      toast.success(result.message || 'Place added to itinerary successfully!');
       return true;
     } catch (error) {
       console.error('❌ Error adding place to backend:', error);
-      alert(`Error adding place: ${error.message}`);
+      toast.error(`Error adding place: ${error.message}`);
       return false;
     }
   };
@@ -777,7 +858,7 @@ const TripItineraryPage = () => {
   const removePlaceFromItineraryBackend = async (placeName, dayIndex, category) => {
     if (!tripId || !userUid) {
       console.warn('⚠️ No tripId or userUid available for removing place from backend:', { tripId, userUid });
-      alert('Unable to remove place: Missing trip or user information');
+      toast.error('Unable to remove place: Missing trip or user information');
       return false;
     }
 
@@ -792,7 +873,7 @@ const TripItineraryPage = () => {
     const apiType = categoryTypeMap[category];
     if (!apiType) {
       console.warn('⚠️ Unknown category for API:', category);
-      alert('Unable to remove place: Unknown category');
+      toast.error('Unable to remove place: Unknown category');
       return false;
     }
 
@@ -830,10 +911,11 @@ const TripItineraryPage = () => {
       const result = await response.json();
       console.log('✅ Place removed from backend successfully:', result);
       
+      toast.success('Place removed from itinerary successfully!');
       return true;
     } catch (error) {
       console.error('❌ Error removing place from backend:', error);
-      alert(`Error removing place: ${error.message}`);
+      toast.error(`Error removing place: ${error.message}`);
       return false;
     }
   };
@@ -918,6 +1000,40 @@ const TripItineraryPage = () => {
     });
   };
 
+  // Map functions
+  const mapContainerStyle = {
+    width: '100%',
+    height: '100%',
+    minHeight: '400px',
+  };
+
+  const getMarkerIcon = (placeType) => {
+    switch (placeType) {
+      case 'activity':
+        return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+      case 'hotel':
+        return 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+      case 'restaurant':
+        return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+      default:
+        return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    }
+  };
+
+  const handleMarkerClick = (place) => {
+    setSelectedMarker(place);
+    if (place.location) {
+      setMapCenter({
+        lat: place.location.lat,
+        lng: place.location.lng
+      });
+    }
+  };
+
+  const handleInfoWindowClose = () => {
+    setSelectedMarker(null);
+  };
+
   const handleBack = () => {
     navigate('/trip-preferences', { 
       state: { tripName, selectedDates } 
@@ -932,7 +1048,7 @@ const TripItineraryPage = () => {
     // Validate required data
     if (!tripName || !selectedDates || selectedDates.length < 2 || !userUid) {
       console.warn('⚠️ Missing required trip data:', { tripName, selectedDates, userUid });
-      alert('Missing required trip information. Please go back and complete all steps.');
+      toast.error('Missing required trip information. Please go back and complete all steps.');
       setIsSavingTrip(false);
       return;
     }
@@ -1226,12 +1342,98 @@ const TripItineraryPage = () => {
           {/* Right Column - Map */}
           <div className="w-full lg:w-1/2">
             <div className="sticky top-6">
-              <div className="bg-gray-100 rounded-lg h-[calc(100vh-12rem)] flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">Interactive map</p>
-                  <p className="text-xs">Your trip destinations will appear here</p>
-                </div>
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-12rem)]">
+                {isLoaded ? (
+                  <>
+                    <div className="p-4 border-b border-gray-100">
+                      <h2 className="font-bold text-lg">Trip Map</h2>
+                      <p className="text-sm text-gray-500">
+                        {mapPlaces.length > 0 
+                          ? `${mapPlaces.length} place${mapPlaces.length !== 1 ? 's' : ''} added` 
+                          : 'Add places to see them on the map'}
+                      </p>
+                    </div>
+                    <div className="flex-1">
+                      <GoogleMap
+                        mapContainerStyle={mapContainerStyle}
+                        center={mapCenter}
+                        zoom={mapPlaces.length > 0 ? 12 : 8}
+                        options={{
+                          fullscreenControl: true,
+                          streetViewControl: false,
+                          mapTypeControl: true,
+                          zoomControl: true,
+                        }}
+                      >
+                        {mapPlaces.map((place, index) => (
+                          <Marker
+                            key={`${place.name}-${index}`}
+                            position={{
+                              lat: place.location.lat,
+                              lng: place.location.lng
+                            }}
+                            onClick={() => handleMarkerClick(place)}
+                            icon={getMarkerIcon(place.placeType)}
+                            title={place.name}
+                          />
+                        ))}
+                        {selectedMarker && (
+                          <InfoWindow
+                            position={{
+                              lat: selectedMarker.location.lat,
+                              lng: selectedMarker.location.lng
+                            }}
+                            onCloseClick={handleInfoWindowClose}
+                          >
+                            <div className="p-2">
+                              <h3 className="font-bold">{selectedMarker.name}</h3>
+                              <p className="text-sm">{selectedMarker.location || selectedMarker.address}</p>
+                              {selectedMarker.rating && (
+                                <div className="flex items-center mt-1">
+                                  <span className="text-yellow-500">★</span>
+                                  <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                                </div>
+                              )}
+                              {selectedMarker.image && (
+                                <img 
+                                  src={selectedMarker.image}
+                                  alt={selectedMarker.name} 
+                                  className="mt-2 w-full h-24 object-cover rounded"
+                                />
+                              )}
+                              <div className="mt-2 text-sm">
+                                <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
+                              </div>
+                            </div>
+                          </InfoWindow>
+                        )}
+                      </GoogleMap>
+                    </div>
+                    <div className="p-3 border-t border-gray-100">
+                      <div className="flex gap-4 flex-wrap">
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                          <span className="text-xs">Activities</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                          <span className="text-xs">Hotels</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                          <span className="text-xs">Restaurants</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                    <div className="text-center text-gray-500">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                      <p className="text-sm font-medium">Loading Map...</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
