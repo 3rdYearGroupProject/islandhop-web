@@ -97,49 +97,49 @@ const PanicAlerts = () => {
   }, [pagination.limit, pagination.skip]); // Re-fetch when pagination changes
 
   // Function to refresh alerts
-  const refreshAlerts = async () => {
-    try {
-      setError(null);
-      console.log('🔄 Refreshing panic alerts...');
+  // const refreshAlerts = async () => {
+  //   try {
+  //     setError(null);
+  //     console.log('🔄 Refreshing panic alerts...');
       
-      // Build query parameters
-      const queryParams = new URLSearchParams({
-        status: 'active',
-        limit: pagination.limit.toString(),
-        skip: pagination.skip.toString()
-      });
+  //     // Build query parameters
+  //     const queryParams = new URLSearchParams({
+  //       status: 'active',
+  //       limit: pagination.limit.toString(),
+  //       skip: pagination.skip.toString()
+  //     });
       
-      const url = `${LOST_ITEMS_API_BASE_URL}/panic-alerts?${queryParams}`;
-      console.log(`📤 API Request: GET ${url}`);
+  //     const url = `${LOST_ITEMS_API_BASE_URL}/panic-alerts?${queryParams}`;
+  //     console.log(`📤 API Request: GET ${url}`);
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
+  //     const response = await fetch(url, {
+  //       method: 'GET',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       credentials: 'include',
+  //     });
 
-      console.log(`📥 API Response: ${response.status} ${response.statusText}`);
+  //     console.log(`📥 API Response: ${response.status} ${response.statusText}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (data.success) {
-        setAlerts(data.data);
-        setPagination(data.pagination);
-        console.log('✅ Panic alerts refreshed successfully');
-      } else {
-        throw new Error(data.message || 'Failed to refresh panic alerts');
-      }
-    } catch (err) {
-      console.error('❌ Error refreshing panic alerts:', err);
-      setError(err.message || 'Failed to refresh panic alerts');
-    }
-  };
+  //     if (data.success) {
+  //       setAlerts(data.data);
+  //       setPagination(data.pagination);
+  //       console.log('✅ Panic alerts refreshed successfully');
+  //     } else {
+  //       throw new Error(data.message || 'Failed to refresh panic alerts');
+  //     }
+  //   } catch (err) {
+  //     console.error('❌ Error refreshing panic alerts:', err);
+  //     setError(err.message || 'Failed to refresh panic alerts');
+  //   }
+  // };
 
   const handleContact = (type, userData = alert.user) => {
     const phone = userData?.phone || userData?.phoneNumber;
@@ -301,14 +301,14 @@ const PanicAlerts = () => {
             )}
             
             {/* Refresh Button */}
-            <div className="flex justify-center mt-6">
+            {/* <div className="flex justify-center mt-6">
               <button
                 onClick={refreshAlerts}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
               >
                 Refresh Alerts
               </button>
-            </div>
+            </div> */}
           </div>
         )}
       </div>

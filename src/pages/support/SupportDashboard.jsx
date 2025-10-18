@@ -75,14 +75,14 @@ const SupportDashboard = ({ onPageChange }) => {
               icon: ShieldExclamationIcon,
               color: 'secondary'
             },
-            {
-              title: 'Refunds',
-              value: result.data.refunds || '0',
-              change: result.data.refundsChange || 'No change',
-              changeType: 'neutral',
-              icon: CurrencyDollarIcon,
-              color: 'secondary'
-            },
+            // {
+            //   title: 'Refunds',
+            //   value: result.data.refunds || '0',
+            //   change: result.data.refundsChange || 'No change',
+            //   changeType: 'neutral',
+            //   icon: CurrencyDollarIcon,
+            //   color: 'secondary'
+            // },
             {
               title: 'Lost Items',
               value: result.data.lostItems || '0',
@@ -176,11 +176,11 @@ const SupportDashboard = ({ onPageChange }) => {
   // Quick actions data
   const quickActions = [
     {
-      title: 'View All Tickets',
-      description: 'See and manage all support tickets',
+      title: 'User Reviews',
+      description: 'See and manage all reviews',
       icon: TicketIcon,
       color: 'secondary',
-      action: () => navigate('/support/tickets')
+      action: () => navigate('/support/reviews')
     },
     {
       title: 'Handle Chat & Email',
@@ -197,11 +197,11 @@ const SupportDashboard = ({ onPageChange }) => {
       action: () => navigate('/support/resolve-complaint')
     },
     {
-      title: 'Process Refunds',
-      description: 'Handle refund and compensation requests',
+      title: 'User Verifications',
+      description: 'Handle user verification requests',
       icon: CurrencyDollarIcon,
       color: 'secondary',
-      action: () => navigate('/support/refunds')
+      action: () => navigate('/support/verifications')
     },
     {
       title: 'Track Lost Items',
