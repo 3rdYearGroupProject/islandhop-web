@@ -19,18 +19,22 @@ const SystemHistory = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("payments");
   const [paymentLogs, setPaymentLogs] = useState([]);
+  const [filteredLogs, setFilteredLogs] = useState([]);
   const [auditTrails, setAuditTrails] = useState([]);
   const [changeHistory, setChangeHistory] = useState([]);
   const [systemEvents, setSystemEvents] = useState([]);
   const [authToken, setAuthToken] = useState("");
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    dateRange: "7days",
-    severity: "all",
-    category: "all",
-    user: "all",
+    dateRange: "all",
+    status: "all",
+    logType: "all",
+    minAmount: "",
+    maxAmount: "",
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Mock data for payment logs
   const mockPaymentLogs = [
@@ -300,9 +304,98 @@ const SystemHistory = () => {
     setSystemEvents(mockSystemEvents);
   };
 
+  // Filter and search functionality
+  useEffect(() => {
+    let filtered = [...paymentLogs];
+
+    // Apply search filter
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (log) =>
+          log.transactionId?.toLowerCase().includes(query) ||
+          log.user?.toLowerCase().includes(query) ||
+          log.tripId?.toLowerCase().includes(query) ||
+          log.logType?.toLowerCase().includes(query) ||
+          log.status?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply date range filter
+    if (filters.dateRange !== "all") {
+      const now = new Date();
+      const ranges = {
+        "1day": 1,
+        "7days": 7,
+        "30days": 30,
+        "90days": 90,
+      };
+      const days = ranges[filters.dateRange];
+      if (days) {
+        const cutoffDate = new Date(now.setDate(now.getDate() - days));
+        filtered = filtered.filter(
+          (log) => new Date(log.timestamp) >= cutoffDate
+        );
+      }
+    }
+
+    // Apply status filter
+    if (filters.status !== "all") {
+      filtered = filtered.filter((log) => log.status === filters.status);
+    }
+
+    // Apply log type filter
+    if (filters.logType !== "all") {
+      filtered = filtered.filter((log) => log.logType === filters.logType);
+    }
+
+    // Apply amount range filters
+    if (filters.minAmount !== "") {
+      const minAmount = parseFloat(filters.minAmount);
+      if (!isNaN(minAmount)) {
+        filtered = filtered.filter((log) => log.amount >= minAmount);
+      }
+    }
+
+    if (filters.maxAmount !== "") {
+      const maxAmount = parseFloat(filters.maxAmount);
+      if (!isNaN(maxAmount)) {
+        filtered = filtered.filter((log) => log.amount <= maxAmount);
+      }
+    }
+
+    // Sort by timestamp (newest first)
+    filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    setFilteredLogs(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [paymentLogs, searchQuery, filters]);
+
+  // Get unique values for filter dropdowns
+  const uniqueStatuses = [
+    ...new Set(paymentLogs.map((log) => log.status).filter(Boolean)),
+  ];
+  const uniqueLogTypes = [
+    ...new Set(paymentLogs.map((log) => log.logType).filter(Boolean)),
+  ];
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentLogs = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // Export payment logs to PDF
   const exportToPDF = () => {
     try {
+      // Use filtered logs for export
+      const logsToExport = filteredLogs.length > 0 ? filteredLogs : paymentLogs;
+      
       // Create new PDF document
       const doc = new jsPDF();
 
@@ -316,23 +409,38 @@ const SystemHistory = () => {
       doc.setTextColor(100);
       doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
 
+      // Add filter information if filters are applied
+      if (filteredLogs.length < paymentLogs.length) {
+        doc.setFontSize(9);
+        doc.setTextColor(150);
+        doc.text(
+          `Filtered Results (${filteredLogs.length} of ${paymentLogs.length} total records)`,
+          14,
+          36
+        );
+      }
+
       // Add summary statistics
-      const totalTransactions = paymentLogs.length;
-      const completedTransactions = paymentLogs.filter(
+      const totalTransactions = logsToExport.length;
+      const completedTransactions = logsToExport.filter(
         (log) => log.status === "completed"
       ).length;
-      const totalAmount = paymentLogs.reduce((sum, log) => sum + log.amount, 0);
+      const totalAmount = logsToExport.reduce((sum, log) => sum + log.amount, 0);
 
       doc.setFontSize(12);
       doc.setTextColor(40);
-      doc.text("Summary Statistics:", 14, 40);
+      doc.text("Summary Statistics:", 14, filteredLogs.length < paymentLogs.length ? 44 : 40);
       doc.setFontSize(10);
-      doc.text(`Total Transactions: ${totalTransactions}`, 14, 47);
-      doc.text(`Completed Transactions: ${completedTransactions}`, 14, 52);
-      doc.text(`Total Amount: LKR ${totalAmount.toLocaleString()}`, 14, 57);
+      doc.text(`Total Transactions: ${totalTransactions}`, 14, filteredLogs.length < paymentLogs.length ? 51 : 47);
+      doc.text(`Completed Transactions: ${completedTransactions}`, 14, filteredLogs.length < paymentLogs.length ? 56 : 52);
+      doc.text(
+        `Total Amount: LKR ${totalAmount.toLocaleString()}`,
+        14,
+        filteredLogs.length < paymentLogs.length ? 61 : 57
+      );
 
       // Prepare table data
-      const tableData = paymentLogs.map((log) => [
+      const tableData = logsToExport.map((log) => [
         new Date(log.timestamp).toLocaleDateString(),
         log.transactionId.substring(0, 20) + "...",
         log.user.substring(0, 25) + "...",
@@ -344,7 +452,7 @@ const SystemHistory = () => {
 
       // Add table
       autoTable(doc, {
-        startY: 65,
+        startY: filteredLogs.length < paymentLogs.length ? 69 : 65,
         head: [
           [
             "Date",
@@ -510,17 +618,134 @@ const SystemHistory = () => {
             </div>
             <button
               onClick={exportToPDF}
-              disabled={paymentLogs.length === 0}
+              disabled={filteredLogs.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              title={`Export ${filteredLogs.length} ${filteredLogs.length === 1 ? 'record' : 'records'}`}
             >
               <ArrowDownTrayIcon className="h-5 w-5" />
-              Export History
+              Export {filteredLogs.length > 0 && `(${filteredLogs.length})`}
             </button>
           </div>
         </div>
 
         {/* Search and Filters */}
         <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Search */}
+            <div className="relative md:col-span-2">
+              <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search transactions, users, trip IDs..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Date Range Filter */}
+            <select
+              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+              value={filters.dateRange}
+              onChange={(e) => handleFilterChange("dateRange", e.target.value)}
+            >
+              <option value="all">All Time</option>
+              <option value="1day">Last 24 hours</option>
+              <option value="7days">Last 7 days</option>
+              <option value="30days">Last 30 days</option>
+              <option value="90days">Last 90 days</option>
+            </select>
+
+            {/* Status Filter */}
+            <select
+              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+              value={filters.status}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              {uniqueStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+            </select>
+
+            {/* Log Type Filter */}
+            <select
+              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+              value={filters.logType}
+              onChange={(e) => handleFilterChange("logType", e.target.value)}
+            >
+              <option value="all">All Types</option>
+              {uniqueLogTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+
+            {/* Clear Filters Button */}
+            <button
+              onClick={() => {
+                setFilters({
+                  dateRange: "all",
+                  status: "all",
+                  logType: "all",
+                  minAmount: "",
+                  maxAmount: "",
+                });
+                setSearchQuery("");
+              }}
+              className="px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-secondary-600 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          {/* Amount Range Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Min Amount
+              </label>
+              <input
+                type="number"
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                value={filters.minAmount}
+                onChange={(e) => handleFilterChange("minAmount", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Max Amount
+              </label>
+              <input
+                type="number"
+                placeholder="999999"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
+                value={filters.maxAmount}
+                onChange={(e) => handleFilterChange("maxAmount", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-secondary-700">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-semibold text-gray-900 dark:text-white">{currentLogs.length}</span> of{" "}
+              <span className="font-semibold text-gray-900 dark:text-white">{filteredLogs.length}</span> results
+              {filteredLogs.length !== paymentLogs.length && (
+                <span className="text-primary-600 dark:text-primary-400">
+                  {" "}(filtered from {paymentLogs.length} total)
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Search and Filters - OLD VERSION REMOVED */}
+        {/* <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -544,38 +769,13 @@ const SystemHistory = () => {
             </select>
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
-              value={filters.severity}
-              onChange={(e) => handleFilterChange("severity", e.target.value)}
+              value={filters.status}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
             >
-              <option value="all">All Severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-            <select
-              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
-              value={filters.category}
-              onChange={(e) => handleFilterChange("category", e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              <option value="authentication">Authentication</option>
-              <option value="user_management">User Management</option>
-              <option value="system">System</option>
-              <option value="security">Security</option>
-            </select>
-            <select
-              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
-              value={filters.user}
-              onChange={(e) => handleFilterChange("user", e.target.value)}
-            >
-              <option value="all">All Users</option>
-              <option value="admin">Admin</option>
-              <option value="system">System</option>
-              <option value="support">Support</option>
+              <option value="all">All Statuses</option>
             </select>
           </div>
-        </div>
+        </div> */}
 
         {/* Tab Navigation */}
         <div className="mb-6">
@@ -605,8 +805,9 @@ const SystemHistory = () => {
         <div className="space-y-4">
           {activeTab === "payments" && (
             <div className="space-y-4">
-              {paymentLogs.length > 0 ? (
-                paymentLogs.map((payment) => (
+              {currentLogs.length > 0 ? (
+                <>
+                  {currentLogs.map((payment) => (
                   <div
                     key={payment.id}
                     className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6"
@@ -728,7 +929,72 @@ const SystemHistory = () => {
                       </div>
                     </div>
                   </div>
-                ))
+                ))}
+                
+                {/* Pagination */}
+                {filteredLogs.length > itemsPerPage && (
+                  <div className="mt-6 flex items-center justify-between bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-4">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      Showing {indexOfFirstItem + 1} to{" "}
+                      {Math.min(indexOfLastItem, filteredLogs.length)} of{" "}
+                      {filteredLogs.length} results
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded-lg border border-gray-300 dark:border-secondary-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Previous
+                      </button>
+                      
+                      {/* Page numbers */}
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter((page) => {
+                            // Show first page, last page, current page, and pages around current
+                            return (
+                              page === 1 ||
+                              page === totalPages ||
+                              (page >= currentPage - 1 && page <= currentPage + 1)
+                            );
+                          })
+                          .map((page, index, array) => {
+                            // Add ellipsis
+                            const prevPage = array[index - 1];
+                            const showEllipsis = prevPage && page - prevPage > 1;
+                            
+                            return (
+                              <React.Fragment key={page}>
+                                {showEllipsis && (
+                                  <span className="px-3 py-1 text-gray-500">...</span>
+                                )}
+                                <button
+                                  onClick={() => handlePageChange(page)}
+                                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                    currentPage === page
+                                      ? "bg-primary-600 text-white"
+                                      : "border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700"
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              </React.Fragment>
+                            );
+                          })}
+                      </div>
+                      
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 rounded-lg border border-gray-300 dark:border-secondary-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
               ) : (
                 <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
                   <CreditCardIcon className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
