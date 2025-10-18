@@ -474,7 +474,8 @@ const Navbar = () => {
   const handleLogout = () => {
     clearUserData();
     clearProfileCompletionStatus(); // Clear profile completion status on logout
-    navigate('/');
+    // Navigate to home and refresh in one smooth action
+    window.location.href = '/';
   };
 
   // Fetch profile from backend and check completion
