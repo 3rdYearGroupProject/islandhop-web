@@ -476,20 +476,13 @@ const DriverTrips = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-gray-900">{trip.tripName || trip.passenger}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Star className="h-3 w-3 text-yellow-400" />
-                        <span>{trip.passengerRating}</span>
-                        <span>•</span>
-                        <span>Trip #{trip.id ? trip.id.substring(0, 8) : 'N/A'}...</span>
-                        {trip.vehicleType && (
-                          <>
-                            <span>•</span>
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                              {trip.vehicleType}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      {trip.vehicleType && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            {trip.vehicleType}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex items-center space-x-3">
@@ -626,28 +619,6 @@ const DriverTrips = () => {
                           >
                             <Check className="h-4 w-4 mr-1" />
                             Accept
-                          </button>
-                        </>
-                      )}
-                      
-                      {trip.status === 'active' && (
-                        <>
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
-                          >
-                            <Navigation className="h-4 w-4 mr-1" />
-                            Navigate
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartTrip(trip.id);
-                            }}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center"
-                          >
-                            <Play className="h-4 w-4 mr-1" />
-                            Start Trip
                           </button>
                         </>
                       )}
