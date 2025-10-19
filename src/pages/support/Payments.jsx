@@ -92,6 +92,9 @@ const Payments = () => {
           drivers: driverHistory.success ? driverHistory.data : [],
           guides: guideHistory.success ? guideHistory.data : []
         });
+        console.log('Payment history fetched successfully');
+        console.log('Driver History:', driverHistory);
+        console.log('Guide History:', guideHistory);
       }
     } catch (err) {
       console.error('Error fetching payment history:', err);
