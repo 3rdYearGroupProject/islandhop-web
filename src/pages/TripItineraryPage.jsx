@@ -14,9 +14,7 @@ import Footer from '../components/Footer';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
-
-// Google Maps libraries
-const GOOGLE_MAPS_LIBRARIES = ['places'];
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -194,6 +192,7 @@ const TripItineraryPage = () => {
   const [itinerary, setItinerary] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStayDates, setSelectedStayDates] = useState([]); // For multi-day place selection
   
   // Destination management states
   const [destinations, setDestinations] = useState({}); // dayIndex -> destination
