@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { getUserData } from '../../utils/userStorage';
 import axios from 'axios';
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const DriverEarnings = () => {
   const [timeFilter, setTimeFilter] = useState('week'); // week, month, year
@@ -207,6 +209,183 @@ const DriverEarnings = () => {
     }));
   };
 
+  // Export earnings and transactions to PDF
+  const exportEarningsToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      
+      // Add header
+      doc.setFillColor(59, 130, 246); // Primary blue
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      // Add logo/title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont(undefined, 'bold');
+      doc.text('IslandHop Driver Earnings Report', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Driver: ${driverEmail || 'N/A'}`, pageWidth / 2, 30, { align: 'center' });
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      
+      let yPos = 50;
+      
+      // Add report date and period
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Report Generated: ${new Date().toLocaleDateString()}`, 14, yPos);
+      doc.text(`Period: ${timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)}`, pageWidth - 14, yPos, { align: 'right' });
+      
+      yPos += 15;
+      
+      // Earnings Summary Section
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(59, 130, 246);
+      doc.text('Earnings Summary', 14, yPos);
+      doc.setTextColor(0, 0, 0);
+      
+      yPos += 5;
+      
+      // Summary table
+      const summaryData = [
+        ['Total Earnings', formatCurrency(currentData.total)],
+        ['Completed Trips', currentData.trips.toString()],
+        ['Average per Trip', formatCurrency(averagePerTrip)],
+        ['Change vs Last Period', `${currentData.change > 0 ? '+' : ''}${currentData.change}%`],
+      ];
+      
+      if (timeFilter === 'week') {
+        summaryData.push(['Daily Average', formatCurrency(currentData.total / 7)]);
+      } else if (timeFilter === 'month') {
+        summaryData.push(['Weekly Average', formatCurrency(currentData.total / 4)]);
+      }
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Value']],
+        body: summaryData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 14, right: 14 },
+        styles: { fontSize: 10 },
+      });
+      
+      yPos = doc.lastAutoTable.finalY + 15;
+      
+      // Breakdown by Day/Week Section
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(59, 130, 246);
+      doc.text(`${timeFilter === 'week' ? 'Daily' : 'Weekly'} Breakdown`, 14, yPos);
+      doc.setTextColor(0, 0, 0);
+      
+      yPos += 5;
+      
+      const breakdownData = (timeFilter === 'week' ? currentData.daily : currentData.weekly).map(item => [
+        timeFilter === 'week' ? item.day : item.week,
+        formatCurrency(item.earnings),
+        item.trips ? item.trips.toString() : 'N/A',
+        item.trips ? formatCurrency(item.earnings / item.trips) : 'N/A'
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [[timeFilter === 'week' ? 'Day' : 'Week', 'Earnings', 'Trips', 'Avg/Trip']],
+        body: breakdownData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 14, right: 14 },
+        styles: { fontSize: 9 },
+      });
+      
+      // Check if we need a new page for transactions
+      yPos = doc.lastAutoTable.finalY + 15;
+      if (yPos > pageHeight - 60) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Recent Transactions Section
+      if (recentTransactions && recentTransactions.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(59, 130, 246);
+        doc.text('Recent Transactions', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        
+        yPos += 5;
+        
+        const transactionData = recentTransactions.map(tx => [
+          tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A',
+          tx.tripId || 'N/A',
+          tx.type || 'Trip Earning',
+          tx.status || 'Completed',
+          formatCurrency(tx.amount || 0)
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Date', 'Trip ID', 'Type', 'Status', 'Amount']],
+          body: transactionData,
+          theme: 'striped',
+          headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 14, right: 14 },
+          styles: { fontSize: 8 },
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'italic');
+        doc.setTextColor(100, 100, 100);
+        doc.text('No recent transactions available', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      // Add footer to all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+        doc.text(
+          'IslandHop - Confidential Driver Report',
+          14,
+          pageHeight - 10
+        );
+        doc.text(
+          new Date().toLocaleDateString(),
+          pageWidth - 14,
+          pageHeight - 10,
+          { align: 'right' }
+        );
+      }
+      
+      // Save the PDF
+      const fileName = `Driver_Earnings_${timeFilter}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      console.log('PDF exported successfully');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF. Please try again.');
+    }
+  };
+
   const currentData = earningsData || {
     total: 0,
     trips: 0,
@@ -294,7 +473,12 @@ const DriverEarnings = () => {
               ))}
             </div>
             
-            <button className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+            <button 
+              onClick={exportEarningsToPDF}
+              disabled={loading || !earningsData}
+              className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              title={`Export earnings report (${currentData.trips} trips, ${recentTransactions.length} transactions)`}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export
             </button>
