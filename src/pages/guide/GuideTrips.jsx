@@ -512,23 +512,16 @@ const GuideTrips = () => {
         {filteredTrips.map((trip) => (
           <div key={trip.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {trip.tripName?.charAt(0) || 'T'}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {trip.tripName || 'Tour'}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {trip.pickupLocation} → {trip.destination}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {trip.distance} • {trip.estimatedTime}
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {trip.tripName || 'Tour'}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Tourist: {trip.userName || 'Tourist Name'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Guide: {guideEmail}
+                </p>
               </div>
               <div className="flex items-center space-x-4">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -541,66 +534,39 @@ const GuideTrips = () => {
                   {trip.status?.charAt(0).toUpperCase() + trip.status?.slice(1) || 'Unknown'}
                 </span>
                 <p className="text-lg font-bold text-gray-900">
-                  LKR {(trip.fare || 0).toLocaleString()}
+                  LKR {(() => {
+                    const startDate = trip.startDate ? new Date(trip.startDate) : null;
+                    const endDate = trip.endDate ? new Date(trip.endDate) : null;
+                    const days = startDate && endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1 : 0;
+                    return (1800 * days).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  })()}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'Date TBD'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  Base: {trip.baseCity || 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {trip.dailyPlans?.length || 0} Day{(trip.dailyPlans?.length || 0) !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
+            {trip.description && (
+              <p className="text-gray-600 text-sm mb-4">{trip.description}</p>
+            )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-              <div className="flex space-x-3">
-                {trip.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => handleTripAction(trip.id, 'accept')}
-                      disabled={loading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      Accept Tour
-                    </button>
-                    <button
-                      onClick={() => handleTripAction(trip.id, 'decline')}
-                      disabled={loading}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                    >
-                      Decline
-                    </button>
-                  </>
-                )}
+            {trip.status === 'pending' && (
+              <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => handleTripAction(trip.id, 'accept')}
+                  disabled={loading}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  Accept Tour
+                </button>
+                <button
+                  onClick={() => handleTripAction(trip.id, 'decline')}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  Decline
+                </button>
               </div>
-              
-              {trip.status === 'pending' && (
-                <div className="flex space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                    <MessageCircle className="h-5 w-5" />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                    <Phone className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         ))}
 

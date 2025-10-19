@@ -1004,9 +1004,6 @@ const OngoingTripPage = () => {
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
-              Trip ID: <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{actualTripId}</span>
-            </span>
-            <span className="text-sm text-gray-600">
               Last Updated: {tripData?.updatedAt ? new Date(tripData.updatedAt.$date || tripData.updatedAt).toLocaleString() : 'Unknown'}
             </span>
           </div>
