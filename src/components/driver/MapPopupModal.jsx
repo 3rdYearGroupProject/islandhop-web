@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
 import { MapPin, Clock, Navigation, CheckCircle, Loader } from 'lucide-react';
 import { GOOGLE_MAPS_LIBRARIES } from '../../utils/googleMapsConfig';
+import { useToast } from '../ToastProvider';
 
 const containerStyle = {
   width: '100%',
@@ -12,6 +13,7 @@ const containerStyle = {
 const BASE_URL = 'http://localhost:3001';
 
 const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
+  const toast = useToast();
   const [routeData, setRouteData] = useState(null);
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -267,10 +269,16 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
       }
       
       // Show success message and potentially close the entire modal
-      alert('Trip completed successfully!');
+      toast.success('Trip completed successfully!', { duration: 2000 });
+      
+      // Close the modal after a short delay
+      setTimeout(() => {
+        onClose();
+      }, 2000);
       
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || 'Failed to complete trip. Please try again.');
       console.error('Error ending trip:', err);
     } finally {
       setEndingTrip(false);

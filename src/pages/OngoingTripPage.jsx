@@ -14,6 +14,7 @@ import TripItinerary from '../components/trip/TripItinerary';
 import TripMapView from '../components/trip/TripMapView';
 import TripChat from '../components/trip/TripChat';
 import { shouldShowChat } from '../utils/chatService';
+import { useToast } from '../components/ToastProvider';
 
 // API functions for trip confirmation
 const confirmDayStart = async (tripId, day) => {
@@ -277,7 +278,7 @@ const mockTravelersData = {
 };
 
 // Travelers Modal Component
-const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic, tripId, locationData }) => {
+const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic, tripId, locationData, toast }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
@@ -565,7 +566,7 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic, t
                             onClick={() => {
                               // TODO: Implement connect/chat functionality
                               console.log('Connect with:', traveler);
-                              alert(`Connect feature coming soon! User: ${fullName}`);
+                              toast.info(`Connect feature coming soon! User: ${fullName}`, { duration: 2000 });
                             }}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
                           >
@@ -594,6 +595,7 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic, t
 const OngoingTripPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
   
   // Get initial trip data from navigation state (passed from MyTripsPage)
   const initialTripData = location.state?.tripData;
@@ -1121,6 +1123,7 @@ const OngoingTripPage = () => {
         setIsPublic={setIsPublic}
         tripId={actualTripId}
         locationData={selectedLocationData}
+        toast={toast}
       />
       
       <ConfirmStartModal
@@ -1149,10 +1152,10 @@ const OngoingTripPage = () => {
             refreshTripData();
             
             console.log(`Day ${dayNumber} start confirmed successfully`);
+            toast.success(`Day ${dayNumber} started successfully!`, { duration: 2000 });
           } catch (error) {
             console.error('Failed to confirm day start:', error);
-            // You might want to show an error message to the user here
-            alert('Failed to confirm day start. Please try again.');
+            toast.error('Failed to confirm day start. Please try again.');
           }
         }}
       />
@@ -1186,10 +1189,10 @@ const OngoingTripPage = () => {
             refreshTripData();
             
             console.log(`Day ${dayNumber} end confirmed successfully`);
+            toast.success(`Day ${dayNumber} completed successfully!`, { duration: 2000 });
           } catch (error) {
             console.error('Failed to confirm day end:', error);
-            // You might want to show an error message to the user here
-            alert('Failed to confirm day end. Please try again.');
+            toast.error('Failed to confirm day end. Please try again.');
           }
         }}
       />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, MapPin, Car, Calendar, CreditCard, User, Users, DollarSign, Heart, Calculator } from 'lucide-react';
 import PaymentForm from './PaymentForm';
+import { useToast } from './ToastProvider';
 
 const TripCompletionModal = ({ 
   isOpen, 
@@ -14,6 +15,7 @@ const TripCompletionModal = ({
 }) => {
   console.log('tripData trip completion:', tripData);
   const navigate = useNavigate();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState([]);
@@ -226,7 +228,7 @@ const TripCompletionModal = ({
       
     } catch (error) {
       console.error('Error processing payments:', error);
-      alert('Payment was successful, but there was an error processing some backend operations. Please contact support if needed.');
+      toast.warning('Payment was successful, but there was an error processing some backend operations. Please contact support if needed.', { duration: 4000 });
       // Still redirect on error
       setTimeout(() => {
         onClose();
@@ -331,7 +333,7 @@ const TripCompletionModal = ({
                   <div className="bg-gray-50 rounded-lg p-4 text-center">
                     <Car className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">Total Distance</p>
-                    <p className="text-lg font-bold text-gray-900">{(calculatedTotalDistance || 0).toLocaleString()} km</p>
+                    <p className="text-lg font-bold text-gray-900">{(calculatedTotalDistance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4 text-center">
                     <Calendar className="w-8 h-8 text-green-600 mx-auto mb-2" />
@@ -378,11 +380,11 @@ const TripCompletionModal = ({
                         <div>
                           <p className="font-medium text-gray-900">Vehicle Cost</p>
                           <p className="text-sm text-gray-500">
-                            {calculatedCosts.vehicleType?.typeName || 'N/A'} - {(calculatedTotalDistance || 0)} km × Rs.{calculatedCosts.vehicleType?.pricePerKm || 0}
+                            {calculatedCosts.vehicleType?.typeName || 'N/A'} - {(calculatedTotalDistance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km × Rs.{(calculatedCosts.vehicleType?.pricePerKm || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
                       </div>
-                      <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.vehicleCost || 0).toLocaleString()}</span>
+                      <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.vehicleCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
 
                     {/* Driver Cost */}
@@ -393,11 +395,11 @@ const TripCompletionModal = ({
                           <div>
                             <p className="font-medium text-gray-900">Driver Service</p>
                             <p className="text-sm text-gray-500">
-                              {calculatedCosts.tripDays || 1} days × Rs.{(chargeData?.driverDailyCharge || 0).toLocaleString()}
+                              {calculatedCosts.tripDays || 1} days × Rs.{(chargeData?.driverDailyCharge || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
                         </div>
-                        <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.baseDriverCost || 0).toLocaleString()}</span>
+                        <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.baseDriverCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
 
@@ -409,11 +411,11 @@ const TripCompletionModal = ({
                           <div>
                             <p className="font-medium text-gray-900">Guide Service</p>
                             <p className="text-sm text-gray-500">
-                              {calculatedCosts.tripDays || 1} days × Rs.{(chargeData?.guideDailyCharge || 0).toLocaleString()}
+                              {calculatedCosts.tripDays || 1} days × Rs.{(chargeData?.guideDailyCharge || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
                         </div>
-                        <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.baseGuideCost || 0).toLocaleString()}</span>
+                        <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.baseGuideCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
 
@@ -468,13 +470,13 @@ const TripCompletionModal = ({
                           <p className="text-sm text-gray-500">{chargeData?.systemChargePercentage || 0}% platform fee</p>
                         </div>
                       </div>
-                      <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.systemCharge || 0).toLocaleString()}</span>
+                      <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.systemCharge || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     
                     {/* Subtotal */}
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-sm font-medium text-gray-700">Subtotal</span>
-                      <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.totalCost || 0).toLocaleString()}</span>
+                      <span className="font-semibold text-gray-900">Rs.{(calculatedCosts.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
 
                     {/* Already Paid Amount */}
@@ -483,7 +485,7 @@ const TripCompletionModal = ({
                         <p className="font-medium text-gray-900">Already Paid</p>
                         <p className="text-sm text-gray-500">Amount paid during booking</p>
                       </div>
-                      <span className="font-semibold text-green-600">-Rs.{parseFloat(tripData?.payedAmount || 0).toLocaleString()}</span>
+                      <span className="font-semibold text-green-600">-Rs.{parseFloat(tripData?.payedAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     
                     {/* Remaining Amount Due */}
@@ -493,7 +495,7 @@ const TripCompletionModal = ({
                         <p className="text-sm text-primary-700">Remaining payment required</p>
                       </div>
                       <span className="text-xl font-bold text-primary-900">
-                        Rs.{getRemainingAmount().toLocaleString()}
+                        Rs.{getRemainingAmount().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
