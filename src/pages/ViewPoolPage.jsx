@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users, CheckCircle, AlertCircle, Timer, X } from 'lucide-react';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SharePoolModal from '../components/SharePoolModal';
 import JoinPoolModal from '../components/JoinPoolModal';
 import InviteUserModal from '../components/InviteUserModal';
+import MapInfoWindow from '../components/MapInfoWindow';
 import { PoolsApi, poolsApi } from '../api/poolsApi';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../components/ToastProvider';
 
 // Mock participant data (replace with real data as needed)
 const mockParticipants = {
@@ -54,6 +58,7 @@ const ViewPoolPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
   const { poolId } = useParams();
+  const toast = useToast();
   
   // Get pool data from route state or use mock data if none provided
   const poolFromState = location.state?.pool;
@@ -80,6 +85,12 @@ const ViewPoolPage = () => {
   const [joinRequests, setJoinRequests] = useState([]);
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
   
+  // Map State
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka center
+  const [places, setPlaces] = useState([]);
+  const [mapInstance, setMapInstance] = useState(null);
+  
   const { user } = useAuth();
   
   // Capacity helpers
@@ -94,7 +105,7 @@ const ViewPoolPage = () => {
       // Find the join request to get the requestId
       const request = joinRequests.find(req => req.email === email);
       if (!request) {
-        alert('❌ Could not find join request');
+        toast.error('Could not find join request', { duration: 3000 });
         return;
       }
       
@@ -105,13 +116,13 @@ const ViewPoolPage = () => {
         action: 'approve'
       });
       
-      alert(`✅ Accepted join request from ${name}!`);
+      toast.success(`Accepted join request from ${name}!`, { duration: 2000 });
       
       // Refresh join requests
       await loadJoinRequests();
     } catch (error) {
       console.error('Error accepting join request:', error);
-      alert(`❌ Failed to accept request: ${error.message}`);
+      toast.error(`Failed to accept request: ${error.message}`, { duration: 3000 });
     }
   };
 
@@ -122,7 +133,7 @@ const ViewPoolPage = () => {
       // Find the join request to get the requestId
       const request = joinRequests.find(req => req.email === email);
       if (!request) {
-        alert('❌ Could not find join request');
+        toast.error('Could not find join request', { duration: 3000 });
         return;
       }
       
@@ -133,13 +144,13 @@ const ViewPoolPage = () => {
         action: 'reject'
       });
       
-      alert(`❌ Rejected join request from ${name}`);
+      toast.warning(`Rejected join request from ${name}`, { duration: 2000 });
       
       // Refresh join requests
       await loadJoinRequests();
     } catch (error) {
       console.error('Error rejecting join request:', error);
-      alert(`❌ Failed to reject request: ${error.message}`);
+      toast.error(`Failed to reject request: ${error.message}`, { duration: 3000 });
     }
   };
 
@@ -241,7 +252,7 @@ const ViewPoolPage = () => {
       setShowConfirmationModal(true);
     } catch (error) {
       console.error('Failed to initiate trip confirmation:', error);
-      alert('Failed to initiate trip confirmation. Please try again.');
+      toast.error('Failed to initiate trip confirmation. Please try again.', { duration: 3000 });
     } finally {
       setConfirmationLoading(false);
     }
@@ -254,13 +265,14 @@ const ViewPoolPage = () => {
       const result = await poolsApi.confirmParticipation(pool.id, user?.uid || user?.id);
       console.log('Participation confirmed:', result);
       setConfirmationStatus('confirmed');
+      toast.success('Participation confirmed successfully!', { duration: 2000 });
       // Navigate to confirmed pools page
       setTimeout(() => {
         navigate('/pools', { state: { activeTab: 'confirmed' } });
       }, 2000);
     } catch (error) {
       console.error('Failed to confirm participation:', error);
-      alert('Failed to confirm participation. Please try again.');
+      toast.error('Failed to confirm participation. Please try again.', { duration: 3000 });
     } finally {
       setConfirmationLoading(false);
     }
@@ -412,6 +424,7 @@ const ViewPoolPage = () => {
           id: `${index}-${actIndex}`,
           name: attraction.name,
           location: attraction.address || dayPlan.city || tripDetails.baseCity,
+          coordinates: attraction.location || attraction.coordinates, // Include coordinates from API
           duration: '2-3 hours',
           rating: attraction.rating || 4.5,
           description: `Visit ${attraction.name} in ${dayPlan.city || tripDetails.baseCity}`,
@@ -424,6 +437,7 @@ const ViewPoolPage = () => {
           id: `${index}-hotel-${hotelIndex}`,
           name: hotel.name,
           location: hotel.address || dayPlan.city || tripDetails.baseCity,
+          coordinates: hotel.location || hotel.coordinates, // Include coordinates from API
           rating: hotel.rating || 4.0,
           description: `Stay at ${hotel.name}`,
           price: 'Contact for rates',
@@ -434,6 +448,7 @@ const ViewPoolPage = () => {
           id: `${index}-restaurant-${restIndex}`,
           name: restaurant.name,
           location: restaurant.address || dayPlan.city || tripDetails.baseCity,
+          coordinates: restaurant.location || restaurant.coordinates, // Include coordinates from API
           rating: restaurant.rating || 4.2,
           description: `Dine at ${restaurant.name}`,
           price: 'Rs. 1,500 - 3,000',
@@ -797,13 +812,13 @@ const ViewPoolPage = () => {
       // Copy to clipboard
       await navigator.clipboard.writeText(poolUrl);
       
-      // Show success notification (you can replace this with a toast notification)
-      alert('Pool link copied to clipboard!');
+      // Show success notification
+      toast.success('Pool link copied to clipboard!', { duration: 2000 });
       
       console.log('Pool link copied:', poolUrl);
     } catch (error) {
       console.error('Failed to copy link:', error);
-      alert('Failed to copy link. Please try again.');
+      toast.error('Failed to copy link. Please try again.', { duration: 3000 });
     }
   };
 
@@ -842,10 +857,143 @@ const ViewPoolPage = () => {
 
   // Check user role when pool or user data changes
   useEffect(() => {
-    if (pool && user) {
-      checkUserRole();
+    checkUserRole();
+    // Also extract places for map when pool data is available
+    if (pool?.itinerary) {
+      const allPlaces = [];
+      Object.entries(pool.itinerary).forEach(([dayIndex, dayData]) => {
+        // Add activities/attractions
+        if (dayData.activities && dayData.activities.length > 0) {
+          dayData.activities.forEach(activity => {
+            // Check for coordinates in multiple possible properties
+            const locationData = activity.coordinates || activity.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...activity,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'attraction'
+              });
+            }
+          });
+        }
+        
+        // Add hotels/places
+        if (dayData.places && dayData.places.length > 0) {
+          dayData.places.forEach(place => {
+            // Check for coordinates in multiple possible properties
+            const locationData = place.coordinates || place.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...place,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'hotel'
+              });
+            }
+          });
+        }
+        
+        // Add restaurants/food
+        if (dayData.food && dayData.food.length > 0) {
+          dayData.food.forEach(restaurant => {
+            // Check for coordinates in multiple possible properties
+            const locationData = restaurant.coordinates || restaurant.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...restaurant,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'restaurant'
+              });
+            }
+          });
+        }
+        
+        // Add transportation if it has coordinates
+        if (dayData.transportation && dayData.transportation.length > 0) {
+          dayData.transportation.forEach(transport => {
+            // Check for coordinates in multiple possible properties
+            const locationData = transport.coordinates || transport.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...transport,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'attraction'
+              });
+            }
+          });
+        }
+      });
+      
+      console.log('🗺️ Extracted places for map:', allPlaces.length, 'locations');
+      setPlaces(allPlaces);
+      
+      // Set map center to first place with coordinates
+      if (allPlaces.length > 0 && allPlaces[0].location) {
+        setMapCenter({
+          lat: allPlaces[0].location.lat,
+          lng: allPlaces[0].location.lng
+        });
+        console.log('🗺️ Map center set to:', allPlaces[0].name);
+      } else {
+        console.log('🗺️ No places with coordinates found, using default Sri Lanka center');
+      }
     }
   }, [pool, user]);
+
+  // Google Maps API loading
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    version: 'weekly'
+  });
+
+  // Google Maps styles and settings
+  const mapContainerStyle = {
+    width: '100%',
+    height: '100%',
+    minHeight: '300px',
+  };
+  
+  // Get map icon based on place type
+  const getMarkerIcon = (placeType) => {
+    switch (placeType) {
+      case 'attraction':
+        return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+      case 'hotel':
+        return 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+      case 'restaurant':
+        return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+      default:
+        return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    }
+  };
+  
+  // Handle marker click
+  const handleMarkerClick = (place) => {
+    setSelectedMarker(place);
+    
+    // Smoothly pan to the selected place
+    if (place.location && mapInstance) {
+      mapInstance.panTo({
+        lat: place.location.lat,
+        lng: place.location.lng
+      });
+    }
+  };
+  
+  // Close info window
+  const handleInfoWindowClose = () => {
+    setSelectedMarker(null);
+  };
+
+  // Handle map load
+  const handleMapLoad = (map) => {
+    setMapInstance(map);
+  };
 
   if (loading) {
     return (
@@ -909,7 +1057,7 @@ const ViewPoolPage = () => {
         poolData={pool}
         onSuccess={(result) => {
           console.log('Join request sent:', result);
-          alert('Join request sent successfully!');
+          toast.success('Join request sent successfully!', { duration: 2000 });
         }}
       />
       <InviteUserModal
@@ -918,7 +1066,7 @@ const ViewPoolPage = () => {
         groupData={pool}
         onSuccess={(result) => {
           console.log('Invitation sent:', result);
-          alert('Invitation sent successfully!');
+          toast.success('Invitation sent successfully!', { duration: 2000 });
         }}
       />
 
@@ -1063,16 +1211,6 @@ const ViewPoolPage = () => {
             </div>
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              {/* Share button (Copy Link) - always visible to everyone */}
-              <button
-                onClick={handleCopyLink}
-                className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                title="Copy pool link to share with anyone"
-              >
-                <Share2 className="w-5 h-5 mr-2" />
-                Share
-              </button>
-              
               {/* Join Pool - shown if user is not a member and there's capacity */}
               {!isMember && hasCapacity && (
                 <button
@@ -1536,146 +1674,71 @@ const ViewPoolPage = () => {
         </div>
           {/* Right: Map, sticky/fixed on viewport - exactly 50% width */}
           <div className="hidden lg:flex w-1/2 min-w-0">
-            <div className="bg-gray-200 rounded-xl w-full h-[calc(100vh-160px)] sticky top-20">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-2" />
-                  <p className="font-medium">Interactive Map</p>
-                  <p className="text-sm">Pool route and locations</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Pool Summary (below itinerary, left column only) */}
-        <div className="flex gap-8 w-full">
-          {/* Left: Pool Summary Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
-            <div className="w-full mt-10">
-              <div
-                id="pool-summary-card"
-                className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200"
-                style={{ minHeight: '220px', boxShadow: 'none', border: '1px solid #e5e7eb' }}
-                ref={el => (window.poolSummaryCardRef = el)}
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Pool Cost Breakdown</h3>
-                <div className="space-y-3">
-                  {/* Accommodation */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('accommodation')}
+            <div className="bg-white rounded-xl w-full h-[calc(100vh-160px)] sticky top-20 shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              {isLoaded ? (
+                <div className="flex-1 flex flex-col h-full">
+                  <div className="p-4 border-b border-gray-100 shrink-0">
+                    <h2 className="font-bold text-lg">Pool Map</h2>
+                    <p className="text-sm text-gray-500">Explore pool destinations</p>
+                  </div>
+                  <div className="flex-1 relative overflow-hidden">
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={mapCenter}
+                      zoom={12}
+                      onLoad={handleMapLoad}
+                      options={{
+                        fullscreenControl: true,
+                        streetViewControl: false,
+                        mapTypeControl: true,
+                        zoomControl: true,
+                      }}
                     >
-                      <span className="text-gray-600">Accommodation</span>
-                      <span className="font-medium flex items-center">
-                        ${accommodationTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.accommodation ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.accommodation && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {accommodationItems.length === 0 && <span className="text-gray-400 text-sm">No accommodations</span>}
-                        {accommodationItems.map((place, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{place.name} <span className="text-gray-400">({place.location})</span></span>
-                            <span>{place.price}</span>
-                          </div>
-                        ))}
+                      {places.map((place, index) => (
+                        <Marker
+                          key={`${place.name}-${index}`}
+                          position={{
+                            lat: place.location.lat,
+                            lng: place.location.lng
+                          }}
+                          onClick={() => handleMarkerClick(place)}
+                          icon={getMarkerIcon(place.placeType)}
+                          title={place.name}
+                        />
+                      ))}
+                      <MapInfoWindow 
+                        selectedMarker={selectedMarker}
+                        onClose={handleInfoWindowClose}
+                      />
+                    </GoogleMap>
+                  </div>
+                  <div className="p-3 border-t border-gray-100 shrink-0">
+                    <div className="flex gap-4 flex-wrap">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                        <span className="text-xs">Attractions</span>
                       </div>
-                    )}
-                  </div>
-                  {/* Food */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('food')}
-                    >
-                      <span className="text-gray-600">Food</span>
-                      <span className="font-medium flex items-center">
-                        ${foodTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.food ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.food && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {foodItems.length === 0 && <span className="text-gray-400 text-sm">No food entries</span>}
-                        {foodItems.map((food, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{food.name} <span className="text-gray-400">({food.location})</span></span>
-                            <span>{food.priceRange}</span>
-                          </div>
-                        ))}
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-xs">Hotels</span>
                       </div>
-                    )}
-                  </div>
-                  {/* Activities */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('activities')}
-                    >
-                      <span className="text-gray-600">Activities</span>
-                      <span className="font-medium flex items-center">
-                        ${activityTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.activities ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.activities && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {activityItems.length === 0 && <span className="text-gray-400 text-sm">No activities</span>}
-                        {activityItems.map((act, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{act.name} <span className="text-gray-400">({act.location})</span></span>
-                            <span>{act.price}</span>
-                          </div>
-                        ))}
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                        <span className="text-xs">Restaurants</span>
                       </div>
-                    )}
-                  </div>
-                  {/* Transportation */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('transportation')}
-                    >
-                      <span className="text-gray-600">Transportation</span>
-                      <span className="font-medium flex items-center">
-                        ${transportationTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.transportation ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.transportation && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {transportationItems.length === 0 && <span className="text-gray-400 text-sm">No transportation</span>}
-                        {transportationItems.map((t, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{t.name} <span className="text-gray-400">({t.type || t.location})</span></span>
-                            <span>{t.price}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Driver */}
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-600">Driver</span>
-                    <span className="font-medium">${driverCost.toFixed(2)}</span>
-                  </div>
-                  {/* Guide */}
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-600">Guide</span>
-                    <span className="font-medium">${guideCost.toFixed(2)}</span>
-                  </div>
-                  {/* Grand Total */}
-                  <div className="flex justify-between mt-2">
-                    <span className="text-gray-900 font-bold">Total</span>
-                    <span className="font-bold text-primary-700 text-lg">${grandTotal.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="font-medium">Loading Map...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          {/* Right: Actions Card */}
         </div>
       </div>
       {/* Footer at the very bottom */}
