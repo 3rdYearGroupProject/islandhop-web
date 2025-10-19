@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Square } from 'lucide-react';
+import { useToast } from '../ToastProvider';
 
 const TripStatusCard = ({ 
   tripName,
@@ -16,6 +17,7 @@ const TripStatusCard = ({
   tripData, // Add tripData prop to access dailyPlans with meter readings
   refreshTripData // Add refreshTripData prop to refresh data after actions
 }) => {
+  const toast = useToast();
   // Get daily plans from trip data
   const dailyPlans = tripData?.dailyPlans || [];
   
@@ -145,7 +147,7 @@ const TripStatusCard = ({
   const handleTripEnd = () => {
     // Check if trip has been ended by driver/guide (ended field must be 1)
     if (tripData?.ended !== 1) {
-      alert('The trip cannot be completed yet. The driver or guide needs to end the trip first.');
+      toast.warning('The trip cannot be completed yet. The driver or guide needs to end the trip first.', { duration: 3000 });
       return;
     }
     setShowTripCompletionModal(true);

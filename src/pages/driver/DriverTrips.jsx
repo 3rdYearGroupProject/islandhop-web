@@ -499,14 +499,6 @@ const DriverTrips = () => {
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-green-500 mr-2" />
-                        <span className="text-sm text-gray-600">From: {trip.pickupLocation}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-red-500 mr-2" />
-                        <span className="text-sm text-gray-600">To: {trip.destination}</span>
-                      </div>
                       {trip.startDate && (
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 text-blue-500 mr-2" />
@@ -517,21 +509,14 @@ const DriverTrips = () => {
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-2 gap-2 text-center">
                       <div>
                         <p className="text-xs text-gray-500">Distance</p>
                         <p className="font-semibold text-sm">{trip.distance}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Duration</p>
-                        <p className="font-semibold text-sm">{trip.estimatedTime}</p>
-                      </div>
-                      <div>
                         <p className="text-xs text-gray-500">Fare</p>
                         <p className="font-semibold text-sm">LKR {trip.fare ? trip.fare.toLocaleString() : '0'}</p>
-                        {trip.paidAmount && (
-                          <p className="text-xs text-green-600">Paid: LKR {parseFloat(trip.paidAmount).toLocaleString()}</p>
-                        )}
                       </div>
                     </div>
                   </div>

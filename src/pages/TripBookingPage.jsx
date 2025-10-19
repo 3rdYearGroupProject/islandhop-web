@@ -283,7 +283,16 @@ const TripBookingPage = () => {
   // Booking functions
   const calculateTotal = () => {
     if (!priceData) return 0;
-    return (priceData.averageDriverCost || 0) + (priceData.averageGuideCost || 0);
+    
+    const driverCost = priceData.averageDriverCost || 0;
+    
+    // Calculate guide cost on frontend: 1800 LKR per day
+    let guideCost = 0;
+    if (needGuide && trip?.totalDays) {
+      guideCost = 1800 * trip.totalDays;
+    }
+    
+    return driverCost + guideCost;
   };
 
   const calculateAdvancePayment = () => {
@@ -339,7 +348,7 @@ const TripBookingPage = () => {
       
       // Show success message with payment details
       const successMessage = paymentCompleted 
-        ? `Trip booked successfully! Advance payment of LKR ${calculateAdvancePayment().toLocaleString()} confirmed.`
+        ? `Trip booked successfully! Advance payment of LKR ${calculateAdvancePayment().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} confirmed.`
         : 'Trip booked successfully!';
         
       navigate('/trips', { 
@@ -658,19 +667,26 @@ const TripBookingPage = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between border-b border-gray-200 pb-2">
                     <span className="text-gray-600">Driver</span>
-                    <span className="font-medium">LKR {priceData ? priceData.averageDriverCost.toLocaleString() : '0.00'}</span>
+                    <span className="font-medium">LKR {priceData ? priceData.averageDriverCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
                   </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-600">Guide</span>
-                    <span className="font-medium">LKR {priceData ? priceData.averageGuideCost.toLocaleString() : '0.00'}</span>
+                  <div className="border-b border-gray-200 pb-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Guide</span>
+                      <span className="font-medium">LKR {needGuide && trip?.totalDays ? (1800 * trip.totalDays).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                    </div>
+                    {needGuide && trip?.totalDays && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        (LKR 1,800.00 × {trip.totalDays} {trip.totalDays === 1 ? 'day' : 'days'})
+                      </div>
+                    )}
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="text-gray-900 font-bold">Total</span>
-                    <span className="font-bold text-primary-700 text-lg">LKR {calculateTotal().toLocaleString()}.00</span>
+                    <span className="font-bold text-primary-700 text-lg">LKR {calculateTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="text-gray-900 font-bold">Advance Payment (50%)</span>
-                    <span className="font-bold text-primary-600 text-lg">LKR {calculateAdvancePayment().toLocaleString()}.00</span>
+                    <span className="font-bold text-primary-600 text-lg">LKR {calculateAdvancePayment().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   {paymentCompleted && (
                     <div className="flex justify-between mt-2">
@@ -726,7 +742,7 @@ const TripBookingPage = () => {
                       : paymentCompleted 
                         ? 'Complete Booking' 
                         : calculateAdvancePayment() > 0 
-                          ? `Pay LKR ${calculateAdvancePayment().toLocaleString()}.00 & Proceed`
+                          ? `Pay LKR ${calculateAdvancePayment().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} & Proceed`
                           : 'Yes, Proceed'
                     }
                   </button>
