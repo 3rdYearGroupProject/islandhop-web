@@ -11,6 +11,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { RefreshCw, AlertCircle } from "lucide-react";
+import { useToast } from "../../components/ToastProvider";
 
 import GuideVerificationForm from "../../components/GuideVerificationForm";
 
@@ -20,6 +21,7 @@ const Verification = () => {
   const [allGuides, setAllGuides] = useState([]); // All fetched guides for current userType
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const toast = useToast();
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [showVerificationForm, setShowVerificationForm] = useState(false);
   const [filter, setFilter] = useState("pending"); // pending, verified, rejected
@@ -287,7 +289,7 @@ const Verification = () => {
     console.log(
       `Downloading ${docType} document for ${guideName}: ${documentUrl}`
     );
-    alert(`Downloading ${docType} document for ${guideName}`);
+    toast.info(`Downloading ${docType} document for ${guideName}`);
   };
 
   const handleVerifyCertificate = async (certificateData) => {
@@ -353,9 +355,12 @@ const Verification = () => {
             : guide
         )
       );
+      
+      // Show success message
+      toast.success("Certificate verified successfully!");
     } catch (err) {
       console.error("Failed to verify certificate:", err);
-      alert("Failed to verify certificate. Please try again.");
+      toast.error("Failed to verify certificate. Please try again.");
     }
     setShowVerificationForm(false);
     setSelectedGuide(null);
@@ -415,9 +420,12 @@ const Verification = () => {
             : guide
         )
       );
+      
+      // Show success message
+      toast.success("Profile rejected successfully!");
     } catch (err) {
       console.error("Failed to reject guide:", err);
-      alert("Failed to reject guide. Please try again.");
+      toast.error("Failed to reject profile. Please try again.");
     }
   };
 

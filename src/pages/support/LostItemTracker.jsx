@@ -449,12 +449,12 @@ const LostItemTracker = () => {
                   Comprehensive tracking and management of lost item reports
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              {/* <div className="flex items-center space-x-3">
                 <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                   <DocumentTextIcon className="h-4 w-4" />
                   <span>Generate Report</span>
                 </button>
-              </div>
+              </div> */}
             </div>
 
         {/* Statistics Cards */}

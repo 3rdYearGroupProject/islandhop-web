@@ -109,13 +109,13 @@ const SupportSidebar = ({ isOpen, onClose }) => {
       description: "Customer Reviews",
       permissions: [2, 4], // Only Reviews and All permissions
     },
-    {
-      name: "Chat & Email",
-      path: "/support/chat-email",
-      icon: ChatBubbleLeftRightIcon,
-      description: "Live Support",
-      permissions: [1, 2, 3, 4], // All users can access chat
-    },
+    // {
+    //   name: "Chat & Email",
+    //   path: "/support/chat-email",
+    //   icon: ChatBubbleLeftRightIcon,
+    //   description: "Live Support",
+    //   permissions: [1, 2, 3, 4], // All users can access chat
+    // },
     {
       name: "Communications",
       path: "/support/communications",

@@ -54,24 +54,24 @@ const SupportDashboard = ({ onPageChange }) => {
             {
               title: 'New Tickets',
               value: result.data.totalComplaints || '0',
-              change: `+${result.data.totalComplaints || 0} today`,
-              changeType: 'positive',
+              // change: `+${result.data.totalComplaints || 0} today`,
+              // changeType: 'positive',
               icon: TicketIcon,
               color: 'secondary'
             },
             {
               title: 'In Progress',
               value: result.data.unresolvedComplaints || '0',
-              change: `${result.data.unresolvedComplaintsChange || 0} from yesterday`,
-              changeType: result.data.unresolvedComplaintsChange >= 0 ? 'positive' : 'negative',
+              // change: `${result.data.unresolvedComplaintsChange || 0} from yesterday`,
+              // changeType: result.data.unresolvedComplaintsChange >= 0 ? 'positive' : 'negative',
               icon: ExclamationTriangleIcon,
               color: 'secondary'
             },
             {
               title: 'Escalated',
               value: result.data.resolvedComplaints || '0',
-              change: `+${result.data.resolvedComplaintsToday || 0} today`,
-              changeType: 'positive',
+              // change: `+${result.data.resolvedComplaintsToday || 0} today`,
+              // changeType: 'positive',
               icon: ShieldExclamationIcon,
               color: 'secondary'
             },
@@ -86,16 +86,16 @@ const SupportDashboard = ({ onPageChange }) => {
             {
               title: 'Lost Items',
               value: result.data.lostItems || '0',
-              change: `+${result.data.lostItemsToday || 0} today`,
-              changeType: 'positive',
+              // change: `+${result.data.lostItemsToday || 0} today`,
+              // changeType: 'positive',
               icon: ArchiveBoxXMarkIcon,
               color: 'secondary'
             },
             {
               title: 'Panic Alerts',
               value: result.data.panicAlerts || '0',
-              change: result.data.panicAlertsActive ? 'Active' : 'None',
-              changeType: result.data.panicAlertsActive ? 'warning' : 'neutral',
+              // change: result.data.panicAlertsActive ? 'Active' : 'None',
+              // changeType: result.data.panicAlertsActive ? 'warning' : 'neutral',
               icon: ShieldExclamationIcon,
               color: 'secondary'
             }
@@ -182,13 +182,13 @@ const SupportDashboard = ({ onPageChange }) => {
       color: 'secondary',
       action: () => navigate('/support/reviews')
     },
-    {
-      title: 'Handle Chat & Email',
-      description: 'Respond to chat and email support',
-      icon: ChatBubbleLeftRightIcon,
-      color: 'secondary',
-      action: () => navigate('/support/chat-email')
-    },
+    // {
+    //   title: 'Handle Chat & Email',
+    //   description: 'Respond to chat and email support',
+    //   icon: ChatBubbleLeftRightIcon,
+    //   color: 'secondary',
+    //   action: () => navigate('/support/chat-email')
+    // },
     {
       title: 'Resolve Complaints',
       description: 'Address customer complaints',
@@ -199,7 +199,7 @@ const SupportDashboard = ({ onPageChange }) => {
     {
       title: 'User Verifications',
       description: 'Handle user verification requests',
-      icon: CurrencyDollarIcon,
+      icon: ShieldExclamationIcon,
       color: 'secondary',
       action: () => navigate('/support/verifications')
     },
@@ -216,6 +216,20 @@ const SupportDashboard = ({ onPageChange }) => {
       icon: ShieldExclamationIcon,
       color: 'secondary',
       action: () => navigate('/support/panic-alerts')
+    },
+    {
+      title: 'Payments',
+      description: 'Manage user payments and transactions',
+      icon: CurrencyDollarIcon,
+      color: 'secondary',
+      action: () => navigate('/support/payments')
+    },
+    {
+      title: 'Communications',
+      description: 'Manage user communications and messages',
+      icon: ChatBubbleLeftRightIcon,
+      color: 'secondary',
+      action: () => navigate('/support/communications')
     }
   ];
 
