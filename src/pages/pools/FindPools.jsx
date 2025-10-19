@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PoolCard from '../../components/PoolCard';
 import JoinPoolModal from '../../components/JoinPoolModal';
+import LoginRequiredPopup from '../../components/LoginRequiredPopup';
+import ErrorState from '../../components/ErrorState';
+import { useToast } from '../../components/ToastProvider';
 import PoolsApi from '../../api/poolsApi';
 import { getUserUID } from '../../utils/userStorage';
 import { useAuth } from '../../hooks/useAuth';
@@ -48,9 +51,11 @@ const FindPools = () => {
   // Join modal state
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedPoolForJoin, setSelectedPoolForJoin] = useState(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   // Terrain options (matching PoolPreferencesPage)
   const terrainOptions = [
@@ -89,7 +94,7 @@ const FindPools = () => {
         await fetchPools(userId);
       } catch (error) {
         console.error('🏊‍♂️❌ Error initializing component:', error);
-        setError('Failed to load pools');
+        setError(error.message || 'Failed to load pools');
         setLoading(false);
       }
     };
@@ -300,8 +305,7 @@ const FindPools = () => {
       console.log('🏊‍♂️ Opening join modal for pool:', pool.name);
       
       if (!user) {
-        alert('Please log in to join a pool');
-        navigate('/login');
+        setShowLoginPopup(true);
         return;
       }
 
@@ -311,7 +315,7 @@ const FindPools = () => {
       
     } catch (error) {
       console.error('🏊‍♂️❌ Error opening join modal:', error);
-      alert(`Failed to open join request: ${error.message}`);
+      toast.error(`Failed to open join request: ${error.message}`, { duration: 3000 });
     }
   };
 
@@ -322,7 +326,7 @@ const FindPools = () => {
     await fetchPools(currentUser);
     
     // Show success message
-    alert(`Join request sent successfully! All group members must approve before you can join.`);
+    toast.success('Join request sent successfully! All group members must approve before you can join.', { duration: 4000 });
   };
 
   const handleCloseJoinModal = () => {
@@ -602,38 +606,34 @@ const FindPools = () => {
 
       {/* Pool Cards Grid */}
       {loading ? (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           <span className="ml-3 text-gray-600 dark:text-gray-400">Loading pools...</span>
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <div className="text-red-800 font-medium mb-2">Failed to load pools</div>
-          <div className="text-red-600 text-sm mb-4">{error}</div>
-          <button 
-            onClick={() => fetchPools(currentUser)}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+        <ErrorState
+          title="Failed to Load Pools"
+          message={error}
+          onRetry={() => fetchPools(currentUser)}
+          retryText="Try Again"
+        />
       ) : pools.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <div className="text-gray-600 font-medium mb-2">No pools found</div>
-          <div className="text-gray-500 text-sm">
-            {hasActiveFilters() 
+        <ErrorState
+          title="No Pools Found"
+          message={
+            hasActiveFilters() 
               ? 'Try adjusting your filters to see more results' 
-              : 'No pools are currently available. Check back later!'}
-          </div>
-          {hasActiveFilters() && (
-            <button 
-              onClick={clearAllFilters}
-              className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
+              : 'No pools are currently available. Check back later!'
+          }
+          onRetry={hasActiveFilters() ? clearAllFilters : null}
+          retryText="Clear Filters"
+          showRetry={hasActiveFilters()}
+          icon={
+            <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pools.map((pool) => (
@@ -704,6 +704,12 @@ const FindPools = () => {
         onClose={handleCloseJoinModal}
         poolData={selectedPoolForJoin}
         onSuccess={handleJoinSuccess}
+      />
+
+      {/* Login Required Popup */}
+      <LoginRequiredPopup 
+        isOpen={showLoginPopup}
+        onClose={() => setShowLoginPopup(false)}
       />
     </div>
   );

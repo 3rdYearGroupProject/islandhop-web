@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '../../components/Card';
 import PoolCard from '../../components/PoolCard';
+import ErrorState from '../../components/ErrorState';
+import LoginRequiredPopup from '../../components/LoginRequiredPopup';
 import PoolsApi from '../../api/poolsApi';
 import { getUserUID } from '../../utils/userStorage';
 import { placeholderImage, getRandomCityImage, getCityImageUrl } from '../../utils/imageUtils';
@@ -29,6 +31,7 @@ const MyPools = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   // Initialize user and fetch pools on component mount
   useEffect(() => {
@@ -39,7 +42,7 @@ const MyPools = () => {
         // Get current user
         const userId = getUserUID();
         if (!userId) {
-          setError('Please log in to view your pools');
+          setShowLoginPopup(true);
           setLoading(false);
           return;
         }
@@ -51,7 +54,7 @@ const MyPools = () => {
         await fetchUserPools(userId);
       } catch (error) {
         console.error('🏊‍♂️❌ Error initializing component:', error);
-        setError('Failed to load your pools');
+        setError(error.message || 'Failed to load your pools');
         setLoading(false);
       }
     };
@@ -142,7 +145,7 @@ const MyPools = () => {
     <div>
       {/* Loading State */}
       {loading && (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           <span className="ml-3 text-gray-600 dark:text-gray-400">Loading your pools...</span>
         </div>
@@ -150,16 +153,12 @@ const MyPools = () => {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-6">
-          <div className="text-red-800 font-medium mb-2">Failed to load pools</div>
-          <div className="text-red-600 text-sm mb-4">{error}</div>
-          <button 
-            onClick={() => currentUser && fetchUserPools(currentUser)}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+        <ErrorState
+          title="Failed to Load Your Pools"
+          message={error}
+          onRetry={() => currentUser && fetchUserPools(currentUser)}
+          retryText="Try Again"
+        />
       )}
 
       {/* Content - Only show if not loading and no error */}
@@ -293,10 +292,16 @@ const MyPools = () => {
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                 Current Pool
               </h2>
-              <div className="text-center py-6 sm:py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-2xl">
-                <div className="text-base sm:text-lg font-medium mb-2">No ongoing or upcoming pools</div>
-                <div className="text-xs sm:text-sm">You don't have any active or upcoming pools right now.</div>
-              </div>
+              <ErrorState
+                title="No Active Pools"
+                message="You don't have any ongoing or upcoming pools right now."
+                showRetry={false}
+                icon={
+                  <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                }
+              />
             </div>
           )}
 
@@ -306,10 +311,16 @@ const MyPools = () => {
               Upcoming Pools
             </h2>
             {upcomingPools.length === 0 ? (
-              <div className="text-center py-6 sm:py-8 text-gray-500">
-                <div className="text-base sm:text-lg font-medium mb-2">No upcoming pools</div>
-                <div className="text-xs sm:text-sm">You haven't joined any upcoming pools yet.</div>
-              </div>
+              <ErrorState
+                title="No Upcoming Pools"
+                message="You haven't joined any upcoming pools yet."
+                showRetry={false}
+                icon={
+                  <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                }
+              />
             ) : (
               <div className="overflow-x-auto pb-2">
                 <div className="flex gap-4 sm:gap-6 min-w-[600px]">
@@ -340,10 +351,16 @@ const MyPools = () => {
               Pool History
             </h2>
             {poolHistory.length === 0 ? (
-              <div className="text-center py-6 sm:py-8 text-gray-500">
-                <div className="text-base sm:text-lg font-medium mb-2">No pool history</div>
-                <div className="text-xs sm:text-sm">You haven't completed any pools yet.</div>
-              </div>
+              <ErrorState
+                title="No Pool History"
+                message="You haven't completed any pools yet."
+                showRetry={false}
+                icon={
+                  <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+              />
             ) : (
               <div className="overflow-x-auto pb-2">
                 <div className="flex gap-4 sm:gap-6 min-w-[600px]">
@@ -363,6 +380,12 @@ const MyPools = () => {
           </div>
         </>
       )}
+      
+      {/* Login Required Popup */}
+      <LoginRequiredPopup 
+        isOpen={showLoginPopup}
+        onClose={() => setShowLoginPopup(false)}
+      />
     </div>
   );
 };

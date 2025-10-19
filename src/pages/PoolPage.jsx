@@ -9,6 +9,7 @@ import ConfirmedPools from './pools/ConfirmedPools';
 import OngoingPools from './pools/OngoingPools';
 import InvitationsAndRequests from './pools/InvitationsAndRequests';
 import CreatePoolModal from '../components/pools/CreatePoolModal';
+import LoginRequiredPopup from '../components/LoginRequiredPopup';
 import pool4kVideo from '../assets/pool4k.mp4';
 import Footer from '../components/Footer';
 
@@ -23,6 +24,7 @@ const tabList = [
 const PoolPage = () => {
   const [activeTab, setActiveTab] = useState('find');
   const [isCreatePoolModalOpen, setIsCreatePoolModalOpen] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -106,7 +108,13 @@ const PoolPage = () => {
             </p>
             <div className="flex justify-center">
               <button
-                onClick={() => setIsCreatePoolModalOpen(true)}
+                onClick={() => {
+                  if (!currentUser) {
+                    setShowLoginPopup(true);
+                  } else {
+                    setIsCreatePoolModalOpen(true);
+                  }
+                }}
                 className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <svg className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -191,6 +199,12 @@ const PoolPage = () => {
         isOpen={isCreatePoolModalOpen}
         onClose={() => setIsCreatePoolModalOpen(false)}
         onCreatePool={handleCreatePool}
+      />
+
+      {/* Login Required Popup */}
+      <LoginRequiredPopup 
+        isOpen={showLoginPopup}
+        onClose={() => setShowLoginPopup(false)}
       />
 
       <Footer />

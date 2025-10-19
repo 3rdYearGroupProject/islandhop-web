@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card, { CardBody } from '../../components/Card';
+import ErrorState from '../../components/ErrorState';
+import LoginRequiredPopup from '../../components/LoginRequiredPopup';
 import { placeholderImage, getRandomCityImage, getCityImageUrl } from '../../utils/imageUtils';
 import { 
   MapPinIcon,
@@ -18,8 +20,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { poolsApi } from '../../api/poolsApi';
 import axios from 'axios';
+import { useToast } from '../../components/ToastProvider';
 
 const ConfirmedPools = ({ currentUser }) => {
+  const toast = useToast();
   const [confirmedTrips, setConfirmedTrips] = useState([]);
   const [currentTripIndex, setCurrentTripIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -37,6 +41,7 @@ const ConfirmedPools = ({ currentUser }) => {
     country: 'Sri Lanka'
   });
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   // Vehicle types state and lookup
   const [vehicleTypes, setVehicleTypes] = useState([]);
@@ -90,6 +95,10 @@ const ConfirmedPools = ({ currentUser }) => {
   useEffect(() => {
     if (currentUser?.uid) {
       loadConfirmedTrips();
+    } else if (currentUser === null) {
+      // User is explicitly not logged in
+      setShowLoginPopup(true);
+      setLoading(false);
     }
   }, [currentUser]);
 
@@ -162,11 +171,13 @@ const ConfirmedPools = ({ currentUser }) => {
 
   const loadConfirmedTrips = async () => {
     if (!currentUser?.uid) {
-      setError('User not authenticated');
+      setShowLoginPopup(true);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
+    setError(null);
     try {
       console.log('📋 Loading confirmed trips for user:', currentUser.uid);
       
@@ -603,23 +614,23 @@ const ConfirmedPools = ({ currentUser }) => {
 
                   if (activateResponse.data) {
                     console.log('🎉 Trip activated successfully!');
-                    alert('Payment completed! All participants have paid. Your trip is now fully activated! 🎉');
+                    toast.success('Payment completed! All participants have paid. Your trip is now fully activated!', { duration: 5000 });
                   }
                 } catch (activateError) {
                   console.error('❌ Failed to activate trip:', activateError);
                   // Don't fail the payment if activation fails
-                  alert('Payment completed successfully! Trip activation will be processed shortly.');
+                  toast.success('Payment completed successfully! Trip activation will be processed shortly.', { duration: 4000 });
                 }
               } else {
                 console.log(`⏳ Waiting for remaining payments (${paidCount}/${totalMembers} paid, max: ${updatedTrip.maxMembers})`);
-                alert('Payment completed successfully! Waiting for other participants to complete their payments.');
+                toast.success('Payment completed successfully! Waiting for other participants to complete their payments.', { duration: 4000 });
               }
             }
           }
         } catch (checkError) {
           console.error('❌ Error checking payment status:', checkError);
           // Continue with normal flow even if check fails
-          alert('Payment completed successfully! Your pool trip payment has been processed.');
+          toast.success('Payment completed successfully! Your pool trip payment has been processed.', { duration: 3000 });
         }
         
         setShowPaymentForm(false);
@@ -804,55 +815,45 @@ const ConfirmedPools = ({ currentUser }) => {
     }
   };
 
-  if (!currentUser) {
-    return (
-      <div className="text-center py-8">
-        <ExclamationCircleIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">Please sign in to view your confirmed trips</p>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading confirmed pools...</p>
-        </div>
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading confirmed pools...</span>
       </div>
     );
   }
 
   if (error && confirmedTrips.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <ExclamationCircleIcon className="h-12 w-12 mx-auto text-red-400 mb-4" />
-          <p className="text-red-600 font-medium mb-2">Error loading confirmed pools</p>
-          <p className="text-gray-600 text-sm mb-4">{error}</p>
-          <button 
-            onClick={loadConfirmedTrips}
-            className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors font-medium"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <ErrorState
+        title="Failed to Load Confirmed Pools"
+        message={error}
+        onRetry={loadConfirmedTrips}
+        retryText="Try Again"
+      />
     );
   }
 
   if (confirmedTrips.length === 0) {
     return (
-      <div className="text-center py-12">
-        <UserGroupIcon className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          No Confirmed Trips
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">
-          You don't have any confirmed trips yet. Once you confirm your participation in a trip, it will appear here.
-        </p>
-      </div>
+      <>
+        <ErrorState
+          title="No Confirmed Trips"
+          message="You don't have any confirmed trips yet. Once you confirm your participation in a trip, it will appear here."
+          showRetry={false}
+          icon={
+            <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+        />
+        
+        <LoginRequiredPopup 
+          isOpen={showLoginPopup}
+          onClose={() => setShowLoginPopup(false)}
+        />
+      </>
     );
   }
 
@@ -1473,6 +1474,12 @@ const ConfirmedPools = ({ currentUser }) => {
           </div>
         </div>
       )}
+      
+      {/* Login Required Popup */}
+      <LoginRequiredPopup 
+        isOpen={showLoginPopup}
+        onClose={() => setShowLoginPopup(false)}
+      />
     </div>
   );
 };

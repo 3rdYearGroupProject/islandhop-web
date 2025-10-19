@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PoolsApi } from '../../api/poolsApi';
 import { useAuth } from '../../hooks/useAuth';
+import ErrorState from '../../components/ErrorState';
+import LoginRequiredPopup from '../../components/LoginRequiredPopup';
+import { useToast } from '../../components/ToastProvider';
 import { 
-  EnvelopeIcon, 
-  UserGroupIcon, 
   CalendarIcon,
   MapPinIcon,
   BellIcon,
@@ -17,17 +18,24 @@ import {
 const InvitationsAndRequests = () => {
   const navigate = useNavigate();
   const { user, displayInfo } = useAuth(); // Get displayInfo for user email
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('invitations');
   const [invitationsCount, setInvitationsCount] = useState(0);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [totalPendingItems, setTotalPendingItems] = useState(0);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchData();
+    } else if (user === null) {
+      // User is explicitly not logged in
+      setShowLoginPopup(true);
+      setLoading(false);
     }
   }, [user]);
 
@@ -35,6 +43,7 @@ const InvitationsAndRequests = () => {
     try {
       console.log('🔄 Starting fetchData for user:', user.uid);
       setLoading(true);
+      setError(null); // Clear previous errors
       
       // Get user email from user or displayInfo
       const userEmail = user?.email || displayInfo?.email;
@@ -51,6 +60,7 @@ const InvitationsAndRequests = () => {
       
     } catch (error) {
       console.error('❌ Error fetching data:', error);
+      setError(error.message || 'Failed to load invitations and requests');
       setTotalPendingItems(0);
       setInvitationsCount(0);
       setJoinRequestsCount(0);
@@ -75,12 +85,12 @@ const InvitationsAndRequests = () => {
       const result = await PoolsApi.respondToInvitation(responseData);
       console.log('📮 Invitation response result:', result);
       
-      alert(`✅ Invitation ${action}ed successfully!`);
+      toast.success(`Invitation ${action}ed successfully!`, { duration: 3000 });
       fetchData(); // Refresh data
       
     } catch (error) {
       console.error('❌ Error responding to invitation:', error);
-      alert(`❌ Failed to respond to invitation: ${error.message}`);
+      toast.error(`Failed to respond to invitation: ${error.message}`, { duration: 3000 });
     }
   };
 
@@ -98,33 +108,61 @@ const InvitationsAndRequests = () => {
       console.log('🗳️ Vote result:', result);
       
       const action = approved ? 'approved' : 'rejected';
-      alert(`✅ Request ${action} successfully!\n\nStatus: ${result.requestStatus}\nVotes: ${result.totalVotesReceived}/${result.totalMembersRequired}`);
+      toast.success(`Request ${action} successfully!\n\nStatus: ${result.requestStatus}\nVotes: ${result.totalVotesReceived}/${result.totalMembersRequired}`, { duration: 4000 });
       
       fetchData(); // Refresh data
       
     } catch (error) {
       console.error('❌ Error voting on request:', error);
-      alert(`❌ Failed to vote on request: ${error.message}`);
+      toast.error(`Failed to vote on request: ${error.message}`, { duration: 3000 });
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading invitations and requests...</span>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Please log in</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            You need to be logged in to view your invitations and requests.
-          </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Log In
-          </button>
-        </div>
-      </div>
+      <>
+        <ErrorState
+          title="Login Required"
+          message="You need to be logged in to view your invitations and requests."
+          showRetry={false}
+          icon={
+            <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          }
+        />
+        
+        <LoginRequiredPopup 
+          isOpen={showLoginPopup}
+          onClose={() => setShowLoginPopup(false)}
+        />
+      </>
+    );
+  }
+
+  // Network/fetch error state
+  if (error) {
+    return (
+      <ErrorState
+        title="Failed to Load Data"
+        message={error}
+        onRetry={fetchData}
+        retryText="Try Again"
+        icon={
+          <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+      />
     );
   }
 
@@ -199,19 +237,19 @@ const InvitationsAndRequests = () => {
 
         {/* Tab Content */}
         <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-600 p-4 sm:p-6">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading...</p>
-              </div>
-            ) : activeTab === 'invitations' ? (
+            {activeTab === 'invitations' ? (
               /* Invitations Tab */
               invitationsCount === 0 ? (
-                <div className="text-center py-12">
-                  <EnvelopeIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500 text-lg mb-2">No pending invitations</p>
-                  <p className="text-gray-400 text-sm">You'll see invitations to join travel groups here.</p>
-                </div>
+                <ErrorState
+                  title="No Pending Invitations"
+                  message="You'll see invitations to join travel groups here."
+                  showRetry={false}
+                  icon={
+                    <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  }
+                />
               ) : (
                 <div className="space-y-3 sm:space-y-4">
                   {invitations.map((invitation, idx) => {
@@ -282,11 +320,16 @@ const InvitationsAndRequests = () => {
             ) : (
               /* Join Requests Tab */
               joinRequestsCount === 0 ? (
-                <div className="text-center py-12">
-                  <UserGroupIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500 text-lg mb-2">No pending requests</p>
-                  <p className="text-gray-400 text-sm">Join requests for your groups will appear here.</p>
-                </div>
+                <ErrorState
+                  title="No Pending Requests"
+                  message="Join requests for your groups will appear here."
+                  showRetry={false}
+                  icon={
+                    <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  }
+                />
               ) : (
                 <div className="space-y-3 sm:space-y-4">
                   {pendingRequests.map((request, idx) => {
@@ -408,6 +451,12 @@ const InvitationsAndRequests = () => {
             </button>
           </div>
         </div>
+      
+        {/* Login Required Popup */}
+        <LoginRequiredPopup 
+          isOpen={showLoginPopup}
+          onClose={() => setShowLoginPopup(false)}
+        />
     </div>
   );
 };

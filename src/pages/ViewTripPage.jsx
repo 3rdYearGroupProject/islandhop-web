@@ -9,15 +9,18 @@ import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
 import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
+import { useToast } from '../components/ToastProvider';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import MapInfoWindow from '../components/MapInfoWindow';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const ViewTripPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
   const { tripId } = useParams();
+  const toast = useToast();
   
   // Get trip data from route state or use mock data if none provided
   const tripFromState = location.state?.trip;
@@ -28,6 +31,8 @@ const ViewTripPage = () => {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka center
   const [places, setPlaces] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -828,14 +833,7 @@ const ViewTripPage = () => {
   };
 
   const handleDelete = async () => {
-    // Confirm deletion with user
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${trip.name}"?\n\nThis action cannot be undone and all trip data will be permanently removed.`
-    );
-    
-    if (!confirmDelete) {
-      return;
-    }
+    setDeleteLoading(true);
 
     try {
       console.log('🗑️ Deleting trip:', tripId, 'for user:', currentUserId);
@@ -846,34 +844,41 @@ const ViewTripPage = () => {
       console.log('✅ Trip deleted successfully:', response.data);
       
       // Show success message
-      alert('Trip deleted successfully!');
+      toast.success('Trip deleted successfully!', { duration: 3000 });
+      
+      // Close modal
+      setShowDeleteConfirm(false);
       
       // Navigate back to trips page
-      navigate('/trips', {
-        state: {
-          message: 'Trip deleted successfully!',
-          deletedTripId: tripId
-        }
-      });
+      setTimeout(() => {
+        navigate('/trips', {
+          state: {
+            message: 'Trip deleted successfully!',
+            deletedTripId: tripId
+          }
+        });
+      }, 500);
     } catch (error) {
       console.error('❌ Error deleting trip:', error);
       
       // Handle specific error cases
       if (error.response) {
         if (error.response.status === 404) {
-          alert('Trip not found. It may have already been deleted.');
+          toast.error('Trip not found. It may have already been deleted.', { duration: 3000 });
         } else if (error.response.status === 403) {
-          alert('You do not have permission to delete this trip.');
+          toast.error('You do not have permission to delete this trip.', { duration: 3000 });
         } else if (error.response.status === 400) {
-          alert(`Invalid request: ${error.response.data?.message || 'Please check your request.'}`);
+          toast.error(`Invalid request: ${error.response.data?.message || 'Please check your request.'}`, { duration: 3000 });
         } else {
-          alert(`Failed to delete trip: ${error.response.data?.message || 'Unknown error occurred.'}`);
+          toast.error(`Failed to delete trip: ${error.response.data?.message || 'Unknown error occurred.'}`, { duration: 3000 });
         }
       } else if (error.request) {
-        alert('Network error: Unable to connect to server. Please check your connection and try again.');
+        toast.error('Network error: Unable to connect to server. Please check your connection and try again.', { duration: 3000 });
       } else {
-        alert(`Error: ${error.message}`);
+        toast.error(`Error: ${error.message}`, { duration: 3000 });
       }
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -1302,7 +1307,7 @@ const ViewTripPage = () => {
                     Edit
                   </button>
                   <button
-                    onClick={handleDelete}
+                    onClick={() => setShowDeleteConfirm(true)}
                     className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded-full transition-colors border border-red-400"
                   >
                     Delete
@@ -1327,6 +1332,30 @@ const ViewTripPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Trip"
+        confirmText="Delete Trip"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deleteLoading}
+      >
+        <div className="text-left space-y-4">
+          <p className="text-gray-600 dark:text-gray-300">
+            Are you sure you want to delete "<strong className="text-gray-900 dark:text-white">{trip?.name}</strong>"?
+          </p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <p className="text-sm text-red-800 dark:text-red-300">
+              ⚠️ <strong>Warning:</strong> This action cannot be undone and all trip data will be permanently removed.
+            </p>
+          </div>
+        </div>
+      </ConfirmationModal>
+      
       <Footer />
     </div>
   );

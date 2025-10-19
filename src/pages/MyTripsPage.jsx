@@ -33,6 +33,7 @@ import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import Footer from '../components/Footer';
+import ErrorState from '../components/ErrorState';
 import { getCityImageUrl, placeholderImage, logImageError, getRandomCityImage } from '../utils/imageUtils';
 
 const placeholder = placeholderImage;
@@ -78,22 +79,8 @@ const MyTripsPage = () => {
         console.log('🔐 Current user UID:', user.uid);
         setCurrentUser(user);
         
-        // Check if we should use mock data (only when explicitly set)
-        const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
-        
-        if (useMockData) {
-          console.log('🔧 Using mock data - REACT_APP_USE_MOCK_DATA is set to true');
-          setTrips(mockTrips);
-          setApiError(null);
-          return;
-        }
-        
         // Fetch user trips from backend
         console.log('🚀 STARTING API FETCH FOR USER:', user.uid);
-        console.log('🔧 Environment variables check:');
-        console.log('  - REACT_APP_USE_MOCK_DATA:', process.env.REACT_APP_USE_MOCK_DATA);
-        console.log('  - REACT_APP_API_BASE_URL_TRIP_PLANNING:', process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING);
-        console.log('  - NODE_ENV:', process.env.NODE_ENV);
         
         try {
           console.log('📡 Calling fetchUserTrips...');
@@ -109,15 +96,17 @@ const MyTripsPage = () => {
           console.error('❌ Full error object:', error);
           console.error('❌ Error stack:', error.stack);
           
-          // Only use mock data for specific network errors, not all errors
-          if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-            console.warn('⚠️ Network error detected - using mock data as fallback');
-            setTrips(mockTrips);
-            setApiError('Unable to connect to server. Showing sample data.');
-          } else {
-            console.error('❌ API Error - NOT using mock data. Showing error state.');
+          // Check if it's an authentication error
+          if (error.message.includes('Invalid userId') || error.message.includes('login status')) {
+            console.log('🔐 Authentication error detected - showing login popup');
+            setShowLoginRequiredPopup(true);
+            setCurrentActionName('view your trips');
             setTrips([]);
-            setApiError(error.message);
+            setApiError(null);
+          } else {
+            // Show error state for other errors
+            setTrips([]);
+            setApiError(error.message || 'Unable to load trips. Please try again.');
           }
         }
       } else {
@@ -138,16 +127,6 @@ const MyTripsPage = () => {
         return;
       }
       
-      // Check if we should use mock data (only when explicitly set)
-      const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
-      
-      if (useMockData) {
-        console.log('🔧 Using mock data - REACT_APP_USE_MOCK_DATA is set to true');
-        setTrips(mockTrips);
-        setApiError(null);
-        return;
-      }
-      
       console.log('🔄 Filter changed to:', filterStatus);
       console.log('🚀 Refetching trips with new filter...');
       
@@ -160,15 +139,17 @@ const MyTripsPage = () => {
         console.error('❌ FILTER REFETCH FAILED!');
         console.error('❌ Error:', error.message);
         
-        // Only use mock data for specific network errors, not all errors
-        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-          console.warn('⚠️ Network error detected - using mock data as fallback');
-          setTrips(mockTrips);
-          setApiError('Unable to connect to server. Showing sample data.');
-        } else {
-          console.error('❌ API Error - NOT using mock data. Showing error state.');
+        // Check if it's an authentication error
+        if (error.message.includes('Invalid userId') || error.message.includes('login status')) {
+          console.log('🔐 Authentication error detected - showing login popup');
+          setShowLoginRequiredPopup(true);
+          setCurrentActionName('view your trips');
           setTrips([]);
-          setApiError(error.message);
+          setApiError(null);
+        } else {
+          // Show error state for other errors
+          setTrips([]);
+          setApiError(error.message || 'Unable to load trips. Please try again.');
         }
       }
     };
@@ -467,22 +448,14 @@ const MyTripsPage = () => {
         if (response.status === 400) {
           const msg = `Invalid user ID: ${errorData.message || 'Please check your login status'}`;
           console.error('❌ 400 Error:', msg);
-          alert(msg);
           throw new Error(`Invalid userId: ${errorData.message}`);
         } else if (response.status === 404) {
           console.log('📝 404 - No trips found for user');
-          if (filter === 'active') {
-            // For active trips, don't show alert - just return empty array
-            console.log('📝 No active trips found for user');
-            return [];
-          } else {
-            alert('No trips found. Start planning your first adventure!');
-            return []; // Return empty array for no trips
-          }
+          // Return empty array for no trips - UI will show empty state
+          return [];
         } else if (response.status === 500) {
           const msg = `Server error: ${errorData.message || 'Please try again later'}`;
           console.error('❌ 500 Error:', msg);
-          alert(msg);
           throw new Error(`Server error: ${errorData.message}`);
         } else {
           const msg = `HTTP ${response.status}: ${response.statusText}`;
@@ -1286,41 +1259,15 @@ const MyTripsPage = () => {
 
           {/* Error Display */}
           {apiError && (
-            <div className="flex justify-center mb-8">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-2xl w-full">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                      <span className="text-red-600 text-sm font-bold">!</span>
-                    </div>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-red-800 mb-1">
-                      Connection Issue
-                    </h3>
-                    <p className="text-sm text-red-700 mb-3">
-                      {apiError}
-                    </p>
-                    {apiError.includes('backend') && (
-                      <div className="text-xs text-red-600 bg-red-100 p-2 rounded">
-                        <strong>For developers:</strong> Make sure your backend servers are running on:
-                        <br />• Trip Planning: {process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}
-                        <br />• User Services: {process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1'}
-                      </div>
-                    )}
-                    <button
-                      onClick={() => {
-                        setApiError(null);
-                        window.location.reload();
-                      }}
-                      className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Retry Connection
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ErrorState
+              title="Unable to Load Trips"
+              message={apiError || "We're having trouble connecting to the server. Please check your connection and try again."}
+              onRetry={() => {
+                setApiError(null);
+                window.location.reload();
+              }}
+              retryText="Try Again"
+            />
           )}
 
           {/* Highlight Ongoing Trip and Other Trips */}

@@ -6,11 +6,14 @@ import Footer from '../../components/Footer';
 import PoolProgressBar from '../../components/PoolProgressBar';
 import { getUserUID, getUserData } from '../../utils/userStorage';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../components/ToastProvider';
+import LoginRequiredPopup from '../../components/LoginRequiredPopup';
 
 const PoolPreferencesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, displayInfo } = useAuth();
+  const toast = useToast();
   const { poolName, selectedDates, poolSize, poolPrivacy, poolId, pool, userUid } = location.state || {};
 
   console.log('📍 PoolPreferencesPage received:', { poolName, selectedDates, poolSize, poolPrivacy, poolId, userUid });
@@ -25,6 +28,7 @@ const PoolPreferencesPage = () => {
   const [showCompatibleGroups, setShowCompatibleGroups] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [joiningGroupId, setJoiningGroupId] = useState(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   const terrainPreferences = [
     { id: 'beaches', name: 'Beach', icon: Waves, color: '#007bff' },
@@ -63,14 +67,13 @@ const PoolPreferencesPage = () => {
       // Get user ID from session
       const userId = getUserUID();
       if (!userId) {
-        alert('Please log in to check compatible groups');
-        navigate('/login');
+        setShowLoginPopup(true);
         return;
       }
 
       const currentUser = getUserData();
       if (!currentUser || !currentUser.email) {
-        alert('User data not found. Please log in again.');
+        toast.error('User data not found. Please log in again.', { duration: 3000 });
         return;
       }
       
@@ -81,7 +84,7 @@ const PoolPreferencesPage = () => {
         selectedDates[1].toISOString().split('T')[0] : startDate;
       
       if (!startDate || !endDate) {
-        alert('Please select valid travel dates');
+        toast.error('Please select valid travel dates', { duration: 3000 });
         return;
       }
       
@@ -114,7 +117,7 @@ const PoolPreferencesPage = () => {
     } catch (error) {
       console.error('❌ PRE-CHECK COMPATIBLE GROUPS FAILED');
       console.error('❌ Error:', error);
-      alert(`Failed to check groups: ${error.message || 'Unknown error occurred'}`);
+      toast.error(`Failed to check groups: ${error.message || 'Unknown error occurred'}`, { duration: 3000 });
     } finally {
       setIsCheckingGroups(false);
     }
@@ -132,8 +135,9 @@ const PoolPreferencesPage = () => {
       // Get user ID from session
       const userId = getUserUID();
       if (!userId) {
-        alert('Please log in to join a group');
-        navigate('/login');
+        setShowLoginPopup(true);
+        setIsJoiningGroup(false);
+        setJoiningGroupId(null);
         return;
       }
       
@@ -193,15 +197,15 @@ const PoolPreferencesPage = () => {
         console.error('❌ Join API Error response:', errorData);
         
         if (response.status === 400) {
-          alert(`Invalid request: ${errorData.message || 'Unable to process join request'}`);
+          toast.error(`Invalid request: ${errorData.message || 'Unable to process join request'}`, { duration: 3000 });
         } else if (response.status === 409) {
-          alert(`Already a member: ${errorData.message || 'You are already a member of this group'}`);
+          toast.warning(`Already a member: ${errorData.message || 'You are already a member of this group'}`, { duration: 3000 });
         } else if (response.status === 404) {
-          alert(`Group not found: ${errorData.message || 'This group may no longer exist'}`);
+          toast.error(`Group not found: ${errorData.message || 'This group may no longer exist'}`, { duration: 3000 });
         } else if (response.status === 500) {
-          alert(`Server error: ${errorData.message || 'Please try again later'}`);
+          toast.error(`Server error: ${errorData.message || 'Please try again later'}`, { duration: 3000 });
         } else {
-          alert(`Failed to join group: ${errorData.message || 'Unknown error'}`);
+          toast.error(`Failed to join group: ${errorData.message || 'Unknown error'}`, { duration: 3000 });
         }
         return;
       }
@@ -211,14 +215,14 @@ const PoolPreferencesPage = () => {
       
       // Handle successful response
       if (result.status === 'pending') {
-        const successMessage = `🎉 Join request submitted successfully!\n\n` +
+        const successMessage = `Join request submitted successfully!\n\n` +
           `Your request to join "${groupName}" has been sent to all group members. ` +
           `They will review your profile and message before approving your request.\n\n` +
-          `✉️ Your personalized message has been shared with the group.\n` +
-          `📋 Your travel preferences (${selectedActivityPreferences.slice(0, 2).join(', ')}) have been included.\n\n` +
+          `Your personalized message has been shared with the group.\n` +
+          `Your travel preferences (${selectedActivityPreferences.slice(0, 2).join(', ')}) have been included.\n\n` +
           `You'll receive a notification once all members respond to your request.`;
         
-        alert(successMessage);
+        toast.success(successMessage, { duration: 5000 });
         
         // Optionally update the UI to show request sent
         setCompatibleGroups(prev => 
@@ -229,7 +233,7 @@ const PoolPreferencesPage = () => {
           )
         );
       } else if (result.status === 'approved') {
-        alert(`🎉 Welcome to the group!\n\nYou've been automatically approved to join "${groupName}". You can now start planning your trip together!`);
+        toast.success(`Welcome to the group! You've been automatically approved to join "${groupName}". You can now start planning your trip together!`, { duration: 5000 });
         
         // Navigate to the group's trip planning page
         if (result.tripId) {
@@ -248,7 +252,7 @@ const PoolPreferencesPage = () => {
         }
       } else {
         console.error('❌ Unexpected join response format:', result);
-        alert(`Request processed but status unclear: ${result.message || 'Please check your group memberships'}`);
+        toast.warning(`Request processed but status unclear: ${result.message || 'Please check your group memberships'}`, { duration: 4000 });
       }
       
     } catch (error) {
@@ -257,9 +261,9 @@ const PoolPreferencesPage = () => {
       
       // Network or other errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        alert('Network error: Please check your internet connection and try again');
+        toast.error('Network error: Please check your internet connection and try again', { duration: 4000 });
       } else {
-        alert(`Failed to join group: ${error.message || 'Unknown error occurred'}`);
+        toast.error(`Failed to join group: ${error.message || 'Unknown error occurred'}`, { duration: 3000 });
       }
     } finally {
       setIsJoiningGroup(false);
@@ -277,8 +281,8 @@ const PoolPreferencesPage = () => {
       // Get user ID from session
       const userId = getUserUID();
       if (!userId) {
-        alert('Please log in to create a pool');
-        navigate('/login');
+        setShowLoginPopup(true);
+        setIsCreatingGroup(false);
         return;
       }
       
@@ -289,18 +293,21 @@ const PoolPreferencesPage = () => {
         selectedDates[1].toISOString().split('T')[0] : startDate;
       
       if (!startDate || !endDate) {
-        alert('Please select valid travel dates');
+        toast.error('Please select valid travel dates', { duration: 3000 });
+        setIsCreatingGroup(false);
         return;
       }
       
       if (!poolName) {
-        alert('Please provide a trip name');
+        toast.error('Please provide a trip name', { duration: 3000 });
+        setIsCreatingGroup(false);
         return;
       }
       
       // Validate required privacy setting
       if (!poolPrivacy) {
-        alert('Pool privacy setting is required. Please go back and select public or private.');
+        toast.error('Pool privacy setting is required. Please go back and select public or private.', { duration: 4000 });
+        setIsCreatingGroup(false);
         return;
       }
       
@@ -321,7 +328,8 @@ const PoolPreferencesPage = () => {
       // For private pools, email is required - validate it
       if (poolPrivacy === 'private' && (!userEmail || userEmail === 'user@example.com')) {
         console.error('❌ Email is required for private pools but not found');
-        alert('Your email address is required to create a private pool. Please ensure you are logged in properly.');
+        toast.error('Your email address is required to create a private pool. Please ensure you are logged in properly.', { duration: 4000 });
+        setIsCreatingGroup(false);
         return;
       }
       
@@ -430,7 +438,7 @@ const PoolPreferencesPage = () => {
         });
         
         // Show success notification
-        alert(`Group created successfully! You can now plan your trip.`);
+        toast.success('Group created successfully! You can now plan your trip.', { duration: 3000 });
         
         // Redirect to pool itinerary page with VALID IDs
         navigate('/pool-itinerary', {
@@ -473,7 +481,7 @@ const PoolPreferencesPage = () => {
         
         errorMessage += 'Please try again or contact support if the problem persists.';
         
-        alert(errorMessage);
+        toast.error(errorMessage, { duration: 4000 });
         
         // Log the full response for debugging
         console.error('🔍 Full API response for debugging:', result);
@@ -485,9 +493,9 @@ const PoolPreferencesPage = () => {
       
       // Network or other errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        alert('Network error: Please check your internet connection and try again');
+        toast.error('Network error: Please check your internet connection and try again', { duration: 4000 });
       } else {
-        alert(`Failed to create group: ${error.message || 'Unknown error occurred'}`);
+        toast.error(`Failed to create group: ${error.message || 'Unknown error occurred'}`, { duration: 3000 });
       }
     } finally {
       setIsCreatingGroup(false);

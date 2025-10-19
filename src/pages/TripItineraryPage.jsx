@@ -8,6 +8,7 @@ import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../components/AddTransportationModal';
 import { useToast } from '../components/ToastProvider';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -193,6 +194,11 @@ const TripItineraryPage = () => {
   const [expandedDays, setExpandedDays] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStayDates, setSelectedStayDates] = useState([]); // For multi-day place selection
+  
+  // Confirmation modal states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   // Destination management states
   const [destinations, setDestinations] = useState({}); // dayIndex -> destination
@@ -923,42 +929,50 @@ const TripItineraryPage = () => {
   const handleRemoveItem = async (item, dayIndex, category) => {
     console.log('🗑️ Remove item clicked:', { item, dayIndex, category });
 
-    // Confirm deletion
-    const confirmDelete = window.confirm(
-      `Are you sure you want to remove "${item.name}" from Day ${dayIndex + 1}?`
-    );
+    // Store the item to delete and show confirmation modal
+    setItemToDelete({ item, dayIndex, category });
+    setShowDeleteConfirm(true);
+  };
 
-    if (!confirmDelete) {
-      return;
-    }
+  // Actual deletion function called after confirmation
+  const confirmDeleteItem = async () => {
+    if (!itemToDelete) return;
 
-    // Remove from backend first (if tripId and userUid are available)
-    if (tripId && userUid && ['activities', 'places', 'food'].includes(category)) {
-      const success = await removePlaceFromItineraryBackend(item.name, dayIndex, category);
-      if (!success) {
-        // If backend removal fails, ask user if they want to continue with local removal
-        const continueLocal = window.confirm(
-          'Failed to remove from server. Do you want to remove it locally only?'
-        );
-        if (!continueLocal) {
+    const { item, dayIndex, category } = itemToDelete;
+    setDeleteLoading(true);
+
+    try {
+      // Remove from backend first (if tripId and userUid are available)
+      if (tripId && userUid && ['activities', 'places', 'food'].includes(category)) {
+        const success = await removePlaceFromItineraryBackend(item.name, dayIndex, category);
+        if (!success) {
+          toast.error('Failed to remove from server. Please try again.', { duration: 3000 });
+          setDeleteLoading(false);
           return;
         }
       }
+
+      // Remove from local state
+      setItinerary(prev => {
+        const updated = { ...prev };
+        if (updated[dayIndex] && updated[dayIndex][category]) {
+          // Filter out the item to remove
+          updated[dayIndex][category] = updated[dayIndex][category].filter(
+            existingItem => existingItem.name !== item.name
+          );
+        }
+        return updated;
+      });
+
+      toast.success(`"${item.name}" removed from Day ${dayIndex + 1}`, { duration: 2000 });
+      setShowDeleteConfirm(false);
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error removing item:', error);
+      toast.error('Failed to remove item. Please try again.', { duration: 3000 });
+    } finally {
+      setDeleteLoading(false);
     }
-
-    // Remove from local state
-    setItinerary(prev => {
-      const updated = { ...prev };
-      if (updated[dayIndex] && updated[dayIndex][category]) {
-        // Filter out the item to remove
-        updated[dayIndex][category] = updated[dayIndex][category].filter(
-          existingItem => existingItem.name !== item.name
-        );
-      }
-      return updated;
-    });
-
-    console.log('✅ Item removed successfully from local state');
   };
 
   // Simple function for destination and transportation modals
@@ -1545,6 +1559,34 @@ const TripItineraryPage = () => {
         startDate={selectedDates?.[0]}
         groupId={null} // Individual trips don't have groupId
       />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDeleteItem}
+        title="Remove Item from Itinerary"
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deleteLoading}
+      >
+        {itemToDelete && (
+          <div className="space-y-3">
+            <p className="text-gray-600 dark:text-gray-300">
+              Are you sure you want to remove <span className="font-semibold">"{itemToDelete.item.name}"</span> from Day {itemToDelete.dayIndex + 1}?
+            </p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p className="text-sm text-red-700 dark:text-red-300">
+                ⚠️ This action cannot be undone.
+              </p>
+            </div>
+          </div>
+        )}
+      </ConfirmationModal>
 
       <Footer />
     </div>
