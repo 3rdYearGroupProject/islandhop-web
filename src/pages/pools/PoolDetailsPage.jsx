@@ -284,8 +284,8 @@ const PoolDetailsPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Trip Confirmation Modal */}
       {showConfirmationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-secondary-800 rounded-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl max-w-md w-full p-6 relative z-[10000]">
             <div className="text-center">
               {confirmationStatus === 'confirming' ? (
                 <>

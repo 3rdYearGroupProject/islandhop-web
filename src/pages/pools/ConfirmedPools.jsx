@@ -266,11 +266,15 @@ const ConfirmedPools = ({ currentUser }) => {
   const mapTripToUI = (trip) => {
     if (!trip) return null;
 
+    // Extract destinations from dailyPlans
+    const destinations = trip.tripDetails?.dailyPlans?.map(plan => plan.city) || 
+                        trip.tripDetails?.destinations || [];
+    
     // Create itinerary from destinations
-    const itinerary = trip.tripDetails?.destinations?.map((dest, index) => ({
+    const itinerary = destinations.map((dest, index) => ({
       destination: dest,
       date: `Day ${index + 1}`
-    })) || [];
+    }));
 
     // Determine user payment status
     let userPaymentStatus = 'pending';
@@ -297,7 +301,7 @@ const ConfirmedPools = ({ currentUser }) => {
       tripId: trip.tripId,
       groupId: trip.groupId,
       name: trip.tripName || trip.groupName,
-      destinations: trip.tripDetails?.destinations?.join(', ') || trip.cities?.join(', ') || 'Destinations TBD',
+      destinations: destinations.join(', ') || 'Destinations TBD',
       date: formatDateRange(trip.tripStartDate, trip.tripEndDate),
       dateRange: {
         start: trip.tripStartDate,
@@ -311,6 +315,7 @@ const ConfirmedPools = ({ currentUser }) => {
       maxParticipants: trip.maxMembers,
       participantsText: `${trip.currentMemberCount}/${trip.maxMembers}`,
       memberIds: trip.memberIds || [],
+      members: trip.members || [], // Add full member details
       image: null, // Let the component handle random images
       itinerary: itinerary,
       notes: `Trip ${trip.status}. ${trip.confirmationDeadline ? `Confirmation deadline: ${formatDate(trip.confirmationDeadline)}` : ''}`,
@@ -328,9 +333,9 @@ const ConfirmedPools = ({ currentUser }) => {
       userPayment: userPayment,
       accommodation: trip.tripDetails?.accommodation,
       transportation: trip.tripDetails?.transportation,
-      vehicleType: trip.vehicleType,
-      driverNeeded: trip.driverNeeded,
-      guideNeeded: trip.guideNeeded,
+      vehicleType: trip.tripDetails?.vehicleType || trip.vehicleType,
+      driverNeeded: trip.tripDetails?.driverNeeded || trip.driverNeeded,
+      guideNeeded: trip.tripDetails?.guideNeeded || trip.guideNeeded,
       memberConfirmations: trip.memberConfirmations || [],
       paymentInfo: trip.paymentInfo
     };
@@ -404,25 +409,31 @@ const ConfirmedPools = ({ currentUser }) => {
     }
     
     let paymentAmount = 0;
+    let paymentCompleted = false;
     
     if (userPayment.upfrontPayment && userPayment.finalPayment) {
-      // Phased payment structure - check if upfront payment is pending
-      if (userPayment.upfrontPayment.status === 'pending') {
-        paymentAmount = userPayment.upfrontPayment.amount;
-      } else if (userPayment.finalPayment.status === 'pending') {
-        paymentAmount = userPayment.finalPayment.amount;
+      // Phased payment structure - check if full payment is needed
+      const upfrontPaid = userPayment.upfrontPayment.status === 'paid' || userPayment.upfrontPayment.status === 'completed';
+      const finalPaid = userPayment.finalPayment.status === 'paid' || userPayment.finalPayment.status === 'completed';
+      
+      if (upfrontPaid && finalPaid) {
+        paymentCompleted = true;
       } else {
-        setPaymentError('All payments for this trip have been completed.');
-        return false;
+        // Calculate full payment amount
+        paymentAmount = (userPayment.upfrontPayment.amount || 0) + (userPayment.finalPayment.amount || 0);
       }
     } else {
       // Single payment structure
-      if (userPayment.status === 'pending') {
-        paymentAmount = userPayment.amount;
+      if (userPayment.status === 'paid' || userPayment.status === 'completed') {
+        paymentCompleted = true;
       } else {
-        setPaymentError('Payment for this trip has already been completed.');
-        return false;
+        paymentAmount = userPayment.amount;
       }
+    }
+    
+    if (paymentCompleted) {
+      setPaymentError('Payment for this trip has already been completed.');
+      return false;
     }
     
     if (!paymentAmount || paymentAmount <= 0) {
@@ -445,7 +456,9 @@ const ConfirmedPools = ({ currentUser }) => {
           `http://localhost:8074/api/v1/pooling-confirm/${tripId}/complete-payment`,
           {
             userId: currentUser.uid,
-            orderId: orderId
+            orderId: orderId,
+            fullPayment: true, // Indicate this is a full payment (upfront + final)
+            phase: 'full' // Specify that both phases should be marked as paid
           },
           {
             headers: {
@@ -460,7 +473,9 @@ const ConfirmedPools = ({ currentUser }) => {
           `http://localhost:8074/api/v1/pooling-confirm/${currentTrip.confirmedTripId}/complete-payment`,
           {
             userId: currentUser.uid,
-            orderId: orderId
+            orderId: orderId,
+            fullPayment: true, // Indicate this is a full payment (upfront + final)
+            phase: 'full' // Specify that both phases should be marked as paid
           },
           {
             headers: {
@@ -506,8 +521,10 @@ const ConfirmedPools = ({ currentUser }) => {
                 let memberPaid = false;
                 
                 if (payment.upfrontPayment && payment.finalPayment) {
-                  // Phased payment: check if upfront is paid (for now we only check upfront)
-                  memberPaid = payment.upfrontPayment.status === 'paid' || payment.upfrontPayment.status === 'completed';
+                  // Phased payment: check if BOTH upfront AND final are paid (full payment required)
+                  const upfrontPaid = payment.upfrontPayment.status === 'paid' || payment.upfrontPayment.status === 'completed';
+                  const finalPaid = payment.finalPayment.status === 'paid' || payment.finalPayment.status === 'completed';
+                  memberPaid = upfrontPaid && finalPaid;
                 } else {
                   // Single payment
                   memberPaid = payment.status === 'paid' || payment.status === 'completed';
@@ -644,7 +661,15 @@ const ConfirmedPools = ({ currentUser }) => {
         throw new Error('Payment information not found for current user');
       }
 
-      const paymentAmount = userPayment.amount || userPayment.upfrontPayment?.amount || currentTrip.paymentInfo?.pricePerPerson;
+      // Calculate full payment amount
+      let paymentAmount;
+      if (userPayment.upfrontPayment && userPayment.finalPayment) {
+        // Phased payment structure - charge full amount (upfront + final)
+        paymentAmount = (userPayment.upfrontPayment.amount || 0) + (userPayment.finalPayment.amount || 0);
+      } else {
+        // Single payment structure
+        paymentAmount = userPayment.amount || currentTrip.paymentInfo?.pricePerPerson;
+      }
       
       if (!paymentAmount || paymentAmount <= 0) {
         throw new Error('Invalid payment amount');
@@ -652,7 +677,7 @@ const ConfirmedPools = ({ currentUser }) => {
       
       console.log('💰 Processing payment for trip ID:', currentTrip.tripId);
       console.log('💰 Confirmed trip MongoDB ID:', currentTrip.confirmedTripId);
-      console.log('💳 Payment amount:', paymentAmount);
+      console.log('💳 Full payment amount:', paymentAmount);
       
       // Generate short order ID (max 50 characters)
       const shortTripId = currentTrip.tripId.substring(0, 8);
@@ -804,8 +829,25 @@ const ConfirmedPools = ({ currentUser }) => {
   // Payment Status Data from real API
   const paymentStatus = currentTrip?.paymentInfo?.memberPayments?.map((payment) => {
     const memberConfirmation = currentTrip.memberConfirmations?.find(mc => mc.userId === payment.userId);
+    const memberDetails = currentTrip.members?.find(m => m.userId === payment.userId);
     const isCurrentUser = payment.userId === currentUser?.uid;
     const isCreator = payment.userId === currentTrip.creatorUserId;
+    
+    // Get member name
+    let memberName = '';
+    if (isCurrentUser) {
+      memberName = 'You';
+    } else if (payment.userName && payment.userName.trim()) {
+      memberName = payment.userName;
+    } else if (payment.firstName || payment.lastName) {
+      memberName = `${payment.firstName || ''} ${payment.lastName || ''}`.trim();
+    } else if (memberDetails) {
+      memberName = `${memberDetails.firstName} ${memberDetails.lastName}`.trim() || memberDetails.email;
+    } else if (payment.userEmail) {
+      memberName = payment.userEmail;
+    } else {
+      memberName = isCreator ? 'Trip Creator' : `Member ${payment.userId.slice(-4)}`;
+    }
     
     // Handle different payment structures (single payment vs phased payments)
     let amount, paid, status;
@@ -814,7 +856,8 @@ const ConfirmedPools = ({ currentUser }) => {
       // Phased payment structure
       amount = payment.upfrontPayment.amount + payment.finalPayment.amount;
       paid = payment.totalPaid || 0;
-      status = payment.overallPaymentStatus === 'paid' || payment.overallPaymentStatus === 'completed' ? 'Paid' : 'Pending';
+      status = payment.overallPaymentStatus === 'paid' || payment.overallPaymentStatus === 'completed' ? 'Paid' : 
+               payment.overallPaymentStatus === 'partial' ? 'Partial' : 'Pending';
     } else {
       // Single payment structure
       amount = payment.amount;
@@ -824,11 +867,11 @@ const ConfirmedPools = ({ currentUser }) => {
     
     return {
       userId: payment.userId,
-      name: isCurrentUser ? 'You' : (isCreator ? 'Trip Creator' : `Member ${payment.userId.slice(-4)}`),
+      name: memberName,
       amount: amount,
       paid: paid,
       status: status,
-      method: payment.paymentId || payment.paymentMethod ? 'Online Payment' : 'Pending',
+      method: payment.upfrontPayment?.paymentId || payment.paymentId || payment.paymentMethod ? 'Online Payment' : 'Pending',
       isCurrentUser
     };
   }) || [];
@@ -836,12 +879,29 @@ const ConfirmedPools = ({ currentUser }) => {
   // Participants Data from real API
   const participants = currentTrip?.memberIds?.map((memberId) => {
     const memberConfirmation = currentTrip.memberConfirmations?.find(mc => mc.userId === memberId);
+    const memberDetails = currentTrip.members?.find(m => m.userId === memberId);
     const isCreator = memberId === currentTrip.creatorUserId;
     const isCurrentUser = memberId === currentUser?.uid;
     
+    // Get member name from members array or payment info
+    let memberName = '';
+    if (isCurrentUser) {
+      memberName = 'You';
+    } else if (memberDetails) {
+      memberName = `${memberDetails.firstName} ${memberDetails.lastName}`.trim() || memberDetails.email || `Member ${memberId.slice(-4)}`;
+    } else {
+      // Fallback to payment info for member name
+      const paymentInfo = currentTrip.paymentInfo?.memberPayments?.find(p => p.userId === memberId);
+      if (paymentInfo) {
+        memberName = paymentInfo.userName || `${paymentInfo.firstName} ${paymentInfo.lastName}`.trim() || paymentInfo.userEmail || `Member ${memberId.slice(-4)}`;
+      } else {
+        memberName = isCreator ? 'Trip Creator' : `Member ${memberId.slice(-4)}`;
+      }
+    }
+    
     return {
       userId: memberId,
-      name: isCurrentUser ? 'You' : (isCreator ? 'Trip Creator' : `Member ${memberId.slice(-4)}`),
+      name: memberName,
       role: isCreator ? 'Creator' : 'Member',
       img: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${Math.floor(Math.random() * 99)}.jpg`,
       confirmed: memberConfirmation?.confirmed || false,
@@ -1158,8 +1218,10 @@ const ConfirmedPools = ({ currentUser }) => {
               let hasPendingPayment = false;
               
               if (userPayment.upfrontPayment && userPayment.finalPayment) {
-                // Phased payment structure
-                hasPendingPayment = userPayment.upfrontPayment.status === 'pending' || userPayment.finalPayment.status === 'pending';
+                // Phased payment structure - check if any payment is pending (need full payment)
+                const upfrontPaid = userPayment.upfrontPayment.status === 'paid' || userPayment.upfrontPayment.status === 'completed';
+                const finalPaid = userPayment.finalPayment.status === 'paid' || userPayment.finalPayment.status === 'completed';
+                hasPendingPayment = !upfrontPaid || !finalPaid;
               } else {
                 // Single payment structure
                 hasPendingPayment = userPayment.status === 'pending';
@@ -1173,7 +1235,7 @@ const ConfirmedPools = ({ currentUser }) => {
                     className="flex-1 bg-green-100 text-green-800 py-2 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-200 transition-colors border border-green-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <CreditCardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    {paymentProcessing ? 'Processing...' : 'Make Payment'}
+                    {paymentProcessing ? 'Processing...' : 'Make Full Payment'}
                   </button>
                 );
               }
@@ -1202,8 +1264,8 @@ const ConfirmedPools = ({ currentUser }) => {
 
       {/* Payment Form Modal */}
       {showPaymentForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative z-[10000]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Make Payment</h3>
               <button
@@ -1323,17 +1385,13 @@ const ConfirmedPools = ({ currentUser }) => {
                       const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid);
                       if (!userPayment) return '0';
                       
-                      // Handle different payment structures
+                      // Always show full amount
                       if (userPayment.upfrontPayment && userPayment.finalPayment) {
-                        // Phased payment - show pending amount
-                        if (userPayment.upfrontPayment.status === 'pending') {
-                          return userPayment.upfrontPayment.amount?.toLocaleString() || '0';
-                        } else if (userPayment.finalPayment.status === 'pending') {
-                          return userPayment.finalPayment.amount?.toLocaleString() || '0';
-                        }
-                        return '0'; // All paid
+                        // Phased payment structure - return full amount (upfront + final)
+                        const totalAmount = (userPayment.upfrontPayment.amount || 0) + (userPayment.finalPayment.amount || 0);
+                        return totalAmount.toLocaleString() || '0';
                       } else {
-                        // Single payment
+                        // Single payment structure
                         return userPayment.amount?.toLocaleString() || '0';
                       }
                     })()}
@@ -1342,19 +1400,9 @@ const ConfirmedPools = ({ currentUser }) => {
                 <p className="text-sm text-gray-500 mt-1">
                   Payment will be processed securely through PayHere
                 </p>
-                {(() => {
-                  const userPayment = currentTrip?.paymentInfo?.memberPayments?.find(p => p.userId === currentUser?.uid);
-                  if (userPayment?.upfrontPayment && userPayment?.finalPayment) {
-                    return (
-                      <p className="text-xs text-blue-600 mt-1">
-                        {userPayment.upfrontPayment.status === 'pending' 
-                          ? 'This is your upfront payment' 
-                          : 'This is your final payment'}
-                      </p>
-                    );
-                  }
-                  return null;
-                })()}
+                <p className="text-xs text-blue-600 mt-1">
+                  Full payment required
+                </p>
               </div>
 
               {paymentError && (
