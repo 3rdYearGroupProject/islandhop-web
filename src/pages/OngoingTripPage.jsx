@@ -839,7 +839,10 @@ const OngoingTripPage = () => {
     return expanded;
   });
   
-  const [itineraryCollapsed, setItineraryCollapsed] = useState(false);
+  // Get itineraryCollapsed state from navigation (default to false if not provided)
+  const [itineraryCollapsed, setItineraryCollapsed] = useState(
+    location.state?.itineraryCollapsed ?? false
+  );
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [dayStarted, setDayStarted] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);

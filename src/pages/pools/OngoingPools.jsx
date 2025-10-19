@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Card, { CardBody } from '../../components/Card';
 import GroupChat from '../../components/GroupChat';
@@ -23,7 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const OngoingPools = () => {
-  const [isGroupChatOpen, setIsGroupChatOpen] = useState(false);
+  const navigate = useNavigate();
   const [ongoingPools, setOngoingPools] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,8 +65,12 @@ const OngoingPools = () => {
   const navigateTrip = (direction) => {
     if (direction === 'prev' && currentTripIndex > 0) {
       setCurrentTripIndex(currentTripIndex - 1);
+      // Scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (direction === 'next' && currentTripIndex < ongoingPools.length - 1) {
       setCurrentTripIndex(currentTripIndex + 1);
+      // Scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -194,17 +199,7 @@ const OngoingPools = () => {
     };
   };
 
-  // Prevent background scroll when GroupChat is open
-  useEffect(() => {
-    if (isGroupChatOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isGroupChatOpen]);
+
 
   // If loading, show spinner
   if (isLoading) {
@@ -269,17 +264,105 @@ const OngoingPools = () => {
     userId: member.userId
   }));
 
-  // Mock live updates (can be replaced with real-time data)
-  const liveUpdates = [
-    { time: 'Just now', message: 'Journey in progress...', author: participants[0]?.name || 'Pool Member' }
-  ];
-
   const handleViewDetails = () => {
     console.log('View details clicked for pool:', ongoingPool.id);
+    console.log('Current pool data:', currentPoolData);
+    
+    // Transform pool data to match OngoingTripPage expected format
+    const tripData = {
+      // IDs
+      tripId: ongoingPool.tripId || ongoingPool.id,
+      _id: ongoingPool.id,
+      id: ongoingPool.id,
+      
+      // Basic info
+      tripName: ongoingPool.name,
+      baseCity: ongoingPool.destinationsList[0] || ongoingPool.destinations.split(',')[0]?.trim() || 'Unknown',
+      
+      // Dates
+      startDate: ongoingPool.dateRange.start,
+      endDate: ongoingPool.dateRange.end,
+      
+      // Service providers
+      driverNeeded: ongoingPool.needDriver ? 1 : 0,
+      guideNeeded: ongoingPool.needGuide ? 1 : 0,
+      driver_email: ongoingPool.driverEmail || '',
+      guide_email: ongoingPool.guideEmail || '',
+      
+      // User info
+      userId: getUserData()?.uid,
+      
+      // Participants - pass full participant list and count
+      travelers: ongoingPool.participants.length,
+      participants: ongoingPool.participants.map(p => ({
+        userId: p.userId,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email,
+        isCreator: p.isCreator,
+        profilePicture: p.profilePicture
+      })),
+      
+      // Daily plans - transform from itinerary
+      dailyPlans: ongoingPool.itinerary.map((day, index) => ({
+        day: index + 1,
+        city: day.destination,
+        attractions: day.activities?.map((activity, actIndex) => ({
+          id: actIndex + 1,
+          name: activity.name || activity,
+          location: { lat: 0, lng: 0 }, // Will be fetched from API if needed
+          rating: 4.5,
+          description: activity.description || '',
+          time: activity.time || '',
+          image: activity.image || ''
+        })) || [],
+        restaurants: day.food?.map((food, foodIndex) => ({
+          id: foodIndex + 1,
+          name: food.name || food,
+          location: { lat: 0, lng: 0 },
+          rating: 4.0,
+          description: food.description || '',
+          time: food.time || ''
+        })) || [],
+        hotels: day.places?.map((place, placeIndex) => ({
+          id: placeIndex + 1,
+          name: place.name || place,
+          location: { lat: 0, lng: 0 },
+          rating: 4.0,
+          description: place.description || ''
+        })) || [],
+        // Meter readings
+        start_meter_read: null,
+        end_meter_read: null,
+        deduct_amount: 0
+      })),
+      
+      // Store original pool data for reference
+      _originalData: currentPoolData,
+      
+      // Additional metadata
+      updatedAt: new Date().toISOString()
+    };
+    
+    console.log('Transformed trip data:', tripData);
+    console.log('Total travelers:', tripData.travelers);
+    console.log('Participant details:', tripData.participants);
+    
+    // Navigate to OngoingTripPage with the trip data and itinerary collapsed state
+    navigate('/ongoing-trip', { 
+      state: { 
+        tripData,
+        itineraryCollapsed: true // Keep itinerary collapsed by default
+      } 
+    });
   };
 
   const handleContactGroup = () => {
-    setIsGroupChatOpen(true);
+    // Scroll to chat section
+    const chatSection = document.querySelector('.group-chat-section');
+    if (chatSection) {
+      chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
@@ -294,7 +377,7 @@ const OngoingPools = () => {
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </button>
-          
+        
           <div className="text-center">
             <p className="text-sm text-gray-500">
               Trip {currentTripIndex + 1} of {ongoingPools.length}
@@ -303,7 +386,7 @@ const OngoingPools = () => {
               {ongoingPool.name}
             </p>
           </div>
-          
+        
           <button
             onClick={() => navigateTrip('next')}
             disabled={currentTripIndex === ongoingPools.length - 1}
@@ -315,7 +398,7 @@ const OngoingPools = () => {
       )}
 
       {/* Trip Summary - Compact Card matching ConfirmedPools style */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-6 sm:mb-8" key={`trip-summary-${ongoingPool.id}-${currentTripIndex}`}>
         <div className="relative group bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-400 hover:border-green-600 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10 flex flex-col lg:flex-row max-w-full sm:max-w-4xl mx-auto">
           {/* Image on the left - More compact */}
           <div className="relative w-full lg:w-1/4 h-32 sm:h-44 lg:h-auto flex-shrink-0">
@@ -349,41 +432,40 @@ const OngoingPools = () => {
                 </h3>
               </div>
             </div>
-            
-            
-            
+        
+        
             {/* Compact 3-column grid for info */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1.5 sm:gap-y-2 mb-3">
               <div className="flex items-center text-gray-600">
                 <MapPinIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
                 <span className="text-[11px] sm:text-xs truncate">{ongoingPool.destinations}</span>
               </div>
-              
+          
               <div className="flex items-center text-gray-600">
                 <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
                 <span className="text-[11px] sm:text-xs">{new Date(ongoingPool.dateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
-              
+          
               <div className="flex items-center text-gray-600">
                 <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-orange-500 flex-shrink-0" />
                 <span className="text-[11px] sm:text-xs">{new Date(ongoingPool.dateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
-              
+          
               <div className="flex items-center text-gray-600">
                 <UserGroupIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
                 <span className="text-[11px] sm:text-xs">{ongoingPool.participantsText}</span>
               </div>
-              
+          
               <div className="flex items-center text-gray-600">
                 <ClockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
                 <span className="text-[11px] sm:text-xs">{ongoingPool.durationDays} {ongoingPool.durationDays === 1 ? 'day' : 'days'}</span>
               </div>
-              
+          
               <div className="flex items-center text-gray-600">
                 <CheckCircleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-green-600 flex-shrink-0" />
                 <span className="text-[11px] sm:text-xs text-green-700 font-semibold">{ongoingPool.statusText}</span>
               </div>
-              
+          
               {ongoingPool.costPerPerson && ongoingPool.totalAmount && (
                 <div className="flex items-center text-gray-600 col-span-2 lg:col-span-3">
                   <CreditCardIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
@@ -391,15 +473,15 @@ const OngoingPools = () => {
                 </div>
               )}
             </div>
-            
+        
             {/* Compact Itinerary Timeline */}
             <div className="mb-2">
               <h4 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white mb-1.5">
-                Journey Progress
+                Itinerary
               </h4>
               <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto pb-1">
                 {ongoingPool.itinerary.map((item, index) => (
-                  <div key={item.destination} className="flex items-center flex-shrink-0">
+                  <div key={`${ongoingPool.id}-${item.destination}-${index}`} className="flex items-center flex-shrink-0">
                     <div className="flex flex-col items-center">
                       <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-600 rounded-full border border-white shadow-sm"></div>
                       <span className="text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5 text-center max-w-[60px] sm:max-w-[80px] truncate">
@@ -416,7 +498,7 @@ const OngoingPools = () => {
             <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2">
               {ongoingPool.itinerary.length} {ongoingPool.itinerary.length === 1 ? 'destination' : 'destinations'} • {ongoingPool.durationDays} {ongoingPool.durationDays === 1 ? 'day' : 'days'}
             </p>
-            
+        
             <div className="flex items-center justify-between pt-2 border-t border-gray-200">
               <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
                 {ongoingPool.isCreator && (
@@ -443,113 +525,6 @@ const OngoingPools = () => {
           </div>
         </div>
       </div>
-
-      {/* Participants & Live Updates */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-        {/* Participants */}
-        <Card className="rounded-lg sm:rounded-xl">
-          <CardBody className="px-3 sm:px-4">
-            <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-              Active Participants
-            </h3>
-            <div className="space-y-2 sm:space-y-3">
-              {participants.map((participant) => (
-                <div key={participant.userId} className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-secondary-800 rounded-lg p-2 sm:p-3 border border-gray-200 dark:border-secondary-600">
-                  <div className="relative">
-                    <img
-                      src={participant.img}
-                      alt={participant.name}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-green-500"
-                    />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                      {participant.name}
-                    </div>
-                    <div className="text-xs sm:text-sm text-green-600 font-medium">
-                      {participant.role} • Online
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setIsGroupChatOpen(true)}
-                    className="bg-green-200 text-green-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm hover:bg-green-300 transition-colors border border-green-400 flex-shrink-0"
-                  >
-                    Message
-                  </button>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Live Updates Feed */}
-        <Card className="rounded-lg sm:rounded-xl">
-          <CardBody className="px-3 sm:px-4">
-            <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
-              <ChatBubbleLeftRightIcon className="h-4 w-4 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
-              Live Updates
-            </h3>
-            <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
-              {liveUpdates.map((update, index) => (
-                <div key={index} className="bg-white dark:bg-secondary-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-secondary-600">
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm truncate">
-                          {update.author}
-                        </span>
-                        <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0 ml-2">
-                          {update.time}
-                        </span>
-                      </div>
-                      <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
-                        {update.message}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div className="text-center py-4">
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Open group chat for more updates
-                </p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Action Buttons */}
-      <Card className="rounded-xl">
-        <CardBody>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <button 
-              onClick={() => setIsGroupChatOpen(true)}
-              className="flex-1 bg-green-200 text-green-800 py-2.5 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-green-300 transition-colors flex items-center justify-center gap-2 border border-green-400 text-sm sm:text-base"
-            >
-              <ChatBubbleLeftRightIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              Group Chat
-            </button>
-            <a 
-              href="tel:+94771234567"
-              className="flex-1 bg-red-200 text-red-800 py-2.5 sm:py-3 px-4 sm:px-6 rounded-full font-medium hover:bg-red-300 transition-colors flex items-center justify-center gap-2 border border-red-400 text-sm sm:text-base"
-            >
-              <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              Emergency Call
-            </a>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Group Chat Modal */}
-      <GroupChat 
-        isOpen={isGroupChatOpen}
-        onClose={() => setIsGroupChatOpen(false)}
-        participants={participants}
-        poolName={ongoingPool.name}
-      />
     </div>
   );
 };

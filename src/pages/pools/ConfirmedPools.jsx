@@ -448,10 +448,18 @@ const ConfirmedPools = ({ currentUser }) => {
     try {
       console.log('💳 Completing payment for trip ID:', tripId, 'Order:', orderId);
       console.log('💳 Current trip data:', currentTrip);
+      console.log('💳 User ID:', currentUser.uid);
+      console.log('💳 Available trip IDs:', {
+        tripId: currentTrip.tripId,
+        confirmedTripId: currentTrip.confirmedTripId,
+        groupId: currentTrip.groupId,
+        id: currentTrip.id
+      });
       
       // Try with the provided tripId first
       let response;
       try {
+        console.log('💳 Attempt 1: Using tripId from parameter:', tripId);
         response = await axios.post(
           `http://localhost:8074/api/v1/pooling-confirm/${tripId}/complete-payment`,
           {
@@ -466,23 +474,47 @@ const ConfirmedPools = ({ currentUser }) => {
             }
           }
         );
+        console.log('💳 Success with tripId from parameter');
       } catch (firstError) {
-        console.log('💳 First attempt failed with tripId, trying with confirmedTripId...');
-        // If it fails, try with confirmedTripId as fallback
-        response = await axios.post(
-          `http://localhost:8074/api/v1/pooling-confirm/${currentTrip.confirmedTripId}/complete-payment`,
-          {
-            userId: currentUser.uid,
-            orderId: orderId,
-            fullPayment: true, // Indicate this is a full payment (upfront + final)
-            phase: 'full' // Specify that both phases should be marked as paid
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json'
+        console.log('💳 First attempt failed:', firstError.response?.data || firstError.message);
+        console.log('💳 Attempt 2: Using currentTrip.tripId:', currentTrip.tripId);
+        
+        try {
+          response = await axios.post(
+            `http://localhost:8074/api/v1/pooling-confirm/${currentTrip.tripId}/complete-payment`,
+            {
+              userId: currentUser.uid,
+              orderId: orderId,
+              fullPayment: true, // Indicate this is a full payment (upfront + final)
+              phase: 'full' // Specify that both phases should be marked as paid
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json'
+              }
             }
-          }
-        );
+          );
+          console.log('💳 Success with currentTrip.tripId');
+        } catch (secondError) {
+          console.log('💳 Second attempt failed:', secondError.response?.data || secondError.message);
+          console.log('💳 Attempt 3: Using confirmedTripId:', currentTrip.confirmedTripId);
+          
+          response = await axios.post(
+            `http://localhost:8074/api/v1/pooling-confirm/${currentTrip.confirmedTripId}/complete-payment`,
+            {
+              userId: currentUser.uid,
+              orderId: orderId,
+              fullPayment: true, // Indicate this is a full payment (upfront + final)
+              phase: 'full' // Specify that both phases should be marked as paid
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          console.log('💳 Success with confirmedTripId');
+        }
       }
 
       console.log('💳 Payment completion response:', response.data);
@@ -903,7 +935,6 @@ const ConfirmedPools = ({ currentUser }) => {
       userId: memberId,
       name: memberName,
       role: isCreator ? 'Creator' : 'Member',
-      img: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${Math.floor(Math.random() * 99)}.jpg`,
       confirmed: memberConfirmation?.confirmed || false,
       isCurrentUser,
       isCreator
@@ -1161,11 +1192,9 @@ const ConfirmedPools = ({ currentUser }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
               {participants.map((participant) => (
                 <div key={participant.userId} className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-secondary-800 rounded-lg p-2 sm:p-3 border border-gray-200 dark:border-secondary-600">
-                  <img
-                    src={participant.img}
-                    alt={participant.name}
-                    className="w-8 h-8 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-info-500"
-                  />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center border-2 border-blue-500">
+                    <UserIcon className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-300" />
+                  </div>
                   <div className="flex-1">
                     <div className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm">
                       {participant.name}
