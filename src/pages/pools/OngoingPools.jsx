@@ -173,8 +173,8 @@ const OngoingPools = () => {
       nextDestination: getNextDestination(poolData),
       // Cost information
       currency: 'LKR',
-      totalAmount: poolDetails.totalCost,
-      costPerPerson: poolDetails.costPerPerson,
+      totalAmount: poolDetails.totalCost || 0,
+      costPerPerson: poolDetails.costPerPerson || 0,
       // Service information
       needDriver: poolDetails.needDriver,
       needGuide: poolDetails.needGuide,
@@ -384,10 +384,12 @@ const OngoingPools = () => {
                 <span className="text-[11px] sm:text-xs text-green-700 font-semibold">{ongoingPool.statusText}</span>
               </div>
               
-              <div className="flex items-center text-gray-600 col-span-2 lg:col-span-3">
-                <CreditCardIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
-                <span className="text-[11px] sm:text-xs font-medium">{ongoingPool.currency} {ongoingPool.costPerPerson.toLocaleString()} / person • Total: {ongoingPool.currency} {ongoingPool.totalAmount.toLocaleString()}</span>
-              </div>
+              {ongoingPool.costPerPerson && ongoingPool.totalAmount && (
+                <div className="flex items-center text-gray-600 col-span-2 lg:col-span-3">
+                  <CreditCardIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-500 flex-shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-medium">{ongoingPool.currency} {ongoingPool.costPerPerson.toLocaleString()} / person • Total: {ongoingPool.currency} {ongoingPool.totalAmount.toLocaleString()}</span>
+                </div>
+              )}
             </div>
             
             {/* Compact Itinerary Timeline */}
