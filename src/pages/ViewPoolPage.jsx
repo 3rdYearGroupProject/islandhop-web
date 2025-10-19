@@ -12,6 +12,7 @@ import InviteUserModal from '../components/InviteUserModal';
 import MapInfoWindow from '../components/MapInfoWindow';
 import { PoolsApi, poolsApi } from '../api/poolsApi';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../components/ToastProvider';
 
 // Mock participant data (replace with real data as needed)
 const mockParticipants = {
@@ -57,6 +58,7 @@ const ViewPoolPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
   const { poolId } = useParams();
+  const toast = useToast();
   
   // Get pool data from route state or use mock data if none provided
   const poolFromState = location.state?.pool;
@@ -103,7 +105,7 @@ const ViewPoolPage = () => {
       // Find the join request to get the requestId
       const request = joinRequests.find(req => req.email === email);
       if (!request) {
-        alert('❌ Could not find join request');
+        toast.error('Could not find join request', { duration: 3000 });
         return;
       }
       
@@ -114,13 +116,13 @@ const ViewPoolPage = () => {
         action: 'approve'
       });
       
-      alert(`✅ Accepted join request from ${name}!`);
+      toast.success(`Accepted join request from ${name}!`, { duration: 2000 });
       
       // Refresh join requests
       await loadJoinRequests();
     } catch (error) {
       console.error('Error accepting join request:', error);
-      alert(`❌ Failed to accept request: ${error.message}`);
+      toast.error(`Failed to accept request: ${error.message}`, { duration: 3000 });
     }
   };
 
@@ -131,7 +133,7 @@ const ViewPoolPage = () => {
       // Find the join request to get the requestId
       const request = joinRequests.find(req => req.email === email);
       if (!request) {
-        alert('❌ Could not find join request');
+        toast.error('Could not find join request', { duration: 3000 });
         return;
       }
       
@@ -142,13 +144,13 @@ const ViewPoolPage = () => {
         action: 'reject'
       });
       
-      alert(`❌ Rejected join request from ${name}`);
+      toast.warning(`Rejected join request from ${name}`, { duration: 2000 });
       
       // Refresh join requests
       await loadJoinRequests();
     } catch (error) {
       console.error('Error rejecting join request:', error);
-      alert(`❌ Failed to reject request: ${error.message}`);
+      toast.error(`Failed to reject request: ${error.message}`, { duration: 3000 });
     }
   };
 
@@ -250,7 +252,7 @@ const ViewPoolPage = () => {
       setShowConfirmationModal(true);
     } catch (error) {
       console.error('Failed to initiate trip confirmation:', error);
-      alert('Failed to initiate trip confirmation. Please try again.');
+      toast.error('Failed to initiate trip confirmation. Please try again.', { duration: 3000 });
     } finally {
       setConfirmationLoading(false);
     }
@@ -263,13 +265,14 @@ const ViewPoolPage = () => {
       const result = await poolsApi.confirmParticipation(pool.id, user?.uid || user?.id);
       console.log('Participation confirmed:', result);
       setConfirmationStatus('confirmed');
+      toast.success('Participation confirmed successfully!', { duration: 2000 });
       // Navigate to confirmed pools page
       setTimeout(() => {
         navigate('/pools', { state: { activeTab: 'confirmed' } });
       }, 2000);
     } catch (error) {
       console.error('Failed to confirm participation:', error);
-      alert('Failed to confirm participation. Please try again.');
+      toast.error('Failed to confirm participation. Please try again.', { duration: 3000 });
     } finally {
       setConfirmationLoading(false);
     }
@@ -809,13 +812,13 @@ const ViewPoolPage = () => {
       // Copy to clipboard
       await navigator.clipboard.writeText(poolUrl);
       
-      // Show success notification (you can replace this with a toast notification)
-      alert('Pool link copied to clipboard!');
+      // Show success notification
+      toast.success('Pool link copied to clipboard!', { duration: 2000 });
       
       console.log('Pool link copied:', poolUrl);
     } catch (error) {
       console.error('Failed to copy link:', error);
-      alert('Failed to copy link. Please try again.');
+      toast.error('Failed to copy link. Please try again.', { duration: 3000 });
     }
   };
 
@@ -1054,7 +1057,7 @@ const ViewPoolPage = () => {
         poolData={pool}
         onSuccess={(result) => {
           console.log('Join request sent:', result);
-          alert('Join request sent successfully!');
+          toast.success('Join request sent successfully!', { duration: 2000 });
         }}
       />
       <InviteUserModal
@@ -1063,7 +1066,7 @@ const ViewPoolPage = () => {
         groupData={pool}
         onSuccess={(result) => {
           console.log('Invitation sent:', result);
-          alert('Invitation sent successfully!');
+          toast.success('Invitation sent successfully!', { duration: 2000 });
         }}
       />
 
