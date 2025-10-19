@@ -637,12 +637,13 @@ const FindPools = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pools.map((pool) => (
-            <PoolCard 
-              key={pool.id} 
-              pool={pool} 
-              onJoinPool={handleJoinPool}
-              onClick={handlePoolClick}
-            />
+            <div key={pool.id} className="w-full">
+              <PoolCard 
+                pool={pool} 
+                onJoinPool={handleJoinPool}
+                onClick={handlePoolClick}
+              />
+            </div>
           ))}
         </div>
       )}

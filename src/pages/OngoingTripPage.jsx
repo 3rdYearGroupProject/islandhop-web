@@ -342,13 +342,18 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic, t
           }
         });
 
-        console.log('✅ Users at location:', response.data);
+        console.log('✅ Users at location response:', response.data);
+
+        // Extract users array from response
+        const usersArray = response.data.users || response.data || [];
+        console.log('✅ Extracted users array:', usersArray);
 
         // Filter out current user
         const userData = getUserData();
         const currentUserId = userData?.uid;
-        const otherUsers = response.data.filter(user => user.userId !== currentUserId);
+        const otherUsers = usersArray.filter(user => user.userId !== currentUserId);
         
+        console.log('✅ Other travelers (excluding current user):', otherUsers);
         setRealTravelers(otherUsers);
       } catch (error) {
         console.error('❌ Error fetching users at location:', error);

@@ -199,7 +199,7 @@ export class PoolsApi {
       id: group.groupId,
       groupId: group.groupId,
       tripId: group.tripId,
-      image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80', // Default image
+      image: null, // Let PoolCard component handle random image generation based on destination
       name: group.tripName || group.groupName || 'Adventure Trip',
       owner: group.creatorName || 'Unknown',
       creatorUserId: group.creatorUserId,
