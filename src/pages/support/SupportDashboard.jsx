@@ -182,13 +182,13 @@ const SupportDashboard = ({ onPageChange }) => {
       color: 'secondary',
       action: () => navigate('/support/reviews')
     },
-    {
-      title: 'Handle Chat & Email',
-      description: 'Respond to chat and email support',
-      icon: ChatBubbleLeftRightIcon,
-      color: 'secondary',
-      action: () => navigate('/support/chat-email')
-    },
+    // {
+    //   title: 'Handle Chat & Email',
+    //   description: 'Respond to chat and email support',
+    //   icon: ChatBubbleLeftRightIcon,
+    //   color: 'secondary',
+    //   action: () => navigate('/support/chat-email')
+    // },
     {
       title: 'Resolve Complaints',
       description: 'Address customer complaints',

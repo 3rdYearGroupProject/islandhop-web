@@ -8,7 +8,7 @@ import SupportDashboard from "../pages/support/SupportDashboard";
 import ViewTickets from "../pages/support/ViewTickets";
 import Payments from "../pages/support/Payments";
 import Reviews from "../pages/support/Reviews";
-import ChatEmailSupport from "../pages/support/ChatEmailSupport";
+// import ChatEmailSupport from "../pages/support/ChatEmailSupport";
 import ResolveComplaint from "../pages/support/ResolveComplaint";
 import LostItemTracker from "../pages/support/LostItemTracker";
 import PanicAlerts from "../pages/support/PanicAlerts";
@@ -32,7 +32,7 @@ const SupportRoutes = () => {
             </ProtectedSupportRoute>
           } 
         />
-        <Route path="chat-email" element={<ChatEmailSupport />} />
+        {/* <Route path="chat-email" element={<ChatEmailSupport />} /> */}
         <Route path="communications" element={<Communications />} />
         <Route 
           path="verifications" 
