@@ -17,8 +17,10 @@ import {
 } from 'lucide-react';
 import { useSchedule } from '../../hooks/useSchedule';
 import userDataManager from '../../utils/userStorage';
+import { useToast } from '../../components/ToastProvider';
 
 const GuideSchedule = () => {
+  const toast = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('week'); // week, month, day
   const [showAddModal, setShowAddModal] = useState(false);
@@ -72,13 +74,13 @@ const GuideSchedule = () => {
   const handleDateSelect = (date) => {
     // Don't allow selection of locked dates
     if (isDateLocked(date)) {
-      alert('Locked dates cannot be modified. These dates are reserved for confirmed bookings.');
+      toast.error('Locked dates cannot be modified. These dates are reserved for confirmed bookings.');
       return;
     }
 
     // Don't allow selection of dates within 14 days
     if (!isDateModifiable(date)) {
-      alert('You can only modify availability for dates that are at least 14 days in the future.');
+      toast.error('You can only modify availability for dates that are at least 14 days in the future.');
       return;
     }
 
@@ -92,14 +94,14 @@ const GuideSchedule = () => {
   // Handle marking days as unavailable
   const handleMarkUnavailable = async () => {
     if (selectedDates.length === 0) {
-      alert('Please select at least one date to mark as unavailable.');
+      toast.error('Please select at least one date to mark as unavailable.');
       return;
     }
 
     // Check if all selected dates are modifiable
     const invalidDates = selectedDates.filter(date => !isDateModifiable(date) || isDateLocked(date));
     if (invalidDates.length > 0) {
-      alert('Some selected dates cannot be modified. Please ensure dates are at least 14 days in the future and not locked.');
+      toast.error('Some selected dates cannot be modified. Please ensure dates are at least 14 days in the future and not locked.');
       return;
     }
 
@@ -107,23 +109,23 @@ const GuideSchedule = () => {
       await markUnavailable(selectedDates);
       await getSchedule(currentMonth); // Refresh data
       setSelectedDates([]);
-      alert('Days marked as unavailable successfully!');
+      toast.success('Days marked as unavailable successfully!');
     } catch (error) {
-      alert('Failed to mark days unavailable: ' + error.message);
+      toast.error('Failed to mark days unavailable: ' + error.message);
     }
   };
 
   // Handle marking days as available
   const handleMarkAvailable = async () => {
     if (selectedDates.length === 0) {
-      alert('Please select at least one date to mark as available.');
+      toast.error('Please select at least one date to mark as available.');
       return;
     }
 
     // Check if all selected dates are modifiable
     const invalidDates = selectedDates.filter(date => !isDateModifiable(date) || isDateLocked(date));
     if (invalidDates.length > 0) {
-      alert('Some selected dates cannot be modified. Please ensure dates are at least 14 days in the future and not locked.');
+      toast.error('Some selected dates cannot be modified. Please ensure dates are at least 14 days in the future and not locked.');
       return;
     }
 
@@ -131,9 +133,9 @@ const GuideSchedule = () => {
       await markAvailable(selectedDates);
       await getSchedule(currentMonth); // Refresh data
       setSelectedDates([]);
-      alert('Days marked as available successfully!');
+      toast.success('Days marked as available successfully!');
     } catch (error) {
-      alert('Failed to mark days available: ' + error.message);
+      toast.error('Failed to mark days available: ' + error.message);
     }
   };
 
@@ -147,9 +149,9 @@ const GuideSchedule = () => {
       await lockDays(selectedDates, tripId || null);
       await getSchedule(currentMonth); // Refresh data
       setSelectedDates([]);
-      alert('Days locked successfully!');
+      toast.success('Days locked successfully!');
     } catch (error) {
-      alert('Failed to lock days: ' + error.message);
+      toast.error('Failed to lock days: ' + error.message);
     }
   };
 
@@ -163,9 +165,9 @@ const GuideSchedule = () => {
       }
       await getSchedule(currentMonth); // Refresh data
       setShowAddModal(false);
-      alert('Schedule updated successfully!');
+      toast.success('Schedule updated successfully!');
     } catch (error) {
-      alert('Failed to update schedule: ' + error.message);
+      toast.error('Failed to update schedule: ' + error.message);
     }
   };
 
@@ -526,12 +528,12 @@ const GuideSchedule = () => {
               
               // Validate date before submission
               if (!isDateModifiable(date)) {
-                alert('You can only set schedule for dates that are at least 14 days in the future.');
+                toast.error('You can only set schedule for dates that are at least 14 days in the future.');
                 return;
               }
 
               if (isDateLocked(date)) {
-                alert('This date is locked and cannot be modified.');
+                toast.error('This date is locked and cannot be modified.');
                 return;
               }
               
@@ -544,9 +546,9 @@ const GuideSchedule = () => {
                 await getSchedule(currentMonth);
                 setShowAddModal(false);
                 setAvailabilityStatus('available');
-                alert('Schedule updated successfully!');
+                toast.success('Schedule updated successfully!');
               } catch (error) {
-                alert('Failed to update schedule: ' + error.message);
+                toast.error('Failed to update schedule: ' + error.message);
               }
             }}>
               <div className="space-y-4">
