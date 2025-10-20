@@ -264,14 +264,12 @@ const ResolveComplaint = () => {
         },
       });
 
-      const data = await response.json();
-      console.log('Response received for third party drivers:', data);
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('Response received for third party drivers:', result);
       
       if (result.success && result.data) {
         setThirdPartyDrivers(result.data);
