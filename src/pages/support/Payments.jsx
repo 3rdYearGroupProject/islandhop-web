@@ -15,8 +15,11 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
+import { useToast } from '../../components/ToastProvider';
 
 const Payments = () => {
+  const { success, error: showError } = useToast();
+  
   const [driverPayments, setDriverPayments] = useState([]);
   const [guidePayments, setGuidePayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,12 +147,12 @@ const Payments = () => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
+        showError('Please upload an image file');
         return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size should be less than 5MB');
+        showError('File size should be less than 5MB');
         return;
       }
       setEvidenceFile(file);
@@ -158,7 +161,7 @@ const Payments = () => {
 
   const submitPayment = async () => {
     if (!selectedPayment || !evidenceFile) {
-      alert('Please upload evidence before submitting');
+      showError('Please upload evidence before submitting');
       return;
     }
 
@@ -178,7 +181,7 @@ const Payments = () => {
       });
 
       if (response.ok) {
-        alert('Payment marked as paid successfully!');
+        success('Payment marked as paid successfully!');
         setShowPaymentModal(false);
         setSelectedPayment(null);
         setEvidenceFile(null);
@@ -189,7 +192,7 @@ const Payments = () => {
       }
     } catch (err) {
       console.error('Error submitting payment:', err);
-      alert('Failed to update payment. Please try again.');
+      showError('Failed to update payment. Please try again.');
     } finally {
       setUploadLoading(false);
     }
@@ -208,7 +211,8 @@ const Payments = () => {
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(payment => 
-        payment.tripId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getPaymentIdentifier(payment, 'driver').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getPaymentIdentifier(payment, 'guide').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (payment.driverEmail && payment.driverEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (payment.guideEmail && payment.guideEmail.toLowerCase().includes(searchTerm.toLowerCase()))
       );
@@ -234,6 +238,34 @@ const Payments = () => {
     });
   };
 
+  // Generate a more readable payment identifier
+  const getPaymentIdentifier = (payment, type) => {
+    const date = new Date(payment.createdAt);
+    const formattedDate = date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: '2-digit' 
+    });
+    const serviceType = type === 'driver' ? 'Driver Service' : 'Guide Service';
+    const email = type === 'driver' ? payment.driverEmail : payment.guideEmail;
+    const userName = email ? email.split('@')[0] : 'Unknown';
+    
+    return `${serviceType} - ${userName} (${formattedDate})`;
+  };
+
+  // Generate payment identifier for table display (shorter version)
+  const getTablePaymentIdentifier = (payment, type) => {
+    const date = new Date(payment.createdAt);
+    const formattedDate = date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: '2-digit' 
+    });
+    const serviceType = type === 'driver' ? 'Driver' : 'Guide';
+    const email = type === 'driver' ? payment.driverEmail : payment.guideEmail;
+    const userName = email ? email.split('@')[0] : 'Unknown';
+    
+    return `${serviceType} - ${userName} (${formattedDate})`;
+  };
+
   const PaymentCard = ({ payment, type }) => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
@@ -246,7 +278,7 @@ const Payments = () => {
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">Trip ID: {payment.tripId}</h3>
+            <h3 className="font-semibold text-gray-900">{getPaymentIdentifier(payment, type)}</h3>
             <p className="text-sm text-gray-500">
               {type === 'driver' ? payment.driverEmail : payment.guideEmail}
             </p>
@@ -391,7 +423,7 @@ const Payments = () => {
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by Trip ID or Email..."
+              placeholder="Search by Service or Email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -462,7 +494,7 @@ const Payments = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver Email</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -472,7 +504,7 @@ const Payments = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {paymentHistory.drivers.map((payment) => (
                         <tr key={payment._id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.tripId}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{getTablePaymentIdentifier(payment, 'driver')}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{payment.driverEmail}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(payment.cost)}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -496,7 +528,7 @@ const Payments = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guide Email</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -506,7 +538,7 @@ const Payments = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {paymentHistory.guides.map((payment) => (
                         <tr key={payment._id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.tripId}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{getTablePaymentIdentifier(payment, 'guide')}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{payment.guideEmail}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(payment.cost)}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -595,8 +627,8 @@ const Payments = () => {
 
             <div className="mb-6">
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">Trip ID</p>
-                <p className="font-semibold">{selectedPayment.tripId}</p>
+                <p className="text-sm text-gray-600 mb-1">Service</p>
+                <p className="font-semibold">{getPaymentIdentifier(selectedPayment, selectedPayment.type)}</p>
                 <p className="text-sm text-gray-600 mb-1 mt-2">Amount</p>
                 <p className="font-semibold">{formatCurrency(selectedPayment.cost)}</p>
                 <p className="text-sm text-gray-600 mb-1 mt-2">
