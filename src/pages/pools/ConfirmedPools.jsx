@@ -614,7 +614,41 @@ const ConfirmedPools = ({ currentUser }) => {
 
                   if (activateResponse.data) {
                     console.log('🎉 Trip activated successfully!');
-                    toast.success('Payment completed! All participants have paid. Your trip is now fully activated!', { duration: 5000 });
+                    
+                    // Create chat group for the trip after successful activation
+                    try {
+                      console.log('💬 Creating chat group for activated trip...');
+                      
+                      const chatGroupPayload = {
+                        groupName: `${updatedTrip.tripName || updatedTrip.groupName} - Travel Group`,
+                        description: `Chat group for ${updatedTrip.tripName || updatedTrip.groupName} trip`,
+                        groupType: 'PRIVATE',
+                        memberIds: updatedTrip.memberIds || [],
+                        adminId: updatedTrip.creatorUserId || updatedTrip.initiatedTripCreatorUserId,
+                        tripId: updatedTrip.tripId
+                      };
+                      
+                      console.log('💬 Chat group payload:', chatGroupPayload);
+                      
+                      const chatResponse = await axios.post(
+                        'http://localhost:8090/api/v1/chat/group/create-with-trip',
+                        chatGroupPayload,
+                        {
+                          headers: {
+                            'Content-Type': 'application/json'
+                          },
+                          timeout: 10000
+                        }
+                      );
+                      
+                      console.log('💬 Chat group created successfully:', chatResponse.data);
+                      toast.success('Payment completed! All participants have paid. Your trip is now fully activated with group chat!', { duration: 5000 });
+                      
+                    } catch (chatError) {
+                      console.error('❌ Failed to create chat group:', chatError);
+                      // Don't fail if chat creation fails - trip is already activated
+                      toast.success('Payment completed! All participants have paid. Your trip is now fully activated!', { duration: 5000 });
+                    }
                   }
                 } catch (activateError) {
                   console.error('❌ Failed to activate trip:', activateError);
