@@ -195,6 +195,56 @@ const Discover = () => {
     setPlaceDetails(place); // Since new API already returns most details
   };
 
+  // Effect to handle body scroll lock when modal is open
+  React.useEffect(() => {
+    if (selectedPlace) {
+      // Store the current scroll position
+      const scrollY = window.scrollY;
+      
+      // Disable body scroll and prevent scroll-through on mobile
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      
+      // Prevent touch-based scrolling on mobile
+      const preventScroll = (e) => {
+        e.preventDefault();
+      };
+      
+      // Add touch event listeners for mobile
+      document.addEventListener('touchmove', preventScroll, { passive: false });
+      
+      return () => {
+        // Re-enable body scroll and restore position
+        document.body.style.overflow = 'unset';
+        document.body.style.position = 'static';
+        document.body.style.top = 'auto';
+        document.body.style.width = 'auto';
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+        
+        // Remove touch event listeners
+        document.removeEventListener('touchmove', preventScroll);
+      };
+    } else {
+      // Re-enable body scroll when modal is closed
+      document.body.style.overflow = 'unset';
+      document.body.style.position = 'static';
+      document.body.style.top = 'auto';
+      document.body.style.width = 'auto';
+    }
+
+    // Cleanup function to ensure scroll is re-enabled when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.style.position = 'static';
+      document.body.style.top = 'auto';
+      document.body.style.width = 'auto';
+    };
+  }, [selectedPlace]);
+
   const renderStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -557,8 +607,14 @@ const Discover = () => {
 
       {/* Place Details Modal */}
       {selectedPlace && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onTouchMove={(e) => e.stopPropagation()}
+        >
+          <Card 
+            className="max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
