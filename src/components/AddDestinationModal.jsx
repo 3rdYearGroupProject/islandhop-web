@@ -8,7 +8,7 @@ const HARDCODED_CITIES = [  {
     name: 'Colombo',
     region: 'Western Province',
     description: 'The bustling commercial capital of Sri Lanka, known for its colonial heritage and vibrant city life.',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/33511789/pexels-photo-33511789.jpeg?cs=srgb&dl=pexels-sofiia-asmi-3378970-33511789.jpg&fm=jpg&w=640&h=427',
     highlights: ['Galle Face Green', 'Gangaramaya Temple', 'Pettah Market']
   },
   {
@@ -16,7 +16,7 @@ const HARDCODED_CITIES = [  {
     name: 'Kandy',
     region: 'Central Province',
     description: 'A scenic city surrounded by mountains, famous for the Temple of the Tooth and its cultural significance.',
-    image: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/739409/pexels-photo-739409.jpeg?cs=srgb&dl=pexels-eugene-dorosh-230277-739409.jpg&fm=jpg&w=640&h=427',
     highlights: ['Temple of the Tooth', 'Kandy Lake', 'Royal Botanical Gardens']
   },
   {
@@ -24,7 +24,7 @@ const HARDCODED_CITIES = [  {
     name: 'Galle',
     region: 'Southern Province',
     description: 'A historic city on the southwest coast, known for its Dutch Fort and beautiful beaches.',
-    image: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/2933943/pexels-photo-2933943.jpeg?cs=srgb&dl=pexels-shainee-2933943.jpg&fm=jpg&w=640&h=853',
     highlights: ['Galle Fort', 'Unawatuna Beach', 'Jungle Beach']
   },
   {
@@ -32,7 +32,7 @@ const HARDCODED_CITIES = [  {
     name: 'Nuwara Eliya',
     region: 'Central Province',
     description: 'A cool-climate city in the heart of Sri Lanka’s tea country, known as Little England.',
-    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/321571/pexels-photo-321571.jpeg?cs=srgb&dl=pexels-freestockpro-321571.jpg&fm=jpg&w=640&h=426',
     highlights: ['Tea Plantations', 'Gregory Lake', 'Horton Plains']
   },
   {
@@ -40,7 +40,7 @@ const HARDCODED_CITIES = [  {
     name: 'Anuradhapura',
     region: 'North Central Province',
     description: 'An ancient city and UNESCO World Heritage Site, known for its well-preserved ruins and sacred sites.',
-    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/13667937/pexels-photo-13667937.jpeg?cs=srgb&dl=pexels-chathura-anuradha-subasinghe-599124-13667937.jpg&fm=jpg&w=640&h=960',
     highlights: ['Sri Maha Bodhi', 'Ruwanwelisaya', 'Jetavanaramaya']
   },
   {
@@ -48,7 +48,7 @@ const HARDCODED_CITIES = [  {
     name: 'Sigiriya',
     region: 'Central Province',
     description: 'Home to the ancient rock fortress and UNESCO World Heritage Site, Sigiriya.',
-    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/34128249/pexels-photo-34128249.jpeg?cs=srgb&dl=pexels-stephanie-perera-2153460865-34128249.jpg&fm=jpg&w=640&h=425',
     highlights: ['Sigiriya Rock', 'Pidurangala Rock', 'Frescoes']
   },
   {
@@ -56,7 +56,7 @@ const HARDCODED_CITIES = [  {
     name: 'Ella',
     region: 'Uva Province',
     description: 'A small town with stunning views, popular for hiking and its relaxed atmosphere.',
-    image: 'https://images.unsplash.com/photo-1517816428104-380fd9864b1b?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/4769075/pexels-photo-4769075.jpeg?cs=srgb&dl=pexels-domenicobertazzo-4769075.jpg&fm=jpg&w=640&h=427',
     highlights: ['Ella Rock', 'Nine Arch Bridge', 'Little Adam’s Peak']
   },
   {
@@ -64,7 +64,7 @@ const HARDCODED_CITIES = [  {
     name: 'Mirissa',
     region: 'Southern Province',
     description: 'A beautiful beach destination known for whale watching and vibrant nightlife.',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/1005417/pexels-photo-1005417.jpeg?cs=srgb&dl=pexels-ollivves-1005417.jpg&fm=jpg&w=640&h=800',
     highlights: ['Mirissa Beach', 'Whale Watching', 'Coconut Tree Hill']
   },
   {
@@ -72,7 +72,7 @@ const HARDCODED_CITIES = [  {
     name: 'Jaffna',
     region: 'Northern Province',
     description: 'A culturally rich city in the north, famous for its unique cuisine and historic sites.',
-    image: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/7927514/pexels-photo-7927514.jpeg?cs=srgb&dl=pexels-amith-anuradha-3230049-7927514.jpg&fm=jpg&w=640&h=397',
     highlights: ['Jaffna Fort', 'Nallur Kandaswamy Temple', 'Casuarina Beach']
   },
   {
@@ -80,7 +80,7 @@ const HARDCODED_CITIES = [  {
     name: 'Negombo',
     region: 'Western Province',
     description: 'A coastal city known for its fishing industry and vibrant lagoon.',
-    image: 'https://images.unsplash.com/photo-1508921912187-0e8a8e7c67f2?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/33929221/pexels-photo-33929221.jpeg?cs=srgb&dl=pexels-amod-s-pallemulla-411135798-33929221.jpg&fm=jpg&w=640&h=427',
     highlights: ['Negombo Lagoon', 'Fish Market', 'Dutch Fort']
   },
   {
@@ -88,7 +88,7 @@ const HARDCODED_CITIES = [  {
     name: 'Trincomalee',
     region: 'Eastern Province',
     description: 'A port city with beautiful beaches and historic temples on the east coast.',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/10850855/pexels-photo-10850855.jpeg?cs=srgb&dl=pexels-srkportraits-10850855.jpg&fm=jpg&w=640&h=427',
     highlights: ['Nilaveli Beach', 'Koneswaram Temple', 'Fort Frederick']
   },
   {
@@ -96,7 +96,7 @@ const HARDCODED_CITIES = [  {
     name: 'Batticaloa',
     region: 'Eastern Province',
     description: 'Known for its singing fish and scenic lagoons, a hidden gem in the east.',
-    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/155547/pexels-photo-155547.jpeg?cs=srgb&dl=pexels-flickr-155547.jpg&fm=jpg&w=640&h=360',
     highlights: ['Batticaloa Lagoon', 'Kallady Bridge', 'Fort Batticaloa']
   },
   {
@@ -104,7 +104,7 @@ const HARDCODED_CITIES = [  {
     name: 'Ratnapura',
     region: 'Sabaragamuwa Province',
     description: 'The city of gems, famous for its gem mining and lush rainforests.',
-    image: 'https://images.unsplash.com/photo-1469474968028-5663c0c8e537?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/12343426/pexels-photo-12343426.jpeg?cs=srgb&dl=pexels-elvimadushanka-12343426.jpg&fm=jpg&w=640&h=960',
     highlights: ['Gem Museum', 'Maha Saman Devalaya', 'Sinharaja Forest']
   },
   {
@@ -112,7 +112,7 @@ const HARDCODED_CITIES = [  {
     name: 'Matara',
     region: 'Southern Province',
     description: 'A coastal city with historic charm and beautiful beaches.',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/8414445/pexels-photo-8414445.jpeg?cs=srgb&dl=pexels-mikhail-nilov-8414445.jpg&fm=jpg&w=640&h=426',
     highlights: ['Polhena Beach', 'Matara Fort', 'Weherahena Temple']
   },
   {
@@ -120,7 +120,7 @@ const HARDCODED_CITIES = [  {
     name: 'Badulla',
     region: 'Uva Province',
     description: 'A gateway to the hill country, known for its waterfalls and tea estates.',
-    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/1047051/pexels-photo-1047051.jpeg?cs=srgb&dl=pexels-ollivves-1047051.jpg&fm=jpg&w=640&h=800',
     highlights: ['Dunhinda Falls', 'Muthiyangana Temple', 'Bogoda Bridge']
   },
   {
@@ -128,7 +128,7 @@ const HARDCODED_CITIES = [  {
     name: 'Polonnaruwa',
     region: 'North Central Province',
     description: 'An ancient city with well-preserved ruins, a UNESCO World Heritage Site.',
-    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/11398966/pexels-photo-11398966.jpeg?cs=srgb&dl=pexels-ravi96-11398966.jpg&fm=jpg&w=640&h=480',
     highlights: ['Gal Vihara', 'Parakrama Samudra', 'Royal Palace']
   },
   {
@@ -136,7 +136,7 @@ const HARDCODED_CITIES = [  {
     name: 'Kurunegala',
     region: 'North Western Province',
     description: 'A historic city surrounded by rock formations and ancient temples.',
-    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/34216510/pexels-photo-34216510.jpeg?cs=srgb&dl=pexels-himal-34216510.jpg&fm=jpg&w=640&h=960',
     highlights: ['Athugala Rock', 'Ridi Viharaya', 'Yapahuwa Rock Fortress']
   },
   {
@@ -144,7 +144,7 @@ const HARDCODED_CITIES = [  {
     name: 'Kalutara',
     region: 'Western Province',
     description: 'A coastal city with a prominent Buddhist temple and serene beaches.',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop',
+    image: 'https://images.pexels.com/photos/5033268/pexels-photo-5033268.jpeg?cs=srgb&dl=pexels-lyn-hoare-2778850-5033268.jpg&fm=jpg&w=640&h=427',
     highlights: ['Kalutara Bodhiya', 'Richmond Castle', 'Kalutara Beach']
   },
   {
