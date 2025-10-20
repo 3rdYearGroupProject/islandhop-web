@@ -205,7 +205,7 @@ const Analytics = () => {
       bgColor: "rgba(16, 185, 129, 0.1)",
     },
     revenue: {
-      label: "Revenue (LKR)",
+      label: "Total Transactions (LKR)",
       color: "#f59e0b",
       bgColor: "rgba(245, 158, 11, 0.1)",
     },
@@ -354,7 +354,7 @@ const Analytics = () => {
       color: "primary",
     },
     {
-      title: "Revenue",
+      title: "Total Transactions",
       value: loading
         ? "Loading..."
         : apiData.totalRevenue
@@ -488,7 +488,7 @@ const Analytics = () => {
         ["Total Bookings", apiData.totalBookings.toLocaleString()],
         ["Active Users", apiData.totalUsers.toLocaleString()],
         [
-          "Total Revenue",
+          "Total Transactions",
           `LKR ${apiData.totalRevenue.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -535,7 +535,7 @@ const Analytics = () => {
 
       autoTable(doc, {
         startY: currentY + 5,
-        head: [["Month", "Bookings", "Users", "Revenue", "Conv. Rate (%)"]],
+        head: [["Month", "Bookings", "Users", "Transactions", "Conv. Rate (%)"]],
         body: monthlyTableData,
         theme: "striped",
         headStyles: {
@@ -563,7 +563,7 @@ const Analytics = () => {
       // Chart visualization section
       doc.setFontSize(16);
       doc.setTextColor(40);
-      doc.text("Revenue Trend Chart", pageWidth / 2, 20, { align: "center" });
+      doc.text("Transactions Trend Chart", pageWidth / 2, 20, { align: "center" });
 
       // Draw simple line chart for revenue
       const chartStartY = 35;
@@ -610,7 +610,7 @@ const Analytics = () => {
       // Add Y-axis label for revenue chart
       doc.setFontSize(8);
       doc.setTextColor(100);
-      doc.text("Revenue", 5, chartStartY + chartHeight / 2, {
+      doc.text("Transactions", 5, chartStartY + chartHeight / 2, {
         angle: 90,
       });
 
@@ -628,7 +628,7 @@ const Analytics = () => {
       doc.setFillColor(59, 130, 246);
       doc.rect(chartStartX, chartStartY + chartHeight + 10, 10, 4, "F");
       doc.setTextColor(40);
-      doc.text("Revenue", chartStartX + 12, chartStartY + chartHeight + 13);
+      doc.text("Transactions", chartStartX + 12, chartStartY + chartHeight + 13);
 
       // Bookings chart
       doc.setFontSize(16);
