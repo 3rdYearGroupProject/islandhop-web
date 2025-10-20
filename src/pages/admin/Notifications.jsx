@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   BellIcon,
   ExclamationTriangleIcon,
@@ -8,8 +8,8 @@ import {
   ServerIcon,
   ShieldExclamationIcon,
   ClockIcon,
-  MagnifyingGlassIcon
-} from '@heroicons/react/24/outline';
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -24,105 +24,33 @@ const Notifications = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
 
-  // Mock data for system notifications
-  const mockNotifications = [
-    {
-      id: 1,
-      title: "High Server Load Detected",
-      message: "Server CPU usage has exceeded 85% for the past 10 minutes. Consider scaling resources.",
-      type: "performance",
-      priority: "high",
-      status: "active",
-      timestamp: "2024-06-25T15:30:00Z",
-      affectedServices: ["API Server", "Database"],
-      details: "CPU: 87%, Memory: 78%, Disk I/O: High"
-    },
-    {
-      id: 2,
-      title: "Security Alert: Multiple Failed Login Attempts",
-      message: "Detected 15 failed login attempts from IP address 203.0.113.195 in the last hour.",
-      type: "security",
-      priority: "critical",
-      status: "investigating",
-      timestamp: "2024-06-25T15:15:00Z",
-      affectedServices: ["Authentication Service"],
-      details: "IP: 203.0.113.195, User Agent: curl/7.68.0"
-    },
-    {
-      id: 3,
-      title: "Database Backup Completed",
-      message: "Automated database backup has been successfully completed.",
-      type: "backup",
-      priority: "low",
-      status: "resolved",
-      timestamp: "2024-06-25T14:00:00Z",
-      affectedServices: ["Database"],
-      details: "Backup size: 2.3GB, Duration: 45 minutes"
-    },
-    {
-      id: 4,
-      title: "New User Registration Spike",
-      message: "User registrations have increased by 300% compared to yesterday.",
-      type: "system",
-      priority: "medium",
-      status: "active",
-      timestamp: "2024-06-25T13:45:00Z",
-      affectedServices: ["User Service", "Email Service"],
-      details: "Today: 450 registrations, Yesterday: 150 registrations"
-    },
-    {
-      id: 5,
-      title: "Scheduled Maintenance Reminder",
-      message: "Scheduled maintenance for payment gateway is planned for tomorrow at 2:00 AM UTC.",
-      type: "maintenance",
-      priority: "medium",
-      status: "scheduled",
-      timestamp: "2024-06-25T12:00:00Z",
-      affectedServices: ["Payment Gateway"],
-      details: "Duration: 2 hours, Expected downtime: Minimal"
-    },
-    {
-      id: 6,
-      title: "API Rate Limit Exceeded",
-      message: "Google Maps API rate limit has been exceeded. Some location services may be affected.",
-      type: "integration",
-      priority: "medium",
-      status: "mitigated",
-      timestamp: "2024-06-25T11:30:00Z",
-      affectedServices: ["Location Service", "Maps"],
-      details: "Current usage: 120% of limit, Fallback system activated"
-    },
-    {
-      id: 7,
-      title: "System Update Deployed",
-      message: "Version 2.1.4 has been successfully deployed to production.",
-      type: "update",
-      priority: "low",
-      status: "completed",
-      timestamp: "2024-06-25T10:15:00Z",
-      affectedServices: ["All Services"],
-      details: "Release notes: Bug fixes and performance improvements"
-    }
-  ];
-
   useEffect(() => {
-    // Simulate API call
+    // Simulate API call - no notifications available
     setTimeout(() => {
-      setNotifications(mockNotifications);
-      setFilteredNotifications(mockNotifications);
+      setNotifications([]);
+      setFilteredNotifications([]);
       setLoading(false);
-    }, 1000);
+    }, 800);
   }, []);
 
   // Filter notifications
   useEffect(() => {
-    let filtered = notifications.filter(notification => {
-      const matchesSearch = notification.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           notification.message.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesType = filters.type === "all" || notification.type === filters.type;
-      const matchesStatus = filters.status === "all" || notification.status === filters.status;
-      const matchesPriority = filters.priority === "all" || notification.priority === filters.priority;
-      
+    let filtered = notifications.filter((notification) => {
+      const matchesSearch =
+        notification.title
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        notification.message
+          .toLowerCase()
+          .includes(filters.search.toLowerCase());
+      const matchesType =
+        filters.type === "all" || notification.type === filters.type;
+      const matchesStatus =
+        filters.status === "all" || notification.status === filters.status;
+      const matchesPriority =
+        filters.priority === "all" ||
+        notification.priority === filters.priority;
+
       return matchesSearch && matchesType && matchesStatus && matchesPriority;
     });
 
@@ -133,7 +61,7 @@ const Notifications = () => {
   }, [notifications, filters]);
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleViewDetails = (notification) => {
@@ -143,26 +71,29 @@ const Notifications = () => {
 
   const getNotificationIcon = (type, priority) => {
     const iconClass = `h-6 w-6 ${
-      priority === 'critical' ? 'text-danger-600' :
-      priority === 'high' ? 'text-warning-600' :
-      priority === 'medium' ? 'text-info-600' :
-      'text-success-600'
+      priority === "critical"
+        ? "text-danger-600"
+        : priority === "high"
+        ? "text-warning-600"
+        : priority === "medium"
+        ? "text-info-600"
+        : "text-success-600"
     }`;
 
     switch (type) {
-      case 'security':
+      case "security":
         return <ShieldExclamationIcon className={iconClass} />;
-      case 'performance':
+      case "performance":
         return <ExclamationTriangleIcon className={iconClass} />;
-      case 'system':
+      case "system":
         return <InformationCircleIcon className={iconClass} />;
-      case 'maintenance':
+      case "maintenance":
         return <ClockIcon className={iconClass} />;
-      case 'backup':
+      case "backup":
         return <ServerIcon className={iconClass} />;
-      case 'integration':
+      case "integration":
         return <ExclamationTriangleIcon className={iconClass} />;
-      case 'update':
+      case "update":
         return <CheckCircleIcon className={iconClass} />;
       default:
         return <BellIcon className={iconClass} />;
@@ -171,35 +102,50 @@ const Notifications = () => {
 
   const getPriorityBadge = (priority) => {
     const badges = {
-      'critical': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'high': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'medium': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300',
-      'low': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300'
+      critical:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      high: "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      medium:
+        "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300",
+      low: "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
     };
     return badges[priority] || badges.low;
   };
 
   const getStatusBadge = (status) => {
     const badges = {
-      'active': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'resolved': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'investigating': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'scheduled': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300',
-      'mitigated': 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300',
-      'completed': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300'
+      active:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      resolved:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
+      investigating:
+        "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      scheduled:
+        "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300",
+      mitigated:
+        "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300",
+      completed:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
     };
     return badges[status] || badges.active;
   };
 
   const getTypeBadge = (type) => {
     const badges = {
-      'system': 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300',
-      'maintenance': 'bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300',
-      'performance': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'security': 'bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300',
-      'integration': 'bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300',
-      'backup': 'bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300',
-      'update': 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300'
+      system:
+        "bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300",
+      maintenance:
+        "bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300",
+      performance:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      security:
+        "bg-danger-100 text-danger-800 dark:bg-danger-900/20 dark:text-danger-300",
+      integration:
+        "bg-info-100 text-info-800 dark:bg-info-900/20 dark:text-info-300",
+      backup:
+        "bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300",
+      update:
+        "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300",
     };
     return badges[type] || badges.system;
   };
@@ -212,10 +158,10 @@ const Notifications = () => {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
   };
 
   if (loading) {
@@ -227,7 +173,10 @@ const Notifications = () => {
             <div className="h-4 bg-gray-200 dark:bg-secondary-700 rounded w-1/2 mb-8"></div>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 dark:bg-secondary-700 rounded"></div>
+                <div
+                  key={i}
+                  className="h-24 bg-gray-200 dark:bg-secondary-700 rounded"
+                ></div>
               ))}
             </div>
           </div>
@@ -247,7 +196,8 @@ const Notifications = () => {
                 System Notifications
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Monitor system alerts, maintenance notices, and important updates
+                Monitor system alerts, maintenance notices, and important
+                updates
               </p>
             </div>
           </div>
@@ -255,20 +205,40 @@ const Notifications = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{notifications.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Alerts</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {notifications.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Total Alerts
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-gray-900">{notifications.filter(n => n.status === 'active').length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Active</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {notifications.filter((n) => n.status === "active").length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Active
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-gray-900">{notifications.filter(n => n.priority === 'critical' || n.priority === 'high').length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">High Priority</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {
+                  notifications.filter(
+                    (n) => n.priority === "critical" || n.priority === "high"
+                  ).length
+                }
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                High Priority
+              </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-              <div className="text-2xl font-bold text-gray-900">{notifications.filter(n => n.status === 'resolved').length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Resolved</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {notifications.filter((n) => n.status === "resolved").length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Resolved
+              </div>
             </div>
           </div>
         </div>
@@ -283,13 +253,13 @@ const Notifications = () => {
                 placeholder="Search notifications..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
                 value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
               />
             </div>
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
+              onChange={(e) => handleFilterChange("type", e.target.value)}
             >
               <option value="all">All Types</option>
               <option value="system">System</option>
@@ -303,7 +273,7 @@ const Notifications = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -316,7 +286,7 @@ const Notifications = () => {
             <select
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-secondary-700 dark:text-white"
               value={filters.priority}
-              onChange={(e) => handleFilterChange('priority', e.target.value)}
+              onChange={(e) => handleFilterChange("priority", e.target.value)}
             >
               <option value="all">All Priorities</option>
               <option value="critical">Critical</option>
@@ -326,7 +296,8 @@ const Notifications = () => {
             </select>
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {filteredNotifications.length} of {notifications.length} notifications
+            Showing {filteredNotifications.length} of {notifications.length}{" "}
+            notifications
           </div>
         </div>
 
@@ -334,23 +305,35 @@ const Notifications = () => {
         <div className="space-y-4">
           {filteredNotifications.length === 0 ? (
             <div className="bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-12 text-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No notifications found</h3>
-              <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
+              <BellIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No notifications available
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                There are no system notifications at this time. Check back later
+                for updates.
+              </p>
             </div>
           ) : (
             filteredNotifications.map((notification) => (
-              <div 
-                key={notification.id} 
+              <div
+                key={notification.id}
                 className={`bg-white dark:bg-secondary-800 rounded-lg border border-gray-200 dark:border-secondary-700 p-6 transition-all hover:shadow-md ${
-                  notification.priority === 'critical' ? 'border-l-4 border-l-danger-500' :
-                  notification.priority === 'high' ? 'border-l-4 border-l-warning-500' : ''
+                  notification.priority === "critical"
+                    ? "border-l-4 border-l-danger-500"
+                    : notification.priority === "high"
+                    ? "border-l-4 border-l-warning-500"
+                    : ""
                 }`}
               >
                 <div className="flex items-start space-x-4">
                   <div className="p-2 rounded-lg bg-gray-100 dark:bg-secondary-700">
-                    {getNotificationIcon(notification.type, notification.priority)}
+                    {getNotificationIcon(
+                      notification.type,
+                      notification.priority
+                    )}
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
@@ -361,12 +344,20 @@ const Notifications = () => {
                           {notification.message}
                         </p>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2 ml-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityBadge(notification.priority)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityBadge(
+                            notification.priority
+                          )}`}
+                        >
                           {notification.priority}
                         </span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(notification.status)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                            notification.status
+                          )}`}
+                        >
                           {notification.status}
                         </span>
                       </div>
@@ -374,15 +365,19 @@ const Notifications = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeBadge(notification.type)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeBadge(
+                            notification.type
+                          )}`}
+                        >
                           {notification.type}
                         </span>
-                        
+
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Affected: {notification.affectedServices.join(', ')}
+                          Affected: {notification.affectedServices.join(", ")}
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-4">
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {formatTimeAgo(notification.timestamp)}
@@ -409,20 +404,35 @@ const Notifications = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start space-x-3">
                   <div className="p-2 rounded-lg bg-gray-100 dark:bg-secondary-700">
-                    {getNotificationIcon(selectedNotification.type, selectedNotification.priority)}
+                    {getNotificationIcon(
+                      selectedNotification.type,
+                      selectedNotification.priority
+                    )}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                       {selectedNotification.title}
                     </h3>
                     <div className="flex items-center space-x-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityBadge(selectedNotification.priority)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityBadge(
+                          selectedNotification.priority
+                        )}`}
+                      >
                         {selectedNotification.priority}
                       </span>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(selectedNotification.status)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                          selectedNotification.status
+                        )}`}
+                      >
                         {selectedNotification.status}
                       </span>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeBadge(selectedNotification.type)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeBadge(
+                          selectedNotification.type
+                        )}`}
+                      >
                         {selectedNotification.type}
                       </span>
                     </div>
@@ -438,28 +448,45 @@ const Notifications = () => {
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Message</h4>
-                  <p className="text-gray-600 dark:text-gray-400">{selectedNotification.message}</p>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Message
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {selectedNotification.message}
+                  </p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Details</h4>
-                  <p className="text-gray-600 dark:text-gray-400">{selectedNotification.details}</p>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Details
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {selectedNotification.details}
+                  </p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Affected Services</h4>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Affected Services
+                  </h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedNotification.affectedServices.map((service, index) => (
-                      <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm rounded">
-                        {service}
-                      </span>
-                    ))}
+                    {selectedNotification.affectedServices.map(
+                      (service, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 text-sm rounded"
+                        >
+                          {service}
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Timestamp</h4>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Timestamp
+                  </h4>
                   <p className="text-gray-600 dark:text-gray-400">
                     {new Date(selectedNotification.timestamp).toLocaleString()}
                   </p>
