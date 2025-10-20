@@ -16,6 +16,8 @@ import Footer from '../components/Footer';
 import TripProgressBar from '../components/TripProgressBar';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
 import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
+// Import suggestions data for fallback
+import suggestionsData from '../../suggestions.json';
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -705,9 +707,81 @@ const TripItineraryPage = () => {
 
   // API call function for modals to use directly
   const fetchSuggestionsForModal = async (category, dayIndex) => {
+    // Helper function to get fallback data from suggestions.json
+    const getFallbackData = () => {
+      console.log('🔄 Using fallback data from suggestions.json');
+      
+      // Get the destination for this day
+      const destination = destinations[dayIndex]?.name;
+      
+      // Map frontend categories to API endpoint types
+      const categoryTypeMap = {
+        'activities': 'attractions',
+        'places': 'hotels', 
+        'food': 'restaurants'
+      };
+      
+      const apiType = categoryTypeMap[category];
+      
+      // Try to get city-specific data
+      if (destination && suggestionsData[destination] && suggestionsData[destination][apiType]) {
+        console.log(`✅ Found ${suggestionsData[destination][apiType].length} items for ${destination} - ${apiType}`);
+        return suggestionsData[destination][apiType].map(item => ({
+          id: item.id,
+          name: item.name,
+          location: item.address,
+          address: item.address,
+          price: item.price || item.priceRange || `Price Level: ${item.priceLevel}`,
+          priceLevel: item.priceLevel,
+          rating: item.rating,
+          reviews: item.reviews,
+          image: item.image || 'https://via.placeholder.com/400x300',
+          description: `${item.category} - ${item.popularityLevel} popularity`,
+          distanceKm: item.distanceKm || 0,
+          isOpenNow: item.isOpenNow !== undefined ? item.isOpenNow : true,
+          isRecommended: item.isRecommended || false,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          source: item.source || 'Fallback Data',
+          googlePlaceId: item.googlePlaceId
+        }));
+      }
+      
+      // If no city-specific data, try to get data from any city
+      const cities = Object.keys(suggestionsData);
+      for (const city of cities) {
+        if (suggestionsData[city][apiType] && suggestionsData[city][apiType].length > 0) {
+          console.log(`✅ Using data from ${city} for ${apiType} (${suggestionsData[city][apiType].length} items)`);
+          return suggestionsData[city][apiType].slice(0, 10).map(item => ({
+            id: item.id,
+            name: item.name,
+            location: item.address,
+            address: item.address,
+            price: item.price || item.priceRange || `Price Level: ${item.priceLevel}`,
+            priceLevel: item.priceLevel,
+            rating: item.rating,
+            reviews: item.reviews,
+            image: item.image || 'https://via.placeholder.com/400x300',
+            description: `${item.category} - ${item.popularityLevel} popularity`,
+            distanceKm: item.distanceKm || 0,
+            isOpenNow: item.isOpenNow !== undefined ? item.isOpenNow : true,
+            isRecommended: item.isRecommended || false,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            source: item.source || 'Fallback Data',
+            googlePlaceId: item.googlePlaceId
+          }));
+        }
+      }
+      
+      // Ultimate fallback to mock data
+      console.log('⚠️ No data found in suggestions.json, using mock data');
+      return mockSuggestions[category] || [];
+    };
+
     if (!tripId || !userUid) {
       console.warn('⚠️ No tripId or userUid available for backend search:', { tripId, userUid });
-      return mockSuggestions[category] || [];
+      return getFallbackData();
     }
 
     // Map frontend categories to API endpoint types
@@ -720,7 +794,7 @@ const TripItineraryPage = () => {
     const apiType = categoryTypeMap[category];
     if (!apiType) {
       console.warn('⚠️ Unknown category for API:', category);
-      return mockSuggestions[category] || [];
+      return getFallbackData();
     }
 
     // Calculate day number
@@ -733,14 +807,21 @@ const TripItineraryPage = () => {
       
       console.log('📡 API URL:', apiUrl);
 
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1000); // 1 second timeout
+
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -770,11 +851,15 @@ const TripItineraryPage = () => {
         googlePlaceId: item.googlePlaceId
       }));
     } catch (error) {
-      console.error('❌ Error fetching modal suggestions:', error);
-      console.log('🔄 Falling back to mock data for category:', category);
+      if (error.name === 'AbortError') {
+        console.warn('⏱️ API request timed out after 1 second, using fallback data');
+        toast.info('Loading suggestions from local data...', { duration: 2000 });
+      } else {
+        console.error('❌ Error fetching modal suggestions:', error);
+      }
       
-      // Fallback to mock data on error
-      return mockSuggestions[category] || [];
+      // Fallback to suggestions.json data
+      return getFallbackData();
     }
   };
 
