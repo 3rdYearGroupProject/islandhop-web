@@ -6,6 +6,7 @@ import {
   EnvelopeIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 // Base URL for Lost Items API
@@ -31,7 +32,6 @@ const PanicAlerts = () => {
     lng: 79.8428,
     user: {
       name: "Ayesha Fernando",
-      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
       phone: "+94 77 123 4567",
       email: "ayesha.fernando@email.com",
       role: "Tourist",
@@ -335,7 +335,6 @@ const AlertCard = ({ alert, onContact, onMarkHandled }) => {
     : userData.name || userData.fullName || alert.userName || 'Unknown User';
   const userPhone = userData.phone || userData.phoneNumber || alert.userPhone || 'No phone';
   const userEmail = userData.email || alert.userEmail || 'No email';
-  const userAvatar = userData.avatar || userData.profilePicture || "https://randomuser.me/api/portraits/women/68.jpg";
   const userRole = userData.role || 'Tourist';
   const userNationality = userData.nationality || 'Unknown';
 
@@ -403,7 +402,7 @@ const AlertCard = ({ alert, onContact, onMarkHandled }) => {
           <div className="flex items-center space-x-3">
             <ShieldExclamationIcon className="h-5 w-5 text-danger-600 dark:text-danger-400" />
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Panic Alert - {safeRender(alert.id || alert._id, 'Unknown ID')}
+              Emergency Panic Alert
             </h2>
           </div>
 
@@ -436,38 +435,26 @@ const AlertCard = ({ alert, onContact, onMarkHandled }) => {
         {/* User Info */}
         <div className="mt-6 p-4 bg-gray-50 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-600">
           <div className="flex items-center space-x-4">
-            <img
-              src={userAvatar}
-              alt={userName}
-              className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-secondary-600"
-            />
+            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-secondary-600 flex items-center justify-center border-2 border-gray-300 dark:border-secondary-500">
+              <UserIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+            </div>
             <div className="flex-1">
               <div className="flex items-center space-x-2">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                <p className="text-base font-semibold text-gray-900 dark:text-white">
                   {safeRender(userName, 'Unknown User')}
                 </p>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   ({safeRender(userRole, 'Tourist')})
                 </span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 📧 {safeRender(userEmail, 'No email')}
               </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                📞 {safeRender(userPhone, 'No phone')}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 🌍 {safeRender(userNationality, 'Unknown nationality')}
               </p>
             </div>
             <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => onContact("phone", userData)}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger-500 transition-colors duration-200"
-              >
-                <PhoneIcon className="h-3 w-3 mr-1" />
-                Emergency Call
-              </button>
               <button
                 onClick={() => onContact("email", userData)}
                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-info-500 transition-colors duration-200"
