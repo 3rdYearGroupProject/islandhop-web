@@ -12,7 +12,9 @@ import {
   InboxIcon,
   XMarkIcon,
   CheckIcon,
-  ClockIcon
+  ClockIcon,
+  EnvelopeIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 const InvitationsAndRequests = () => {
