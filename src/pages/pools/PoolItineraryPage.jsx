@@ -17,6 +17,8 @@ import Footer from '../../components/Footer';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../../components/TripProgressBar';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
+// Import suggestions data for fallback
+import suggestionsData from '../../suggestions.json';
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -664,30 +666,120 @@ const PoolItineraryPage = () => {
 
   // API call function for modals to use directly
   const fetchSuggestionsForModal = async (category, dayIndex) => {
-    if (!tripId || !userUid) {
-      console.warn('⚠️ No tripId or userUid available for backend search:', { tripId, userUid });
-      // Filter mock suggestions based on user preferences
+    // Helper function to get fallback data from suggestions.json
+    const getFallbackData = () => {
+      console.log('🔄 Using fallback data from suggestions.json');
+      
+      // Get the destination for this day
+      const destination = destinations[dayIndex]?.name;
+      
+      // Map frontend categories to API endpoint types
+      const categoryTypeMap = {
+        'activities': 'attractions',
+        'places': 'hotels', 
+        'food': 'restaurants'
+      };
+      
+      const apiType = categoryTypeMap[category];
+      
+      // Try to get city-specific data
+      if (destination && suggestionsData[destination] && suggestionsData[destination][apiType]) {
+        console.log(`✅ Found ${suggestionsData[destination][apiType].length} items for ${destination} - ${apiType}`);
+        return suggestionsData[destination][apiType].map(item => ({
+          id: item.id,
+          name: item.name,
+          location: item.address,
+          address: item.address,
+          price: item.price || item.priceRange || `Price Level: ${item.priceLevel}`,
+          priceLevel: item.priceLevel,
+          rating: item.rating,
+          reviews: item.reviews,
+          image: item.image || 'https://via.placeholder.com/400x300',
+          description: `${item.category} - ${item.popularityLevel} popularity`,
+          distanceKm: item.distanceKm || 0,
+          isOpenNow: item.isOpenNow !== undefined ? item.isOpenNow : true,
+          isRecommended: item.isRecommended || false,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          source: item.source || 'Fallback Data',
+          googlePlaceId: item.googlePlaceId
+        }));
+      }
+      
+      // If no city-specific data, try to get data from any city
+      const cities = Object.keys(suggestionsData);
+      for (const city of cities) {
+        if (suggestionsData[city][apiType] && suggestionsData[city][apiType].length > 0) {
+          console.log(`✅ Using data from ${city} for ${apiType} (${suggestionsData[city][apiType].length} items)`);
+          return suggestionsData[city][apiType].slice(0, 10).map(item => ({
+            id: item.id,
+            name: item.name,
+            location: item.address,
+            address: item.address,
+            price: item.price || item.priceRange || `Price Level: ${item.priceLevel}`,
+            priceLevel: item.priceLevel,
+            rating: item.rating,
+            reviews: item.reviews,
+            image: item.image || 'https://via.placeholder.com/400x300',
+            description: `${item.category} - ${item.popularityLevel} popularity`,
+            distanceKm: item.distanceKm || 0,
+            isOpenNow: item.isOpenNow !== undefined ? item.isOpenNow : true,
+            isRecommended: item.isRecommended || false,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            source: item.source || 'Fallback Data',
+            googlePlaceId: item.googlePlaceId
+          }));
+        }
+      }
+      
+      // Ultimate fallback to mock data
+      console.log('⚠️ No data found in suggestions.json, using filtered mock data');
       return filterSuggestionsByPreferences(mockSuggestions[category] || [], category);
-    }
+    };
 
-    // Map frontend categories to API endpoint types
+    // Check if fallback data exists first - if it does, use it immediately without API call
+    const destination = destinations[dayIndex]?.name;
     const categoryTypeMap = {
       'activities': 'attractions',
       'places': 'hotels', 
       'food': 'restaurants'
     };
-
     const apiType = categoryTypeMap[category];
+    
+    // If we have local data, return it immediately without making API calls
+    if (apiType && destination && suggestionsData[destination] && suggestionsData[destination][apiType] && suggestionsData[destination][apiType].length > 0) {
+      console.log(`✅ Local data available for ${destination} - ${apiType}, skipping API call`);
+      return getFallbackData();
+    }
+    
+    // If no destination-specific data, check if any city has data
+    if (apiType) {
+      const cities = Object.keys(suggestionsData);
+      for (const city of cities) {
+        if (suggestionsData[city][apiType] && suggestionsData[city][apiType].length > 0) {
+          console.log(`✅ Local data available from ${city} - ${apiType}, skipping API call`);
+          return getFallbackData();
+        }
+      }
+    }
+
+    if (!tripId || !userUid) {
+      console.warn('⚠️ No tripId or userUid available for backend search:', { tripId, userUid });
+      // Filter mock suggestions based on user preferences
+      return getFallbackData();
+    }
+
     if (!apiType) {
       console.warn('⚠️ Unknown category for API:', category);
-      return filterSuggestionsByPreferences(mockSuggestions[category] || [], category);
+      return getFallbackData();
     }
 
     // Calculate day number
     const dayNumber = (dayIndex || 0) + 1;
 
     try {
-      console.log('🔄 Fetching suggestions for modal - category:', category, 'type:', apiType, 'day:', dayNumber);
+      console.log('🔄 No local data found, fetching from API - category:', category, 'type:', apiType, 'day:', dayNumber);
       
       // Include user preferences in API request
       const params = new URLSearchParams({
@@ -732,10 +824,10 @@ const PoolItineraryPage = () => {
       }));
     } catch (error) {
       console.error('❌ Error fetching modal suggestions:', error);
-      console.log('🔄 Falling back to filtered mock data for category:', category);
+      console.log('🔄 Falling back to local data for category:', category);
       
-      // Fallback to filtered mock data on error
-      return filterSuggestionsByPreferences(mockSuggestions[category] || [], category);
+      // Fallback to suggestions.json data
+      return getFallbackData();
     }
   };
 

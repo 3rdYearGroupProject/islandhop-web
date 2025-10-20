@@ -549,8 +549,8 @@ const LostItemTracker = () => {
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <ArchiveBoxXMarkIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        ITEM-{String(idx + 1).padStart(3, '0')}
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Lost-item-{String(idx + 1).padStart(3, '0')}
                       </h3>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -589,14 +589,14 @@ const LostItemTracker = () => {
                   <div className="space-y-3">
                     {/* Item Details */}
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                      <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                         {report.item}
                       </h4>
-                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
+                      <p className="text-gray-700 dark:text-gray-300 text-base mb-2">
                         {report.desc}
                       </p>
                       {report.location && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center space-x-2 text-base text-gray-600 dark:text-gray-400">
                           <TruckIcon className="h-4 w-4" />
                           <span>Location: {report.location}</span>
                         </div>
@@ -607,27 +607,27 @@ const LostItemTracker = () => {
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-3">
                       <div className="flex items-center space-x-2 mb-2">
                         <DocumentTextIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">
+                        <h5 className="font-medium text-gray-900 dark:text-white text-base">
                           Report Details
                         </h5>
                       </div>
                       <div className="space-y-2">
                         <div>
-                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Message:</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-secondary-700 rounded-md p-2">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Message:</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-secondary-700 rounded-md p-2">
                             {report.description || "No message provided"}
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Lost:</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Lost:</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
                               {report.lostDate ? new Date(report.lostDate).toLocaleDateString() : "Not specified"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Reported:</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Reported:</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
                               {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "Not available"}
                             </p>
                           </div>
@@ -691,7 +691,7 @@ const LostItemTracker = () => {
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
                       <div className="flex items-center space-x-1 mb-1">
                         {/* <UserIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" /> */}
-                        <h5 className="font-medium text-gray-900 dark:text-white text-xs">
+                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">
                           Tourist
                         </h5>
                       </div>
@@ -701,12 +701,12 @@ const LostItemTracker = () => {
                             <UserCircleIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
                               {report.touristDetails?.first_name && report.touristDetails?.last_name 
                                 ? `${report.touristDetails.first_name} ${report.touristDetails.last_name}`
                                 : "Unknown Tourist"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-tight truncate">
                               {report.touristDetails?.email || report.email || "No email provided"}
                             </p>
                           </div>
@@ -728,7 +728,7 @@ const LostItemTracker = () => {
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
                       <div className="flex items-center space-x-1 mb-1">
                         {/* <TruckIcon className="h-3 w-3 text-warning-600 dark:text-warning-400" /> */}
-                        <h5 className="font-medium text-gray-900 dark:text-white text-xs">
+                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">
                           Driver
                         </h5>
                       </div>
@@ -738,15 +738,15 @@ const LostItemTracker = () => {
                             <TruckIcon className="w-4 h-4 text-warning-600 dark:text-warning-400" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
                               {report.tripDetails?.driver?.first_name && report.tripDetails?.driver?.last_name 
                                 ? `${report.tripDetails.driver.first_name} ${report.tripDetails.driver.last_name}`
                                 : "No Driver Assigned"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-tight truncate">
                               {report.tripDetails?.driver?.email || "No email provided"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-tight truncate">
                               {report.tripDetails?.driver?.emergency_contact_number || "No phone provided"}
                             </p>
                           </div>
@@ -766,7 +766,7 @@ const LostItemTracker = () => {
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
                       <div className="flex items-center space-x-1 mb-1">
                         {/* <UserIcon className="h-3 w-3 text-primary-600 dark:text-primary-400" /> */}
-                        <h5 className="font-medium text-gray-900 dark:text-white text-xs">
+                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">
                           Guide
                         </h5>
                       </div>
@@ -776,15 +776,15 @@ const LostItemTracker = () => {
                             <MapIcon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
                               {report.tripDetails?.guide?.first_name && report.tripDetails?.guide?.last_name 
                                 ? `${report.tripDetails.guide.first_name} ${report.tripDetails.guide.last_name}`
                                 : "No Guide Assigned"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-tight truncate">
                               {report.tripDetails?.guide?.email || "No email provided"}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-tight truncate">
                               {report.tripDetails?.guide?.emergency_contact_number || "No phone provided"}
                             </p>
                           </div>

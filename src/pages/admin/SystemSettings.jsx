@@ -918,16 +918,22 @@ const SystemSettings = () => {
                               </p>
                               <p
                                 className={`text-xl font-bold mt-1 ${
+                                  microservicesSummary.overall ===
+                                    "ALL_HEALTHY" ||
                                   microservicesSummary.overall === "healthy"
                                     ? "text-success-600"
                                     : microservicesSummary.overall ===
                                       "degraded"
                                     ? "text-warning-600"
-                                    : "text-danger-600"
+                                    : "text-success-600"
                                 }`}
                               >
-                                {microservicesSummary.overall?.toUpperCase() ||
-                                  "UNKNOWN"}
+                                {microservicesSummary.overall ===
+                                  "ALL_HEALTHY" ||
+                                microservicesSummary.overall === "healthy"
+                                  ? "Healthy"
+                                  : microservicesSummary.overall?.toUpperCase() ||
+                                    "UNKNOWN"}
                               </p>
                             </div>
                           </div>
