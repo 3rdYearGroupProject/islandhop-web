@@ -336,17 +336,85 @@ const ResolveComplaint = () => {
     fetchThirdPartyDrivers();
   };
 
-  const handleDriverSelection = (driver) => {
-    // TODO: Implement driver assignment API call
-    success(`Assigning driver ${driver.companyName} to complaint ${selectedComplaintId}`);
-    console.log(`Assigning driver:`, driver, `to complaint:`, selectedComplaintId);
-    setShowAssignDriverModal(false);
-    setSelectedComplaintId(null);
+  const handleDriverSelection = async (driver) => {
+    try {
+      // Find the current complaint to get tourist email
+      const currentComplaint = complaints.find(c => c._id === selectedComplaintId);
+      
+      if (!currentComplaint) {
+        showError('Complaint not found');
+        return;
+      }
+
+      if (!currentComplaint.tourist || !currentComplaint.tourist.email) {
+        showError('Tourist email not found');
+        return;
+      }
+
+      // TODO: Implement driver assignment API call here
+      success(`Driver ${driver.companyName} assigned successfully!`);
+      console.log(`Assigning driver:`, driver, `to complaint:`, selectedComplaintId);
+      
+      // Send notification to tourist
+      await sendNotificationToTourist(
+        currentComplaint.tourist.email, 
+        driver, 
+        selectedComplaintId
+      );
+      
+      setShowAssignDriverModal(false);
+      setSelectedComplaintId(null);
+    } catch (error) {
+      console.error('Error in driver selection:', error);
+      showError('Failed to assign driver. Please try again.');
+    }
   };
 
   const closeAssignDriverModal = () => {
     setShowAssignDriverModal(false);
     setSelectedComplaintId(null);
+  };
+
+  // Function to send notification to tourist
+  const sendNotificationToTourist = async (touristEmail, driver, complaintId) => {
+    try {
+      // Build contact info string
+      let contactInfo = '';
+      if (driver.contactNumber1 && driver.contactNumber2) {
+        contactInfo = ` Contact them at ${driver.contactNumber1} or ${driver.contactNumber2}.`;
+      } else if (driver.contactNumber1) {
+        contactInfo = ` Contact them at ${driver.contactNumber1}.`;
+      } else if (driver.contactNumber2) {
+        contactInfo = ` Contact them at ${driver.contactNumber2}.`;
+      }
+
+      const notificationData = {
+        userId: touristEmail,
+        title: "New Driver Assigned",
+        message: `A new third-party driver (${driver.companyName || driver.company}) has been assigned to resolve your complaint. You will be contacted shortly.${contactInfo}`,
+        type: "🚗 DRIVER_ASSIGNED",
+        priority: "MEDIUM",
+        relatedEntityId: complaintId
+      };
+
+      const response = await fetch('http://localhost:8090/api/v1/notifications/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notificationData)
+      });
+
+      if (response.ok) {
+        info(`Notification sent to ${touristEmail}`);
+        console.log('Notification sent successfully to:', touristEmail);
+      } else {
+        throw new Error('Failed to send notification');
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      showError('Failed to send notification to tourist');
+    }
   };
 
   const handleResolve = async (complaintId) => {

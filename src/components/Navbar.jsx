@@ -412,11 +412,13 @@ const Navbar = () => {
     switch (type?.toUpperCase()) {
       case 'CHAT': return '💬';
       case 'TRIP': return '🚗';
-      case 'PAYMENT': return '💰';
+      case 'PAYMENT': return '�';
       case 'BOOKING': return '📅';
       case 'REVIEW': return '⭐';
-      case 'SYSTEM': return '🔔';
-      default: return '📢';
+      case 'SYSTEM': return '⚙️';
+      case '🔧 DRIVER_ASSIGNED': return '�';
+      case 'DRIVER_ASSIGNED': return '🔧';
+      default: return '�';
     }
   };
 
