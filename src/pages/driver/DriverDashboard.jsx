@@ -29,6 +29,7 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [trips, setTrips] = useState([]);
   const [error, setError] = useState(null);
+  const [activeTrips, setActiveTrips] = useState([]); // Changed to array to store all active trips
   const [activeTrip, setActiveTrip] = useState(null);
   const [activeTripsLoading, setActiveTripsLoading] = useState(false);
   const toast = useToast();
@@ -169,6 +170,7 @@ const DriverDashboard = () => {
   useEffect(() => {
     const fetchActiveTrips = async () => {
       if (!driverEmail) {
+        setActiveTrips([]);
         setActiveTrip(null);
         return;
       }
@@ -180,48 +182,52 @@ const DriverDashboard = () => {
         console.log('Active trips API Response:', response);
         
         if (response.data.success && response.data.data.trips.length > 0) {
-          const apiTrip = response.data.data.trips[0]; // There should be only 1 active trip
+          const apiTrips = response.data.data.trips;
           
-          // Transform API data to match component structure
-          const firstDay = apiTrip.dailyPlans?.[0];
-          const lastDay = apiTrip.dailyPlans?.[apiTrip.dailyPlans.length - 1];
+          // Transform all active trips
+          const transformedTrips = apiTrips.map(apiTrip => {
+            const firstDay = apiTrip.dailyPlans?.[0];
+            const lastDay = apiTrip.dailyPlans?.[apiTrip.dailyPlans.length - 1];
 
-          const transformedTrip = {
-            id: apiTrip._id,
-            userId: apiTrip.userId,
-            tripName: apiTrip.tripName,
-            passenger: apiTrip.userId ? `User ${apiTrip.userId.substring(0, 8)}...` : 'Unknown User',
-            passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
-            pickupLocation: firstDay?.city || apiTrip.baseCity || 'Not specified',
-            destination: lastDay?.city || 'Multiple destinations',
-            distance: `${Math.round(apiTrip.averageTripDistance || 0)} km`,
-            estimatedTime: `${Math.ceil((apiTrip.averageTripDistance || 0) / 60)} hours`,
-            fare: apiTrip.payedAmount || 0,
-            passengerRating: 4.9,
-            startDate: apiTrip.startDate,
-            endDate: apiTrip.endDate,
-            arrivalTime: apiTrip.arrivalTime,
-            baseCity: apiTrip.baseCity,
-            dailyPlans: apiTrip.dailyPlans,
-            vehicleType: apiTrip.vehicleType,
-            driverNeeded: apiTrip.driverNeeded,
-            guideNeeded: apiTrip.guideNeeded,
-            guideEmail: apiTrip.guide_email,
-            // Important fields from the new API
-            started: apiTrip.started,
-            startconfirmed: apiTrip.startconfirmed,
-            ended: apiTrip.ended,
-            endconfirmed: apiTrip.endconfirmed
-          };
+            return {
+              id: apiTrip._id,
+              userId: apiTrip.userId,
+              tripName: apiTrip.tripName,
+              passenger: apiTrip.userId ? `User ${apiTrip.userId.substring(0, 8)}...` : 'Unknown User',
+              passengerAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+              pickupLocation: firstDay?.city || apiTrip.baseCity || 'Not specified',
+              destination: lastDay?.city || 'Multiple destinations',
+              distance: `${Math.round(apiTrip.averageTripDistance || 0)} km`,
+              estimatedTime: `${Math.ceil((apiTrip.averageTripDistance || 0) / 60)} hours`,
+              fare: apiTrip.payedAmount || 0,
+              passengerRating: 4.9,
+              startDate: apiTrip.startDate,
+              endDate: apiTrip.endDate,
+              arrivalTime: apiTrip.arrivalTime,
+              baseCity: apiTrip.baseCity,
+              dailyPlans: apiTrip.dailyPlans,
+              vehicleType: apiTrip.vehicleType,
+              driverNeeded: apiTrip.driverNeeded,
+              guideNeeded: apiTrip.guideNeeded,
+              guideEmail: apiTrip.guide_email,
+              // Important fields from the new API
+              started: apiTrip.started,
+              startconfirmed: apiTrip.startconfirmed,
+              ended: apiTrip.ended,
+              endconfirmed: apiTrip.endconfirmed
+            };
+          });
 
-          setActiveTrip(transformedTrip);
+          setActiveTrips(transformedTrips);
+          setActiveTrip(transformedTrips[0]); // Set first trip as default
           
-          // Update stats to reflect active trip
+          // Update stats to reflect active trips
           setDriverStats(prevStats => ({
             ...prevStats,
-            activeTrips: 1
+            activeTrips: transformedTrips.length
           }));
         } else {
+          setActiveTrips([]);
           setActiveTrip(null);
           setDriverStats(prevStats => ({
             ...prevStats,
@@ -230,6 +236,7 @@ const DriverDashboard = () => {
         }
       } catch (err) {
         console.error('Error fetching active trips:', err);
+        setActiveTrips([]);
         setActiveTrip(null);
         setDriverStats(prevStats => ({
           ...prevStats,
@@ -436,18 +443,31 @@ const DriverDashboard = () => {
               In Progress
             </span>
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Users className="h-5 w-5 text-gray-400 mr-2" />
-                <span className="font-medium">{activeTrip.passenger}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                  <MessageCircle className="h-4 w-4" />
-                </button>
-              </div>
+          
+          {/* Trip Selector - Only show if multiple active trips */}
+          {activeTrips.length > 1 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Active Trip
+              </label>
+              <select
+                value={activeTrip.id}
+                onChange={(e) => {
+                  const selectedTrip = activeTrips.find(trip => trip.id === e.target.value);
+                  setActiveTrip(selectedTrip);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                {activeTrips.map((trip) => (
+                  <option key={trip.id} value={trip.id}>
+                    {trip.tripName} - {trip.pickupLocation} to {trip.destination}
+                  </option>
+                ))}
+              </select>
             </div>
+          )}
+          
+          <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center">
                 <MapPin className="h-4 w-4 text-green-500 mr-2" />
@@ -469,7 +489,7 @@ const DriverDashboard = () => {
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-500">Fare</p>
-                <p className="font-semibold">LKR{activeTrip.fare}</p>
+                <p className="font-semibold">LKR {parseFloat(activeTrip.fare).toFixed(2)}</p>
               </div>
             </div>
             

@@ -140,10 +140,10 @@ const DriverTripModal = ({ open, onClose, trip }) => {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'activities': return <Camera className="w-4 h-4 text-primary-600" />;
+      case 'activities': return <Camera className="w-4 h-4 text-blue-600" />;
       case 'food': return <Utensils className="w-4 h-4 text-orange-600" />;
       case 'places': return <Bed className="w-4 h-4 text-green-600" />;
-      case 'transportation': return <Car className="w-4 h-4 text-blue-600" />;
+      case 'transportation': return <Car className="w-4 h-4 text-purple-600" />;
       default: return <MapPin className="w-4 h-4 text-gray-600" />;
     }
   };
@@ -164,7 +164,6 @@ const DriverTripModal = ({ open, onClose, trip }) => {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">Active Trip</span>
-                <span className="text-white/80 text-sm">#{trip.id}</span>
               </div>
               <h1 className="text-3xl font-bold mb-2 text-white drop-shadow">
                 {trip.tripName || `Trip to ${trip.destination}`}
@@ -174,10 +173,6 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                 <span className="text-lg font-medium">{trip.pickupLocation} → {trip.destination}</span>
               </div>
               <div className="flex items-center gap-4 mb-2">
-                <div className="flex items-center text-blue-100">
-                  <Users className="h-4 w-4 mr-1" />
-                  <span className="text-sm">{trip.passenger}</span>
-                </div>
                 <div className="flex items-center text-blue-100">
                   <Clock className="h-4 w-4 mr-1" />
                   <span className="text-sm">{trip.estimatedTime}</span>
@@ -191,102 +186,76 @@ const DriverTripModal = ({ open, onClose, trip }) => {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">
-            {/* Trip Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Passenger Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-800 mb-3">Passenger Information</h3>
-                <div className="flex items-center mb-3">
-                  <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center mr-3">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{trip.passenger}</p>
-                    <p className="text-sm text-gray-600">{trip.passengerPhone || '+94 77 000 0000'}</p>
-                    
-                  </div>
-                </div>
-              </div>
-
-              {/* Trip Details */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-green-800 mb-3">Trip Details</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Distance:</span>
-                    <span className="font-medium">{trip.distance}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Duration:</span>
-                    <span className="font-medium">{trip.estimatedTime}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Start Time:</span>
-                    <span className="font-medium">{trip.startTime}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Status:</span>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm font-medium">
-                      {trip.status === 'in_progress' ? 'In Progress' : trip.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Tourist's Planned Activities */}
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Tourist's Planned Activities</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Trip Itinerary</h2>
+                <span className="text-sm text-gray-500">
+                  {Object.entries(itineraryData).length} {Object.entries(itineraryData).length === 1 ? 'Day' : 'Days'}
+                </span>
+              </div>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {Object.entries(itineraryData).length > 0 ? (
                   Object.entries(itineraryData).map(([dayIndex, dayData]) => (
-                  <div key={dayIndex} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div key={dayIndex} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <button
                       onClick={() => toggleDay(dayIndex)}
-                      className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      className="w-full p-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-primary-600 font-bold">{parseInt(dayIndex) + 1}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                          <span className="text-white font-bold text-lg">{parseInt(dayIndex) + 1}</span>
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">
-                            Day {parseInt(dayIndex) + 1}
+                            Day {parseInt(dayIndex) + 1} - {dayData.city}
                           </h3>
-                          <p className="text-sm text-gray-600">{formatDate(dayData.date)}</p>
+                          <p className="text-sm text-gray-500">{formatDate(dayData.date)}</p>
                         </div>
                       </div>
                       <ChevronDown 
-                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
                           expandedDays[dayIndex] ? 'rotate-180' : ''
                         }`} 
                       />
                     </button>
 
                     {expandedDays[dayIndex] && (
-                      <div className="px-4 pb-4">
-                        <div className="border-t border-gray-100 pt-4">
+                      <div className="px-5 pb-5 bg-gray-50">
+                        <div className="border-t border-gray-200 pt-4 space-y-4">
                           {/* Activities */}
                           {dayData.activities?.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
-                                {getCategoryIcon('activities')}
-                                <span className="ml-2">Activities</span>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center text-base">
+                                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2">
+                                  {getCategoryIcon('activities')}
+                                </div>
+                                <span>Activities & Attractions</span>
+                                <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{dayData.activities.length}</span>
                               </h4>
                               <div className="space-y-2">
                                 {dayData.activities.map((activity) => (
-                                  <div key={activity.id} className="bg-primary-50 rounded-lg p-3">
-                                    <div className="flex justify-between items-start mb-1">
-                                      <h5 className="font-medium text-gray-900">{activity.name}</h5>
-                                      <span className="text-sm text-primary-600 font-medium">{activity.price}</span>
+                                  <div key={activity.id} className="bg-white border border-blue-100 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h5 className="font-semibold text-gray-900">{activity.name}</h5>
+                                      {activity.price && <span className="text-sm text-blue-600 font-medium">{activity.price}</span>}
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-1">{activity.description}</p>
-                                    <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {typeof activity.location === 'object' ? `${activity.location.lat}, ${activity.location.lng}` : activity.location}</span>
-                                      <span>⏱️ {activity.duration}</span>
-                                      <span>🕐 {activity.time}</span>
-                                      <span>⭐ {activity.rating}/5</span>
+                                    <p className="text-sm text-gray-600 mb-2">{activity.description}</p>
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        {typeof activity.location === 'object' ? `${activity.location.lat}, ${activity.location.lng}` : activity.location}
+                                      </span>
+                                      {activity.duration && <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {activity.duration}
+                                      </span>}
+                                      {activity.time && <span>🕐 {activity.time}</span>}
+                                      {activity.rating && <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                        {activity.rating}/5
+                                      </span>}
                                     </div>
                                   </div>
                                 ))}
@@ -296,24 +265,33 @@ const DriverTripModal = ({ open, onClose, trip }) => {
 
                           {/* Food */}
                           {dayData.food?.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
-                                {getCategoryIcon('food')}
-                                <span className="ml-2">Dining</span>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center text-base">
+                                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-2">
+                                  {getCategoryIcon('food')}
+                                </div>
+                                <span>Dining</span>
+                                <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">{dayData.food.length}</span>
                               </h4>
                               <div className="space-y-2">
                                 {dayData.food.map((restaurant) => (
-                                  <div key={restaurant.id} className="bg-orange-50 rounded-lg p-3">
-                                    <div className="flex justify-between items-start mb-1">
-                                      <h5 className="font-medium text-gray-900">{restaurant.name}</h5>
-                                      <span className="text-sm text-orange-600 font-medium">{restaurant.priceRange}</span>
+                                  <div key={restaurant.id} className="bg-white border border-orange-100 rounded-lg p-4 hover:border-orange-300 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h5 className="font-semibold text-gray-900">{restaurant.name}</h5>
+                                      {restaurant.priceRange && <span className="text-sm text-orange-600 font-medium">{restaurant.priceRange}</span>}
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-1">{restaurant.description}</p>
-                                    <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {typeof restaurant.location === 'object' ? `${restaurant.location.lat}, ${restaurant.location.lng}` : restaurant.location}</span>
-                                      <span>🍽️ {restaurant.cuisine}</span>
-                                      <span>🕐 {restaurant.time}</span>
-                                      <span>⭐ {restaurant.rating}/5 ({restaurant.reviews} reviews)</span>
+                                    <p className="text-sm text-gray-600 mb-2">{restaurant.description}</p>
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        {typeof restaurant.location === 'object' ? `${restaurant.location.lat}, ${restaurant.location.lng}` : restaurant.location}
+                                      </span>
+                                      {restaurant.cuisine && <span>🍽️ {restaurant.cuisine}</span>}
+                                      {restaurant.time && <span>🕐 {restaurant.time}</span>}
+                                      {restaurant.rating && <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                        {restaurant.rating}/5 {restaurant.reviews && `(${restaurant.reviews})`}
+                                      </span>}
                                     </div>
                                   </div>
                                 ))}
@@ -323,24 +301,33 @@ const DriverTripModal = ({ open, onClose, trip }) => {
 
                           {/* Accommodation */}
                           {dayData.places?.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
-                                {getCategoryIcon('places')}
-                                <span className="ml-2">Accommodation</span>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center text-base">
+                                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-2">
+                                  {getCategoryIcon('places')}
+                                </div>
+                                <span>Accommodation</span>
+                                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{dayData.places.length}</span>
                               </h4>
                               <div className="space-y-2">
                                 {dayData.places.map((place) => (
-                                  <div key={place.id} className="bg-green-50 rounded-lg p-3">
-                                    <div className="flex justify-between items-start mb-1">
-                                      <h5 className="font-medium text-gray-900">{place.name}</h5>
-                                      <span className="text-sm text-green-600 font-medium">{place.price}</span>
+                                  <div key={place.id} className="bg-white border border-green-100 rounded-lg p-4 hover:border-green-300 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h5 className="font-semibold text-gray-900">{place.name}</h5>
+                                      {place.price && <span className="text-sm text-green-600 font-medium">{place.price}</span>}
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-1">{place.description}</p>
-                                    <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>📍 {typeof place.location === 'object' ? `${place.location.lat}, ${place.location.lng}` : place.location}</span>
-                                      <span>🏨 Check-in: {place.checkIn}</span>
-                                      <span>🚪 Check-out: {place.checkOut}</span>
-                                      <span>⭐ {place.rating}/5 ({place.reviews} reviews)</span>
+                                    <p className="text-sm text-gray-600 mb-2">{place.description}</p>
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        {typeof place.location === 'object' ? `${place.location.lat}, ${place.location.lng}` : place.location}
+                                      </span>
+                                      {place.checkIn && <span>🏨 Check-in: {place.checkIn}</span>}
+                                      {place.checkOut && <span>🚪 Check-out: {place.checkOut}</span>}
+                                      {place.rating && <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                        {place.rating}/5 {place.reviews && `(${place.reviews})`}
+                                      </span>}
                                     </div>
                                   </div>
                                 ))}
@@ -350,24 +337,33 @@ const DriverTripModal = ({ open, onClose, trip }) => {
 
                           {/* Transportation */}
                           {dayData.transportation?.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
-                                {getCategoryIcon('transportation')}
-                                <span className="ml-2">Transportation</span>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center text-base">
+                                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-2">
+                                  {getCategoryIcon('transportation')}
+                                </div>
+                                <span>Transportation</span>
+                                <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">{dayData.transportation.length}</span>
                               </h4>
                               <div className="space-y-2">
                                 {dayData.transportation.map((transport) => (
-                                  <div key={transport.id} className="bg-blue-50 rounded-lg p-3">
-                                    <div className="flex justify-between items-start mb-1">
-                                      <h5 className="font-medium text-gray-900">{transport.name}</h5>
-                                      <span className="text-sm text-blue-600 font-medium">{transport.price}</span>
+                                  <div key={transport.id} className="bg-white border border-purple-100 rounded-lg p-4 hover:border-purple-300 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h5 className="font-semibold text-gray-900">{transport.name}</h5>
+                                      {transport.price && <span className="text-sm text-purple-600 font-medium">{transport.price}</span>}
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-1">{transport.description}</p>
-                                    <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                      <span>🚗 {transport.type}</span>
-                                      <span>⏱️ {transport.duration}</span>
-                                      <span>🕐 {transport.time}</span>
-                                      <span>⭐ {transport.rating}/5</span>
+                                    <p className="text-sm text-gray-600 mb-2">{transport.description}</p>
+                                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                      {transport.type && <span>🚗 {transport.type}</span>}
+                                      {transport.duration && <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {transport.duration}
+                                      </span>}
+                                      {transport.time && <span>🕐 {transport.time}</span>}
+                                      {transport.rating && <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                        {transport.rating}/5
+                                      </span>}
                                     </div>
                                   </div>
                                 ))}
@@ -380,13 +376,15 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                            (!dayData.food || dayData.food.length === 0) &&
                            (!dayData.places || dayData.places.length === 0) &&
                            (!dayData.transportation || dayData.transportation.length === 0) && (
-                            <div className="text-center py-6">
-                              <div className="text-gray-400 mb-2">📋</div>
-                              <p className="text-gray-500 text-sm">
+                            <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+                              <div className="text-gray-300 mb-3">
+                                <MapPin className="w-12 h-12 mx-auto" />
+                              </div>
+                              <p className="text-gray-600 text-sm font-medium">
                                 No detailed itinerary available for this day.
                               </p>
                               <p className="text-gray-400 text-xs mt-1">
-                                The tourist hasn't added specific activities yet.
+                                Activities haven't been planned yet.
                               </p>
                             </div>
                           )}
@@ -396,10 +394,12 @@ const DriverTripModal = ({ open, onClose, trip }) => {
                   </div>
                   ))
                 ) : (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 mb-4">🗺️</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Itinerary Available</h3>
-                    <p className="text-gray-600 max-w-md mx-auto">
+                  <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                    <div className="text-gray-300 mb-4">
+                      <MapPin className="w-16 h-16 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Itinerary Available</h3>
+                    <p className="text-gray-500 max-w-md mx-auto text-sm">
                       The tourist hasn't created a detailed itinerary for this trip yet. 
                       You can still provide transportation services based on the pickup and destination locations.
                     </p>
@@ -411,17 +411,8 @@ const DriverTripModal = ({ open, onClose, trip }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">
-                <Navigation className="w-4 h-4 mr-2" />
-                Navigate to Pickup
-              </button>
-              {/* <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                Call Passenger
-              </button> */}
-            </div>
+        <div className="p-6 border-t border-gray-200 bg-white">
+          <div className="flex justify-end items-center gap-3">
             <button
               onClick={onClose}
               className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors"

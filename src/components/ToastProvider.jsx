@@ -20,7 +20,7 @@ export const ToastProvider = ({ children }) => {
       id,
       message,
       type,
-      duration: options.duration || 4000,
+      duration: options.duration || 3000,
       position: options.position || 'top-right',
       showProgress: options.showProgress !== false,
       ...options

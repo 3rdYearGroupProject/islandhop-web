@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { auth } from "../../firebase";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,6 +26,7 @@ import {
   UserIcon,
   BuildingOfficeIcon,
   SparklesIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 
 ChartJS.register(
@@ -39,6 +44,122 @@ const Analytics = () => {
   const [selectedUser, setSelectedUser] = useState("user1");
   const [leftMetric, setLeftMetric] = useState("bookings");
   const [rightMetric, setRightMetric] = useState("users");
+  const [authToken, setAuthToken] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [apiData, setApiData] = useState({
+    totalUsers: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    conversionRate: 0,
+    monthlyRevenue: [],
+    serviceProviders: [],
+    monthlyData: null, // Add monthly breakdown data
+  });
+
+  // Get Firebase auth token
+  useEffect(() => {
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setAuthToken("");
+        }
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    if (!authToken) return;
+
+    setLoading(true);
+    try {
+      // Fetch total user count
+      const userCountResponse = await axios.get(
+        "http://localhost:8070/api/admin/analytics/users/count",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Fetch monthly revenue data (which includes bookings, revenue, conversion rate)
+      const revenueResponse = await axios.get(
+        "http://localhost:8070/api/admin/analytics/revenue/monthly",
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("User count response:", userCountResponse.data);
+      console.log("Revenue response:", revenueResponse.data);
+      console.log(
+        "Service providers response:",
+        userCountResponse.data.data.breakdown
+      );
+
+      // Process monthly data for chart
+      const monthlyBreakdown =
+        revenueResponse.data.data?.monthlyBreakdown || [];
+      const processedMonthlyData = {
+        bookings: new Array(12).fill(0),
+        users: new Array(12).fill(0), // We'll use totalTrips as a proxy for users
+        revenue: new Array(12).fill(0),
+        conversion: new Array(12).fill(0),
+      };
+
+      // Fill in the data from API response
+      monthlyBreakdown.forEach((monthData) => {
+        const monthIndex = monthData.month - 1; // Convert to 0-based index
+        if (monthIndex >= 0 && monthIndex < 12) {
+          processedMonthlyData.bookings[monthIndex] = monthData.totalTrips || 0;
+          processedMonthlyData.users[monthIndex] =
+            userCountResponse.data.data.totalUsers || 0;
+          processedMonthlyData.revenue[monthIndex] =
+            monthData.totalRevenue || 0;
+          processedMonthlyData.conversion[monthIndex] =
+            monthData.conversionRate || 0;
+        }
+      });
+
+      // Update API data state
+      setApiData({
+        totalUsers:
+          userCountResponse.data.data.totalUsers || userCountResponse.data || 0,
+        totalBookings: revenueResponse.data.data.yearlyTotal.totalTrips || 0,
+        totalRevenue: revenueResponse.data.data.yearlyTotal.totalRevenue || 0,
+        conversionRate:
+          revenueResponse.data.data.yearlyTotal.conversionRate || 0,
+        monthlyRevenue:
+          revenueResponse.data.data.yearlyTotal.averageAmount || [],
+        serviceProviders:
+          userCountResponse.data.data.breakdown || userCountResponse.data || [],
+        monthlyData: processedMonthlyData,
+      });
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+      // Keep mock data if API fails
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when auth token is available
+  useEffect(() => {
+    if (authToken) {
+      fetchAnalyticsData();
+    }
+  }, [authToken]);
 
   // Mock data for different users
   const userData = {
@@ -84,7 +205,7 @@ const Analytics = () => {
       bgColor: "rgba(16, 185, 129, 0.1)",
     },
     revenue: {
-      label: "Revenue ($)",
+      label: "Revenue (LKR)",
       color: "#f59e0b",
       bgColor: "rgba(245, 158, 11, 0.1)",
     },
@@ -110,12 +231,22 @@ const Analytics = () => {
     "Dec",
   ];
 
+  // Get chart data - use API data if available, otherwise fall back to mock data
+  const getChartData = () => {
+    if (apiData.monthlyData && !loading) {
+      return apiData.monthlyData;
+    }
+    return userData[selectedUser];
+  };
+
+  const currentChartData = getChartData();
+
   const chartData = {
     labels: months,
     datasets: [
       {
         label: metricConfig[leftMetric].label,
-        data: userData[selectedUser][leftMetric],
+        data: currentChartData[leftMetric],
         borderColor: metricConfig[leftMetric].color,
         backgroundColor: metricConfig[leftMetric].bgColor,
         fill: true,
@@ -126,7 +257,7 @@ const Analytics = () => {
       },
       {
         label: metricConfig[rightMetric].label,
-        data: userData[selectedUser][rightMetric],
+        data: currentChartData[rightMetric],
         borderColor: metricConfig[rightMetric].color,
         backgroundColor: metricConfig[rightMetric].bgColor,
         fill: true,
@@ -200,39 +331,48 @@ const Analytics = () => {
     },
   };
 
-  // Key metrics for the selected user
+  // Key metrics for the selected user - now using API data when available
   const currentData = userData[selectedUser];
   const keyMetrics = [
     {
       title: "Total Bookings",
-      value: currentData.bookings[currentData.bookings.length - 1],
-      change: "+12.5%",
+      value: loading
+        ? "Loading..."
+        : apiData.totalBookings ||
+          currentData.bookings[currentData.bookings.length - 1],
       changeType: "positive",
       icon: ChartBarIcon,
       color: "primary",
     },
     {
       title: "Active Users",
-      value: currentData.users[currentData.users.length - 1],
-      change: "+8.3%",
+      value: loading
+        ? "Loading..."
+        : apiData.totalUsers || currentData.users[currentData.users.length - 1],
       changeType: "positive",
       icon: UsersIcon,
       color: "primary",
     },
     {
       title: "Revenue",
-      value: `$${(
-        currentData.revenue[currentData.revenue.length - 1] / 1000
-      ).toFixed(1)}k`,
-      change: "+15.2%",
+      value: loading
+        ? "Loading..."
+        : apiData.totalRevenue
+        ? `RS. ${(apiData.totalRevenue / 1000).toFixed(1)}k`
+        : `$${(
+            currentData.revenue[currentData.revenue.length - 1] / 1000
+          ).toFixed(1)}k`,
       changeType: "positive",
       icon: CurrencyDollarIcon,
       color: "primary",
     },
     {
       title: "Conversion Rate",
-      value: `${currentData.conversion[currentData.conversion.length - 1]}%`,
-      change: "+2.1%",
+      value: loading
+        ? "Loading..."
+        : apiData.conversionRate
+        ? `${apiData.conversionRate}%`
+        : `${currentData.conversion[currentData.conversion.length - 1]}%`,
       changeType: "positive",
       icon: ArrowTrendingUpIcon,
       color: "info",
@@ -247,11 +387,49 @@ const Analytics = () => {
     { name: "Sigiriya", bookings: 98, percentage: 13 },
   ];
 
-
-  const serviceProviders = [
-    { type: "Drivers", count: 156, icon: TruckIcon, trend: "+5" },
-    { type: "Guides", count: 89, icon: UserIcon, trend: "+3" },
-  ];
+  const serviceProviders = loading
+    ? [
+        { type: "Loading...", count: "...", icon: TruckIcon, trend: "..." },
+        { type: "Loading...", count: "...", icon: UserIcon, trend: "..." },
+      ]
+    : apiData.serviceProviders &&
+      typeof apiData.serviceProviders === "object" &&
+      !Array.isArray(apiData.serviceProviders)
+    ? Object.entries(apiData.serviceProviders)
+        .filter(([key]) =>
+          ["driver", "guide", "admin", "support"].includes(key.toLowerCase())
+        ) // Filter out tourist
+        .map(([key, value]) => ({
+          type: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize first letter
+          count: value.count || 0,
+          percentage: value.percentage || 0,
+          icon: key.toLowerCase().includes("driver")
+            ? TruckIcon
+            : key.toLowerCase().includes("guide")
+            ? UserIcon
+            : key.toLowerCase().includes("admin")
+            ? BuildingOfficeIcon
+            : key.toLowerCase().includes("support")
+            ? SparklesIcon
+            : UserIcon,
+          trend: value.percentage ? `${value.percentage.toFixed(1)}%` : "+0%", // Use percentage as trend
+        }))
+    : apiData.serviceProviders &&
+      Array.isArray(apiData.serviceProviders) &&
+      apiData.serviceProviders.length > 0
+    ? apiData.serviceProviders.map((provider) => ({
+        type: provider.type || provider.name || "Unknown",
+        count: provider.count || provider.total || 0,
+        icon:
+          provider.type === "Drivers" || provider.name === "Drivers"
+            ? TruckIcon
+            : UserIcon,
+        trend: provider.trend || `+${provider.growth || 0}`,
+      }))
+    : [
+        { type: "Drivers", count: 156, icon: TruckIcon, trend: "+5" },
+        { type: "Guides", count: 89, icon: UserIcon, trend: "+3" },
+      ];
 
   const getMetricCardColor = (color) => {
     const colors = {
@@ -276,17 +454,300 @@ const Analytics = () => {
     return colors[color] || colors.primary;
   };
 
+  // Export analytics to PDF
+  const exportAnalyticsToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Add title
+      doc.setFontSize(22);
+      doc.setTextColor(40);
+      doc.text("IslandHop Analytics Report", pageWidth / 2, 22, {
+        align: "center",
+      });
+
+      // Add generation date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Generated on: ${new Date().toLocaleString()}`,
+        pageWidth / 2,
+        30,
+        { align: "center" }
+      );
+
+      // Add key metrics summary
+      doc.setFontSize(14);
+      doc.setTextColor(40);
+      doc.text("Key Metrics Summary", 14, 45);
+
+      // Create metrics table
+      const metricsData = [
+        ["Total Bookings", apiData.totalBookings.toLocaleString()],
+        ["Active Users", apiData.totalUsers.toLocaleString()],
+        [
+          "Total Revenue",
+          `LKR ${apiData.totalRevenue.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
+        ],
+        ["Conversion Rate", `${apiData.conversionRate}%`],
+      ];
+
+      autoTable(doc, {
+        startY: 50,
+        head: [["Metric", "Value"]],
+        body: metricsData,
+        theme: "grid",
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 11,
+        },
+        bodyStyles: {
+          fontSize: 10,
+        },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 100, halign: "right", fontStyle: "bold" },
+        },
+        margin: { left: 14 },
+      });
+
+      // Monthly data section
+      let currentY = doc.lastAutoTable.finalY + 15;
+      doc.setFontSize(14);
+      doc.setTextColor(40);
+      doc.text("Monthly Performance Data", 14, currentY);
+
+      // Prepare monthly data for table
+      const monthlyTableData = months.map((month, index) => [
+        month,
+        currentChartData.bookings[index]?.toLocaleString() || "0",
+        currentChartData.users[index]?.toLocaleString() || "0",
+        currentChartData.revenue[index]?.toLocaleString() || "0",
+        currentChartData.conversion[index]?.toFixed(2) || "0.00",
+      ]);
+
+      autoTable(doc, {
+        startY: currentY + 5,
+        head: [["Month", "Bookings", "Users", "Revenue", "Conv. Rate (%)"]],
+        body: monthlyTableData,
+        theme: "striped",
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 9,
+        },
+        bodyStyles: {
+          fontSize: 8,
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 30, halign: "right" },
+          2: { cellWidth: 30, halign: "right" },
+          3: { cellWidth: 40, halign: "right" },
+          4: { cellWidth: 35, halign: "right" },
+        },
+        margin: { left: 14 },
+      });
+
+      // Add new page for visual chart representation
+      doc.addPage();
+
+      // Chart visualization section
+      doc.setFontSize(16);
+      doc.setTextColor(40);
+      doc.text("Revenue Trend Chart", pageWidth / 2, 20, { align: "center" });
+
+      // Draw simple line chart for revenue
+      const chartStartY = 35;
+      const chartHeight = 80;
+      const chartWidth = pageWidth - 40;
+      const chartStartX = 20;
+
+      // Draw chart border
+      doc.setDrawColor(200);
+      doc.rect(chartStartX, chartStartY, chartWidth, chartHeight);
+
+      // Calculate max value for scaling
+      const maxRevenue = Math.max(...currentChartData.revenue);
+      const maxBookings = Math.max(...currentChartData.bookings);
+      const maxUsers = Math.max(...currentChartData.users);
+
+      // Draw revenue line (blue)
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(1.5);
+      for (let i = 0; i < months.length - 1; i++) {
+        const x1 = chartStartX + (chartWidth / (months.length - 1)) * i;
+        const y1 =
+          chartStartY +
+          chartHeight -
+          (currentChartData.revenue[i] / maxRevenue) * chartHeight;
+        const x2 = chartStartX + (chartWidth / (months.length - 1)) * (i + 1);
+        const y2 =
+          chartStartY +
+          chartHeight -
+          (currentChartData.revenue[i + 1] / maxRevenue) * chartHeight;
+        doc.line(x1, y1, x2, y2);
+      }
+
+      // Add month labels for revenue chart (X-axis)
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      for (let i = 0; i < months.length; i++) {
+        const x = chartStartX + (chartWidth / (months.length - 1)) * i;
+        doc.text(months[i], x - 3, chartStartY + chartHeight + 5, {
+          angle: 0,
+        });
+      }
+
+      // Add Y-axis label for revenue chart
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Revenue", 5, chartStartY + chartHeight / 2, {
+        angle: 90,
+      });
+
+      // Add max and min values on Y-axis
+      doc.setFontSize(7);
+      doc.text(maxRevenue.toLocaleString(), chartStartX - 2, chartStartY + 3, {
+        align: "right",
+      });
+      doc.text("0", chartStartX - 2, chartStartY + chartHeight + 3, {
+        align: "right",
+      });
+
+      // Add chart legend
+      doc.setFontSize(9);
+      doc.setFillColor(59, 130, 246);
+      doc.rect(chartStartX, chartStartY + chartHeight + 10, 10, 4, "F");
+      doc.setTextColor(40);
+      doc.text("Revenue", chartStartX + 12, chartStartY + chartHeight + 13);
+
+      // Bookings chart
+      doc.setFontSize(16);
+      doc.setTextColor(40);
+      doc.text(
+        "Bookings Trend Chart",
+        pageWidth / 2,
+        chartStartY + chartHeight + 35,
+        {
+          align: "center",
+        }
+      );
+
+      const chartStartY2 = chartStartY + chartHeight + 45;
+
+      // Draw chart border
+      doc.setDrawColor(200);
+      doc.rect(chartStartX, chartStartY2, chartWidth, chartHeight);
+
+      // Draw bookings line (green)
+      doc.setDrawColor(16, 185, 129);
+      doc.setLineWidth(1.5);
+      for (let i = 0; i < months.length - 1; i++) {
+        const x1 = chartStartX + (chartWidth / (months.length - 1)) * i;
+        const y1 =
+          chartStartY2 +
+          chartHeight -
+          (currentChartData.bookings[i] / maxBookings) * chartHeight;
+        const x2 = chartStartX + (chartWidth / (months.length - 1)) * (i + 1);
+        const y2 =
+          chartStartY2 +
+          chartHeight -
+          (currentChartData.bookings[i + 1] / maxBookings) * chartHeight;
+        doc.line(x1, y1, x2, y2);
+      }
+
+      // Add month labels for bookings chart (X-axis)
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      for (let i = 0; i < months.length; i++) {
+        const x = chartStartX + (chartWidth / (months.length - 1)) * i;
+        doc.text(months[i], x - 3, chartStartY2 + chartHeight + 5, {
+          angle: 0,
+        });
+      }
+
+      // Add Y-axis label for bookings chart
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Bookings", 5, chartStartY2 + chartHeight / 2, {
+        angle: 90,
+      });
+
+      // Add max and min values on Y-axis
+      doc.setFontSize(7);
+      doc.text(
+        maxBookings.toLocaleString(),
+        chartStartX - 2,
+        chartStartY2 + 3,
+        { align: "right" }
+      );
+      doc.text("0", chartStartX - 2, chartStartY2 + chartHeight + 3, {
+        align: "right",
+      });
+
+      // Add legend
+      doc.setFillColor(16, 185, 129);
+      doc.rect(chartStartX, chartStartY2 + chartHeight + 10, 10, 4, "F");
+      doc.setTextColor(40);
+      doc.text("Bookings", chartStartX + 12, chartStartY2 + chartHeight + 13);
+
+      // Add footer to all pages
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`IslandHop Analytics - Confidential`, 14, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 30, pageHeight - 10);
+      }
+
+      // Save the PDF
+      doc.save(
+        `IslandHop_Analytics_Report_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`
+      );
+
+      console.log("PDF export successful");
+    } catch (error) {
+      console.error("Error exporting analytics to PDF:", error);
+      alert("Failed to export PDF. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-secondary-900 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Analytics Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Monitor platform performance and user engagement
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Analytics Dashboard
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Monitor platform performance and user engagement
+              </p>
+            </div>
+            <button
+              onClick={exportAnalyticsToPDF}
+              disabled={loading || !apiData.monthlyData}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              title="Export analytics report as PDF"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              Export Report
+            </button>
+          </div>
         </div>
 
         {/* Bento Grid Layout */}
@@ -305,7 +766,7 @@ const Analytics = () => {
 
               {/* User Selector */}
               <div className="flex space-x-2">
-                {["user1", "user2", "user3"].map((user) => (
+                {["user1"].map((user) => (
                   <button
                     key={user}
                     onClick={() => setSelectedUser(user)}
@@ -315,11 +776,7 @@ const Analytics = () => {
                         : "bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-secondary-600"
                     }`}
                   >
-                    {user === "user1"
-                      ? "Overall"
-                      : user === "user2"
-                      ? "Travelers"
-                      : "Providers"}
+                    {user === "user1" ? "Overall" : user === "user2"}
                   </button>
                 ))}
               </div>
@@ -363,15 +820,48 @@ const Analytics = () => {
 
             {/* Chart */}
             <div className="h-80">
-              <Line data={chartData} options={chartOptions} />
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Loading analytics data...
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Line data={chartData} options={chartOptions} />
+              )}
             </div>
           </div>
 
           {/* Key Metrics - 2 columns wide */}
           <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-              Key Metrics
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Key Metrics
+              </h3>
+              <button
+                onClick={fetchAnalyticsData}
+                disabled={loading || !authToken}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-secondary-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh data"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </button>
+            </div>
             <div className="space-y-4">
               {keyMetrics.map((metric, index) => {
                 const IconComponent = metric.icon;
@@ -450,8 +940,6 @@ const Analytics = () => {
               ))}
             </div>
           </div>
-
-
 
           {/* Service Providers - 2 columns wide */}
           <div className="lg:col-span-3 bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">

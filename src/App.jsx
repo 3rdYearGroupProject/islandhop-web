@@ -38,7 +38,7 @@ function App() {
       <ToastProvider>
         <DevTools />
         {/* Quick Actions Button always visible for logged in users */}
-        <QuickActionsButton isLoggedIn={isAuthenticated} />
+        <QuickActionsButton isLoggedIn={isAuthenticated} userRole={user?.role} />
        
         <Routes>
           {/* General/Public and Tourist Routes */}

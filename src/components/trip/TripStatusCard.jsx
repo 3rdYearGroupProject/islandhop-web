@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Square } from 'lucide-react';
+import { useToast } from '../ToastProvider';
 
 const TripStatusCard = ({ 
   tripName,
@@ -16,6 +17,7 @@ const TripStatusCard = ({
   tripData, // Add tripData prop to access dailyPlans with meter readings
   refreshTripData // Add refreshTripData prop to refresh data after actions
 }) => {
+  const toast = useToast();
   // Get daily plans from trip data
   const dailyPlans = tripData?.dailyPlans || [];
   
@@ -143,6 +145,11 @@ const TripStatusCard = ({
   };
 
   const handleTripEnd = () => {
+    // Check if trip has been ended by driver/guide (ended field must be 1)
+    if (tripData?.ended !== 1) {
+      toast.warning('The trip cannot be completed yet. The driver or guide needs to end the trip first.', { duration: 3000 });
+      return;
+    }
     setShowTripCompletionModal(true);
   };
 
@@ -237,7 +244,13 @@ const TripStatusCard = ({
           {allCompleted ? (
             <button
               onClick={handleTripEnd}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+              disabled={tripData?.ended !== 1}
+              className={`font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 text-base shadow-lg ${
+                tripData?.ended === 1
+                  ? 'bg-green-600 hover:bg-green-700 text-white hover:shadow-xl transform hover:scale-105 cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              title={tripData?.ended !== 1 ? 'Waiting for driver/guide to end the trip' : 'Complete and finalize your trip'}
             >
               <Square className="w-5 h-5" />
               Confirm Trip End
@@ -278,7 +291,9 @@ const TripStatusCard = ({
           
           <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
             allCompleted 
-              ? 'bg-green-100 text-green-700' 
+              ? tripData?.ended === 1
+                ? 'bg-green-100 text-green-700'
+                : 'bg-amber-100 text-amber-700'
               : !canConfirm
                 ? 'bg-amber-100 text-amber-700'
                 : action === 'start' 
@@ -286,7 +301,9 @@ const TripStatusCard = ({
                   : 'bg-orange-100 text-orange-700'
           }`}>
             {allCompleted 
-              ? 'Ready to Complete' 
+              ? tripData?.ended === 1 
+                ? 'Ready to Complete' 
+                : 'Waiting for Trip End'
               : !canConfirm 
                 ? 'Waiting for Schedule'
                 : action === 'start' 

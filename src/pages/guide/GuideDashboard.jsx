@@ -16,6 +16,7 @@ import {
   Languages
 } from 'lucide-react';
 import GuideTourModal from '../../components/guide/GuideTourModal';
+import MapPopupModal from '../../components/driver/MapPopupModal';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData, getUserUID } from '../../utils/userStorage';
 import { Link } from 'react-router-dom';
@@ -29,6 +30,7 @@ const GuideDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [tours, setTours] = useState([]);
   const [error, setError] = useState(null);
+  const [activeTours, setActiveTours] = useState([]); // Changed to array to store all active tours
   const [activeTour, setActiveTour] = useState(null);
   const [activeToursLoading, setActiveToursLoading] = useState(false);
   const toast = useToast();
@@ -169,6 +171,7 @@ const GuideDashboard = () => {
   useEffect(() => {
     const fetchActiveTours = async () => {
       if (!guideEmail) {
+        setActiveTours([]);
         setActiveTour(null);
         return;
       }
@@ -180,48 +183,52 @@ const GuideDashboard = () => {
         console.log('Active tours API Response:', response);
         
         if (response.data.success && response.data.data.trips.length > 0) {
-          const apiTour = response.data.data.trips[0]; // There should be only 1 active tour
+          const apiTours = response.data.data.trips;
           
-          // Transform API data to match component structure
-          const firstDay = apiTour.dailyPlans?.[0];
-          const lastDay = apiTour.dailyPlans?.[apiTour.dailyPlans.length - 1];
+          // Transform all API tours to match component structure
+          const transformedTours = apiTours.map(apiTour => {
+            const firstDay = apiTour.dailyPlans?.[0];
+            const lastDay = apiTour.dailyPlans?.[apiTour.dailyPlans.length - 1];
 
-          const transformedTour = {
-            id: apiTour._id,
-            userId: apiTour.userId,
-            tripName: apiTour.tripName,
-            tourist: apiTour.userId ? `Tourist ${apiTour.userId.substring(0, 8)}...` : 'Unknown Tourist',
-            touristAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
-            location: firstDay?.city || apiTour.baseCity || 'Not specified',
-            destination: lastDay?.city || 'Multiple destinations',
-            distance: `${Math.round(apiTour.averageTripDistance || 0)} km`,
-            estimatedTime: `${Math.ceil((apiTour.averageTripDistance || 0) / 60)} hours`,
-            fee: apiTour.payedAmount || 0,
-            touristRating: 4.9,
-            startDate: apiTour.startDate,
-            endDate: apiTour.endDate,
-            arrivalTime: apiTour.arrivalTime,
-            baseCity: apiTour.baseCity,
-            dailyPlans: apiTour.dailyPlans,
-            vehicleType: apiTour.vehicleType,
-            guideNeeded: apiTour.guideNeeded,
-            driverNeeded: apiTour.driverNeeded,
-            driverEmail: apiTour.driver_email,
-            // Important fields from the new API
-            started: apiTour.started,
-            startconfirmed: apiTour.startconfirmed,
-            ended: apiTour.ended,
-            endconfirmed: apiTour.endconfirmed
-          };
+            return {
+              id: apiTour._id,
+              userId: apiTour.userId,
+              tripName: apiTour.tripName,
+              tourist: apiTour.userId ? `Tourist ${apiTour.userId.substring(0, 8)}...` : 'Unknown Tourist',
+              touristAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+              location: firstDay?.city || apiTour.baseCity || 'Not specified',
+              destination: lastDay?.city || 'Multiple destinations',
+              distance: `${Math.round(apiTour.averageTripDistance || 0)} km`,
+              estimatedTime: `${Math.ceil((apiTour.averageTripDistance || 0) / 60)} hours`,
+              fee: apiTour.payedAmount || 0,
+              touristRating: 4.9,
+              startDate: apiTour.startDate,
+              endDate: apiTour.endDate,
+              arrivalTime: apiTour.arrivalTime,
+              baseCity: apiTour.baseCity,
+              dailyPlans: apiTour.dailyPlans,
+              vehicleType: apiTour.vehicleType,
+              guideNeeded: apiTour.guideNeeded,
+              driverNeeded: apiTour.driverNeeded,
+              driverEmail: apiTour.driver_email,
+              // Important fields from the new API
+              started: apiTour.started,
+              startconfirmed: apiTour.startconfirmed,
+              ended: apiTour.ended,
+              endconfirmed: apiTour.endconfirmed
+            };
+          });
 
-          setActiveTour(transformedTour);
+          setActiveTours(transformedTours);
+          setActiveTour(transformedTours[0]); // Set first tour as default
           
-          // Update stats to reflect active tour
+          // Update stats to reflect active tours
           setGuideStats(prevStats => ({
             ...prevStats,
-            activeTours: 1
+            activeTours: transformedTours.length
           }));
         } else {
+          setActiveTours([]);
           setActiveTour(null);
           setGuideStats(prevStats => ({
             ...prevStats,
@@ -230,6 +237,7 @@ const GuideDashboard = () => {
         }
       } catch (err) {
         console.error('Error fetching active tours:', err);
+        setActiveTours([]);
         setActiveTour(null);
         setGuideStats(prevStats => ({
           ...prevStats,
@@ -447,18 +455,31 @@ const GuideDashboard = () => {
                 In Progress
               </span>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 text-gray-400 mr-2" />
-                  <span className="font-medium">{activeTour.tourist}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors">
-                    <MessageCircle className="h-4 w-4" />
-                  </button>
-                </div>
+            
+            {/* Tour Selector - Only show if multiple active tours */}
+            {activeTours.length > 1 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Active Tour
+                </label>
+                <select
+                  value={activeTour.id}
+                  onChange={(e) => {
+                    const selectedTour = activeTours.find(tour => tour.id === e.target.value);
+                    setActiveTour(selectedTour);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  {activeTours.map((tour) => (
+                    <option key={tour.id} value={tour.id}>
+                      {tour.tripName} - {tour.location} to {tour.destination}
+                    </option>
+                  ))}
+                </select>
               </div>
+            )}
+            
+            <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center">
                   <MapPin className="h-4 w-4 text-green-500 mr-2" />
@@ -480,7 +501,7 @@ const GuideDashboard = () => {
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Fee</p>
-                  <p className="font-semibold">LKR{activeTour.fee}</p>
+                  <p className="font-semibold">LKR {parseFloat(activeTour.fee).toFixed(2)}</p>
                 </div>
               </div>
               
@@ -660,11 +681,19 @@ const GuideDashboard = () => {
         </div>
       </div>
 
-      {/* Tour Details Modal */}
+      {/* Tour Details Modal for Active Tour - Pass full active tour data */}
       <GuideTourModal 
         open={modalOpen} 
         onClose={() => setModalOpen(false)} 
         tour={activeTour} 
+      />
+      
+      {/* Map Popup Modal for Navigate - Pass tour ID and full tour data */}
+      <MapPopupModal 
+        open={mapModalOpen} 
+        onClose={() => setMapModalOpen(false)} 
+        tripId={activeTour?.id}
+        tripData={activeTour} // Pass the full active tour data
       />
     </div>
   );

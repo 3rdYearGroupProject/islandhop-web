@@ -122,26 +122,21 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center space-x-3">
-            <FiUsers className="text-blue-600" size={20} />
-            <h3 className="text-lg font-semibold text-gray-900">
-              Join Pool Request
-            </h3>
-          </div>
+    <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+      <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+        <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto" style={{ zIndex: 1001 }}>
           <button
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close"
           >
             <FiX size={20} />
           </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+          
+          <div className="flex items-center gap-3 mb-6">
+            <FiUsers className="w-6 h-6 text-blue-600" />
+            <h2 className="text-2xl font-bold text-gray-900">Join Pool Request</h2>
+          </div>
           {success ? (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
@@ -354,16 +349,16 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
                       </span>
                     ))}
                   </div>
-                </div>
-              </div>
 
-              {/* Approval Notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-                <div className="flex items-start space-x-2">
-                  <FiInfo className="text-amber-600 mt-0.5" size={16} />
-                  <div className="text-sm text-amber-800">
-                    <strong>Approval Required:</strong> All existing group members must approve your request before you can join the pool.
+                  {/* Disclaimers and info */}
+                  <div className="text-xs text-gray-500 mt-2 space-y-1">
+                    <p>By joining, you agree to our <a href="#" className="underline hover:text-primary-600">Terms & Conditions</a> and <a href="#" className="underline hover:text-primary-600">Privacy Policy</a>.</p>
+                    <p>Payments are processed securely. You will be able to contact the organizer after joining.</p>
+                    {/* Delete disclaimer removed as requested */}
+                    <p>For support, contact <a href="mailto:support@islandhop.com" className="underline hover:text-primary-600">support@islandhop.com</a>.</p>
+                    <p className="italic">Note: Submitting a join request does not guarantee acceptance into the pool.</p>
                   </div>
+
                 </div>
               </div>
 
@@ -381,14 +376,14 @@ const JoinPoolModal = ({ open, onClose, poolData, onSuccess }) => {
               <div className="flex space-x-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmitJoinRequest}
                   disabled={loading || !message.trim()}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm font-medium transition-colors flex items-center justify-center space-x-2"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>

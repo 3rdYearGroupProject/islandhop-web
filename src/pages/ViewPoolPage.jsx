@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users } from 'lucide-react';
+import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock, Edit3, Share2, Heart, Star, Users, CheckCircle, AlertCircle, Timer, X } from 'lucide-react';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SharePoolModal from '../components/SharePoolModal';
 import JoinPoolModal from '../components/JoinPoolModal';
 import InviteUserModal from '../components/InviteUserModal';
-import JoinRequestsManager from '../components/JoinRequestsManager';
-import { PoolsApi } from '../api/poolsApi';
+import LoginRequiredPopup from '../components/LoginRequiredPopup';
+import MapInfoWindow from '../components/MapInfoWindow';
+import { PoolsApi, poolsApi } from '../api/poolsApi';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../components/ToastProvider';
 
 // Mock participant data (replace with real data as needed)
 const mockParticipants = {
@@ -55,6 +59,7 @@ const ViewPoolPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
   const { poolId } = useParams();
+  const toast = useToast();
   
   // Get pool data from route state or use mock data if none provided
   const poolFromState = location.state?.pool;
@@ -69,42 +74,313 @@ const ViewPoolPage = () => {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  
+  // Trip Confirmation State
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showParticipantConfirmModal, setShowParticipantConfirmModal] = useState(false);
+  const [confirmationStatus, setConfirmationStatus] = useState('pending'); // 'pending', 'confirming', 'confirmed', 'failed', 'initiated'
+  const [confirmationLoading, setConfirmationLoading] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  
+  // Join Requests State
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  
+  // Request action loading states (for individual accept/reject buttons)
+  const [requestActionLoading, setRequestActionLoading] = useState({});
+  
+  // Trip Summary State
+  const [tripSummary, setTripSummary] = useState(null);
+  const [tripSummaryLoading, setTripSummaryLoading] = useState(false);
+  const [tripSummaryError, setTripSummaryError] = useState(null);
+  
+  // Map State
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka center
+  const [places, setPlaces] = useState([]);
+  const [mapInstance, setMapInstance] = useState(null);
+  
   const { user } = useAuth();
-  // Mock join requests data
-  const mockJoinRequests = [
-    {
-      name: 'Emily Carter',
-      avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-      email: 'emily.carter@email.com',
-      nationality: 'Australian',
-      languages: ['English'],
-      age: 29
-    },
-    {
-      name: 'David Brown',
-      avatar: 'https://randomuser.me/api/portraits/men/77.jpg',
-      email: 'david.brown@email.com',
-      nationality: 'Canadian',
-      languages: ['English', 'French'],
-      age: 35
-    }
-  ];
+  
+  // Capacity helpers
+  const currentParticipants = pool?.participants || pool?.members?.length || 0;
+  const maxParticipants = pool?.maxParticipants || 0;
+  const hasCapacity = currentParticipants < maxParticipants;
 
-  const handleAcceptRequest = (email, name) => {
-    // Implement accept logic here
-    console.log(`Accepting join request from ${name} (${email})`);
-    // In a real app, this would make an API call to accept the request
-    // For now, show a success message and remove from pending requests
-    alert(`✅ Accepted join request from ${name}!`);
-    // You could update the mockJoinRequests state here to remove the accepted request
+  const handleAcceptRequest = async (email, name) => {
+    setRequestActionLoading(prev => ({ ...prev, [email]: 'accepting' }));
+    try {
+      console.log(`Accepting join request from ${name} (${email})`);
+      
+      // Find the join request to get the requestId
+      const request = joinRequests.find(req => req.email === email);
+      if (!request) {
+        toast.error('Could not find join request', { duration: 3000 });
+        setRequestActionLoading(prev => ({ ...prev, [email]: null }));
+        return;
+      }
+      
+      // Use correct API parameters based on poolsApi.js documentation
+      await PoolsApi.voteOnJoinRequest(pool.groupId, {
+        userId: user.uid,
+        joinRequestId: request.requestId,
+        action: 'approve'
+      });
+      
+      toast.success(`Accepted join request from ${name}!`, { duration: 2000 });
+      
+      // Refresh join requests
+      await loadJoinRequests();
+    } catch (error) {
+      console.error('Error accepting join request:', error);
+      toast.error(`Failed to accept request: ${error.message}`, { duration: 3000 });
+    } finally {
+      setRequestActionLoading(prev => ({ ...prev, [email]: null }));
+    }
   };
 
-  const handleRejectRequest = (email, name) => {
-    // Implement reject logic here
-    console.log(`Rejecting join request from ${name} (${email})`);
-    // In a real app, this would make an API call to reject the request
-    alert(`❌ Rejected join request from ${name}`);
-    // You could update the mockJoinRequests state here to remove the rejected request
+  const handleRejectRequest = async (email, name) => {
+    setRequestActionLoading(prev => ({ ...prev, [email]: 'rejecting' }));
+    try {
+      console.log(`Rejecting join request from ${name} (${email})`);
+      
+      // Find the join request to get the requestId
+      const request = joinRequests.find(req => req.email === email);
+      if (!request) {
+        toast.error('Could not find join request', { duration: 3000 });
+        setRequestActionLoading(prev => ({ ...prev, [email]: null }));
+        return;
+      }
+      
+      // Use correct API parameters based on poolsApi.js documentation
+      await PoolsApi.voteOnJoinRequest(pool.groupId, {
+        userId: user.uid,
+        joinRequestId: request.requestId,
+        action: 'reject'
+      });
+      
+      toast.warning(`Rejected join request from ${name}`, { duration: 2000 });
+      
+      // Refresh join requests
+      await loadJoinRequests();
+    } catch (error) {
+      console.error('Error rejecting join request:', error);
+      toast.error(`Failed to reject request: ${error.message}`, { duration: 3000 });
+    } finally {
+      setRequestActionLoading(prev => ({ ...prev, [email]: null }));
+    }
+  };
+
+  // Function to load join requests separately
+  const loadJoinRequests = async () => {
+    if (!pool?.groupId || !user?.uid) {
+      return;
+    }
+    
+    try {
+      setJoinRequestsLoading(true);
+      console.log('📋 Loading join requests for group:', pool.groupId);
+      
+      const response = await PoolsApi.getPendingJoinRequests(pool.groupId, user.uid);
+      console.log('📋🔍 Full API response:', response);
+      
+      // Try multiple possible response structures
+      let requests = [];
+      if (response.pendingRequests) {
+        requests = response.pendingRequests;
+        console.log('📋🔍 Found pendingRequests:', requests);
+      } else if (response.joinRequests) {
+        requests = response.joinRequests;
+        console.log('📋🔍 Found joinRequests:', requests);
+      } else if (response.data?.joinRequests) {
+        requests = response.data.joinRequests;
+        console.log('📋🔍 Found data.joinRequests:', requests);
+      } else if (response.data?.pendingRequests) {
+        requests = response.data.pendingRequests;
+        console.log('📋🔍 Found data.pendingRequests:', requests);
+      } else if (Array.isArray(response)) {
+        requests = response;
+        console.log('📋🔍 Response is array:', requests);
+      } else {
+        console.log('📋⚠️ No requests found in response structure:', Object.keys(response));
+        requests = [];
+      }
+      
+      console.log('📋🔍 Extracted requests before transformation:', requests);
+      
+      // Transform requests to match the expected format
+      const transformedRequests = requests.map(req => {
+        console.log('📋🔍 Transforming request:', req);
+        return {
+          requestId: req.requestId || req.id || req.joinRequestId,
+          name: req.requesterName || req.name || req.userName || 'Unknown User',
+          email: req.requesterEmail || req.email || req.userEmail || 'unknown@email.com',
+          nationality: req.nationality || req.requesterNationality || 'Sri Lanka',
+          languages: req.languages && req.languages.length > 0 ? req.languages : ['English'],
+          age: req.age || req.requesterAge || 25,
+          message: req.message || req.requestMessage || 'Would like to join your trip!',
+          avatar: req.avatar || req.requesterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.requesterName || req.name || 'User')}&background=random&color=fff`
+        };
+      });
+      
+      console.log('📋🔍 Transformed requests:', transformedRequests);
+      setJoinRequests(transformedRequests);
+      console.log('📋✅ Join requests loaded:', transformedRequests.length, 'requests');
+    } catch (error) {
+      console.error('📋❌ Error loading join requests:', error);
+      // Keep existing requests on error
+    } finally {
+      setJoinRequestsLoading(false);
+    }
+  };
+
+  // Function to load trip summary
+  const loadTripSummary = async (tripId) => {
+    if (!tripId) {
+      console.warn('⚠️ No tripId provided for trip summary');
+      return;
+    }
+    
+    try {
+      setTripSummaryLoading(true);
+      setTripSummaryError(null);
+      console.log('📊 Loading trip summary for tripId:', tripId);
+      
+      const response = await fetch(`http://127.0.0.1:8074/api/v1/pooling-confirm/initiated-trip/${tripId}/summary`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch trip summary: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('📊✅ Trip summary response:', data);
+      
+      if (data.success && data.data) {
+        setTripSummary(data.data);
+        console.log('📊✅ Trip summary loaded:', data.data);
+      } else {
+        throw new Error(data.message || 'Failed to load trip summary');
+      }
+    } catch (error) {
+      console.error('📊❌ Error loading trip summary:', error);
+      setTripSummaryError(error.message);
+      toast.error(`Failed to load trip summary: ${error.message}`, { duration: 3000 });
+    } finally {
+      setTripSummaryLoading(false);
+    }
+  };
+
+  // Trip Confirmation Functions
+  const handleInitiateTripConfirmation = async () => {
+    setConfirmationLoading(true);
+    try {
+      // Prepare confirmation data object matching backend API spec
+      const confirmationData = {
+        groupId: pool.id,     // The pool ID is the group ID
+        tripId: pool.tripId,  // Use the separate tripId field
+        userId: user?.uid || user?.id,
+        minMembers: pool?.minParticipants || 2,
+        maxMembers: pool?.maxParticipants || 6,
+        tripStartDate: pool?.startDate ? new Date(pool.startDate).toISOString() : new Date().toISOString(),
+        tripEndDate: pool?.endDate ? new Date(pool.endDate).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        confirmationHours: 48,
+        totalAmount: pool?.totalCost || pool?.budget || 40000,
+        pricePerPerson: pool?.costPerPerson || pool?.pricePerPerson || 10000,
+        currency: "LKR",
+        paymentDeadlineHours: 72,
+        tripDetails: {
+          destinations: Array.isArray(pool?.destinations) ? pool.destinations : [pool?.destinations || "Sri Lanka"],
+          activities: pool?.preferredActivities || pool?.activities || ["sightseeing"],
+          accommodation: pool?.accommodation || "hotel",
+          transportation: pool?.transportation || "private_van"
+        }
+      };
+      
+      console.log('🎯 Sending confirmation data:', confirmationData);
+      console.log('🎯 Pool ID (groupId):', pool.id);
+      console.log('🎯 Trip ID:', pool.tripId);
+      const result = await poolsApi.initiateTripConfirmation(confirmationData);
+      console.log('Trip confirmation initiated:', result);
+      setConfirmationStatus('initiated');
+      toast.success('Trip confirmation initiated! All participants will be notified.', { duration: 3000 });
+    } catch (error) {
+      console.error('Failed to initiate trip confirmation:', error);
+      toast.error('Failed to initiate trip confirmation. Please try again.', { duration: 3000 });
+    } finally {
+      setConfirmationLoading(false);
+    }
+  };
+
+  // Function to open the confirmation modal
+  const handleOpenConfirmationModal = () => {
+    setShowConfirmationModal(true);
+  };
+
+  // Function to open participant confirmation modal
+  const handleOpenParticipantConfirmModal = () => {
+    setShowParticipantConfirmModal(true);
+  };
+
+  const handleConfirmParticipation = async () => {
+    setConfirmationLoading(true);
+    try {
+      // Pass both confirmedTripId and userId as required by the API
+      const result = await poolsApi.confirmParticipation(pool.id, user?.uid || user?.id);
+      console.log('Participation confirmed:', result);
+      setConfirmationStatus('confirmed');
+      toast.success('Participation confirmed successfully!', { duration: 2000 });
+      // Navigate to confirmed pools page
+      setTimeout(() => {
+        navigate('/pools', { state: { activeTab: 'confirmed' } });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to confirm participation:', error);
+      toast.error('Failed to confirm participation. Please try again.', { duration: 3000 });
+    } finally {
+      setConfirmationLoading(false);
+      setShowParticipantConfirmModal(false);
+    }
+  };
+
+  const checkUserRole = () => {
+    // Check if current user is the pool creator and member using the proper API structure
+    console.log('🔍🔑 checkUserRole called with:', { 
+      hasUser: !!user, 
+      hasPool: !!pool,
+      userId: user?.uid || user?.id,
+      userEmail: user?.email
+    });
+    
+    if (user && pool) {
+      // Check if user is the group leader (creator) using groupLeader from API
+      const creatorCheck = pool.groupInfo?.groupLeader === user.uid || 
+                          pool.groupInfo?.groupLeader === user.id ||
+                          pool.members?.some(m => m.userId === user.uid && m.role === 'leader') ||
+                          pool.members?.some(m => m.userId === user.id && m.role === 'leader');
+      setIsCreator(creatorCheck);
+      
+      // Check if user is a member
+      const memberCheck = pool.members?.some(m => 
+        m.userId === user.uid || 
+        m.userId === user.id ||
+        m.email === user.email
+      );
+      setIsMember(memberCheck);
+      
+      console.log('🔍🔑 User role check result:', {
+        userId: user.uid || user.id,
+        userEmail: user.email,
+        groupLeader: pool.groupInfo?.groupLeader,
+        isCreator: creatorCheck,
+        isMember: memberCheck,
+        members: pool.members?.map(m => ({ userId: m.userId, role: m.role, email: m.email })),
+        poolGroupInfo: pool.groupInfo
+      });
+    } else {
+      console.log('🔍🔑 User or pool not available for role check');
+    }
   };
 
   // --- Expandable Cost Breakdown State ---
@@ -214,6 +490,7 @@ const ViewPoolPage = () => {
           id: `${index}-${actIndex}`,
           name: attraction.name,
           location: attraction.address || dayPlan.city || tripDetails.baseCity,
+          coordinates: attraction.location || attraction.coordinates, // Include coordinates from API
           duration: '2-3 hours',
           rating: attraction.rating || 4.5,
           description: `Visit ${attraction.name} in ${dayPlan.city || tripDetails.baseCity}`,
@@ -226,6 +503,7 @@ const ViewPoolPage = () => {
           id: `${index}-hotel-${hotelIndex}`,
           name: hotel.name,
           location: hotel.address || dayPlan.city || tripDetails.baseCity,
+          coordinates: hotel.location || hotel.coordinates, // Include coordinates from API
           rating: hotel.rating || 4.0,
           description: `Stay at ${hotel.name}`,
           price: 'Contact for rates',
@@ -236,6 +514,7 @@ const ViewPoolPage = () => {
           id: `${index}-restaurant-${restIndex}`,
           name: restaurant.name,
           location: restaurant.address || dayPlan.city || tripDetails.baseCity,
+          coordinates: restaurant.location || restaurant.coordinates, // Include coordinates from API
           rating: restaurant.rating || 4.2,
           description: `Dine at ${restaurant.name}`,
           price: 'Rs. 1,500 - 3,000',
@@ -262,11 +541,20 @@ const ViewPoolPage = () => {
     };
     const price = priceMap[tripDetails?.budgetLevel?.toLowerCase()] || 'Contact for pricing';
     
+    // Transform members with proper defaults
+    const transformedMembers = members?.map(member => ({
+      ...member,
+      nationality: member.nationality || 'Sri Lanka', // Default nationality
+      languages: member.languages && member.languages.length > 0 ? member.languages : ['English'], // Default language
+      age: member.age || 25, // Default age
+      avatar: member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&color=fff`
+    })) || [];
+    
     const transformedData = {
       id: tripDetails?.tripId || 'unknown',
       tripId: tripDetails?.tripId,
       groupId: groupInfo?.groupId,
-      name: tripDetails?.tripName || 'Trip Adventure',
+      name: groupInfo?.groupName || tripDetails?.tripName || 'Trip Adventure',
       owner: members?.find(m => m.role === 'leader')?.name || 'Trip Leader',
       destinations: uniqueDestinations.join(', '),
       destinationsArray: uniqueDestinations,
@@ -288,7 +576,7 @@ const ViewPoolPage = () => {
       
       // Group and member information
       groupInfo: groupInfo,
-      members: members || [],
+      members: transformedMembers,
       
       // Itinerary data
       itinerary: itinerary,
@@ -353,6 +641,25 @@ const ViewPoolPage = () => {
           console.log('🔍📋 Transformed trip data:', tripData);
           
           setPool(tripData);
+          
+          // Set initial join requests from comprehensive data
+          console.log('📋🔍 Checking comprehensive data for join requests:', comprehensiveData);
+          if (comprehensiveData.pendingJoinRequests) {
+            console.log('📋🔍 Found pendingJoinRequests in comprehensive data:', comprehensiveData.pendingJoinRequests);
+            const transformedRequests = comprehensiveData.pendingJoinRequests.map(req => ({
+              requestId: req.requestId || req.id,
+              name: req.requesterName || req.name || 'Unknown User',
+              email: req.requesterEmail || req.email || 'unknown@email.com',
+              nationality: req.nationality || 'Sri Lanka',
+              languages: req.languages && req.languages.length > 0 ? req.languages : ['English'],
+              age: req.age || 25,
+              message: req.message || 'Would like to join your trip!'
+            }));
+            console.log('📋🔍 Setting initial join requests:', transformedRequests);
+            setJoinRequests(transformedRequests);
+          } else {
+            console.log('📋🔍 No pendingJoinRequests found in comprehensive data');
+          }
           
           // Initialize expanded days - expand first few days by default
           const totalDays = tripData.totalDays || 5;
@@ -479,6 +786,53 @@ const ViewPoolPage = () => {
     loadPool();
   }, [poolFromState, poolId, user]);
 
+  // Load join requests when pool data is available and user is the creator
+  useEffect(() => {
+    console.log('📋🔍 useEffect for join requests triggered:', { 
+      hasPool: !!pool, 
+      hasUser: !!user, 
+      isCreator, 
+      groupId: pool?.groupId 
+    });
+    
+    if (pool && user && isCreator && pool.groupId) {
+      console.log('📋🔍 Conditions met, calling loadJoinRequests');
+      loadJoinRequests();
+    } else {
+      console.log('📋🔍 Conditions not met for loading join requests');
+    }
+  }, [pool, user, isCreator]);
+
+  // Load trip summary when pool data is available and has a tripId
+  useEffect(() => {
+    console.log('📊🔍 useEffect for trip summary triggered:', { 
+      hasPool: !!pool, 
+      tripId: pool?.tripId 
+    });
+    
+    if (pool && pool.tripId) {
+      console.log('📊🔍 Conditions met, calling loadTripSummary');
+      loadTripSummary(pool.tripId);
+    } else {
+      console.log('📊🔍 Conditions not met for loading trip summary - no tripId');
+    }
+  }, [pool?.tripId]);
+
+  // Load join requests when modal opens
+  useEffect(() => {
+    console.log('📋🔍 Modal useEffect triggered:', { 
+      joinRequestsModalOpen, 
+      groupId: pool?.groupId, 
+      userId: user?.uid, 
+      isCreator 
+    });
+    
+    if (joinRequestsModalOpen && pool?.groupId && user?.uid && isCreator) {
+      console.log('📋🔍 Modal opened and conditions met, calling loadJoinRequests');
+      loadJoinRequests();
+    }
+  }, [joinRequestsModalOpen, pool?.groupId, user?.uid, isCreator]);
+
   // Generate days array from pool dates
   const generateDays = () => {
     if (!pool || !pool.dates || pool.dates.length < 2) return [];
@@ -531,8 +885,22 @@ const ViewPoolPage = () => {
     });
   };
 
-  const handleShare = () => {
-    setShareModalOpen(true);
+  const handleCopyLink = async () => {
+    try {
+      // Get the current pool URL
+      const poolUrl = `${window.location.origin}/pool/${poolId}`;
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(poolUrl);
+      
+      // Show success notification
+      toast.success('Pool link copied to clipboard!', { duration: 2000 });
+      
+      console.log('Pool link copied:', poolUrl);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Failed to copy link. Please try again.', { duration: 3000 });
+    }
   };
 
   const handleInvite = (emails) => {
@@ -567,6 +935,146 @@ const ViewPoolPage = () => {
       document.body.style.overflow = '';
     };
   }, [joinRequestsModalOpen]);
+
+  // Check user role when pool or user data changes
+  useEffect(() => {
+    checkUserRole();
+    // Also extract places for map when pool data is available
+    if (pool?.itinerary) {
+      const allPlaces = [];
+      Object.entries(pool.itinerary).forEach(([dayIndex, dayData]) => {
+        // Add activities/attractions
+        if (dayData.activities && dayData.activities.length > 0) {
+          dayData.activities.forEach(activity => {
+            // Check for coordinates in multiple possible properties
+            const locationData = activity.coordinates || activity.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...activity,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'attraction'
+              });
+            }
+          });
+        }
+        
+        // Add hotels/places
+        if (dayData.places && dayData.places.length > 0) {
+          dayData.places.forEach(place => {
+            // Check for coordinates in multiple possible properties
+            const locationData = place.coordinates || place.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...place,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'hotel'
+              });
+            }
+          });
+        }
+        
+        // Add restaurants/food
+        if (dayData.food && dayData.food.length > 0) {
+          dayData.food.forEach(restaurant => {
+            // Check for coordinates in multiple possible properties
+            const locationData = restaurant.coordinates || restaurant.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...restaurant,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'restaurant'
+              });
+            }
+          });
+        }
+        
+        // Add transportation if it has coordinates
+        if (dayData.transportation && dayData.transportation.length > 0) {
+          dayData.transportation.forEach(transport => {
+            // Check for coordinates in multiple possible properties
+            const locationData = transport.coordinates || transport.location;
+            if (locationData && typeof locationData === 'object' && locationData.lat && locationData.lng) {
+              allPlaces.push({
+                ...transport,
+                location: locationData,
+                dayNumber: parseInt(dayIndex) + 1,
+                placeType: 'attraction'
+              });
+            }
+          });
+        }
+      });
+      
+      console.log('🗺️ Extracted places for map:', allPlaces.length, 'locations');
+      setPlaces(allPlaces);
+      
+      // Set map center to first place with coordinates
+      if (allPlaces.length > 0 && allPlaces[0].location) {
+        setMapCenter({
+          lat: allPlaces[0].location.lat,
+          lng: allPlaces[0].location.lng
+        });
+        console.log('🗺️ Map center set to:', allPlaces[0].name);
+      } else {
+        console.log('🗺️ No places with coordinates found, using default Sri Lanka center');
+      }
+    }
+  }, [pool, user]);
+
+  // Google Maps API loading
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    version: 'weekly'
+  });
+
+  // Google Maps styles and settings
+  const mapContainerStyle = {
+    width: '100%',
+    height: '100%',
+    minHeight: '300px',
+  };
+  
+  // Get map icon based on place type
+  const getMarkerIcon = (placeType) => {
+    switch (placeType) {
+      case 'attraction':
+        return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+      case 'hotel':
+        return 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+      case 'restaurant':
+        return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+      default:
+        return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    }
+  };
+  
+  // Handle marker click
+  const handleMarkerClick = (place) => {
+    setSelectedMarker(place);
+    
+    // Smoothly pan to the selected place
+    if (place.location && mapInstance) {
+      mapInstance.panTo({
+        lat: place.location.lat,
+        lng: place.location.lng
+      });
+    }
+  };
+  
+  // Close info window
+  const handleInfoWindowClose = () => {
+    setSelectedMarker(null);
+  };
+
+  // Handle map load
+  const handleMapLoad = (map) => {
+    setMapInstance(map);
+  };
 
   if (loading) {
     return (
@@ -630,7 +1138,7 @@ const ViewPoolPage = () => {
         poolData={pool}
         onSuccess={(result) => {
           console.log('Join request sent:', result);
-          alert('Join request sent successfully!');
+          toast.success('Join request sent successfully!', { duration: 2000 });
         }}
       />
       <InviteUserModal
@@ -639,18 +1147,202 @@ const ViewPoolPage = () => {
         groupData={pool}
         onSuccess={(result) => {
           console.log('Invitation sent:', result);
-          alert('Invitation sent successfully!');
+          toast.success('Invitation sent successfully!', { duration: 2000 });
         }}
       />
-      <JoinRequestsManager
-        groupId={pool?.groupInfo?.groupId || pool?.id}
-        isOpen={joinRequestsModalOpen}
-        onClose={() => setJoinRequestsModalOpen(false)}
-        onRequestUpdate={(result) => {
-          console.log('Join request updated:', result);
-          // Refresh pool data if needed
-        }}
-      />
+
+      {/* Trip Confirmation Modal */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+          <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setShowConfirmationModal(false)}
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="text-center">
+                {confirmationStatus === 'initiated' ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-6 justify-center">
+                      <CheckCircle className="w-6 h-6 text-green-500" />
+                      <h2 className="text-2xl font-bold text-gray-900">Trip Confirmation Initiated!</h2>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6">
+                      Trip confirmation has been initiated successfully! All participants will be notified and can now confirm their participation.
+                    </p>
+                    
+                    <button
+                      onClick={() => setShowConfirmationModal(false)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-full text-sm font-medium transition-colors"
+                    >
+                      Got it!
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-6 justify-center">
+                      <AlertCircle className="w-6 h-6 text-orange-500" />
+                      <h2 className="text-2xl font-bold text-gray-900">Confirm Trip</h2>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6 text-left">
+                      You're about to initiate trip confirmation. This will notify all participants to confirm their participation within the confirmation period.
+                    </p>
+                    
+                    <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
+                      <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Trip Details:
+                      </h4>
+                      <div className="space-y-2 text-sm text-blue-700">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Destination:</span>
+                          <span>{Array.isArray(pool?.destinations) ? pool.destinations.join(', ') : pool?.destinations || pool?.destination}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Duration:</span>
+                          <span>{pool?.totalDays} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Dates:</span>
+                          <span>{pool?.dates ? `${formatDate(new Date(pool.dates[0]))} - ${formatDate(new Date(pool.dates[1]))}` : 'TBA'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Cost per person:</span>
+                          <span className="font-semibold">{tripSummary?.summary?.costPerParticipant || `Rs. ${pool?.costPerPerson || 'TBA'}`}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+                      <p className="text-sm text-amber-800">
+                        <strong>Note:</strong> As the trip creator, your participation will be automatically confirmed when you initiate this confirmation process.
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowConfirmationModal(false)}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-full text-sm font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleInitiateTripConfirmation}
+                        disabled={confirmationLoading}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-full text-sm font-medium transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                      >
+                        {confirmationLoading ? (
+                          <>
+                            <Timer className="w-4 h-4 mr-2 animate-spin" />
+                            Initiating...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Confirm & Initiate Trip
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Participant Confirmation Modal */}
+      {showParticipantConfirmModal && (
+        <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+          <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => setShowParticipantConfirmModal(false)}
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="text-center">
+                <div className="flex items-center gap-3 mb-6 justify-center">
+                  <AlertCircle className="w-6 h-6 text-orange-500" />
+                  <h2 className="text-2xl font-bold text-gray-900">Confirm Your Participation</h2>
+                </div>
+                
+                <p className="text-gray-600 mb-6 text-left">
+                  The trip organizer has initiated trip confirmation. Please confirm your participation to proceed with this amazing journey!
+                </p>
+                
+                <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
+                  <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Trip Details:
+                  </h4>
+                  <div className="space-y-2 text-sm text-blue-700">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Destination:</span>
+                      <span>{Array.isArray(pool?.destinations) ? pool.destinations.join(', ') : pool?.destinations || pool?.destination}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Duration:</span>
+                      <span>{pool?.totalDays} days</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Dates:</span>
+                      <span>{pool?.dates ? `${formatDate(new Date(pool.dates[0]))} - ${formatDate(new Date(pool.dates[1]))}` : 'TBA'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Cost per person:</span>
+                      <span className="font-semibold">{tripSummary?.summary?.costPerParticipant || `Rs. ${pool?.costPerPerson || 'TBA'}`}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+                  <p className="text-sm text-amber-800">
+                    <strong>Important:</strong> By confirming, you agree to participate in this trip and commit to the payment within the specified deadline.
+                  </p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowParticipantConfirmModal(false)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-full text-sm font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmParticipation}
+                    disabled={confirmationLoading}
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-full text-sm font-medium transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                  >
+                    {confirmationLoading ? (
+                      <>
+                        <Timer className="w-4 h-4 mr-2 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Confirm My Participation
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Bill-shaped Navbar overlays the top, so pull content down and let blue header go behind */}
       <div className="relative z-10">
         <Navbar />
@@ -677,135 +1369,195 @@ const ViewPoolPage = () => {
                 {formatDate(new Date(pool.dates[0]))} - {formatDate(new Date(pool.dates[1]))}
               </p>
             </div>
-            {/* Share/Join Pool Button */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              {sourcePage === 'findPools' ? (
+              {/* Join Pool - shown if user is not a member and there's capacity */}
+              {!isMember && hasCapacity && (
                 <button
-                  onClick={() => setJoinModalOpen(true)}
+                  onClick={() => {
+                    if (!user) {
+                      setShowLoginPopup(true);
+                    } else {
+                      setJoinModalOpen(true);
+                    }
+                  }}
                   className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
                   title="Join Pool"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Join Pool
                 </button>
-              ) : (
+              )}
+              
+              {/* Invite Users - shown only for private pools if there's capacity and user is creator or member */}
+              {hasCapacity && (isCreator || isMember) && pool?.visibility !== 'public' && (
+                <button
+                  onClick={() => setInviteModalOpen(true)}
+                  className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
+                  title="Invite specific users to this pool"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Invite
+                </button>
+              )}
+              
+              {/* Join Requests - shown only to creator */}
+              {isCreator && (
+                <button
+                  onClick={() => setJoinRequestsModalOpen(true)}
+                  className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
+                  title="Join Requests"
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Join Requests ({joinRequests.length})
+                </button>
+              )}
+              
+              {/* Trip Confirmation Buttons with proper visibility rules */}
+              {pool && pool.status !== 'completed' && (
                 <>
-                  <button
-                    onClick={handleShare}
-                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                    title="Share Pool"
-                  >
-                    <Share2 className="w-5 h-5 mr-2" />
-                    Share Pool
-                  </button>
-                  <button
-                    onClick={() => setInviteModalOpen(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold rounded-full transition-colors border border-blue-500"
-                    title="Invite Users"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Invite Users
-                  </button>
-                  <button
-                    onClick={() => setJoinRequestsModalOpen(true)}
-                    className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-full transition-colors border border-white/30"
-                    title="Join Requests"
-                  >
-                    <Users className="w-5 h-5 mr-2" />
-                    Join Requests
-                  </button>
-                  {/* Join Requests Modal */}
-                  {joinRequestsModalOpen && (
-                    <div className="fixed inset-0" style={{ zIndex: 1000 }}>
-                      <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
-                        <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
-                          <button
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-                            onClick={() => setJoinRequestsModalOpen(false)}
-                            aria-label="Close"
-                          >
-                            <span className="text-2xl">×</span>
-                          </button>
-                          
-                          <div className="flex items-center gap-3 mb-6">
-                            <Users className="w-6 h-6 text-primary-600" />
-                            <h2 className="text-2xl font-bold text-gray-900">Join Requests</h2>
-                            <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
-                              {mockJoinRequests.length} pending
-                            </span>
-                          </div>
-                          
-                          {mockJoinRequests.length === 0 ? (
-                            <div className="text-center py-12">
-                              <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                              <p className="text-gray-500 text-lg mb-2">No join requests</p>
-                              <p className="text-gray-400 text-sm">When people request to join your pool, they'll appear here.</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-4 max-h-96 overflow-y-auto">
-                              {mockJoinRequests.map((req, idx) => (
-                                <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                  <div className="flex items-start gap-4">
-                                    <img 
-                                      src={req.avatar} 
-                                      alt={req.name} 
-                                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between">
-                                        <div>
-                                          <h3 className="font-semibold text-gray-900 text-lg">{req.name}</h3>
-                                          <p className="text-gray-600 text-sm">{req.email}</p>
-                                        </div>
-                                        <div className="flex gap-2 ml-4">
-                                          <button
-                                            onClick={() => handleRejectRequest(req.email, req.name)}
-                                            className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-                                          >
-                                            Reject
-                                          </button>
-                                          <button
-                                            onClick={() => handleAcceptRequest(req.email, req.name)}
-                                            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
-                                          >
-                                            Accept
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
-                                        <div>
-                                          <span className="text-gray-500 block">Nationality</span>
-                                          <span className="font-medium">{req.nationality}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500 block">Languages</span>
-                                          <span className="font-medium">{req.languages.join(', ')}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500 block">Age</span>
-                                          <span className="font-medium">{req.age} years</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          <div className="mt-6 pt-4 border-t border-gray-200">
-                            <p className="text-sm text-gray-500 text-center">
-                              Pool capacity: {pool?.participants || 0}/{pool?.maxParticipants || 0} participants
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Confirm Trip shown only to creator */}
+                  {isCreator && (
+                    <button
+                      onClick={handleOpenConfirmationModal}
+                      disabled={confirmationLoading}
+                      className="flex items-center px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold rounded-full transition-colors border border-green-500 disabled:bg-gray-500/50 disabled:cursor-not-allowed"
+                      title="Initiate Trip Confirmation"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Confirm Trip
+                    </button>
+                  )}
+                  
+                  {/* Confirm Participation shown only to participants who are not the creator */}
+                  {isMember && !isCreator && (
+                    <button
+                      onClick={handleOpenParticipantConfirmModal}
+                      className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors border border-orange-500"
+                      title="Confirm Your Participation"
+                    >
+                      <AlertCircle className="w-5 h-5 mr-2" />
+                      Confirm Participation
+                    </button>
                   )}
                 </>
               )}
             </div>
           </div>
+          
+          {/* Join Requests Modal */}
+          {joinRequestsModalOpen && (
+            <div className="fixed inset-0" style={{ zIndex: 1000 }}>
+              <div className="flex items-center justify-center w-full h-full bg-black bg-opacity-40">
+                <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-6 relative" style={{ zIndex: 1001 }}>
+                  <button
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => setJoinRequestsModalOpen(false)}
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex items-center gap-3 mb-6">
+                    <Users className="w-6 h-6 text-primary-600" />
+                    <h2 className="text-2xl font-bold text-gray-900">Join Requests</h2>
+                    <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
+                      {joinRequests.length} pending
+                    </span>
+                  </div>
+                  
+                  {joinRequests.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-gray-500 text-lg mb-2">No join requests</p>
+                      <p className="text-gray-400 text-sm">When people request to join your pool, they'll appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {joinRequests.map((req, idx) => {
+                        // Create avatar URL - use a placeholder if no avatar provided
+                        const avatarUrl = req.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.name || 'User')}&background=random&color=fff`;
+                        // Set defaults for missing data
+                        const nationality = req.nationality || 'Not specified';
+                        const languages = req.languages && req.languages.length > 0 ? req.languages : ['English'];
+                        const age = req.age && req.age > 0 ? req.age : 'Not specified';
+                        
+                        return (
+                        <div key={req.userId || req.email || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-start gap-4">
+                            <img 
+                              src={avatarUrl} 
+                              alt={req.name || 'User'} 
+                              className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" 
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 text-lg">{req.name || 'Unknown User'}</h3>
+                                  <p className="text-gray-600 text-sm">{req.email}</p>
+                                </div>
+                                <div className="flex gap-2 ml-4">
+                                  <button
+                                    onClick={() => handleRejectRequest(req.email, req.name)}
+                                    disabled={requestActionLoading[req.email] === 'rejecting' || requestActionLoading[req.email] === 'accepting'}
+                                    className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center gap-1"
+                                  >
+                                    {requestActionLoading[req.email] === 'rejecting' ? (
+                                      <>
+                                        <Timer className="w-4 h-4 animate-spin" />
+                                        Rejecting...
+                                      </>
+                                    ) : (
+                                      'Reject'
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => handleAcceptRequest(req.email, req.name)}
+                                    disabled={requestActionLoading[req.email] === 'accepting' || requestActionLoading[req.email] === 'rejecting'}
+                                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+                                  >
+                                    {requestActionLoading[req.email] === 'accepting' ? (
+                                      <>
+                                        <Timer className="w-4 h-4 animate-spin" />
+                                        Accepting...
+                                      </>
+                                    ) : (
+                                      'Accept'
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-500 block">Nationality</span>
+                                  <span className="font-medium">{nationality}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block">Languages</span>
+                                  <span className="font-medium">{Array.isArray(languages) ? languages.join(', ') : languages}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500 block">Age</span>
+                                  <span className="font-medium">{age}{typeof age === 'number' ? ' years' : ''}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <p className="text-sm text-gray-500 text-center">
+                      Pool capacity: {pool?.participants || 0}/{pool?.maxParticipants || 0} participants
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -859,20 +1611,38 @@ const ViewPoolPage = () => {
                 <Calendar className="w-4 h-4 mr-1 text-primary-600" />
                 <span>{pool.totalDays} days</span>
               </div>
-              {/* Cost per participant */}
+              {/* Cost per participant - Use API data if available, fallback to calculated */}
               <div className="flex items-center text-gray-700">
                 <span className="font-medium mr-1">Cost/participant:</span>
-                <span className="text-primary-700 font-semibold">${(grandTotal / (pool?.participants || 1)).toFixed(2)}</span>
+                {tripSummaryLoading ? (
+                  <span className="text-gray-500">Loading...</span>
+                ) : tripSummary?.summary?.costPerParticipant ? (
+                  <span className="text-primary-700 font-semibold">{tripSummary.summary.costPerParticipant}</span>
+                ) : (
+                  <span className="text-primary-700 font-semibold">Rs. {(grandTotal / (pool?.participants || 1)).toFixed(2)}</span>
+                )}
               </div>
-              {/* Driver appointed */}
+              {/* Driver appointed - Use API data if available */}
               <div className="flex items-center text-gray-700">
                 <Car className="w-4 h-4 mr-1 text-blue-600" />
-                <span>Driver: <span className={"font-semibold " + (true ? 'text-green-600' : 'text-red-500')}>{true ? 'Appointed' : 'Not appointed'}</span></span>
+                {tripSummaryLoading ? (
+                  <span>Driver: <span className="text-gray-500">Loading...</span></span>
+                ) : tripSummary?.summary?.driver ? (
+                  <span>Driver: <span className={"font-semibold " + (tripSummary.summary.driver === 'Confirmed' ? 'text-green-600' : tripSummary.summary.driver === 'Requested' ? 'text-amber-600' : 'text-gray-500')}>{tripSummary.summary.driver}</span></span>
+                ) : (
+                  <span>Driver: <span className="text-gray-500">Not appointed</span></span>
+                )}
               </div>
-              {/* Guide appointed */}
+              {/* Guide appointed - Use API data if available */}
               <div className="flex items-center text-gray-700">
                 <Camera className="w-4 h-4 mr-1 text-primary-600" />
-                <span>Guide: <span className={"font-semibold " + (true ? 'text-green-600' : 'text-red-500')}>{true ? 'Appointed' : 'Not appointed'}</span></span>
+                {tripSummaryLoading ? (
+                  <span>Guide: <span className="text-gray-500">Loading...</span></span>
+                ) : tripSummary?.summary?.guide ? (
+                  <span>Guide: <span className={"font-semibold " + (tripSummary.summary.guide === 'Confirmed' ? 'text-green-600' : tripSummary.summary.guide === 'Requested' ? 'text-amber-600' : 'text-gray-500')}>{tripSummary.summary.guide}</span></span>
+                ) : (
+                  <span>Guide: <span className="text-gray-500">Not appointed</span></span>
+                )}
               </div>
             </div>
             {/* Participants Detail Table */}
@@ -902,9 +1672,13 @@ const ViewPoolPage = () => {
                           <span className={isLeader ? "text-primary-700" : ""}>{member.name}</span>
                           {isLeader && <span className="text-xs text-gray-400 ml-1">(Organizer)</span>}
                         </td>
-                        <td className="px-3 py-2">{member.nationality || 'Not specified'}</td>
-                        <td className="px-3 py-2">{member.languages ? member.languages.join(', ') : 'Not specified'}</td>
-                        <td className="px-3 py-2">{member.age || 'Not specified'}</td>
+                        <td className="px-3 py-2">{member.nationality || 'Sri Lanka'}</td>
+                        <td className="px-3 py-2">{
+                          member.languages && member.languages.length > 0 
+                            ? member.languages.join(', ') 
+                            : 'English'
+                        }</td>
+                        <td className="px-3 py-2">{member.age || '25'}</td>
                       </tr>
                     );
                   })}
@@ -1091,184 +1865,81 @@ const ViewPoolPage = () => {
         </div>
           {/* Right: Map, sticky/fixed on viewport - exactly 50% width */}
           <div className="hidden lg:flex w-1/2 min-w-0">
-            <div className="bg-gray-200 rounded-xl w-full h-[calc(100vh-160px)] sticky top-20">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-2" />
-                  <p className="font-medium">Interactive Map</p>
-                  <p className="text-sm">Pool route and locations</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Pool Summary (below itinerary, left column only) */}
-        <div className="flex gap-8 w-full">
-          {/* Left: Pool Summary Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
-            <div className="w-full mt-10">
-              <div
-                id="pool-summary-card"
-                className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200"
-                style={{ minHeight: '220px', boxShadow: 'none', border: '1px solid #e5e7eb' }}
-                ref={el => (window.poolSummaryCardRef = el)}
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Pool Cost Breakdown</h3>
-                <div className="space-y-3">
-                  {/* Accommodation */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('accommodation')}
+            <div className="bg-white rounded-xl w-full h-[calc(100vh-160px)] sticky top-20 shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              {isLoaded ? (
+                <div className="flex-1 flex flex-col h-full">
+                  <div className="p-4 border-b border-gray-100 shrink-0">
+                    <h2 className="font-bold text-lg">Pool Map</h2>
+                    <p className="text-sm text-gray-500">Explore pool destinations</p>
+                  </div>
+                  <div className="flex-1 relative overflow-hidden">
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={mapCenter}
+                      zoom={12}
+                      onLoad={handleMapLoad}
+                      options={{
+                        fullscreenControl: true,
+                        streetViewControl: false,
+                        mapTypeControl: true,
+                        zoomControl: true,
+                      }}
                     >
-                      <span className="text-gray-600">Accommodation</span>
-                      <span className="font-medium flex items-center">
-                        ${accommodationTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.accommodation ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.accommodation && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {accommodationItems.length === 0 && <span className="text-gray-400 text-sm">No accommodations</span>}
-                        {accommodationItems.map((place, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{place.name} <span className="text-gray-400">({place.location})</span></span>
-                            <span>{place.price}</span>
-                          </div>
-                        ))}
+                      {places.map((place, index) => (
+                        <Marker
+                          key={`${place.name}-${index}`}
+                          position={{
+                            lat: place.location.lat,
+                            lng: place.location.lng
+                          }}
+                          onClick={() => handleMarkerClick(place)}
+                          icon={getMarkerIcon(place.placeType)}
+                          title={place.name}
+                        />
+                      ))}
+                      <MapInfoWindow 
+                        selectedMarker={selectedMarker}
+                        onClose={handleInfoWindowClose}
+                      />
+                    </GoogleMap>
+                  </div>
+                  <div className="p-3 border-t border-gray-100 shrink-0">
+                    <div className="flex gap-4 flex-wrap">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                        <span className="text-xs">Attractions</span>
                       </div>
-                    )}
-                  </div>
-                  {/* Food */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('food')}
-                    >
-                      <span className="text-gray-600">Food</span>
-                      <span className="font-medium flex items-center">
-                        ${foodTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.food ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.food && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {foodItems.length === 0 && <span className="text-gray-400 text-sm">No food entries</span>}
-                        {foodItems.map((food, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{food.name} <span className="text-gray-400">({food.location})</span></span>
-                            <span>{food.priceRange}</span>
-                          </div>
-                        ))}
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-xs">Hotels</span>
                       </div>
-                    )}
-                  </div>
-                  {/* Activities */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('activities')}
-                    >
-                      <span className="text-gray-600">Activities</span>
-                      <span className="font-medium flex items-center">
-                        ${activityTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.activities ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.activities && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {activityItems.length === 0 && <span className="text-gray-400 text-sm">No activities</span>}
-                        {activityItems.map((act, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{act.name} <span className="text-gray-400">({act.location})</span></span>
-                            <span>{act.price}</span>
-                          </div>
-                        ))}
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                        <span className="text-xs">Restaurants</span>
                       </div>
-                    )}
-                  </div>
-                  {/* Transportation */}
-                  <div className="flex flex-col border-b border-gray-100 pb-2">
-                    <button
-                      className="flex justify-between items-center w-full text-left focus:outline-none"
-                      onClick={() => toggleCostExpand('transportation')}
-                    >
-                      <span className="text-gray-600">Transportation</span>
-                      <span className="font-medium flex items-center">
-                        ${transportationTotal.toFixed(2)}
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${costExpanded.transportation ? 'rotate-180' : ''}`} />
-                      </span>
-                    </button>
-                    {costExpanded.transportation && (
-                      <div className="pl-4 mt-2 space-y-1">
-                        {transportationItems.length === 0 && <span className="text-gray-400 text-sm">No transportation</span>}
-                        {transportationItems.map((t, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-gray-700">
-                            <span>{t.name} <span className="text-gray-400">({t.type || t.location})</span></span>
-                            <span>{t.price}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Driver */}
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-600">Driver</span>
-                    <span className="font-medium">${driverCost.toFixed(2)}</span>
-                  </div>
-                  {/* Guide */}
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-600">Guide</span>
-                    <span className="font-medium">${guideCost.toFixed(2)}</span>
-                  </div>
-                  {/* Grand Total */}
-                  <div className="flex justify-between mt-2">
-                    <span className="text-gray-900 font-bold">Total</span>
-                    <span className="font-bold text-primary-700 text-lg">${grandTotal.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          {/* Right: Actions Card */}
-          <div className="w-1/2 min-w-0 flex flex-col">
-            <div className="w-full mt-10">
-              <div
-                className="bg-gray-50 rounded-xl p-6 mb-8 w-full border border-gray-200 flex flex-col justify-center"
-                id="actions-card"
-                style={{ boxShadow: 'none', border: '1px solid #e5e7eb' }}
-              >
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Actions</h3>
-                <div className="flex flex-row gap-4 w-full mb-4">
-                  <button
-                    onClick={handleBack}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-full transition-colors border border-gray-200"
-                  >
-                    Back
-                  </button>
-                  {/* Delete button removed as requested */}
-                <button
-                  onClick={sourcePage === 'findPools' ? undefined : handleProceed}
-                  className={`flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-full transition-colors border border-blue-200 ${sourcePage === 'findPools' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={sourcePage === 'findPools'}
-                >
-                  Join Pool
-                </button>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="font-medium">Loading Map...</p>
+                  </div>
                 </div>
-                {/* Disclaimers and info */}
-                <div className="text-xs text-gray-500 mt-2 space-y-1">
-                  <p>By joining, you agree to our <a href="#" className="underline hover:text-primary-600">Terms & Conditions</a> and <a href="#" className="underline hover:text-primary-600">Privacy Policy</a>.</p>
-                  <p>Payments are processed securely. You will be able to contact the organizer after joining.</p>
-                  {/* Delete disclaimer removed as requested */}
-                  <p>For support, contact <a href="mailto:support@islandhop.com" className="underline hover:text-primary-600">support@islandhop.com</a>.</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </div>
       {/* Footer at the very bottom */}
       <Footer />
+      
+      {/* Login Required Popup */}
+      <LoginRequiredPopup 
+        isOpen={showLoginPopup}
+        onClose={() => setShowLoginPopup(false)}
+      />
     </div>
   );
 };

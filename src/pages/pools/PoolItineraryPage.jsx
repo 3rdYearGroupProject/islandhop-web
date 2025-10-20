@@ -248,6 +248,9 @@ const PoolItineraryPage = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [isFinalizingTrip, setIsFinalizingTrip] = useState(false);
   
+  // --- End of state variables ---
+  const [isCreator, setIsCreator] = useState(false); // Will be determined from group data
+  
   // Mock data for trip planning
   const mockSuggestions = {
     activities: [
@@ -882,6 +885,140 @@ const PoolItineraryPage = () => {
     });
   };
 
+  // ===============================
+  // TRIP CONFIRMATION FUNCTIONS
+  // ===============================
+
+  /**
+   * Check if current user is the trip creator and fetch confirmation status
+   */
+  const checkCreatorStatusAndConfirmation = async () => {
+    try {
+      // For now, assume the user who navigated with userUid is the creator
+      // In a real app, you'd fetch group details to check creator
+      const currentUserUID = getUserUID();
+      setIsCreator(currentUserUID === userUid);
+      
+      // Check if there's already a confirmation in progress
+      if (confirmedTripId) {
+        const status = await PoolsApi.getConfirmationStatus(confirmedTripId, currentUserUID);
+        setConfirmationStatus(status);
+      }
+    } catch (error) {
+      console.error('❌ Error checking creator status:', error);
+    }
+  };
+
+  /**
+   * Initiate trip confirmation - Only creators can do this
+   */
+  const handleInitiateTripConfirmation = async () => {
+    if (!isCreator) {
+      alert('❌ Only the trip creator can initiate confirmation');
+      return;
+    }
+
+    try {
+      setIsInitiatingConfirmation(true);
+      
+      const confirmationData = {
+        groupId: groupId,
+        userId: userUid,
+        minMembers: 2, // Minimum members required
+        maxMembers: 8, // Maximum members allowed
+        tripStartDate: normalizedDates[0]?.toISOString(),
+        tripEndDate: normalizedDates[normalizedDates.length - 1]?.toISOString(),
+        confirmationHours: 48, // Members have 48 hours to confirm
+        totalAmount: 40000, // Total trip cost in LKR
+        pricePerPerson: 10000, // Price per person in LKR
+        currency: 'LKR',
+        upfrontPaymentHours: 48, // Hours to make upfront payment
+        finalPaymentDaysBefore: 7, // Days before trip to make final payment
+        tripDetails: {
+          destinations: Object.values(destinations).map(dest => dest.name || dest),
+          activities: Object.values(itinerary).flat().map(activity => activity.name || activity.title)
+        }
+      };
+
+      console.log('🎯 Initiating trip confirmation with data:', confirmationData);
+      
+      const result = await PoolsApi.initiateTripConfirmation(confirmationData);
+      
+      console.log('✅ Trip confirmation initiated:', result);
+      setConfirmedTripId(result.confirmedTripId);
+      setConfirmationStatus(result);
+      setShowConfirmationModal(true);
+      
+      alert(`✅ Trip confirmation initiated successfully!\n\nConfirmation ID: ${result.confirmedTripId}\nMembers have 48 hours to confirm their participation.`);
+      
+    } catch (error) {
+      console.error('❌ Error initiating trip confirmation:', error);
+      alert(`❌ Failed to initiate trip confirmation: ${error.message}`);
+    } finally {
+      setIsInitiatingConfirmation(false);
+    }
+  };
+
+  /**
+   * Confirm participation in the trip - Members call this
+   */
+  const handleConfirmParticipation = async () => {
+    if (!confirmedTripId) {
+      alert('❌ No trip confirmation in progress');
+      return;
+    }
+
+    try {
+      setIsConfirmingParticipation(true);
+      
+      const result = await PoolsApi.confirmParticipation(confirmedTripId, getUserUID());
+      
+      console.log('✅ Participation confirmed:', result);
+      setConfirmationStatus(result);
+      
+      alert(`✅ Your participation has been confirmed!\n\nStatus: ${result.status}\nConfirmed members: ${result.confirmedMembers?.length || 0}`);
+      
+    } catch (error) {
+      console.error('❌ Error confirming participation:', error);
+      alert(`❌ Failed to confirm participation: ${error.message}`);
+    } finally {
+      setIsConfirmingParticipation(false);
+    }
+  };
+
+  /**
+   * Cancel trip confirmation - Only creators can do this
+   */
+  const handleCancelTripConfirmation = async () => {
+    if (!isCreator || !confirmedTripId) {
+      alert('❌ Only the trip creator can cancel confirmation');
+      return;
+    }
+
+    const reason = prompt('Please provide a reason for canceling the trip confirmation:');
+    if (!reason) return;
+
+    try {
+      const result = await PoolsApi.cancelTripConfirmation(confirmedTripId, userUid, reason);
+      
+      console.log('✅ Trip confirmation canceled:', result);
+      setConfirmationStatus(null);
+      setConfirmedTripId(null);
+      
+      alert(`✅ Trip confirmation canceled successfully.\n\nReason: ${reason}`);
+      
+    } catch (error) {
+      console.error('❌ Error canceling trip confirmation:', error);
+      alert(`❌ Failed to cancel trip confirmation: ${error.message}`);
+    }
+  };
+
+  // Check creator status on component mount
+  useEffect(() => {
+    // Trip confirmation functionality moved to ViewPoolPage.jsx
+    // This useEffect is no longer needed for confirmation
+  }, [groupId, userUid]);
+
   const handleSaveTrip = async () => {
     console.log('💾 Starting trip save process to get suggestions...');
     
@@ -981,23 +1118,23 @@ const PoolItineraryPage = () => {
       console.log('📊 Similar trips data:', response?.similarTrips);
       console.log('📊 ===== END SAVE-TRIP RESPONSE ANALYSIS =====');
       
-      // Always navigate to suggestions page, whether we have suggestions or not
-      console.log('🔄 Navigating to trip suggestions page...');
-      navigate('/trip-suggestions', {
+      // Navigate to cost estimation page after saving trip
+      console.log('🔄 Navigating to cost estimation page...');
+      navigate('/pool-cost-estimation', {
         state: {
           // Trip information
           tripId: tripId,
           groupId: groupId,
-          tripName: normalizedTripName,
-          startDate: normalizedDates[0],
-          endDate: normalizedDates[normalizedDates.length - 1],
+          poolName: normalizedTripName,
+          selectedDates: normalizedDates,
           destinations: Object.values(destinations),
-          terrains: normalizedTerrains,
-          activities: normalizedActivities,
+          selectedTerrainPreferences: normalizedTerrains,
+          selectedActivityPreferences: normalizedActivities,
           itinerary: itinerary,
           userUid: user?.uid || userUid,
+          userEmail: user?.email,
           
-          // Suggestions data from backend
+          // Store suggestions data for later use
           suggestions: response?.similarTrips || response?.suggestions || [],
           totalSuggestions: response?.totalSuggestions || 0,
           hasSuggestions: response?.hasSimilarTrips || false,
@@ -1379,8 +1516,14 @@ const PoolItineraryPage = () => {
               disabled={isSavingTrip || isLoadingSuggestions}
               className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoadingSuggestions ? 'Finding Similar Trips...' : isSavingTrip ? 'Saving...' : 'Save & Find Similar Trips'}
+              {isLoadingSuggestions ? 'Saving Trip...' : isSavingTrip ? 'Saving...' : 'Save Trip & Continue'}
             </button>
+          </div>
+
+          {/* Trip Confirmation Section */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            {/* Trip planning and itinerary management continues here */}
+            {/* Trip confirmation functionality has been moved to ViewPoolPage.jsx */}
           </div>
         </div>
       </div>

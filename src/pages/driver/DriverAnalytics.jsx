@@ -17,8 +17,6 @@ import axios from 'axios';
 const DriverAnalytics = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [topRoutes, setTopRoutes] = useState([]);
-  const [busyHours, setBusyHours] = useState([]);
   const [weeklyEarnings, setWeeklyEarnings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,10 +35,8 @@ const DriverAnalytics = () => {
       setLoading(true);
       setError(null);
 
-      const [analyticsRes, routesRes, busyHoursRes, weeklyEarningsRes] = await Promise.all([
+      const [analyticsRes, weeklyEarningsRes] = await Promise.all([
         axios.get(`http://localhost:5001/api/drivers/${driverEmail}/analytics?period=${timeRange}`),
-        axios.get(`http://localhost:5001/api/drivers/${driverEmail}/top-routes?period=${timeRange}`),
-        axios.get(`http://localhost:5001/api/drivers/${driverEmail}/busy-hours?period=${timeRange}`),
         axios.get(`http://localhost:5001/api/drivers/${driverEmail}/weekly-earnings`)
       ]);
 
@@ -49,10 +45,10 @@ const DriverAnalytics = () => {
       
       // Create transformed analytics data structure
       const transformedAnalyticsData = {
-        totalEarnings: rawAnalyticsData.topRoutes?.reduce((sum, route) => sum + (route.earnings || 0), 0) || 125000,
-        totalTrips: rawAnalyticsData.topRoutes?.reduce((sum, route) => sum + (route.trips || 0), 0) || 28,
-        totalHours: 160, // Mock data since API doesn't provide
-        totalDistance: 1450, // Mock data since API doesn't provide
+        totalEarnings: rawAnalyticsData.totalEarnings || 125000,
+        totalTrips: rawAnalyticsData.totalTrips || 28,
+        totalHours: rawAnalyticsData.totalHours || 160,
+        totalDistance: rawAnalyticsData.totalDistance || 1450,
         averageRating: rawAnalyticsData.performance?.averageRating || 4.8,
         completionRate: rawAnalyticsData.performance?.completionRate || 94.2,
         earningsChange: rawAnalyticsData.performance?.earningsChange || 3.75,
@@ -62,8 +58,6 @@ const DriverAnalytics = () => {
       };
 
       setAnalyticsData(transformedAnalyticsData);
-      setTopRoutes(routesRes.data.success ? routesRes.data.data : routesRes.data);
-      setBusyHours(busyHoursRes.data.success ? busyHoursRes.data.data : busyHoursRes.data);
       setWeeklyEarnings(weeklyEarningsRes.data.success ? weeklyEarningsRes.data.data : weeklyEarningsRes.data);
     } catch (err) {
       console.error('Failed to fetch analytics data:', err);
@@ -82,8 +76,6 @@ const DriverAnalytics = () => {
         hoursChange: 0,
         distanceChange: 0
       });
-      setTopRoutes([]);
-      setBusyHours([]);
       setWeeklyEarnings([]);
     } finally {
       setLoading(false);

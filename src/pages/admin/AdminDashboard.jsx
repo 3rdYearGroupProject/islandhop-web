@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../../firebase";
 import {
   UsersIcon,
   ChartBarIcon,
@@ -15,12 +16,109 @@ import {
 
 const AdminDashboard = ({ onPageChange }) => {
   const navigate = useNavigate();
+  const [totalUsers, setTotalUsers] = useState("Loading...");
+  const [activeBookings, setActiveBookings] = useState("Loading...");
+  const [revenue, setRevenue] = useState("Loading...");
+  const [authToken, setAuthToken] = useState("");
+
+  // Get Firebase auth token
+  useEffect(() => {
+    const getToken = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setAuthToken(token);
+        } catch (err) {
+          console.error("Error getting auth token:", err);
+          setAuthToken("");
+        }
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch total user count
+  const fetchTotalUserCount = async () => {
+    if (!authToken) return;
+
+    try {
+      const response = await fetch(
+        "http://localhost:8070/api/admin/analytics/users/count",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Total user count response:", data);
+        setTotalUsers(data.data.totalUsers.toString()); // Convert to string for display
+      } else {
+        console.error("Failed to fetch total user count:", response.status);
+        setTotalUsers("N/A");
+      }
+    } catch (error) {
+      console.error("Error fetching total user count:", error);
+      setTotalUsers("Error");
+    }
+  };
+
+  // Fetch revenue and bookings data
+  const fetchRevenueAndBookings = async () => {
+    if (!authToken) return;
+
+    try {
+      const response = await fetch(
+        "http://localhost:8070/api/admin/analytics/revenue/monthly",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Revenue and bookings response:", data);
+
+        // Extract active bookings and total revenue
+        const totalBookings = data.data?.yearlyTotal?.totalTrips || 0;
+        const totalRevenue = data.data?.yearlyTotal?.totalRevenue || 0;
+
+        setActiveBookings(totalBookings.toLocaleString()); // Format with commas
+        setRevenue(`LKR ${totalRevenue.toLocaleString()}`); // Format with currency
+      } else {
+        console.error("Failed to fetch revenue and bookings:", response.status);
+        setActiveBookings("N/A");
+        setRevenue("N/A");
+      }
+    } catch (error) {
+      console.error("Error fetching revenue and bookings:", error);
+      setActiveBookings("Error");
+      setRevenue("Error");
+    }
+  };
+
+  // Fetch user count when auth token is available
+  useEffect(() => {
+    if (authToken) {
+      fetchTotalUserCount();
+      fetchRevenueAndBookings(); // Also fetch revenue and bookings
+    }
+  }, [authToken]);
 
   // Dashboard stats data
   const dashboardStats = [
     {
       title: "Total Users",
-      value: "15,234",
+      value: totalUsers,
       change: "+12%",
       changeType: "positive",
       icon: UsersIcon,
@@ -28,7 +126,7 @@ const AdminDashboard = ({ onPageChange }) => {
     },
     {
       title: "Active Bookings",
-      value: "2,847",
+      value: activeBookings,
       change: "+8%",
       changeType: "positive",
       icon: PresentationChartBarIcon,
@@ -36,7 +134,7 @@ const AdminDashboard = ({ onPageChange }) => {
     },
     {
       title: "Revenue",
-      value: "LKR 324,567",
+      value: revenue,
       change: "+15%",
       changeType: "positive",
       icon: ChartBarIcon,
@@ -50,42 +148,42 @@ const AdminDashboard = ({ onPageChange }) => {
       description: "Manage user accounts and permissions",
       icon: UserGroupIcon,
       color: "primary",
-      action: () => onPageChange && onPageChange("UserAccounts"),
+      action: () => navigate("/admin/accounts"),
     },
     {
       title: "Analytics",
       description: "View detailed system analytics",
       icon: ChartBarIcon,
       color: "primary",
-      action: () => onPageChange && onPageChange("Analytics"),
+      action: () => navigate("/admin/analytics"),
     },
     {
       title: "System Settings",
       description: "Configure system preferences",
       icon: CogIcon,
       color: "primary",
-      action: () => onPageChange && onPageChange("SystemSettings"),
+      action: () => navigate("/admin/settings"),
     },
     {
       title: "Reviews",
       description: "Manage user reviews and feedback",
       icon: ShieldCheckIcon,
       color: "primary",
-      action: () => onPageChange && onPageChange("Reviews"),
+      action: () => navigate("/admin/reviews"),
     },
     {
       title: "Notifications",
       description: "System notifications and alerts",
       icon: BellIcon,
       color: "primary",
-      action: () => onPageChange && onPageChange("Notifications"),
+      action: () => navigate("/admin/notifications"),
     },
     {
       title: "System History",
       description: "View audit logs and history",
       icon: ClockIcon,
       color: "primary",
-      action: () => onPageChange && onPageChange("SystemHistory"),
+      action: () => navigate("/admin/history"),
     },
   ];
 

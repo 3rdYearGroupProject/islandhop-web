@@ -21,6 +21,7 @@ const GuideTrips = () => {
   const [filter, setFilter] = useState('all'); // all, pending, active, completed, cancelled
   const [loading, setLoading] = useState(true);
   const [trips, setTrips] = useState([]);
+  const [completedTrips, setCompletedTrips] = useState([]);
   const [error, setError] = useState(null);
 
   // Get user data from storage
@@ -125,6 +126,79 @@ const GuideTrips = () => {
     };
 
     fetchTrips();
+  }, [guideEmail]);
+
+  // Fetch completed trips from the new endpoint
+  useEffect(() => {
+    const fetchCompletedTrips = async () => {
+      if (!guideEmail) {
+        return;
+      }
+
+      try {
+        console.log('Fetching completed trips for guide:', guideEmail);
+        const response = await axios.get(`http://localhost:4015/api/guide-trips/${guideEmail}`);
+        console.log('Completed Trips API Response:', response);
+        
+        if (response.data && response.data.data) {
+          const completedTripsData = response.data.data;
+          
+          // Transform completed trips to match component structure
+          const transformedCompletedTrips = completedTripsData.map(trip => {
+            const firstDay = trip.dailyPlans?.[0];
+            const lastDay = trip.dailyPlans?.[trip.dailyPlans.length - 1];
+
+            return {
+              id: trip._id || trip.originalTripId,
+              userId: trip.userId,
+              tripName: trip.tripName,
+              tourist: trip.userId ? `Tourist ${trip.userId.substring(0, 8)}...` : 'Unknown Tourist',
+              touristAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612d9e3?w=150&h=150&fit=crop&crop=face',
+              pickupLocation: firstDay?.city || trip.baseCity || 'Not specified',
+              destination: lastDay?.city || 'Multiple destinations',
+              distance: `${Math.round(trip.averageTripDistance || 0)} km`,
+              estimatedTime: `${Math.ceil((trip.averageTripDistance || 0) / 60)} hours`,
+              fare: trip.payedAmount || 0,
+              status: 'completed',
+              touristRating: 4.5,
+              tripType: 'full_tour',
+              requestTime: new Date(trip.createdAt),
+              startDate: trip.startDate,
+              endDate: trip.endDate,
+              arrivalTime: trip.arrivalTime,
+              baseCity: trip.baseCity,
+              dailyPlans: trip.dailyPlans,
+              vehicleType: trip.vehicleType,
+              paidAmount: trip.payedAmount,
+              guideNeeded: trip.guideNeeded,
+              driverNeeded: trip.driverNeeded,
+              driverEmail: trip.driver_email,
+              guideEmail: trip.guide_email,
+              started: trip.started,
+              ended: trip.ended,
+              startconfirmed: trip.startconfirmed,
+              endconfirmed: trip.endconfirmed,
+              driver_reviewed: trip.driver_reviewed,
+              guide_reviewed: trip.guide_reviewed
+            };
+          });
+
+          setCompletedTrips(transformedCompletedTrips);
+
+          // Update stats with completed trips count
+          setStats(prevStats => ({
+            ...prevStats,
+            completedTrips: transformedCompletedTrips.length,
+            totalTrips: prevStats.activeTrips + prevStats.pendingTrips + transformedCompletedTrips.length
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching completed trips:', err);
+        // Don't set error here as it's not critical - just log it
+      }
+    };
+
+    fetchCompletedTrips();
   }, [guideEmail]);
 
   // Helper function to generate date range for trip duration
@@ -314,7 +388,7 @@ const GuideTrips = () => {
     }
   };
 
-  const filteredTrips = trips.filter(trip => {
+  const filteredTrips = [...trips, ...completedTrips].filter(trip => {
     if (filter === 'all') return trip.status !== 'declined';
     return trip.status === filter;
   });
@@ -438,23 +512,16 @@ const GuideTrips = () => {
         {filteredTrips.map((trip) => (
           <div key={trip.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {trip.userName?.charAt(0) || 'T'}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {trip.destination || 'Tour Destination'}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Tourist: {trip.userName || 'Tourist Name'}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Guide: {guideEmail}
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {trip.tripName || 'Tour'}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Tourist: {trip.userName || 'Tourist Name'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Guide: {guideEmail}
+                </p>
               </div>
               <div className="flex items-center space-x-4">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -467,29 +534,13 @@ const GuideTrips = () => {
                   {trip.status?.charAt(0).toUpperCase() + trip.status?.slice(1) || 'Unknown'}
                 </span>
                 <p className="text-lg font-bold text-gray-900">
-                  LKR {(trip.fare || 0).toLocaleString()}
+                  LKR {(() => {
+                    const startDate = trip.startDate ? new Date(trip.startDate) : null;
+                    const endDate = trip.endDate ? new Date(trip.endDate) : null;
+                    const days = startDate && endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1 : 0;
+                    return (1800 * days).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  })()}
                 </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'Date TBD'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  Duration: {trip.duration || 'TBD'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {trip.numberOfPeople || 1} Tourist{(trip.numberOfPeople || 1) > 1 ? 's' : ''}
-                </span>
               </div>
             </div>
 
@@ -498,57 +549,24 @@ const GuideTrips = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-              <div className="flex space-x-3">
-                {trip.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => handleTripAction(trip.id, 'accept')}
-                      disabled={loading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      Accept Tour
-                    </button>
-                    <button
-                      onClick={() => handleTripAction(trip.id, 'decline')}
-                      disabled={loading}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                    >
-                      Decline
-                    </button>
-                  </>
-                )}
-                
-                {trip.status === 'accepted' && (
-                  <button
-                    onClick={() => handleStartTrip(trip.id)}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    Start Tour
-                  </button>
-                )}
-                
-                {trip.status === 'active' && (
-                  <button
-                    onClick={() => handleTripAction(trip.id, 'complete')}
-                    disabled={loading}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-                  >
-                    Complete Tour
-                  </button>
-                )}
-              </div>
-              
-              <div className="flex space-x-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <MessageCircle className="h-5 w-5" />
+            {trip.status === 'pending' && (
+              <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => handleTripAction(trip.id, 'accept')}
+                  disabled={loading}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  Accept Tour
                 </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Phone className="h-5 w-5" />
+                <button
+                  onClick={() => handleTripAction(trip.id, 'decline')}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  Decline
                 </button>
               </div>
-            </div>
+            )}
           </div>
         ))}
 

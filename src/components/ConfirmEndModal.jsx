@@ -1,22 +1,17 @@
 import React from 'react';
 import { X, Square, Gauge } from 'lucide-react';
 
-const ConfirmEndModal = ({ isOpen, onClose, onConfirm, driverMeterReading, startMeterReading, deductAmount = 0, additionalNote = "" }) => {
+const ConfirmEndModal = ({ isOpen, onClose, onConfirm, driverMeterReading, startMeterReading }) => {
 
   const handleConfirm = () => {
     onConfirm(driverMeterReading);
     onClose();
   };
 
-  // Calculate distance traveled with deduction
-  const grossDistance = driverMeterReading && startMeterReading 
-    ? parseFloat(driverMeterReading.replace(/,/g, '')) - parseFloat(startMeterReading.replace(/,/g, ''))
-    : 0;
-  
-  const totalDistance = grossDistance - (deductAmount || 0);
-  
-  const formattedGrossDistance = grossDistance.toLocaleString();
-  const formattedTotalDistance = totalDistance.toLocaleString();
+  // Calculate distance traveled
+  const distanceTraveled = driverMeterReading && startMeterReading 
+    ? (parseFloat(driverMeterReading.replace(/,/g, '')) - parseFloat(startMeterReading.replace(/,/g, ''))).toLocaleString()
+    : '0';
 
   if (!isOpen) return null;
 
@@ -64,51 +59,18 @@ const ConfirmEndModal = ({ isOpen, onClose, onConfirm, driverMeterReading, start
                 
                 {/* Trip Summary */}
                 <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
                       <p className="text-gray-600">Start Reading</p>
                       <p className="font-semibold text-gray-900">{startMeterReading} km</p>
                     </div>
-                    <div className="flex justify-between">
-                      <p className="text-gray-600">End Reading</p>
-                      <p className="font-semibold text-gray-900">{driverMeterReading} km</p>
+                    <div>
+                      <p className="text-gray-600">Distance Traveled</p>
+                      <p className="font-semibold text-green-600">{distanceTraveled} km</p>
                     </div>
-                    <div className="flex justify-between">
-                      <p className="text-gray-600">Gross Distance</p>
-                      <p className="font-semibold text-gray-900">{formattedGrossDistance} km</p>
-                    </div>
-                    {deductAmount > 0 && (
-                      <div className="flex justify-between">
-                        <p className="text-gray-600">Deduct Amount</p>
-                        <p className="font-semibold text-red-600">-{deductAmount} km</p>
-                      </div>
-                    )}
-                    <div className="flex justify-between border-t border-gray-200 pt-2">
-                      <p className="text-gray-700 font-medium">Total Distance</p>
-                      <p className="font-bold text-green-600">{formattedTotalDistance} km</p>
-                    </div>
-                  </div>
-                  
-                  {/* Calculation Formula */}
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs text-blue-700 font-medium mb-1">Calculation:</p>
-                    <p className="text-xs text-blue-600">
-                      Total Distance = (End Reading - Start Reading) - Deduct Amount
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      {formattedTotalDistance} km = ({driverMeterReading} - {startMeterReading}) - {deductAmount || 0}
-                    </p>
                   </div>
                 </div>
               </div>
-              
-              {/* Additional Note */}
-              {additionalNote && additionalNote.trim() && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm font-medium text-yellow-800 mb-1">Additional Note:</p>
-                  <p className="text-sm text-yellow-700">{additionalNote}</p>
-                </div>
-              )}
             </div>
 
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">

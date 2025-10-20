@@ -12,13 +12,18 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   DocumentTextIcon,
+  UserCircleIcon,
+  MapIcon,
+  IdentificationIcon,
 } from "@heroicons/react/24/outline";
+import { useToast } from '../../components/ToastProvider';
 
 const LostItemTracker = () => {
   const [reports, setReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dashboardStats, setDashboardStats] = useState({});
+  const toast = useToast();
 
   // useEffect hook to fetch lost items from database
   useEffect(() => {
@@ -161,7 +166,7 @@ const LostItemTracker = () => {
       console.log('✅ Status updated successfully:', result);
 
       // Show success message
-      alert(`Status updated to "${newStatus}" successfully!`);
+      toast.success(`Status updated to "${newStatus}" successfully!`);
       
     } catch (error) {
       console.error('❌ Error updating status:', error);
@@ -173,7 +178,7 @@ const LostItemTracker = () => {
         )
       );
       
-      alert(`Failed to update status: ${error.message}`);
+      toast.error(`Failed to update status: ${error.message}`);
     }
   };
 
@@ -198,7 +203,7 @@ const LostItemTracker = () => {
     const updateNotes = report.update;
     
     if (!updateNotes || updateNotes.trim() === '') {
-      alert('Please enter progress notes before saving.');
+      toast.warning('Please enter progress notes before saving.');
       return;
     }
 
@@ -253,18 +258,18 @@ const LostItemTracker = () => {
         );
       }
 
-      alert('Progress notes saved successfully!');
+      toast.success('Progress notes saved successfully!');
       
     } catch (error) {
       console.error('❌ Error saving progress notes:', error);
       
       // More detailed error information
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        alert('Network error: Unable to connect to the server. Please check if the backend is running on port 8062.');
+        toast.error('Network error: Unable to connect to the server. Please check if the backend is running on port 8062.');
       } else if (error.message.includes('HTTP error')) {
-        alert(`Server error: ${error.message}`);
+        toast.error(`Server error: ${error.message}`);
       } else {
-        alert(`Failed to save progress notes: ${error.message}`);
+        toast.error(`Failed to save progress notes: ${error.message}`);
       }
     }
   };
@@ -330,7 +335,7 @@ const LostItemTracker = () => {
     const resolutionNotes = report.update;
     
     if (!resolutionNotes || resolutionNotes.trim() === '') {
-      alert('Please provide resolution details before marking as resolved.');
+      toast.warning('Please provide resolution details before marking as resolved.');
       return;
     }
 
@@ -367,11 +372,11 @@ const LostItemTracker = () => {
         )
       );
 
-      alert('Item marked as resolved successfully!');
+      toast.success('Item marked as resolved successfully!');
       
     } catch (error) {
       console.error('❌ Error resolving item:', error);
-      alert(`Failed to resolve item: ${error.message}`);
+      toast.error(`Failed to resolve item: ${error.message}`);
     }
   };
 
@@ -444,12 +449,12 @@ const LostItemTracker = () => {
                   Comprehensive tracking and management of lost item reports
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              {/* <div className="flex items-center space-x-3">
                 <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                   <DocumentTextIcon className="h-4 w-4" />
                   <span>Generate Report</span>
                 </button>
-              </div>
+              </div> */}
             </div>
 
         {/* Statistics Cards */}
@@ -685,18 +690,16 @@ const LostItemTracker = () => {
                     {/* Tourist Contact */}
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
                       <div className="flex items-center space-x-1 mb-1">
-                        <UserIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                        {/* <UserIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" /> */}
                         <h5 className="font-medium text-gray-900 dark:text-white text-xs">
                           Tourist
                         </h5>
                       </div>
                       <div className="flex items-center justify-between space-x-2">
                         <div className="flex items-center space-x-2 flex-1">
-                          <img
-                            src={report.touristDetails?.avatar || "https://via.placeholder.com/24x24?text=T"}
-                            alt={`${report.touristDetails?.first_name || ''} ${report.touristDetails?.last_name || ''}`.trim() || "Unknown Tourist"}
-                            className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-secondary-600"
-                          />
+                          <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20 border border-gray-200 dark:border-secondary-600">
+                            <UserCircleIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
                               {report.touristDetails?.first_name && report.touristDetails?.last_name 
@@ -724,18 +727,16 @@ const LostItemTracker = () => {
                     {/* Driver Contact */}
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
                       <div className="flex items-center space-x-1 mb-1">
-                        <TruckIcon className="h-3 w-3 text-warning-600 dark:text-warning-400" />
+                        {/* <TruckIcon className="h-3 w-3 text-warning-600 dark:text-warning-400" /> */}
                         <h5 className="font-medium text-gray-900 dark:text-white text-xs">
                           Driver
                         </h5>
                       </div>
                       <div className="flex items-center justify-between space-x-2">
                         <div className="flex items-center space-x-2 flex-1">
-                          <img
-                            src={report.tripDetails?.driver?.avatar || "https://via.placeholder.com/24x24?text=D"}
-                            alt={`${report.tripDetails?.driver?.first_name || ''} ${report.tripDetails?.driver?.last_name || ''}`.trim() || "No Driver Assigned"}
-                            className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-secondary-600"
-                          />
+                          <div className="w-6 h-6 flex items-center justify-center rounded-full bg-warning-100 dark:bg-warning-900/20 border border-gray-200 dark:border-secondary-600">
+                            <TruckIcon className="w-4 h-4 text-warning-600 dark:text-warning-400" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
                               {report.tripDetails?.driver?.first_name && report.tripDetails?.driver?.last_name 
@@ -764,18 +765,16 @@ const LostItemTracker = () => {
                     {/* Guide Contact */}
                     <div className="bg-white dark:bg-secondary-800 border border-gray-200 dark:border-secondary-600 rounded-lg p-2">
                       <div className="flex items-center space-x-1 mb-1">
-                        <UserIcon className="h-3 w-3 text-primary-600 dark:text-primary-400" />
+                        {/* <UserIcon className="h-3 w-3 text-primary-600 dark:text-primary-400" /> */}
                         <h5 className="font-medium text-gray-900 dark:text-white text-xs">
                           Guide
                         </h5>
                       </div>
                       <div className="flex items-center justify-between space-x-2">
                         <div className="flex items-center space-x-2 flex-1">
-                          <img
-                            src={report.tripDetails?.guide?.avatar || "https://via.placeholder.com/24x24?text=G"}
-                            alt={`${report.tripDetails?.guide?.first_name || ''} ${report.tripDetails?.guide?.last_name || ''}`.trim() || "No Guide Assigned"}
-                            className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-secondary-600"
-                          />
+                          <div className="w-6 h-6 flex items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 border border-gray-200 dark:border-secondary-600">
+                            <MapIcon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white text-xs truncate">
                               {report.tripDetails?.guide?.first_name && report.tripDetails?.guide?.last_name 

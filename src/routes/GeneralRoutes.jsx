@@ -21,6 +21,7 @@ import OngoingTripPage from '../pages/OngoingTripPage';
 import CompletedTripDetailsPage from '../pages/CompletedTripDetailsPage';
 import PoolDurationPage from '../pages/pools/PoolDurationPage';
 import PoolPreferencesPage from '../pages/pools/PoolPreferencesPage';
+import PoolCostEstimationPage from '../pages/pools/PoolCostEstimationPage';
 import PoolItineraryPage from '../pages/pools/PoolItineraryPage';
 import PoolDetailsPage from '../pages/pools/PoolDetailsPage';
 import CompatibleGroupsPage from '../pages/pools/CompatibleGroupsPage';
@@ -29,6 +30,7 @@ import InvitationsAndRequests from '../pages/pools/InvitationsAndRequests';
 import AITripDurationPage from '../pages/AITripDurationPage';
 import AITripPreferencesPage from '../pages/AITripPreferencesPage';
 import AITripView from '../pages/AITripView';
+import TranslationTest from '../pages/TranslationTest';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRouteWrapper = ({ children }) => {
@@ -135,6 +137,11 @@ const GeneralRoutes = () => (
         <PoolPreferencesPage />
       </PublicRoute>
     } />
+    <Route path="/pool-cost-estimation" element={
+      <PublicRoute>
+        <PoolCostEstimationPage />
+      </PublicRoute>
+    } />
     <Route path="/compatible-groups" element={
       <PublicRoute>
         <CompatibleGroupsPage />
@@ -175,6 +182,11 @@ const GeneralRoutes = () => (
     <Route path="/ai-trip-view" element={
       <PublicRoute>
         <AITripView />
+      </PublicRoute>
+    } />
+    <Route path="/translation-test" element={
+      <PublicRoute>
+        <TranslationTest />
       </PublicRoute>
     } />
 

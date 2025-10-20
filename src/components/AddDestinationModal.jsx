@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Search, Calendar, MapPin } from 'lucide-react';
 import { tripPlanningApi } from '../api/axios';
+import { useToast } from './ToastProvider';
 
 const HARDCODED_CITIES = [  {
     id: 1,
@@ -342,6 +343,7 @@ const AddDestinationModal = ({
   // Early return BEFORE any hooks to prevent hook order issues
   if (!show) return null;
   
+  const toast = useToast();
   const [loadingCities, setLoadingCities] = useState({}); // Track loading state per city
 
   // Calculate day number based on dayIndex and startDate
@@ -355,7 +357,7 @@ const AddDestinationModal = ({
     if (!tripId || !userUid || !startDate) {
       console.error('❌ Missing required data for backend API:', { tripId, userUid, startDate });
       console.error('🔍 Available data:', { tripId, userUid, startDate, groupId });
-      alert('Missing trip information. Please try again or refresh the page.');
+      toast.error('Missing trip information. Please try again or refresh the page.', { duration: 3000 });
       return false;
     }
 
@@ -397,7 +399,7 @@ const AddDestinationModal = ({
         errorMessage = error.message;
       }
       
-      alert(`Error: ${errorMessage}`);
+      toast.error(`Error: ${errorMessage}`, { duration: 3000 });
       return false;
     } finally {
       setLoadingCities(prev => ({ ...prev, [cityKey]: false }));

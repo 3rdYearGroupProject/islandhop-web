@@ -1,4 +1,5 @@
-import { poolingServicesApi } from './axios';
+import { poolingServicesApi, userServicesApi } from './axios';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Pool API service for managing pool/group operations
@@ -113,12 +114,54 @@ export class PoolsApi {
    * @param {boolean} [groupData.requiresApproval] - Whether group requires approval to join
    * @param {Object} [groupData.additionalPreferences] - Additional preferences
    * @returns {Promise<Object>} Group creation response
+   * @note Email will be automatically fetched from the current logged-in user
    */
   static async createGroupWithTrip(groupData) {
     try {
       console.log('🏊‍♂️ Creating group with trip:', groupData);
       
-      const response = await poolingServicesApi.post('/groups/with-trip', groupData);
+      // Get current user's email from Firebase Auth and backend profile
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('No authenticated user found. Please log in to create a group.');
+      }
+      
+      let userEmail = currentUser.email;
+      console.log('🏊‍♂️ Firebase user email:', userEmail);
+      
+      // If no email from Firebase, try to fetch from backend profile
+      if (!userEmail && groupData.userId) {
+        try {
+          console.log('🏊‍♂️ Fetching email from user profile for userId:', groupData.userId);
+          const profileResponse = await userServicesApi.get('/tourist/profile', { 
+            params: { email: currentUser.email || groupData.userId } 
+          });
+          userEmail = profileResponse.data?.email || currentUser.email;
+          console.log('🏊‍♂️ Email from profile API:', userEmail);
+        } catch (profileError) {
+          console.warn('🏊‍♂️⚠️ Could not fetch email from profile, using Firebase email:', profileError.message);
+          userEmail = currentUser.email;
+        }
+      }
+      
+      if (!userEmail) {
+        throw new Error('Could not determine user email. Please ensure your profile is complete.');
+      }
+      
+      // Create the complete request payload with email
+      const completeGroupData = {
+        ...groupData,
+        email: userEmail // Automatically include the current user's email
+      };
+      
+      console.log('🏊‍♂️ Email automatically added to request:', userEmail);
+      console.log('🏊‍♂️ Complete request payload:', JSON.stringify(completeGroupData, null, 2));
+      console.log('🏊‍♂️ Email field specifically:', completeGroupData.email);
+      console.log('🏊‍♂️ UserId field:', completeGroupData.userId);
+      
+      const response = await poolingServicesApi.post('/groups/with-trip', completeGroupData);
 
       console.log('🏊‍♂️ Group created successfully:', response.data);
       console.log('🏊‍♂️ Response before navigation - Full response:', response);
@@ -131,6 +174,12 @@ export class PoolsApi {
       return response.data;
     } catch (error) {
       console.error('🏊‍♂️❌ Error creating group with trip:', error);
+      console.error('🏊‍♂️❌ Request data that failed:', groupData);
+      console.error('🏊‍♂️❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data
+      });
       throw new Error(`Failed to create group: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -150,7 +199,7 @@ export class PoolsApi {
       id: group.groupId,
       groupId: group.groupId,
       tripId: group.tripId,
-      image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80', // Default image
+      image: null, // Let PoolCard component handle random image generation based on destination
       name: group.tripName || group.groupName || 'Adventure Trip',
       owner: group.creatorName || 'Unknown',
       creatorUserId: group.creatorUserId,
@@ -289,15 +338,56 @@ export class PoolsApi {
    * @param {string} groupId - Group ID to join
    * @param {Object} joinData - Join request data
    * @param {string} joinData.userId - User ID joining the group
-   * @param {string} joinData.userEmail - User email
    * @param {string} joinData.userName - User name
    * @param {string} joinData.message - Personal message for join request
    * @param {Object} joinData.userProfile - User profile information
    * @returns {Promise<Object>} Join result
+   * @note Email will be automatically fetched from the current logged-in user
    */
   static async joinPool(groupId, joinData) {
     try {
       console.log('🏊‍♂️ Requesting to join pool:', { groupId, joinData });
+      
+      // Get current user's email from Firebase Auth and backend profile
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('No authenticated user found. Please log in to join a pool.');
+      }
+      
+      let userEmail = currentUser.email;
+      console.log('🏊‍♂️ Firebase user email:', userEmail);
+      
+      // If no email from Firebase, try to fetch from backend profile
+      if (!userEmail && joinData.userId) {
+        try {
+          console.log('🏊‍♂️ Fetching email from user profile for userId:', joinData.userId);
+          const profileResponse = await userServicesApi.get('/tourist/profile', { 
+            params: { email: currentUser.email || joinData.userId } 
+          });
+          userEmail = profileResponse.data?.email || currentUser.email;
+          console.log('🏊‍♂️ Email from profile API:', userEmail);
+        } catch (profileError) {
+          console.warn('🏊‍♂️⚠️ Could not fetch email from profile, using Firebase email:', profileError.message);
+          userEmail = currentUser.email;
+        }
+      }
+      
+      if (!userEmail) {
+        throw new Error('Could not determine user email. Please ensure your profile is complete.');
+      }
+      
+      // Create the complete request payload with email
+      const completeJoinData = {
+        ...joinData,
+        userEmail: userEmail // Automatically include the current user's email
+      };
+      
+      console.log('🏊‍♂️ Email automatically added to join request:', userEmail);
+      console.log('🏊‍♂️ Complete join request payload:', JSON.stringify(completeJoinData, null, 2));
+      console.log('🏊‍♂️ Email field specifically:', completeJoinData.userEmail);
+      console.log('🏊‍♂️ UserId field:', completeJoinData.userId);
       
       // Use the new API endpoint for joining groups
       const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
@@ -310,7 +400,7 @@ export class PoolsApi {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(joinData)
+        body: JSON.stringify(completeJoinData)
       });
 
       if (!response.ok) {
@@ -323,6 +413,12 @@ export class PoolsApi {
       return result;
     } catch (error) {
       console.error('🏊‍♂️❌ Error joining pool:', error);
+      console.error('🏊‍♂️❌ Join request data that failed:', joinData);
+      console.error('🏊‍♂️❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data
+      });
       throw new Error(`Failed to join pool: ${error.message}`);
     }
   }
@@ -401,6 +497,62 @@ export class PoolsApi {
     } catch (error) {
       console.error('📋❌ Error fetching pending join requests:', error);
       throw new Error(`Failed to fetch pending join requests: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get ALL pending items requiring user action - both invitations received and join requests to vote on.
+   * This comprehensive endpoint combines:
+   * 1. Invitations the user has received (to join groups)
+   * 2. Join requests that need the user's vote (for groups they're a member of)
+   * 
+   * @param {string} userId - The ID of the current user
+   * @param {string} userEmail - The email of the current user
+   * @returns {Promise<Object>} ComprehensivePendingItemsResponse with all pending items requiring user attention
+   */
+  static async getAllPendingItems(userId, userEmail) {
+    try {
+      console.log('📋🔔 Starting getAllPendingItems for userId:', userId, 'userEmail:', userEmail);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE || 'http://localhost:8086/api/v1';
+      const fullUrl = `${baseUrl}/groups/all-pending-items?userId=${userId}&email=${encodeURIComponent(userEmail)}`;
+      
+      console.log('📋🔔 Making request to URL:', fullUrl);
+      console.log('📋🔔 Base URL from env:', process.env.REACT_APP_API_BASE_URL_POOLING_SERVICE);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('📋🔔 Response status:', response.status);
+      console.log('📋🔔 Response ok:', response.ok);
+      console.log('📋🔔 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📋🔔 Error response data:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📋🔔 All pending items fetched successfully:', result);
+      console.log('📋🔔 Result type:', typeof result);
+      console.log('📋🔔 Result keys:', Object.keys(result || {}));
+      console.log('📋🔔 Total pending items:', result.totalPendingItems);
+      console.log('📋🔔 Total invitations:', result.totalInvitations);
+      console.log('📋🔔 Total vote requests:', result.totalVoteRequests);
+      return result;
+    } catch (error) {
+      console.error('📋🔔❌ Error fetching all pending items:', error);
+      console.error('📋🔔❌ Error name:', error.name);
+      console.error('📋🔔❌ Error message:', error.message);
+      console.error('📋🔔❌ Error stack:', error.stack);
+      throw new Error(`Failed to fetch all pending items: ${error.message}`);
     }
   }
 
@@ -927,6 +1079,112 @@ export class PoolsApi {
   }
 
   /**
+   * Paginate an array of pools (frontend-only pagination)
+   * @param {Array} pools - Array of pools to paginate
+   * @param {number} page - Current page number (1-based)
+   * @param {number} pageSize - Number of items per page
+   * @returns {Object} Pagination result with pools and metadata
+   */
+  static paginatePools(pools, page = 1, pageSize = 9) {
+    const totalPools = pools.length;
+    const totalPages = Math.ceil(totalPools / pageSize);
+    const currentPage = Math.max(1, Math.min(page, totalPages));
+    
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedPools = pools.slice(startIndex, endIndex);
+    
+    console.log('📄 Frontend pagination:', {
+      totalPools,
+      totalPages,
+      currentPage,
+      pageSize,
+      startIndex,
+      endIndex,
+      paginatedPoolsCount: paginatedPools.length
+    });
+    
+    return {
+      pools: paginatedPools,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalPools,
+        pageSize,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1,
+        startIndex: startIndex + 1, // 1-based for display
+        endIndex: Math.min(endIndex, totalPools) // Actual end index
+      }
+    };
+  }
+
+  /**
+   * Get paginated public pools for browsing (Find Pools page)
+   * @param {Object} options - Pagination and filter options
+   * @param {number} [options.page=1] - Page number (1-based)
+   * @param {number} [options.pageSize=9] - Number of pools per page
+   * @param {Object} [options.filters={}] - Filter options
+   * @param {Array} [options.allPools] - Optional pre-fetched pools data
+   * @returns {Promise<Object>} Paginated pools with metadata
+   */
+  static async getPaginatedPublicPools({ page = 1, pageSize = 9, filters = {}, allPools = null } = {}) {
+    try {
+      console.log('📄 Getting paginated public pools:', { page, pageSize, filters });
+      
+      // Get all filtered pools first
+      const filteredPools = await this.getPublicPools(filters, allPools);
+      
+      // Apply frontend pagination
+      const result = this.paginatePools(filteredPools, page, pageSize);
+      
+      console.log('📄 Paginated public pools result:', {
+        poolsCount: result.pools.length,
+        pagination: result.pagination
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('📄❌ Error getting paginated public pools:', error);
+      throw new Error(`Failed to get paginated pools: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get paginated user pools (My Pools page)
+   * @param {string} userId - User ID
+   * @param {Object} options - Pagination options
+   * @param {number} [options.pageSize=9] - Number of pools per page for each section
+   * @returns {Promise<Object>} Paginated user pools organized by status
+   */
+  static async getPaginatedUserPools(userId, { pageSize = 9 } = {}) {
+    try {
+      console.log('📄 Getting paginated user pools for:', userId, { pageSize });
+      
+      // Get all user pools first
+      const userPools = await this.getUserPools(userId);
+      
+      // Apply pagination to each section
+      const result = {
+        ongoing: this.paginatePools(userPools.ongoing, 1, pageSize),
+        upcoming: this.paginatePools(userPools.upcoming, 1, pageSize),
+        past: this.paginatePools(userPools.past, 1, pageSize)
+      };
+      
+      console.log('📄 Paginated user pools result:', {
+        ongoing: result.ongoing.pools.length,
+        upcoming: result.upcoming.pools.length,
+        past: result.past.pools.length
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('📄❌ Error getting paginated user pools:', error);
+      throw new Error(`Failed to get paginated user pools: ${error.message}`);
+    }
+  }
+
+  /**
    * Save trip and get similar group suggestions
    * @param {string} groupId - Group ID
    * @param {Object} tripData - Trip data to save
@@ -1240,6 +1498,563 @@ export class PoolsApi {
       throw new Error(`Failed to fetch comprehensive trip details: ${error.response?.data?.message || error.message}`);
     }
   }
+
+  // ===============================
+  // POOLING CONFIRMATION METHODS
+  // ===============================
+
+  /**
+   * Initiate trip confirmation - Only the trip creator can call this
+   * POST /api/v1/pooling-confirm/initiate
+   * @param {Object} confirmationData - Trip confirmation data
+   * @returns {Promise<Object>} Confirmation initiation result
+   */
+  static async initiateTripConfirmation(confirmationData) {
+    try {
+      console.log('🎯 Initiating trip confirmation:', confirmationData);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/initiate`;
+      
+      console.log('🎯 Making initiate request to URL:', fullUrl);
+      console.log('🎯 Request payload:', JSON.stringify(confirmationData, null, 2));
+      
+      // Simplified fetch without problematic headers
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(confirmationData)
+      });
+
+      console.log('🎯 Initiate response status:', response.status);
+      console.log('🎯 Initiate response ok:', response.ok);
+      console.log('🎯 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🎯 Initiate error response text:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Unknown error' };
+        }
+        console.error('🎯 Initiate error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('🎯 Trip confirmation initiated successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('🎯❌ Error initiating trip confirmation:', error);
+      console.error('🎯❌ Error type:', error.name);
+      console.error('🎯❌ Error message:', error.message);
+      console.error('🎯❌ Error stack:', error.stack);
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Unable to connect to confirmation service. This is likely a CORS issue. Backend: ${baseUrl}`);
+      }
+      
+      throw new Error(`Failed to initiate trip confirmation: ${error.message}`);
+    }
+  }
+
+  /**
+   * Confirm participation in a trip - Members call this to confirm
+   * POST /api/v1/pooling-confirm/{confirmedTripId}/confirm
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID confirming participation
+   * @returns {Promise<Object>} Confirmation result
+   */
+  static async confirmParticipation(confirmedTripId, userId) {
+    try {
+      console.log('✅ Confirming participation:', { confirmedTripId, userId });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/confirm`;
+      
+      console.log('✅ Making confirm request to URL:', fullUrl);
+      console.log('✅ Request payload:', JSON.stringify({ userId }, null, 2));
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId })
+      });
+
+      console.log('✅ Confirm response status:', response.status);
+      console.log('✅ Confirm response ok:', response.ok);
+      console.log('✅ Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('✅ Confirm error response text:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Unknown error' };
+        }
+        console.error('✅ Confirm error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Participation confirmed successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('✅❌ Error confirming participation:', error);
+      console.error('✅❌ Error type:', error.name);
+      console.error('✅❌ Error message:', error.message);
+      console.error('✅❌ Error stack:', error.stack);
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Unable to connect to confirmation service. This is likely a CORS issue. Backend: ${process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074'}`);
+      }
+      
+      throw new Error(`Failed to confirm participation: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get confirmation status for a trip
+   * GET /api/v1/pooling-confirm/{confirmedTripId}/status?userId={userId}
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID to check status for
+   * @returns {Promise<Object>} Confirmation status
+   */
+  static async getConfirmationStatus(confirmedTripId, userId) {
+    try {
+      console.log('📊 Getting confirmation status:', { confirmedTripId, userId });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/status?userId=${userId}`;
+      
+      console.log('📊 Making status request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('📊 Status response status:', response.status);
+      console.log('📊 Status response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📊 Status error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📊 Confirmation status retrieved:', result);
+      return result;
+    } catch (error) {
+      console.error('📊❌ Error getting confirmation status:', error);
+      throw new Error(`Failed to get confirmation status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get trip details by trip ID
+   * GET /api/v1/pooling-confirm/trip/{tripId}/status?userId={userId}
+   * @param {string} tripId - The trip ID
+   * @param {string} userId - User ID for context
+   * @returns {Promise<Object>} Trip details
+   */
+  static async getTripDetailsByTripId(tripId, userId) {
+    try {
+      console.log('🚀 Getting trip details by tripId:', { tripId, userId });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/trip/${tripId}/status?userId=${userId}`;
+      
+      console.log('🚀 Making trip details request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('🚀 Trip details response status:', response.status);
+      console.log('🚀 Trip details response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('🚀 Trip details error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🚀 Trip details retrieved:', result);
+      return result;
+    } catch (error) {
+      console.error('🚀❌ Error getting trip details by tripId:', error);
+      throw new Error(`Failed to get trip details: ${error.message}`);
+    }
+  }
+
+  /**
+   * Cancel trip confirmation - Only trip creator can call this
+   * POST /api/v1/pooling-confirm/{confirmedTripId}/cancel
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID canceling (must be creator)
+   * @param {string} reason - Reason for cancellation
+   * @returns {Promise<Object>} Cancellation result
+   */
+  static async cancelTripConfirmation(confirmedTripId, userId, reason) {
+    try {
+      console.log('❌ Canceling trip confirmation:', { confirmedTripId, userId, reason });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/cancel`;
+      
+      console.log('❌ Making cancel request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId, reason })
+      });
+
+      console.log('❌ Cancel response status:', response.status);
+      console.log('❌ Cancel response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Cancel error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('❌ Trip confirmation canceled successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('❌❌ Error canceling trip confirmation:', error);
+      throw new Error(`Failed to cancel trip confirmation: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user confirmed trips
+   * GET /api/v1/pooling-confirm/user/{userId}/trips
+   * @param {string} userId - User ID
+   * @param {Object} options - Query options (status, page, limit)
+   * @returns {Promise<Object>} User confirmed trips
+   */
+  static async getUserConfirmedTrips(userId, options = {}) {
+    try {
+      console.log('📋 Getting user confirmed trips:', { userId, options });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const queryParams = new URLSearchParams();
+      
+      if (options.status) queryParams.append('status', options.status);
+      if (options.page) queryParams.append('page', options.page);
+      if (options.limit) queryParams.append('limit', options.limit);
+      
+      const fullUrl = `${baseUrl}/pooling-confirm/user/${userId}/trips${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      
+      console.log('📋 Making user trips request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('📋 User trips response status:', response.status);
+      console.log('📋 User trips response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📋 User trips error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📋 User confirmed trips retrieved:', result);
+      return result;
+    } catch (error) {
+      console.error('📋❌ Error getting user confirmed trips:', error);
+      throw new Error(`Failed to get user confirmed trips: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get comprehensive trip details including payment status
+   * GET /api/v1/pooling-confirm/{confirmedTripId}/details
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID for context
+   * @returns {Promise<Object>} Comprehensive trip details with payment info
+   */
+  static async getConfirmedTripDetails(confirmedTripId, userId) {
+    try {
+      console.log('📊 Getting confirmed trip details:', { confirmedTripId, userId });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/details?userId=${userId}`;
+      
+      console.log('📊 Making trip details request to URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      console.log('📊 Trip details response status:', response.status);
+      console.log('📊 Trip details response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('📊 Trip details error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📊 Trip details retrieved successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('📊❌ Error getting trip details:', error);
+      throw new Error(`Failed to get trip details: ${error.message}`);
+    }
+  }
+
+  /**
+   * Make upfront payment (50% of trip cost)
+   * POST /api/v1/pooling-confirm/{confirmedTripId}/payment/upfront
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID making payment
+   * @param {Object} paymentData - Payment information
+   * @returns {Promise<Object>} Payment result
+   */
+  static async makeUpfrontPayment(confirmedTripId, userId, paymentData) {
+    try {
+      console.log('💳 Making upfront payment:', { confirmedTripId, userId, paymentData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/payment/upfront`;
+      
+      console.log('💳 Making upfront payment request to URL:', fullUrl);
+      
+      const requestBody = {
+        userId,
+        ...paymentData,
+        // Mock payment data for now
+        paymentMethod: 'mock',
+        mockPayment: true
+      };
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('💳 Upfront payment response status:', response.status);
+      console.log('💳 Upfront payment response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('💳 Upfront payment error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('💳 Upfront payment completed successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('💳❌ Error making upfront payment:', error);
+      throw new Error(`Failed to make upfront payment: ${error.message}`);
+    }
+  }
+
+  /**
+   * Make final payment (remaining 50% of trip cost)
+   * POST /api/v1/pooling-confirm/{confirmedTripId}/payment/final
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID making payment
+   * @param {Object} paymentData - Payment information
+   * @returns {Promise<Object>} Payment result
+   */
+  static async makeFinalPayment(confirmedTripId, userId, paymentData) {
+    try {
+      console.log('💰 Making final payment:', { confirmedTripId, userId, paymentData });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/payment/final`;
+      
+      console.log('💰 Making final payment request to URL:', fullUrl);
+      
+      const requestBody = {
+        userId,
+        ...paymentData,
+        // Mock payment data for now
+        paymentMethod: 'mock',
+        mockPayment: true
+      };
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('💰 Final payment response status:', response.status);
+      console.log('💰 Final payment response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('💰 Final payment error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('💰 Final payment completed successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('💰❌ Error making final payment:', error);
+      throw new Error(`Failed to make final payment: ${error.message}`);
+    }
+  }
+
+  /**
+   * Vote during decision period when partial payments received
+   * POST /api/v1/pooling-confirm/{confirmedTripId}/vote
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID voting
+   * @param {string} decision - 'continue' or 'cancel'
+   * @param {string} reason - Optional reason for vote
+   * @returns {Promise<Object>} Vote result
+   */
+  static async voteOnTripDecision(confirmedTripId, userId, decision, reason = '') {
+    try {
+      console.log('🗳️ Voting on trip decision:', { confirmedTripId, userId, decision, reason });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/vote`;
+      
+      console.log('🗳️ Making vote request to URL:', fullUrl);
+      
+      const requestBody = {
+        userId,
+        decision, // 'continue' or 'cancel'
+        reason
+      };
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('🗳️ Vote response status:', response.status);
+      console.log('🗳️ Vote response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('🗳️ Vote error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🗳️ Vote submitted successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('🗳️❌ Error voting on trip decision:', error);
+      throw new Error(`Failed to vote on trip decision: ${error.message}`);
+    }
+  }
+
+  /**
+   * Cancel individual participation with penalty
+   * POST /api/v1/pooling-confirm/{confirmedTripId}/cancel-participation
+   * @param {string} confirmedTripId - The confirmed trip ID
+   * @param {string} userId - User ID canceling
+   * @param {string} reason - Reason for cancellation
+   * @returns {Promise<Object>} Cancellation result
+   */
+  static async cancelIndividualParticipation(confirmedTripId, userId, reason) {
+    try {
+      console.log('❌ Canceling individual participation:', { confirmedTripId, userId, reason });
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL_POOLING_CONFIRM || 'http://localhost:8074/api/v1';
+      const fullUrl = `${baseUrl}/pooling-confirm/${confirmedTripId}/cancel-participation`;
+      
+      console.log('❌ Making cancellation request to URL:', fullUrl);
+      
+      const requestBody = {
+        userId,
+        reason
+      };
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('❌ Cancellation response status:', response.status);
+      console.log('❌ Cancellation response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Cancellation error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('❌ Participation canceled successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('❌❌ Error canceling participation:', error);
+      throw new Error(`Failed to cancel participation: ${error.message}`);
+    }
+  }
 }
 
+// Export both the class and an instance for convenience
+export const poolsApi = PoolsApi;
 export default PoolsApi;

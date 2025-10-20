@@ -37,7 +37,12 @@ const TripSuggestionsPage = () => {
     suggestions = [],
     totalSuggestions = 0,
     hasSuggestions = false,
-    backendResponse
+    backendResponse,
+    // Cost breakdown from PoolCostEstimationPage
+    costBreakdown,
+    needDriver,
+    needGuide,
+    selectedVehicle
   } = location.state || {};
 
   const [isFinalizingTrip, setIsFinalizingTrip] = useState(false);
@@ -46,7 +51,7 @@ const TripSuggestionsPage = () => {
   const [isJoining, setIsJoining] = useState(false);
 
   console.log('🎯 ===== TRIP SUGGESTIONS PAGE INITIALIZATION =====');
-  console.log('🎯 Received state from PoolItineraryPage:', location.state);
+  console.log('🎯 Received state from PoolCostEstimationPage:', location.state);
   console.log('🎯 Trip information:');
   console.log('  - tripId:', tripId);
   console.log('  - groupId:', groupId);
@@ -55,6 +60,11 @@ const TripSuggestionsPage = () => {
   console.log('  - endDate:', endDate);
   console.log('  - destinations:', destinations);
   console.log('  - userUid:', userUid);
+  console.log('🎯 Cost breakdown information:');
+  console.log('  - costBreakdown:', costBreakdown);
+  console.log('  - needDriver:', needDriver);
+  console.log('  - needGuide:', needGuide);
+  console.log('  - selectedVehicle:', selectedVehicle);
   console.log('🎯 Suggestions information:');
   console.log('  - suggestions count:', suggestions?.length || 0);
   console.log('  - totalSuggestions:', totalSuggestions);
@@ -148,7 +158,16 @@ const TripSuggestionsPage = () => {
       const finalizeData = {
         groupId: groupId,  // Include groupId in the request body
         userId: currentUserId,
-        action: 'finalize'
+        action: 'finalize',
+        // Cost breakdown details
+        averageDriverCost: costBreakdown?.averageDriverCost || 0,
+        averageGuideCost: costBreakdown?.averageGuideCost || 0,
+        totalCost: costBreakdown?.totalCost || 0,
+        costPerPerson: costBreakdown?.costPerPerson || 0,
+        maxParticipants: costBreakdown?.maxParticipants || 1,
+        vehicleType: costBreakdown?.vehicleType || selectedVehicle || '',
+        needDriver: costBreakdown?.needDriver || needDriver || false,
+        needGuide: costBreakdown?.needGuide || needGuide || false
       };
       
       console.log('🎯 ===== FINALIZE REQUEST DETAILS =====');
@@ -157,6 +176,15 @@ const TripSuggestionsPage = () => {
       console.log('🎯 Request body data:', finalizeData);
       console.log('🎯 User ID being sent:', finalizeData.userId);
       console.log('🎯 Action being sent:', finalizeData.action);
+      console.log('🎯 Cost breakdown being sent:');
+      console.log('  - averageDriverCost:', finalizeData.averageDriverCost);
+      console.log('  - averageGuideCost:', finalizeData.averageGuideCost);
+      console.log('  - totalCost:', finalizeData.totalCost);
+      console.log('  - costPerPerson:', finalizeData.costPerPerson);
+      console.log('  - maxParticipants:', finalizeData.maxParticipants);
+      console.log('  - vehicleType:', finalizeData.vehicleType);
+      console.log('  - needDriver:', finalizeData.needDriver);
+      console.log('  - needGuide:', finalizeData.needGuide);
       console.log('🎯 getUserUID():', getUserUID());
       console.log('🎯 user?.uid:', user?.uid);
       console.log('🎯 userUid:', userUid);
@@ -301,6 +329,40 @@ const TripSuggestionsPage = () => {
                   <span><strong>Terrains:</strong> {terrains?.slice(0, 2).join(', ') || 'Various'}</span>
                 </div>
               </div>
+              
+              {/* Cost Breakdown Display */}
+              {costBreakdown && (costBreakdown.totalCost > 0) && (
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">Cost Breakdown</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    {costBreakdown.needDriver && (
+                      <div className="bg-white rounded px-3 py-2">
+                        <span className="text-gray-600">Driver Cost:</span>
+                        <div className="font-semibold text-blue-800">LKR {costBreakdown.averageDriverCost?.toLocaleString() || '0'}</div>
+                      </div>
+                    )}
+                    {costBreakdown.needGuide && (
+                      <div className="bg-white rounded px-3 py-2">
+                        <span className="text-gray-600">Guide Cost:</span>
+                        <div className="font-semibold text-blue-800">LKR {costBreakdown.averageGuideCost?.toLocaleString() || '0'}</div>
+                      </div>
+                    )}
+                    <div className="bg-white rounded px-3 py-2">
+                      <span className="text-gray-600">Total Cost:</span>
+                      <div className="font-semibold text-blue-800">LKR {costBreakdown.totalCost?.toLocaleString() || '0'}</div>
+                    </div>
+                    <div className="bg-white rounded px-3 py-2">
+                      <span className="text-gray-600">Per Person:</span>
+                      <div className="font-semibold text-green-700">LKR {costBreakdown.costPerPerson?.toLocaleString() || '0'}</div>
+                    </div>
+                  </div>
+                  {costBreakdown.vehicleType && (
+                    <div className="mt-2 text-xs text-blue-700">
+                      <strong>Vehicle:</strong> {costBreakdown.vehicleType} (Max {costBreakdown.maxParticipants} people)
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

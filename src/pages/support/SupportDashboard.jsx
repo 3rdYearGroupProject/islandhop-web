@@ -9,11 +9,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { useToast } from '../../components/ToastProvider';
 import { getUserData } from '../../utils/userStorage';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Modal from '../../components/Modal';
 
 const SupportDashboard = ({ onPageChange }) => {
   const toast = useToast();
+  const navigate = useNavigate();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [dashboardStats, setDashboardStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,48 +54,48 @@ const SupportDashboard = ({ onPageChange }) => {
             {
               title: 'New Tickets',
               value: result.data.totalComplaints || '0',
-              change: `+${result.data.totalComplaints || 0} today`,
-              changeType: 'positive',
+              // change: `+${result.data.totalComplaints || 0} today`,
+              // changeType: 'positive',
               icon: TicketIcon,
               color: 'secondary'
             },
             {
               title: 'In Progress',
               value: result.data.unresolvedComplaints || '0',
-              change: `${result.data.unresolvedComplaintsChange || 0} from yesterday`,
-              changeType: result.data.unresolvedComplaintsChange >= 0 ? 'positive' : 'negative',
+              // change: `${result.data.unresolvedComplaintsChange || 0} from yesterday`,
+              // changeType: result.data.unresolvedComplaintsChange >= 0 ? 'positive' : 'negative',
               icon: ExclamationTriangleIcon,
               color: 'secondary'
             },
             {
               title: 'Escalated',
               value: result.data.resolvedComplaints || '0',
-              change: `+${result.data.resolvedComplaintsToday || 0} today`,
-              changeType: 'positive',
+              // change: `+${result.data.resolvedComplaintsToday || 0} today`,
+              // changeType: 'positive',
               icon: ShieldExclamationIcon,
               color: 'secondary'
             },
-            {
-              title: 'Refunds',
-              value: result.data.refunds || '0',
-              change: result.data.refundsChange || 'No change',
-              changeType: 'neutral',
-              icon: CurrencyDollarIcon,
-              color: 'secondary'
-            },
+            // {
+            //   title: 'Refunds',
+            //   value: result.data.refunds || '0',
+            //   change: result.data.refundsChange || 'No change',
+            //   changeType: 'neutral',
+            //   icon: CurrencyDollarIcon,
+            //   color: 'secondary'
+            // },
             {
               title: 'Lost Items',
               value: result.data.lostItems || '0',
-              change: `+${result.data.lostItemsToday || 0} today`,
-              changeType: 'positive',
+              // change: `+${result.data.lostItemsToday || 0} today`,
+              // changeType: 'positive',
               icon: ArchiveBoxXMarkIcon,
               color: 'secondary'
             },
             {
               title: 'Panic Alerts',
               value: result.data.panicAlerts || '0',
-              change: result.data.panicAlertsActive ? 'Active' : 'None',
-              changeType: result.data.panicAlertsActive ? 'warning' : 'neutral',
+              // change: result.data.panicAlertsActive ? 'Active' : 'None',
+              // changeType: result.data.panicAlertsActive ? 'warning' : 'neutral',
               icon: ShieldExclamationIcon,
               color: 'secondary'
             }
@@ -175,46 +176,60 @@ const SupportDashboard = ({ onPageChange }) => {
   // Quick actions data
   const quickActions = [
     {
-      title: 'View All Tickets',
-      description: 'See and manage all support tickets',
+      title: 'User Reviews',
+      description: 'See and manage all reviews',
       icon: TicketIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('ViewTickets')
+      action: () => navigate('/support/reviews')
     },
-    {
-      title: 'Handle Chat & Email',
-      description: 'Respond to chat and email support',
-      icon: ChatBubbleLeftRightIcon,
-      color: 'secondary',
-      action: () => onPageChange && onPageChange('ChatEmailSupport')
-    },
+    // {
+    //   title: 'Handle Chat & Email',
+    //   description: 'Respond to chat and email support',
+    //   icon: ChatBubbleLeftRightIcon,
+    //   color: 'secondary',
+    //   action: () => navigate('/support/chat-email')
+    // },
     {
       title: 'Resolve Complaints',
       description: 'Address customer complaints',
       icon: ExclamationTriangleIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('ResolveComplaint')
+      action: () => navigate('/support/resolve-complaint')
     },
     {
-      title: 'Process Refunds',
-      description: 'Handle refund and compensation requests',
-      icon: CurrencyDollarIcon,
+      title: 'User Verifications',
+      description: 'Handle user verification requests',
+      icon: ShieldExclamationIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('RefundCompensation')
+      action: () => navigate('/support/verifications')
     },
     {
       title: 'Track Lost Items',
       description: 'Monitor lost item reports',
       icon: ArchiveBoxXMarkIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('LostItemTracker')
+      action: () => navigate('/support/lost-item-tracker')
     },
     {
       title: 'Panic Alerts',
       description: 'Handle emergency situations',
       icon: ShieldExclamationIcon,
       color: 'secondary',
-      action: () => onPageChange && onPageChange('PanicAlerts')
+      action: () => navigate('/support/panic-alerts')
+    },
+    {
+      title: 'Payments',
+      description: 'Manage user payments and transactions',
+      icon: CurrencyDollarIcon,
+      color: 'secondary',
+      action: () => navigate('/support/payments')
+    },
+    {
+      title: 'Communications',
+      description: 'Manage user communications and messages',
+      icon: ChatBubbleLeftRightIcon,
+      color: 'secondary',
+      action: () => navigate('/support/communications')
     }
   ];
 

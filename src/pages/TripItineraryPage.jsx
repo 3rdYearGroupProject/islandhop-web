@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Plus, Utensils, Bed, Car, Camera, Search, Calendar, ChevronDown, Clock } from 'lucide-react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import AddDestinationModal from '../components/AddDestinationModal';
 import AddThingsToDoModal from '../components/AddThingsToDoModal';
 import AddPlacesToStayModal from '../components/AddPlacesToStayModal';
 import AddFoodAndDrinkModal from '../components/AddFoodAndDrinkModal';
 import AddTransportationModal from '../components/AddTransportationModal';
+import { useToast } from '../components/ToastProvider';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 // Import the trip progress bar component (assume it's named TripProgressBar and in components)
 import TripProgressBar from '../components/TripProgressBar';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -158,9 +162,29 @@ const getPhotoUrl = (photo, maxWidth = 400) => {
 const TripItineraryPage = () => {
   const location = useRouterLocation();
   const navigate = useNavigate();
-  const { tripName, selectedDates, selectedTerrains, selectedActivities, tripId, trip, userUid } = location.state || {};
+  const toast = useToast();
+  const { 
+    tripName, 
+    selectedDates, 
+    selectedTerrains, 
+    selectedActivities, 
+    tripId, 
+    trip, 
+    userUid,
+    editMode,
+    existingItinerary,
+    existingDestinations
+  } = location.state || {};
   
-  console.log('📍 TripItineraryPage received:', { tripName, selectedDates, tripId, userUid });
+  console.log('📍 TripItineraryPage received:', { 
+    tripName, 
+    selectedDates, 
+    tripId, 
+    userUid, 
+    editMode,
+    hasExistingItinerary: !!existingItinerary,
+    hasExistingDestinations: !!existingDestinations
+  });
   
   const [currentDay, setCurrentDay] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -169,12 +193,31 @@ const TripItineraryPage = () => {
   const [itinerary, setItinerary] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStayDates, setSelectedStayDates] = useState([]); // For multi-day place selection
+  
+  // Confirmation modal states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   // Destination management states
   const [destinations, setDestinations] = useState({}); // dayIndex -> destination
   const [availableCities, setAvailableCities] = useState([]);
   const [isSearchingCities, setIsSearchingCities] = useState(false);
   const [isSavingTrip, setIsSavingTrip] = useState(false);
+  
+  // Map state
+  const [mapPlaces, setMapPlaces] = useState([]);
+  const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Center of Sri Lanka
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  
+  // Google Maps API loading
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    preventGoogleFontsLoading: true
+  });
   
   // Mock data for trip planning
   const mockSuggestions = {
@@ -453,20 +496,102 @@ const TripItineraryPage = () => {
     // Initialize empty itinerary for each day and expand first few days
     const initialItinerary = {};
     const initialExpanded = {};
+    
     days.forEach((day, index) => {
-      initialItinerary[index] = {
-        date: day,
-        activities: [],
-        places: [],
-        food: [],
-        transportation: []
-      };
+      // If in edit mode and we have existing itinerary data, use it
+      if (editMode && existingItinerary && existingItinerary[index]) {
+        initialItinerary[index] = {
+          date: day,
+          activities: existingItinerary[index].activities || [],
+          places: existingItinerary[index].places || [],
+          food: existingItinerary[index].food || [],
+          transportation: existingItinerary[index].transportation || []
+        };
+      } else {
+        // Otherwise create empty structure
+        initialItinerary[index] = {
+          date: day,
+          activities: [],
+          places: [],
+          food: [],
+          transportation: []
+        };
+      }
       // Expand first 3 days by default
-      initialExpanded[index] = index < 1;
+      initialExpanded[index] = index < 3;
     });
+    
     setItinerary(initialItinerary);
     setExpandedDays(initialExpanded);
-  }, [days.length]);
+    
+    // If in edit mode, also set the destinations
+    if (editMode && existingDestinations) {
+      console.log('🏙️ Pre-populating destinations from existing trip:', existingDestinations);
+      setDestinations(existingDestinations);
+    }
+  }, [days.length, editMode]);
+
+  // Update map when itinerary changes
+  useEffect(() => {
+    const places = [];
+    
+    // Extract all places from itinerary with location data
+    Object.entries(itinerary).forEach(([dayIndex, dayData]) => {
+      const dayNum = parseInt(dayIndex) + 1;
+      
+      // Add activities
+      if (dayData.activities && Array.isArray(dayData.activities)) {
+        dayData.activities.forEach(item => {
+          if ((item.latitude && item.longitude) || item.coords) {
+            places.push({
+              ...item,
+              dayNumber: dayNum,
+              placeType: 'activity',
+              location: item.coords || { lat: item.latitude, lng: item.longitude }
+            });
+          }
+        });
+      }
+      
+      // Add places (hotels)
+      if (dayData.places && Array.isArray(dayData.places)) {
+        dayData.places.forEach(item => {
+          if ((item.latitude && item.longitude) || item.coords) {
+            places.push({
+              ...item,
+              dayNumber: dayNum,
+              placeType: 'hotel',
+              location: item.coords || { lat: item.latitude, lng: item.longitude }
+            });
+          }
+        });
+      }
+      
+      // Add food (restaurants)
+      if (dayData.food && Array.isArray(dayData.food)) {
+        dayData.food.forEach(item => {
+          if ((item.latitude && item.longitude) || item.coords) {
+            places.push({
+              ...item,
+              dayNumber: dayNum,
+              placeType: 'restaurant',
+              location: item.coords || { lat: item.latitude, lng: item.longitude }
+            });
+          }
+        });
+      }
+    });
+    
+    setMapPlaces(places);
+    
+    // Center map on first place with valid coordinates
+    if (places.length > 0 && places[0].location) {
+      setMapCenter({
+        lat: places[0].location.lat,
+        lng: places[0].location.lng
+      });
+    }
+  }, [itinerary]);
 
   // Remove all backend integration functions
   // (searchActivities, searchAccommodation, searchDining, addPlaceToDay, addCityToDay, updateTripCities, getTripDetails)
@@ -489,7 +614,7 @@ const TripItineraryPage = () => {
     } else {
       // Check if destination is required for this day
       if (!dayHasDestination(dayIndex)) {
-        alert('Please add a destination for this day first before adding other activities.');
+        toast.error('Please add a destination for this day first before adding other activities.');
         return;
       }
       
@@ -657,7 +782,7 @@ const TripItineraryPage = () => {
   const addPlaceToItineraryBackend = async (place, dayIndex, category) => {
     if (!tripId || !userUid) {
       console.warn('⚠️ No tripId or userUid available for adding place to backend:', { tripId, userUid });
-      alert('Unable to add place: Missing trip or user information');
+      toast.error('Unable to add place: Missing trip or user information');
       return false;
     }
 
@@ -671,7 +796,7 @@ const TripItineraryPage = () => {
     const apiType = categoryTypeMap[category];
     if (!apiType) {
       console.warn('⚠️ Unknown category for API:', category);
-      alert('Unable to add place: Unknown category');
+      toast.error('Unable to add place: Unknown category');
       return false;
     }
 
@@ -725,12 +850,128 @@ const TripItineraryPage = () => {
       const result = await response.json();
       console.log('✅ Place added to backend successfully:', result);
       
-      alert(result.message || 'Place added to itinerary successfully!');
+      toast.success(result.message || 'Place added to itinerary successfully!');
       return true;
     } catch (error) {
       console.error('❌ Error adding place to backend:', error);
-      alert(`Error adding place: ${error.message}`);
+      toast.error(`Error adding place: ${error.message}`);
       return false;
+    }
+  };
+
+  // API call function to remove place from itinerary backend
+  const removePlaceFromItineraryBackend = async (placeName, dayIndex, category) => {
+    if (!tripId || !userUid) {
+      console.warn('⚠️ No tripId or userUid available for removing place from backend:', { tripId, userUid });
+      toast.error('Unable to remove place: Missing trip or user information');
+      return false;
+    }
+
+    // Map frontend categories to API endpoint types
+    const categoryTypeMap = {
+      'activities': 'attractions',
+      'places': 'hotels', 
+      'food': 'restaurants',
+      'transportation': 'transportation'
+    };
+
+    const apiType = categoryTypeMap[category];
+    if (!apiType) {
+      console.warn('⚠️ Unknown category for API:', category);
+      toast.error('Unable to remove place: Unknown category');
+      return false;
+    }
+
+    // Calculate day number (1-based)
+    const dayNumber = (dayIndex || 0) + 1;
+
+    try {
+      console.log('🗑️ Removing place from backend itinerary:', {
+        placeName,
+        category,
+        apiType,
+        dayNumber,
+        tripId,
+        userUid
+      });
+      
+      const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary/${tripId}/day/${dayNumber}/${apiType}?placeName=${encodeURIComponent(placeName)}&userId=${userUid}`;
+      
+      console.log('📡 DELETE API URL:', apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Place removed from backend successfully:', result);
+      
+      toast.success('Place removed from itinerary successfully!');
+      return true;
+    } catch (error) {
+      console.error('❌ Error removing place from backend:', error);
+      toast.error(`Error removing place: ${error.message}`);
+      return false;
+    }
+  };
+
+  // Handler to remove item from itinerary
+  const handleRemoveItem = async (item, dayIndex, category) => {
+    console.log('🗑️ Remove item clicked:', { item, dayIndex, category });
+
+    // Store the item to delete and show confirmation modal
+    setItemToDelete({ item, dayIndex, category });
+    setShowDeleteConfirm(true);
+  };
+
+  // Actual deletion function called after confirmation
+  const confirmDeleteItem = async () => {
+    if (!itemToDelete) return;
+
+    const { item, dayIndex, category } = itemToDelete;
+    setDeleteLoading(true);
+
+    try {
+      // Remove from backend first (if tripId and userUid are available)
+      if (tripId && userUid && ['activities', 'places', 'food'].includes(category)) {
+        const success = await removePlaceFromItineraryBackend(item.name, dayIndex, category);
+        if (!success) {
+          toast.error('Failed to remove from server. Please try again.', { duration: 3000 });
+          setDeleteLoading(false);
+          return;
+        }
+      }
+
+      // Remove from local state
+      setItinerary(prev => {
+        const updated = { ...prev };
+        if (updated[dayIndex] && updated[dayIndex][category]) {
+          // Filter out the item to remove
+          updated[dayIndex][category] = updated[dayIndex][category].filter(
+            existingItem => existingItem.name !== item.name
+          );
+        }
+        return updated;
+      });
+
+      toast.success(`"${item.name}" removed from Day ${dayIndex + 1}`, { duration: 2000 });
+      setShowDeleteConfirm(false);
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('Error removing item:', error);
+      toast.error('Failed to remove item. Please try again.', { duration: 3000 });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -772,6 +1013,40 @@ const TripItineraryPage = () => {
     });
   };
 
+  // Map functions
+  const mapContainerStyle = {
+    width: '100%',
+    height: '100%',
+    minHeight: '400px',
+  };
+
+  const getMarkerIcon = (placeType) => {
+    switch (placeType) {
+      case 'activity':
+        return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+      case 'hotel':
+        return 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+      case 'restaurant':
+        return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+      default:
+        return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    }
+  };
+
+  const handleMarkerClick = (place) => {
+    setSelectedMarker(place);
+    if (place.location) {
+      setMapCenter({
+        lat: place.location.lat,
+        lng: place.location.lng
+      });
+    }
+  };
+
+  const handleInfoWindowClose = () => {
+    setSelectedMarker(null);
+  };
+
   const handleBack = () => {
     navigate('/trip-preferences', { 
       state: { tripName, selectedDates } 
@@ -779,34 +1054,54 @@ const TripItineraryPage = () => {
   };
 
   const handleSaveTrip = async () => {
-    console.log('💾 Starting comprehensive trip creation process...');
+    console.log('💾 Starting comprehensive trip save process...');
+    console.log('📝 Edit mode:', editMode);
     
     setIsSavingTrip(true);
     // Validate required data
     if (!tripName || !selectedDates || selectedDates.length < 2 || !userUid) {
       console.warn('⚠️ Missing required trip data:', { tripName, selectedDates, userUid });
-      alert('Missing required trip information. Please go back and complete all steps.');
+      toast.error('Missing required trip information. Please go back and complete all steps.');
       setIsSavingTrip(false);
       return;
     }
 
-    console.log('🚀 Trip already created in preferences, saving itinerary locally...');
-
-    // Trip was already created in TripPreferencesPage, just save locally and navigate
-    navigate('/trips', {
-      state: {
-        newTrip: {
-          id: tripId || Date.now(), // Use tripId from backend or generate one
-          name: tripName,
-          dates: selectedDates,
-          terrains: selectedTerrains,
-          activities: selectedActivities,
-          itinerary: itinerary,
-          createdAt: new Date()
-        },
-        message: 'Trip itinerary saved successfully!'
-      }
-    });
+    if (editMode) {
+      console.log('✏️ Edit mode - Trip already exists, saving changes...');
+      // In edit mode, trip already exists, just save the updated itinerary
+      // The backend endpoints are already being called when items are added via addPlaceToItineraryBackend
+      navigate('/trips', {
+        state: {
+          updatedTrip: {
+            id: tripId,
+            name: tripName,
+            dates: selectedDates,
+            terrains: selectedTerrains,
+            activities: selectedActivities,
+            itinerary: itinerary,
+            updatedAt: new Date()
+          },
+          message: 'Trip updated successfully!'
+        }
+      });
+    } else {
+      console.log('🚀 Create mode - Trip already created in preferences, saving itinerary locally...');
+      // Trip was already created in TripPreferencesPage, just save locally and navigate
+      navigate('/trips', {
+        state: {
+          newTrip: {
+            id: tripId || Date.now(), // Use tripId from backend or generate one
+            name: tripName,
+            dates: selectedDates,
+            terrains: selectedTerrains,
+            activities: selectedActivities,
+            itinerary: itinerary,
+            createdAt: new Date()
+          },
+          message: 'Trip itinerary saved successfully!'
+        }
+      });
+    }
     
     setIsSavingTrip(false);
   };
@@ -952,7 +1247,11 @@ const TripItineraryPage = () => {
                                       {item.rating && (
                                         <p className="text-xs text-yellow-600 mb-2">★ {item.rating}</p>
                                       )}
-                                      <button className="text-gray-400 hover:text-gray-600">
+                                      <button 
+                                        onClick={() => handleRemoveItem(item, dayIndex, category)}
+                                        className="text-gray-400 hover:text-red-600 transition-colors"
+                                        title="Remove this item"
+                                      >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
@@ -1056,12 +1355,98 @@ const TripItineraryPage = () => {
           {/* Right Column - Map */}
           <div className="w-full lg:w-1/2">
             <div className="sticky top-6">
-              <div className="bg-gray-100 rounded-lg h-[calc(100vh-12rem)] flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">Interactive map</p>
-                  <p className="text-xs">Your trip destinations will appear here</p>
-                </div>
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-12rem)]">
+                {isLoaded ? (
+                  <>
+                    <div className="p-4 border-b border-gray-100">
+                      <h2 className="font-bold text-lg">Trip Map</h2>
+                      <p className="text-sm text-gray-500">
+                        {mapPlaces.length > 0 
+                          ? `${mapPlaces.length} place${mapPlaces.length !== 1 ? 's' : ''} added` 
+                          : 'Add places to see them on the map'}
+                      </p>
+                    </div>
+                    <div className="flex-1">
+                      <GoogleMap
+                        mapContainerStyle={mapContainerStyle}
+                        center={mapCenter}
+                        zoom={mapPlaces.length > 0 ? 12 : 8}
+                        options={{
+                          fullscreenControl: true,
+                          streetViewControl: false,
+                          mapTypeControl: true,
+                          zoomControl: true,
+                        }}
+                      >
+                        {mapPlaces.map((place, index) => (
+                          <Marker
+                            key={`${place.name}-${index}`}
+                            position={{
+                              lat: place.location.lat,
+                              lng: place.location.lng
+                            }}
+                            onClick={() => handleMarkerClick(place)}
+                            icon={getMarkerIcon(place.placeType)}
+                            title={place.name}
+                          />
+                        ))}
+                        {selectedMarker && (
+                          <InfoWindow
+                            position={{
+                              lat: selectedMarker.location.lat,
+                              lng: selectedMarker.location.lng
+                            }}
+                            onCloseClick={handleInfoWindowClose}
+                          >
+                            <div className="p-2">
+                              <h3 className="font-bold">{selectedMarker.name}</h3>
+                              <p className="text-sm">{selectedMarker.location || selectedMarker.address}</p>
+                              {selectedMarker.rating && (
+                                <div className="flex items-center mt-1">
+                                  <span className="text-yellow-500">★</span>
+                                  <span className="ml-1 text-sm">{selectedMarker.rating}</span>
+                                </div>
+                              )}
+                              {selectedMarker.image && (
+                                <img 
+                                  src={selectedMarker.image}
+                                  alt={selectedMarker.name} 
+                                  className="mt-2 w-full h-24 object-cover rounded"
+                                />
+                              )}
+                              <div className="mt-2 text-sm">
+                                <p className="text-blue-600">Day {selectedMarker.dayNumber}</p>
+                              </div>
+                            </div>
+                          </InfoWindow>
+                        )}
+                      </GoogleMap>
+                    </div>
+                    <div className="p-3 border-t border-gray-100">
+                      <div className="flex gap-4 flex-wrap">
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                          <span className="text-xs">Activities</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
+                          <span className="text-xs">Hotels</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                          <span className="text-xs">Restaurants</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                    <div className="text-center text-gray-500">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                      <p className="text-sm font-medium">Loading Map...</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1082,7 +1467,7 @@ const TripItineraryPage = () => {
               onClick={handleSaveTrip}
               className="bg-primary-600 text-white px-6 py-2 rounded-full shadow hover:bg-primary-700 font-medium transition-colors"
             >
-              Save Trip
+              {editMode ? 'Update Trip' : 'Save Trip'}
             </button>
           </div>
         </div>
@@ -1174,6 +1559,34 @@ const TripItineraryPage = () => {
         startDate={selectedDates?.[0]}
         groupId={null} // Individual trips don't have groupId
       />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDeleteItem}
+        title="Remove Item from Itinerary"
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deleteLoading}
+      >
+        {itemToDelete && (
+          <div className="space-y-3">
+            <p className="text-gray-600 dark:text-gray-300">
+              Are you sure you want to remove <span className="font-semibold">"{itemToDelete.item.name}"</span> from Day {itemToDelete.dayIndex + 1}?
+            </p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p className="text-sm text-red-700 dark:text-red-300">
+                ⚠️ This action cannot be undone.
+              </p>
+            </div>
+          </div>
+        )}
+      </ConfirmationModal>
 
       <Footer />
     </div>

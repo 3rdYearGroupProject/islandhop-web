@@ -471,31 +471,18 @@ const DriverTrips = () => {
             onClick={() => { setSelectedTrip(trip); setModalOpen(true); }}
           >
             <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4 flex-1">
-                <img
-                  src={trip.passengerAvatar}
-                  alt={trip.passenger}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                
+              <div className="flex items-start flex-1">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-gray-900">{trip.tripName || trip.passenger}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Star className="h-3 w-3 text-yellow-400" />
-                        <span>{trip.passengerRating}</span>
-                        <span>•</span>
-                        <span>Trip #{trip.id ? trip.id.substring(0, 8) : 'N/A'}...</span>
-                        {trip.vehicleType && (
-                          <>
-                            <span>•</span>
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                              {trip.vehicleType}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      {trip.vehicleType && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            {trip.vehicleType}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex items-center space-x-3">
@@ -512,14 +499,6 @@ const DriverTrips = () => {
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-green-500 mr-2" />
-                        <span className="text-sm text-gray-600">From: {trip.pickupLocation}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-red-500 mr-2" />
-                        <span className="text-sm text-gray-600">To: {trip.destination}</span>
-                      </div>
                       {trip.startDate && (
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 text-blue-500 mr-2" />
@@ -530,21 +509,14 @@ const DriverTrips = () => {
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-2 gap-2 text-center">
                       <div>
                         <p className="text-xs text-gray-500">Distance</p>
                         <p className="font-semibold text-sm">{trip.distance}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Duration</p>
-                        <p className="font-semibold text-sm">{trip.estimatedTime}</p>
-                      </div>
-                      <div>
                         <p className="text-xs text-gray-500">Fare</p>
                         <p className="font-semibold text-sm">LKR {trip.fare ? trip.fare.toLocaleString() : '0'}</p>
-                        {trip.paidAmount && (
-                          <p className="text-xs text-green-600">Paid: LKR {parseFloat(trip.paidAmount).toLocaleString()}</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -609,7 +581,7 @@ const DriverTrips = () => {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <div className="flex space-x-2">
                       {trip.status === 'pending' && (
                         <>
@@ -636,28 +608,6 @@ const DriverTrips = () => {
                         </>
                       )}
                       
-                      {trip.status === 'active' && (
-                        <>
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium flex items-center"
-                          >
-                            <Navigation className="h-4 w-4 mr-1" />
-                            Navigate
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartTrip(trip.id);
-                            }}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center"
-                          >
-                            <Play className="h-4 w-4 mr-1" />
-                            Start Trip
-                          </button>
-                        </>
-                      )}
-                      
                       {trip.status === 'completed' && (
                         <button 
                           onClick={(e) => e.stopPropagation()}
@@ -668,23 +618,6 @@ const DriverTrips = () => {
                         </button>
                       )}
                     </div>
-
-                    {(trip.status === 'active' || trip.status === 'completed') && (
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
                   </div>
 
                   {trip.status === 'completed' && trip.driverRating && (

@@ -21,7 +21,6 @@ import {
   Filter,
   Search,
   MoreHorizontal,
-  Sparkles,
   Globe,
   Camera,
   Heart,
@@ -29,19 +28,18 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CreateTripModal from '../components/tourist/CreateTripModal';
-import CreateAiTripModal from '../components/tourist/CreateTripModal';
 import TripCard from '../components/tourist/TripCard';
 import myTripsVideo from '../assets/mytrips.mp4';
 import { tripPlanningApi } from '../api/axios';
 import { getUserUID } from '../utils/userStorage';
 import Footer from '../components/Footer';
-import { getCityImageUrl, placeholderImage, logImageError } from '../utils/imageUtils';
+import ErrorState from '../components/ErrorState';
+import { getCityImageUrl, placeholderImage, logImageError, getRandomCityImage } from '../utils/imageUtils';
 
 const placeholder = placeholderImage;
 
 const MyTripsPage = () => {
   const [isCreateTripModalOpen, setIsCreateTripModalOpen] = useState(false);
-  const [isCreateAiTripModalOpen, setIsCreateAiTripModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
@@ -81,22 +79,8 @@ const MyTripsPage = () => {
         console.log('🔐 Current user UID:', user.uid);
         setCurrentUser(user);
         
-        // Check if we should use mock data (only when explicitly set)
-        const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
-        
-        if (useMockData) {
-          console.log('🔧 Using mock data - REACT_APP_USE_MOCK_DATA is set to true');
-          setTrips(mockTrips);
-          setApiError(null);
-          return;
-        }
-        
         // Fetch user trips from backend
         console.log('🚀 STARTING API FETCH FOR USER:', user.uid);
-        console.log('🔧 Environment variables check:');
-        console.log('  - REACT_APP_USE_MOCK_DATA:', process.env.REACT_APP_USE_MOCK_DATA);
-        console.log('  - REACT_APP_API_BASE_URL_TRIP_PLANNING:', process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING);
-        console.log('  - NODE_ENV:', process.env.NODE_ENV);
         
         try {
           console.log('📡 Calling fetchUserTrips...');
@@ -112,15 +96,17 @@ const MyTripsPage = () => {
           console.error('❌ Full error object:', error);
           console.error('❌ Error stack:', error.stack);
           
-          // Only use mock data for specific network errors, not all errors
-          if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-            console.warn('⚠️ Network error detected - using mock data as fallback');
-            setTrips(mockTrips);
-            setApiError('Unable to connect to server. Showing sample data.');
-          } else {
-            console.error('❌ API Error - NOT using mock data. Showing error state.');
+          // Check if it's an authentication error
+          if (error.message.includes('Invalid userId') || error.message.includes('login status')) {
+            console.log('🔐 Authentication error detected - showing login popup');
+            setShowLoginRequiredPopup(true);
+            setCurrentActionName('view your trips');
             setTrips([]);
-            setApiError(error.message);
+            setApiError(null);
+          } else {
+            // Show error state for other errors
+            setTrips([]);
+            setApiError(error.message || 'Unable to load trips. Please try again.');
           }
         }
       } else {
@@ -141,16 +127,6 @@ const MyTripsPage = () => {
         return;
       }
       
-      // Check if we should use mock data (only when explicitly set)
-      const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
-      
-      if (useMockData) {
-        console.log('🔧 Using mock data - REACT_APP_USE_MOCK_DATA is set to true');
-        setTrips(mockTrips);
-        setApiError(null);
-        return;
-      }
-      
       console.log('🔄 Filter changed to:', filterStatus);
       console.log('🚀 Refetching trips with new filter...');
       
@@ -163,15 +139,17 @@ const MyTripsPage = () => {
         console.error('❌ FILTER REFETCH FAILED!');
         console.error('❌ Error:', error.message);
         
-        // Only use mock data for specific network errors, not all errors
-        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-          console.warn('⚠️ Network error detected - using mock data as fallback');
-          setTrips(mockTrips);
-          setApiError('Unable to connect to server. Showing sample data.');
-        } else {
-          console.error('❌ API Error - NOT using mock data. Showing error state.');
+        // Check if it's an authentication error
+        if (error.message.includes('Invalid userId') || error.message.includes('login status')) {
+          console.log('🔐 Authentication error detected - showing login popup');
+          setShowLoginRequiredPopup(true);
+          setCurrentActionName('view your trips');
           setTrips([]);
-          setApiError(error.message);
+          setApiError(null);
+        } else {
+          // Show error state for other errors
+          setTrips([]);
+          setApiError(error.message || 'Unable to load trips. Please try again.');
         }
       }
     };
@@ -204,22 +182,15 @@ const MyTripsPage = () => {
     }
   };
 
-  // Handle AI Trip Suggestions button click
-  const handleAITripSuggestions = () => {
-    if (checkUserAccessAndProfile('get AI trip suggestions')) {
-      setIsCreateTripModalOpen(true);
-    }
-  };
-
-  // Mock data as fallback - updated to use getCityImageUrl consistently
+  // Mock data as fallback - updated to use random images
   const mockTrips = [
     // Trip History (mostly expired, some completed)
     {
       id: 1,
       name: 'Summer Adventure in Sri Lanka',
       dates: 'Jun 11 → Jun 21, 2025',
-      destination: 'Sri Lanka',
-      image: getCityImageUrl('Sigiriya'),
+      destination: 'Sigiriya, Kandy, Galle',
+      image: getRandomCityImage('1'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -234,8 +205,8 @@ const MyTripsPage = () => {
       id: 4,
       name: 'Wildlife Safari',
       dates: 'May 2 → May 10, 2025',
-      destination: 'Yala National Park',
-      image: getCityImageUrl('Yala'),
+      destination: 'Yala, Ella',
+      image: getRandomCityImage('4'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -250,8 +221,8 @@ const MyTripsPage = () => {
       id: 5,
       name: 'Hill Country Escape',
       dates: 'Apr 10 → Apr 18, 2025',
-      destination: 'Nuwara Eliya',
-      image: getCityImageUrl('Nuwara Eliya'),
+      destination: 'Nuwara Eliya, Kandy',
+      image: getRandomCityImage('5'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -266,8 +237,8 @@ const MyTripsPage = () => {
       id: 6,
       name: 'Historic Wonders',
       dates: 'Mar 1 → Mar 7, 2025',
-      destination: 'Anuradhapura',
-      image: getCityImageUrl('Anuradhapura'),
+      destination: 'Anuradhapura, Polonnaruwa',
+      image: getRandomCityImage('6'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -282,8 +253,8 @@ const MyTripsPage = () => {
       id: 10,
       name: 'City Lights',
       dates: 'Feb 1 → Feb 5, 2025',
-      destination: 'Colombo',
-      image: getCityImageUrl('Colombo'),
+      destination: 'Colombo, Negombo',
+      image: getRandomCityImage('10'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -299,7 +270,7 @@ const MyTripsPage = () => {
       name: 'Solo Explorer',
       dates: 'Jan 10 → Jan 15, 2025',
       destination: 'Jaffna',
-      image: getCityImageUrl('Jaffna'),
+      image: getRandomCityImage('11'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -314,8 +285,8 @@ const MyTripsPage = () => {
       id: 12,
       name: 'Expired Beach Bash',
       dates: 'Dec 1 → Dec 7, 2024',
-      destination: 'Mirissa',
-      image: getCityImageUrl('Mirissa'),
+      destination: 'Mirissa, Weligama',
+      image: getRandomCityImage('12'),
       status: 'expired',
       progress: 100,
       daysLeft: 0,
@@ -331,8 +302,8 @@ const MyTripsPage = () => {
       id: 13,
       name: 'Wellness Getaway',
       dates: 'Nov 10 → Nov 15, 2024',
-      destination: 'Kandy',
-      image: getCityImageUrl('Kandy'),
+      destination: 'Kandy, Matale',
+      image: getRandomCityImage('13'),
       status: 'completed',
       progress: 100,
       daysLeft: 0,
@@ -348,8 +319,8 @@ const MyTripsPage = () => {
       id: 2,
       name: 'Cultural Heritage Tour',
       dates: 'Aug 15 → Aug 25, 2025',
-      destination: 'Central Province',
-      image: getCityImageUrl('Kandy'),
+      destination: 'Kandy, Nuwara Eliya, Ella',
+      image: getRandomCityImage('2'),
       status: 'active',
       progress: 65,
       daysLeft: 12,
@@ -365,8 +336,8 @@ const MyTripsPage = () => {
       id: 3,
       name: 'Beach Retreat',
       dates: 'Not set',
-      destination: 'Southern Coast',
-      image: getCityImageUrl('Mirissa'),
+      destination: 'Mirissa, Galle, Unawatuna',
+      image: getRandomCityImage('3'),
       status: 'draft',
       progress: 25,
       daysLeft: null,
@@ -381,8 +352,8 @@ const MyTripsPage = () => {
       id: 7,
       name: 'Family Fun Trip',
       dates: 'Dec 20 → Dec 28, 2025',
-      destination: 'Colombo',
-      image: getCityImageUrl('Colombo'),
+      destination: 'Colombo, Kandy',
+      image: getRandomCityImage('7'),
       status: 'upcoming',
       progress: 10,
       daysLeft: 5,
@@ -477,22 +448,14 @@ const MyTripsPage = () => {
         if (response.status === 400) {
           const msg = `Invalid user ID: ${errorData.message || 'Please check your login status'}`;
           console.error('❌ 400 Error:', msg);
-          alert(msg);
           throw new Error(`Invalid userId: ${errorData.message}`);
         } else if (response.status === 404) {
           console.log('📝 404 - No trips found for user');
-          if (filter === 'active') {
-            // For active trips, don't show alert - just return empty array
-            console.log('📝 No active trips found for user');
-            return [];
-          } else {
-            alert('No trips found. Start planning your first adventure!');
-            return []; // Return empty array for no trips
-          }
+          // Return empty array for no trips - UI will show empty state
+          return [];
         } else if (response.status === 500) {
           const msg = `Server error: ${errorData.message || 'Please try again later'}`;
           console.error('❌ 500 Error:', msg);
-          alert(msg);
           throw new Error(`Server error: ${errorData.message}`);
         } else {
           const msg = `HTTP ${response.status}: ${response.statusText}`;
@@ -711,23 +674,38 @@ const MyTripsPage = () => {
     };
 
     const status = calculateTripStatus(tripSummary);
-    const cityImage = getCityImageUrl(tripSummary.destination || 'Sri Lanka');
     
+    // Use random city image based on tripId for consistency
+    const cityImage = getRandomCityImage(tripSummary.tripId);
+    
+    // Build highlights array from cities and activities
     let highlights = [];
+    let cities = [];
+    
+    // Collect all city names
     if (tripSummary.destination) {
-      highlights.push(tripSummary.destination);
+      cities.push(tripSummary.destination);
     }
     if (tripSummary.cities && Array.isArray(tripSummary.cities)) {
-      highlights = [...highlights, ...tripSummary.cities];
+      cities = [...cities, ...tripSummary.cities];
     }
+    
+    // Remove duplicates from cities
+    cities = [...new Set(cities)];
+    
+    // Add cities to highlights
+    highlights = [...cities];
+    
+    // Add activities to highlights (limited to keep card clean)
     if (tripSummary.activities && Array.isArray(tripSummary.activities)) {
       const activityNames = tripSummary.activities
         .filter(a => a && a.name)
         .map(a => a.name)
-        .slice(0, 3);
+        .slice(0, 2); // Limit activities to make room for cities
       highlights = [...highlights, ...activityNames];
     }
     
+    // Remove duplicates from final highlights
     highlights = [...new Set(highlights)];
     
     return {
@@ -735,7 +713,8 @@ const MyTripsPage = () => {
       tripId: tripSummary.tripId, // Explicitly preserve the backend trip ID
       name: tripSummary.tripName || 'Untitled Trip',
       dates: formatTripDates(tripSummary.startDate, tripSummary.endDate),
-      destination: tripSummary.destination || 'Sri Lanka',
+      destination: cities.length > 0 ? cities.join(', ') : 'Sri Lanka', // Show all cities
+      cities: cities, // Store cities separately
       image: cityImage,
       status: status,
       progress: status === 'completed' ? 100 : status === 'active' ? 50 : 10,
@@ -801,7 +780,7 @@ const MyTripsPage = () => {
     const tripName = activeTrip.tripName || activeTrip.name || activeTrip.title || 'Untitled Trip';
     const startDate = activeTrip.startDate;
     const endDate = activeTrip.endDate;
-    const destination = activeTrip.baseCity || activeTrip.destination || activeTrip.location || 'Sri Lanka';
+    const baseCity = activeTrip.baseCity || activeTrip.destination || activeTrip.location || 'Sri Lanka';
     
     // Calculate budget from the cost fields
     const driverCost = activeTrip.averageDriverCost || 0;
@@ -809,16 +788,30 @@ const MyTripsPage = () => {
     const totalBudget = driverCost + guideCost;
     const spent = parseFloat(activeTrip.payedAmount) || 0;
 
-    // Get city image for the destination
-    const cityImage = getCityImageUrl(destination);
+    // Use random city image based on tripId for consistency
+    const cityImage = getRandomCityImage(tripId);
     
-    // Build highlights array from dailyPlans, preferredTerrains, and preferredActivities
-    let highlights = [];
+    // Build cities array from daily plans
+    let cities = [];
     
-    // Add destination
-    if (destination) {
-      highlights.push(destination);
+    // Add base city
+    if (baseCity) {
+      cities.push(baseCity);
     }
+    
+    // Add cities from daily plans
+    if (activeTrip.dailyPlans && Array.isArray(activeTrip.dailyPlans)) {
+      const planCities = activeTrip.dailyPlans
+        .map(plan => plan.city)
+        .filter(city => city);
+      cities = [...cities, ...planCities];
+    }
+    
+    // Remove duplicate cities
+    cities = [...new Set(cities)];
+    
+    // Build highlights array from cities, terrains, and activities
+    let highlights = [...cities]; // Start with all cities
     
     // Add preferred terrains
     if (activeTrip.preferredTerrains && Array.isArray(activeTrip.preferredTerrains)) {
@@ -830,17 +823,8 @@ const MyTripsPage = () => {
       highlights = [...highlights, ...activeTrip.preferredActivities.slice(0, 2)];
     }
     
-    // Add cities from daily plans
-    if (activeTrip.dailyPlans && Array.isArray(activeTrip.dailyPlans)) {
-      const cities = activeTrip.dailyPlans
-        .map(plan => plan.city)
-        .filter(city => city && city !== destination)
-        .slice(0, 2);
-      highlights = [...highlights, ...cities];
-    }
-    
-    // Remove duplicates and limit to 5 highlights
-    highlights = [...new Set(highlights)].slice(0, 5);
+    // Remove duplicates from highlights
+    highlights = [...new Set(highlights)];
     
     // Calculate number of days
     const numberOfDays = activeTrip.dailyPlans ? activeTrip.dailyPlans.length : 
@@ -851,7 +835,8 @@ const MyTripsPage = () => {
       tripId: tripId, // Explicitly preserve the backend trip ID
       name: tripName,
       dates: formatTripDates(startDate, endDate),
-      destination: destination,
+      destination: cities.length > 0 ? cities.join(', ') : 'Sri Lanka', // Show all cities
+      cities: cities, // Store cities separately
       image: cityImage,
       status: 'active', // All trips from this API are active
       progress: 50, // Default progress for active trips
@@ -905,7 +890,7 @@ const MyTripsPage = () => {
     const tripName = completedTrip.tripName || completedTrip.name || completedTrip.title || 'Untitled Trip';
     const startDate = completedTrip.startDate;
     const endDate = completedTrip.endDate;
-    const destination = completedTrip.baseCity || completedTrip.destination || completedTrip.location || 'Sri Lanka';
+    const baseCity = completedTrip.baseCity || completedTrip.destination || completedTrip.location || 'Sri Lanka';
     
     // Calculate budget and spent from the cost fields
     const averageDriverCost = completedTrip.averageDriverCost || 0;
@@ -913,16 +898,30 @@ const MyTripsPage = () => {
     const totalBudget = averageDriverCost + averageGuideCost;
     const spent = parseFloat(completedTrip.payedAmount) || 0;
 
-    // Get city image for the destination
-    const cityImage = getCityImageUrl(destination);
+    // Use random city image based on tripId for consistency
+    const cityImage = getRandomCityImage(tripId);
     
-    // Build highlights array from dailyPlans, preferredTerrains, and preferredActivities
-    let highlights = [];
+    // Build cities array from daily plans
+    let cities = [];
     
-    // Add destination
-    if (destination) {
-      highlights.push(destination);
+    // Add base city
+    if (baseCity) {
+      cities.push(baseCity);
     }
+    
+    // Add cities from daily plans
+    if (completedTrip.dailyPlans && Array.isArray(completedTrip.dailyPlans)) {
+      const planCities = completedTrip.dailyPlans
+        .map(plan => plan.city)
+        .filter(city => city);
+      cities = [...cities, ...planCities];
+    }
+    
+    // Remove duplicate cities
+    cities = [...new Set(cities)];
+    
+    // Build highlights array from cities, terrains, and activities
+    let highlights = [...cities]; // Start with all cities
     
     // Add preferred terrains
     if (completedTrip.preferredTerrains && Array.isArray(completedTrip.preferredTerrains)) {
@@ -934,17 +933,8 @@ const MyTripsPage = () => {
       highlights = [...highlights, ...completedTrip.preferredActivities.slice(0, 2)];
     }
     
-    // Add cities from daily plans
-    if (completedTrip.dailyPlans && Array.isArray(completedTrip.dailyPlans)) {
-      const cities = completedTrip.dailyPlans
-        .map(plan => plan.city)
-        .filter(city => city && city !== destination)
-        .slice(0, 2);
-      highlights = [...highlights, ...cities];
-    }
-    
-    // Remove duplicates and limit to 5 highlights
-    highlights = [...new Set(highlights)].slice(0, 5);
+    // Remove duplicates from highlights
+    highlights = [...new Set(highlights)];
     
     // Calculate number of days
     const numberOfDays = completedTrip.dailyPlans ? completedTrip.dailyPlans.length : 
@@ -976,7 +966,8 @@ const MyTripsPage = () => {
       tripId: tripId, // Explicitly preserve the backend trip ID
       name: tripName,
       dates: formatTripDates(startDate, endDate),
-      destination: destination,
+      destination: cities.length > 0 ? cities.join(', ') : 'Sri Lanka', // Show all cities
+      cities: cities, // Store cities separately
       image: cityImage,
       status: 'completed', // All trips from this API are completed
       progress: 100, // Completed trips have 100% progress
@@ -1138,19 +1129,6 @@ const MyTripsPage = () => {
     setIsCreateTripModalOpen(false);
   };
 
-  const handleCreateAITrip = (tripData) => {
-    console.log('🚀 Creating trip with user UID:', currentUser?.uid);
-    console.log('📝 Trip data:', tripData);
-    
-    navigate('/ai-trip-duration', { 
-      state: { 
-        tripName: tripData.name,
-        userUid: currentUser?.uid
-      } 
-    });
-    setIsCreateAiTripModalOpen(false);
-  };
-
   const handleTripClick = (trip) => {
     console.log('🔍 Viewing trip:', trip.name);
     
@@ -1209,19 +1187,11 @@ const MyTripsPage = () => {
             <div className="flex flex-row gap-3 sm:gap-4 justify-center mb-8">
               <button
                 onClick={handlePlanNewAdventure}
-                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl flex-1 sm:flex-none"
+                className="group inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-900 rounded-full font-bold text-sm sm:text-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <Plus className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6 group-hover:rotate-90 transition-transform duration-300" />
                 <span className="hidden sm:inline">Plan New Adventure</span>
                 <span className="sm:hidden">Plan Adventure</span>
-              </button>
-              <button 
-                onClick={handleAITripSuggestions}
-                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 border-2 border-white text-white rounded-full font-bold text-sm sm:text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm flex-1 sm:flex-none"
-              >
-                <Sparkles className="mr-2 sm:mr-3 h-5 sm:h-6 w-5 sm:w-6" />
-                <span className="hidden sm:inline">AI Trip Suggestions</span>
-                <span className="sm:hidden">AI Suggestions</span>
               </button>
             </div>
           </div>
@@ -1289,41 +1259,15 @@ const MyTripsPage = () => {
 
           {/* Error Display */}
           {apiError && (
-            <div className="flex justify-center mb-8">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-2xl w-full">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                      <span className="text-red-600 text-sm font-bold">!</span>
-                    </div>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-red-800 mb-1">
-                      Connection Issue
-                    </h3>
-                    <p className="text-sm text-red-700 mb-3">
-                      {apiError}
-                    </p>
-                    {apiError.includes('backend') && (
-                      <div className="text-xs text-red-600 bg-red-100 p-2 rounded">
-                        <strong>For developers:</strong> Make sure your backend servers are running on:
-                        <br />• Trip Planning: {process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}
-                        <br />• User Services: {process.env.REACT_APP_API_BASE_URL_USER_SERVICES || 'http://localhost:8083/api/v1'}
-                      </div>
-                    )}
-                    <button
-                      onClick={() => {
-                        setApiError(null);
-                        window.location.reload();
-                      }}
-                      className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Retry Connection
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ErrorState
+              title="Unable to Load Trips"
+              message={apiError || "We're having trouble connecting to the server. Please check your connection and try again."}
+              onRetry={() => {
+                setApiError(null);
+                window.location.reload();
+              }}
+              retryText="Try Again"
+            />
           )}
 
           {/* Highlight Ongoing Trip and Other Trips */}
@@ -1431,9 +1375,6 @@ const MyTripsPage = () => {
                               <span className="font-semibold text-sm sm:text-lg text-gray-700">{ongoingTrip.memories} memories</span>
                             </div>
                           )}
-                          <div className="flex items-center">
-                            <span className="font-semibold text-sm sm:text-lg text-gray-700">Budget: ${ongoingTrip.budget}</span>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -1450,7 +1391,7 @@ const MyTripsPage = () => {
                             <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Other Active Trips</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                               {otherTrips.map((trip) => (
-                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                <div key={trip.id} className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
                                   <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                                 </div>
                               ))}
@@ -1470,7 +1411,7 @@ const MyTripsPage = () => {
                             <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">Upcoming Trips</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                               {upcoming.map((trip) => (
-                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                <div key={trip.id} className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
                                   <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                                 </div>
                               ))}
@@ -1482,7 +1423,7 @@ const MyTripsPage = () => {
                             <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-6">Trip History</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                               {history.map((trip) => (
-                                <div key={trip.id} className="min-w-[240px] max-w-[260px] sm:max-w-xs flex-shrink-0">
+                                <div key={trip.id} className="w-[260px] sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
                                   <TripCard trip={trip} getStatusColor={getStatusColor} onClick={() => handleTripClick(trip)} />
                                 </div>
                               ))}
@@ -1530,12 +1471,6 @@ const MyTripsPage = () => {
         isOpen={isCreateTripModalOpen}
         onClose={() => setIsCreateTripModalOpen(false)}
         onCreateTrip={handleCreateTrip}
-      />
-      {/* Enhanced Create Trip Modal */}
-      <CreateAiTripModal
-        isOpen={isCreateAiTripModalOpen}
-        onClose={() => setIsCreateTripModalOpen(false)}
-        onCreateTrip={handleCreateAITrip}
       />
 
       {/* Login Required Popup */}

@@ -8,11 +8,13 @@ import ConfirmStartModal from '../components/ConfirmStartModal';
 import ConfirmEndModal from '../components/ConfirmEndModal';
 import TripCompletionModal from '../components/TripCompletionModal';
 import TripBanner from '../components/trip/TripBanner';
+import { getUserData } from '../utils/userStorage';
 import TripStatusCard from '../components/trip/TripStatusCard';
 import TripItinerary from '../components/trip/TripItinerary';
 import TripMapView from '../components/trip/TripMapView';
 import TripChat from '../components/trip/TripChat';
 import { shouldShowChat } from '../utils/chatService';
+import { useToast } from '../components/ToastProvider';
 
 // API functions for trip confirmation
 const confirmDayStart = async (tripId, day) => {
@@ -276,7 +278,95 @@ const mockTravelersData = {
 };
 
 // Travelers Modal Component
-const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic }) => {
+const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic, tripId, locationData, toast }) => {
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [realTravelers, setRealTravelers] = useState([]);
+  const [isLoadingTravelers, setIsLoadingTravelers] = useState(false);
+
+  // Check if location is already shared when modal opens
+  useEffect(() => {
+    const checkLocationStatus = async () => {
+      if (!isOpen || !tripId) return;
+
+      try {
+        setIsCheckingStatus(true);
+        
+        // Get user data from encrypted storage
+        const userData = getUserData();
+        if (!userData || !userData.uid) return;
+
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split('T')[0];
+
+        // Check if location is already shared
+        const response = await axios.get('http://localhost:5008/api/v1/check-location-shared', {
+          params: {
+            tripId: tripId,
+            userId: userData.uid,
+            date: today
+          }
+        });
+
+        console.log('📍 Location status check:', response.data);
+
+        // Update isPublic state based on API response
+        if (response.data && response.data.shared) {
+          setIsPublic(true);
+        }
+      } catch (error) {
+        console.error('❌ Error checking location status:', error);
+        // Don't show error to user, just default to not shared
+      } finally {
+        setIsCheckingStatus(false);
+      }
+    };
+
+    checkLocationStatus();
+  }, [isOpen, tripId, setIsPublic]);
+
+  // Fetch users at the same location when isPublic becomes true
+  useEffect(() => {
+    const fetchUsersAtLocation = async () => {
+      if (!isPublic || !locationData || !locationData.lat || !locationData.lng) return;
+
+      try {
+        setIsLoadingTravelers(true);
+        
+        console.log('👥 Fetching users at location:', locationData);
+
+        const response = await axios.get('http://localhost:5008/api/v1/users-at-location', {
+          params: {
+            latitude: locationData.lat,
+            longitude: locationData.lng
+          }
+        });
+
+        console.log('✅ Users at location response:', response.data);
+
+        // Extract users array from response
+        const usersArray = response.data.users || response.data || [];
+        console.log('✅ Extracted users array:', usersArray);
+
+        // Filter out current user
+        const userData = getUserData();
+        const currentUserId = userData?.uid;
+        const otherUsers = usersArray.filter(user => user.userId !== currentUserId);
+        
+        console.log('✅ Other travelers (excluding current user):', otherUsers);
+        setRealTravelers(otherUsers);
+      } catch (error) {
+        console.error('❌ Error fetching users at location:', error);
+        setRealTravelers([]);
+      } finally {
+        setIsLoadingTravelers(false);
+      }
+    };
+
+    fetchUsersAtLocation();
+  }, [isPublic, locationData]);
+
   // Prevent body scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -288,6 +378,53 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic })
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Function to share location with the API
+  const handleShareLocation = async () => {
+    try {
+      setIsSharing(true);
+      setShareError(null);
+
+      // Get user data from encrypted storage
+      const userData = getUserData();
+      
+      if (!userData || !userData.uid || !userData.email) {
+        throw new Error('User not logged in. Please log in to share your location.');
+      }
+
+      if (!locationData || !locationData.lat || !locationData.lng) {
+        throw new Error('Location data not available.');
+      }
+
+      if (!tripId) {
+        throw new Error('Trip ID not found.');
+      }
+
+      // Prepare the payload
+      const payload = {
+        tripId: tripId,
+        userId: userData.uid,
+        latitude: locationData.lat,
+        longitude: locationData.lng,
+        email: userData.email
+      };
+
+      console.log('📍 Sharing location:', payload);
+
+      // Call the share location API
+      const response = await axios.post('http://localhost:5008/api/v1/share-location', payload);
+
+      console.log('✅ Location shared successfully:', response.data);
+
+      // Update the public state
+      setIsPublic(true);
+    } catch (error) {
+      console.error('❌ Error sharing location:', error);
+      setShareError(error.response?.data?.message || error.message || 'Failed to share location');
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -313,7 +450,13 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic })
 
         {/* Content */}
         <div className="p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
-          {!isPublic ? (
+          {isCheckingStatus ? (
+            /* Loading state while checking if location is shared */
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 text-sm">Checking your status...</p>
+            </div>
+          ) : !isPublic ? (
             /* Initial state - Make arrival public */
             <div className="text-center py-8">
               <div className="mb-4">
@@ -325,11 +468,26 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic })
                   Make your arrival time public to see other travelers visiting {destination} and potentially meet up!
                 </p>
               </div>
+              
+              {shareError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">{shareError}</p>
+                </div>
+              )}
+              
               <button
-                onClick={() => setIsPublic(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                onClick={handleShareLocation}
+                disabled={isSharing}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
               >
-                Make My Arrival Public
+                {isSharing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Sharing Location...</span>
+                  </>
+                ) : (
+                  'Make My Arrival Public'
+                )}
               </button>
               <p className="text-xs text-gray-500 mt-3">
                 You can change this anytime in your privacy settings
@@ -347,42 +505,83 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic })
                 </div>
               </div>
 
-              {travelers.length > 0 ? (
+              {isLoadingTravelers ? (
+                /* Loading travelers */
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                  <p className="text-gray-600 text-sm">Finding other travelers...</p>
+                </div>
+              ) : realTravelers.length > 0 ? (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">
-                    Other travelers visiting today ({travelers.length})
+                    Other travelers at {destination} today ({realTravelers.length})
                   </h4>
                   <div className="space-y-3">
-                    {travelers.map((traveler) => (
-                      <div key={traveler.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={traveler.avatar}
-                            alt={traveler.name}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-900">{traveler.name}</p>
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
-                              <span>Arriving at {traveler.arrivalTime}</span>
-                              <span>•</span>
-                              <span>{traveler.groupSize} {traveler.groupSize === 1 ? 'person' : 'people'}</span>
+                    {realTravelers.map((traveler, index) => {
+                      const fullName = `${traveler.firstName || ''} ${traveler.lastName || ''}`.trim() || 'Anonymous Traveler';
+                      const arrivalTime = traveler.timestamp ? new Date(traveler.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Unknown';
+                      const profilePic = traveler.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
+                      
+                      return (
+                        <div key={traveler.userId || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={profilePic}
+                              alt={fullName}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`;
+                              }}
+                            />
+                            <div>
+                              <p className="font-medium text-gray-900">{fullName}</p>
+                              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                <span>Shared at {arrivalTime}</span>
+                                {traveler.nationality && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{traveler.nationality}</span>
+                                  </>
+                                )}
+                              </div>
+                              {traveler.languages && traveler.languages.length > 0 && (
+                                <p className="text-xs text-blue-600">
+                                  Speaks: {Array.isArray(traveler.languages) ? traveler.languages.join(', ') : traveler.languages}
+                                </p>
+                              )}
+                              {traveler.profileCompletion && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-green-500 rounded-full" 
+                                      style={{ width: `${traveler.profileCompletion}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs text-gray-500">{traveler.profileCompletion}%</span>
+                                </div>
+                              )}
                             </div>
-                            <p className="text-xs text-blue-600">{traveler.tripType}</p>
                           </div>
+                          <button 
+                            onClick={() => {
+                              // TODO: Implement connect/chat functionality
+                              console.log('Connect with:', traveler);
+                              toast.info(`Connect feature coming soon! User: ${fullName}`, { duration: 2000 });
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                          >
+                            Connect
+                          </button>
                         </div>
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors">
-                          Connect
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-6">
                   <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600">No other public travelers at this destination today.</p>
-                  <p className="text-sm text-gray-500 mt-1">Check back later or explore other destinations!</p>
+                  <p className="text-gray-600">No other travelers at this location today.</p>
+                  <p className="text-sm text-gray-500 mt-1">You're the first one here! Others might join soon.</p>
                 </div>
               )}
             </div>
@@ -396,6 +595,7 @@ const TravelersModal = ({ isOpen, onClose, destination, isPublic, setIsPublic })
 const OngoingTripPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
   
   // Get initial trip data from navigation state (passed from MyTripsPage)
   const initialTripData = location.state?.tripData;
@@ -404,6 +604,7 @@ const OngoingTripPage = () => {
   const [tripData, setTripData] = useState(initialTripData);
   const [isLoadingTripData, setIsLoadingTripData] = useState(false);
   const [tripDataError, setTripDataError] = useState(null);
+  const [isWaitingForAssignments, setIsWaitingForAssignments] = useState(false);
 
   // Extract trip ID for API calls
   const getTripId = (data) => {
@@ -442,11 +643,38 @@ const OngoingTripPage = () => {
       const apiResponse = await response.json();
       console.log('API Response:', apiResponse);
       
+      // Check if trip was not found (waiting for driver/guide assignment)
+      if (apiResponse.success === false && apiResponse.message === "Trip not found") {
+        console.log('Trip not found - waiting for driver/guide assignment');
+        setIsWaitingForAssignments(true);
+        setTripData(null);
+        return;
+      }
+      
       // Extract the actual trip data from the response
       const updatedTripData = apiResponse.data || apiResponse;
       console.log('Extracted trip data:', updatedTripData);
       
-      setTripData(updatedTripData);
+      // Check if driver or guide are needed but not assigned
+      const needsDriver = updatedTripData.driverNeeded === 1 || updatedTripData.driverNeeded === true;
+      const needsGuide = updatedTripData.guideNeeded === 1 || updatedTripData.guideNeeded === true;
+      const hasDriver = updatedTripData.driver_email && updatedTripData.driver_email.trim() !== '';
+      const hasGuide = updatedTripData.guide_email && updatedTripData.guide_email.trim() !== '';
+      
+      // If driver/guide needed but not assigned, show waiting screen
+      if ((needsDriver && !hasDriver) || (needsGuide && !hasGuide)) {
+        console.log('Waiting for assignments:', {
+          needsDriver,
+          hasDriver,
+          needsGuide,
+          hasGuide
+        });
+        setIsWaitingForAssignments(true);
+        setTripData(updatedTripData); // Keep trip data for display purposes
+      } else {
+        setIsWaitingForAssignments(false);
+        setTripData(updatedTripData);
+      }
     } catch (error) {
       console.error('Error fetching trip data:', error);
       setTripDataError(error.message);
@@ -611,7 +839,10 @@ const OngoingTripPage = () => {
     return expanded;
   });
   
-  const [itineraryCollapsed, setItineraryCollapsed] = useState(false);
+  // Get itineraryCollapsed state from navigation (default to false if not provided)
+  const [itineraryCollapsed, setItineraryCollapsed] = useState(
+    location.state?.itineraryCollapsed ?? false
+  );
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [dayStarted, setDayStarted] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
@@ -637,6 +868,7 @@ const OngoingTripPage = () => {
   // Modal states for "See who else is coming"
   const [showTravelersModal, setShowTravelersModal] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState(null);
+  const [selectedLocationData, setSelectedLocationData] = useState(null);
   const [isPublic, setIsPublic] = useState(false);
 
   return (
@@ -667,9 +899,108 @@ const OngoingTripPage = () => {
         )}
       </div>
       
-      <TripBanner 
-        tripData={tripData}
-        formattedDates={formattedDates}
+      {/* Waiting for Driver/Guide Assignment Screen */}
+      {isWaitingForAssignments && (
+        <div className="flex-1 flex items-center justify-center px-4 py-16">
+          <div className="max-w-2xl w-full text-center">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-xl p-8 md:p-12">
+              {/* Animated Icon */}
+              <div className="mb-8">
+                <div className="relative inline-block">
+                  <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="absolute inset-0 w-24 h-24 bg-blue-400 rounded-full animate-ping opacity-20"></div>
+                </div>
+              </div>
+              
+              {/* Main Message */}
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                Preparing Your Trip
+              </h2>
+              
+              <p className="text-lg text-gray-700 mb-6">
+                We're currently assigning the best professionals for your journey
+              </p>
+              
+              {/* Status Details */}
+              <div className="bg-white rounded-xl p-6 mb-6 text-left">
+                <h3 className="font-semibold text-gray-900 mb-4">What's happening:</h3>
+                <div className="space-y-3">
+                  {tripData?.driverNeeded === 1 && !tripData?.driver_email && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span className="text-gray-700">Finding an experienced driver for you...</span>
+                    </div>
+                  )}
+                  {tripData?.guideNeeded === 1 && !tripData?.guide_email && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span className="text-gray-700">Matching you with a knowledgeable guide...</span>
+                    </div>
+                  )}
+                  {tripData?.driver_email && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-gray-700">✓ Driver assigned</span>
+                    </div>
+                  )}
+                  {tripData?.guide_email && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-gray-700">✓ Guide assigned</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Trip Details */}
+              {tripData && (
+                <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                  <p className="text-sm text-gray-600 mb-1">Your Trip</p>
+                  <p className="font-semibold text-gray-900 text-lg">{tripData.tripName}</p>
+                  <p className="text-sm text-gray-600 mt-2">{tripData.baseCity}</p>
+                </div>
+              )}
+              
+              {/* Refresh Button */}
+              <button
+                onClick={refreshTripData}
+                disabled={isLoadingTripData}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingTripData ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Checking Status...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh Status
+                  </>
+                )}
+              </button>
+              
+              {/* Help Text */}
+              <p className="text-sm text-gray-600 mt-6">
+                This usually takes just a few moments. We'll notify you once everything is ready!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Main Trip Content - Only show when not waiting */}
+      {!isWaitingForAssignments && (
+        <>
+          <TripBanner 
+            tripData={tripData}
+            formattedDates={formattedDates}
         daysLeft={daysLeft}
       />
 
@@ -677,9 +1008,6 @@ const OngoingTripPage = () => {
       <div className="bg-gray-50 border-b border-gray-200 py-3">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              Trip ID: <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{actualTripId}</span>
-            </span>
             <span className="text-sm text-gray-600">
               Last Updated: {tripData?.updatedAt ? new Date(tripData.updatedAt.$date || tripData.updatedAt).toLocaleString() : 'Unknown'}
             </span>
@@ -780,6 +1108,7 @@ const OngoingTripPage = () => {
             setSelectedMarker={setSelectedMarker}
             setShowTravelersModal={setShowTravelersModal}
             setSelectedDestination={setSelectedDestination}
+            setSelectedLocationData={setSelectedLocationData}
           />
         </div>
       </div>
@@ -787,10 +1116,17 @@ const OngoingTripPage = () => {
       {/* Modals */}
       <TravelersModal
         isOpen={showTravelersModal}
-        onClose={() => setShowTravelersModal(false)}
+        onClose={() => {
+          setShowTravelersModal(false);
+          // Reset isPublic state when modal closes so it checks fresh next time
+          setIsPublic(false);
+        }}
         destination={selectedDestination}
         isPublic={isPublic}
         setIsPublic={setIsPublic}
+        tripId={actualTripId}
+        locationData={selectedLocationData}
+        toast={toast}
       />
       
       <ConfirmStartModal
@@ -819,10 +1155,10 @@ const OngoingTripPage = () => {
             refreshTripData();
             
             console.log(`Day ${dayNumber} start confirmed successfully`);
+            toast.success(`Day ${dayNumber} started successfully!`, { duration: 2000 });
           } catch (error) {
             console.error('Failed to confirm day start:', error);
-            // You might want to show an error message to the user here
-            alert('Failed to confirm day start. Please try again.');
+            toast.error('Failed to confirm day start. Please try again.');
           }
         }}
       />
@@ -856,10 +1192,10 @@ const OngoingTripPage = () => {
             refreshTripData();
             
             console.log(`Day ${dayNumber} end confirmed successfully`);
+            toast.success(`Day ${dayNumber} completed successfully!`, { duration: 2000 });
           } catch (error) {
             console.error('Failed to confirm day end:', error);
-            // You might want to show an error message to the user here
-            alert('Failed to confirm day end. Please try again.');
+            toast.error('Failed to confirm day end. Please try again.');
           }
         }}
       />
@@ -873,6 +1209,8 @@ const OngoingTripPage = () => {
       />
       
       <Footer />
+        </>
+      )}
     </div>
   );
 };

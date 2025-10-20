@@ -1,226 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import InvitationsManager from '../../components/InvitationsManager';
-import JoinRequestsManager from '../../components/JoinRequestsManager';
 import { PoolsApi } from '../../api/poolsApi';
 import { useAuth } from '../../hooks/useAuth';
+import ErrorState from '../../components/ErrorState';
+import LoginRequiredPopup from '../../components/LoginRequiredPopup';
+import { useToast } from '../../components/ToastProvider';
 import { 
-  EnvelopeIcon, 
-  UserGroupIcon, 
   CalendarIcon,
   MapPinIcon,
   BellIcon,
-  InboxIcon
+  InboxIcon,
+  XMarkIcon,
+  CheckIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 const InvitationsAndRequests = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [invitationsModalOpen, setInvitationsModalOpen] = useState(false);
-  const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
+  const { user, displayInfo } = useAuth(); // Get displayInfo for user email
+  const toast = useToast();
+  const [activeTab, setActiveTab] = useState('invitations');
   const [invitationsCount, setInvitationsCount] = useState(0);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [useMockData, setUseMockData] = useState(true); // Toggle for mock data
-
-  // Mock data for demonstration
-  const mockPendingRequests = {
-    groups: [
-      {
-        groupId: "mock-group-1",
-        groupName: "Sri Lanka Adventure Seekers",
-        pendingRequests: [
-          {
-            requestId: "req_001",
-            userId: "testUser002Firebase",
-            userName: "Sarah Johnson",
-            userEmail: "sarah.johnson@gmail.com",
-            message: "Hi everyone! I'm an experienced traveler who loves adventure activities and cultural experiences. I'd love to join your group for this amazing Sri Lankan adventure!",
-            requestedAt: "2025-08-27T10:30:00Z",
-            memberApprovals: [
-              {
-                memberId: "wBuieMHjt1RKKgRoDgI9v6VyNHF3",
-                action: "approve",
-                reason: "Great profile and experience!",
-                respondedAt: "2025-08-27T11:00:00Z"
-              }
-            ],
-            pendingMembers: ["testUser001Firebase"],
-            totalMembersRequired: 3,
-            votesReceived: 1
-          },
-          {
-            requestId: "req_002",
-            userId: "testUser003Firebase",
-            userName: "Mike Chen",
-            userEmail: "mike.chen@outlook.com",
-            message: "I'm really excited about this trip! I've been to Southeast Asia before and I'm particularly interested in the wildlife and nature experiences in Sri Lanka.",
-            requestedAt: "2025-08-27T14:15:00Z",
-            memberApprovals: [],
-            pendingMembers: ["wBuieMHjt1RKKgRoDgI9v6VyNHF3", "testUser001Firebase"],
-            totalMembersRequired: 3,
-            votesReceived: 0
-          }
-        ],
-        totalPendingRequests: 2
-      },
-      {
-        groupId: "mock-group-2",
-        groupName: "Cultural Heritage Explorers",
-        pendingRequests: [
-          {
-            requestId: "req_003",
-            userId: "testUser004Firebase",
-            userName: "Elena Rodriguez",
-            userEmail: "elena.rodriguez@yahoo.com",
-            message: "As an art history graduate, I'm fascinated by Sri Lankan culture and ancient temples. I would love to contribute my knowledge to the group!",
-            requestedAt: "2025-08-28T09:20:00Z",
-            memberApprovals: [
-              {
-                memberId: "groupMember1",
-                action: "approve",
-                reason: "Perfect fit for our cultural focus!",
-                respondedAt: "2025-08-28T10:00:00Z"
-              },
-              {
-                memberId: "groupMember2",
-                action: "approve",
-                reason: "Her expertise would be valuable",
-                respondedAt: "2025-08-28T11:30:00Z"
-              }
-            ],
-            pendingMembers: ["wBuieMHjt1RKKgRoDgI9v6VyNHF3"],
-            totalMembersRequired: 3,
-            votesReceived: 2
-          }
-        ],
-        totalPendingRequests: 1
-      }
-    ],
-    totalGroups: 2,
-    totalPendingRequests: 3
-  };
-
-  // Mock invitations data for demonstration
-  const mockInvitations = {
-    invitations: [
-      {
-        invitationId: "inv_001",
-        groupId: "group-001",
-        groupName: "Colombo City Explorers",
-        inviterName: "David Wilson",
-        inviterEmail: "david.wilson@gmail.com",
-        invitedAt: "2025-08-27T16:45:00Z",
-        tripStartDate: "2025-09-15T00:00:00Z",
-        tripEndDate: "2025-09-20T00:00:00Z",
-        memberCount: 4,
-        maxMembers: 6,
-        message: "Hey! We're planning an amazing cultural tour of Colombo and the surrounding areas. Your travel experience would be a great addition to our group!",
-        groupDescription: "A group focused on exploring Sri Lanka's vibrant capital city, ancient temples, and local cuisine.",
-        preferredActivities: ["Cultural Tours", "Food Experiences", "Historical Sites"],
-        baseCity: "Colombo",
-        status: "pending"
-      },
-      {
-        invitationId: "inv_002", 
-        groupId: "group-002",
-        groupName: "Wildlife Safari Adventure",
-        inviterName: "Priya Sharma",
-        inviterEmail: "priya.sharma@yahoo.com",
-        invitedAt: "2025-08-28T09:30:00Z",
-        tripStartDate: "2025-09-25T00:00:00Z",
-        tripEndDate: "2025-10-02T00:00:00Z",
-        memberCount: 3,
-        maxMembers: 8,
-        message: "Hi there! We're organizing an incredible wildlife safari covering Yala, Udawalawe, and Minneriya National Parks. Would you like to join us for this amazing wildlife experience?",
-        groupDescription: "Wildlife enthusiasts planning to explore Sri Lanka's best national parks and see elephants, leopards, and exotic birds.",
-        preferredActivities: ["Safari", "Wildlife Photography", "Nature Walks"],
-        baseCity: "Colombo",
-        status: "pending"
-      },
-      {
-        invitationId: "inv_003",
-        groupId: "group-003", 
-        groupName: "Hill Country Trekkers",
-        inviterName: "James Mitchell",
-        inviterEmail: "james.mitchell@outlook.com",
-        invitedAt: "2025-08-28T14:20:00Z",
-        tripStartDate: "2025-10-10T00:00:00Z",
-        tripEndDate: "2025-10-17T00:00:00Z",
-        memberCount: 2,
-        maxMembers: 5,
-        message: "We're planning an adventurous trekking expedition through Sri Lanka's hill country including Ella, Nuwara Eliya, and Adam's Peak. Perfect for adventure lovers!",
-        groupDescription: "Adventure seekers planning hiking trails, tea plantation visits, and mountain climbing in Sri Lanka's beautiful hill country.",
-        preferredActivities: ["Hiking", "Mountain Climbing", "Tea Plantation Tours"],
-        baseCity: "Kandy",
-        status: "pending"
-      }
-    ],
-    totalInvitations: 3
-  };
+  const [error, setError] = useState(null);
+  const [totalPendingItems, setTotalPendingItems] = useState(0);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchCounts();
+      fetchData();
+    } else if (user === null) {
+      // User is explicitly not logged in
+      setShowLoginPopup(true);
+      setLoading(false);
     }
   }, [user]);
 
-  const fetchCounts = async () => {
+  const fetchData = async () => {
     try {
-      console.log('🔄 Starting fetchCounts for user:', user.uid);
+      console.log('🔄 Starting fetchData for user:', user.uid);
       setLoading(true);
+      setError(null); // Clear previous errors
       
-      if (useMockData) {
-        // Use mock data for demonstration
-        console.log('🎭 Using mock data for demonstration');
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setInvitationsCount(mockInvitations.totalInvitations); // Mock invitations count
-        setInvitations(mockInvitations.invitations);
-        setPendingRequests(mockPendingRequests.groups);
-        setJoinRequestsCount(mockPendingRequests.totalPendingRequests);
-        
-        console.log('✅ Mock data loaded successfully');
-        console.log('📨 Mock invitations loaded:', mockInvitations.totalInvitations);
-        console.log('🗳️ Mock pending requests loaded:', mockPendingRequests.totalPendingRequests);
-        return;
-      }
+      // Get user email from user or displayInfo
+      const userEmail = user?.email || displayInfo?.email;
+      console.log('🔄 User email:', userEmail);
       
-      // Real API calls
-      // Fetch invitations count
-      console.log('📨 Calling PoolsApi.getUserInvitations with userId:', user.uid);
-      const invitationsResponse = await PoolsApi.getUserInvitations(user.uid);
-      console.log('📨 Invitations response received:', invitationsResponse);
-      console.log('📨 Raw invitations data:', invitationsResponse.invitations);
-      console.log('📨 Invitations count:', invitationsResponse.invitations?.length || 0);
+      const comprehensiveResponse = await PoolsApi.getAllPendingItems(user.uid, userEmail);
+      console.log('📋 Response received:', comprehensiveResponse);
       
-      setInvitationsCount(invitationsResponse.invitations?.length || 0);
-      setInvitations(invitationsResponse.invitations || []);
-      
-      // Fetch pending requests that user needs to vote on
-      console.log('🗳️ Calling PoolsApi.getMyPendingRequests with userId:', user.uid);
-      const pendingRequestsResponse = await PoolsApi.getMyPendingRequests(user.uid);
-      console.log('🗳️ Pending requests response received:', pendingRequestsResponse);
-      console.log('🗳️ Total pending requests:', pendingRequestsResponse.totalPendingRequests || 0);
-      
-      setPendingRequests(pendingRequestsResponse.groups || []);
-      setJoinRequestsCount(pendingRequestsResponse.totalPendingRequests || 0);
-      
-      console.log('✅ fetchCounts completed successfully');
+      setTotalPendingItems(comprehensiveResponse.totalPendingItems || 0);
+      setInvitationsCount(comprehensiveResponse.totalInvitations || 0);
+      setJoinRequestsCount(comprehensiveResponse.totalVoteRequests || 0);
+      setInvitations(comprehensiveResponse.pendingInvitations || []);
+      setPendingRequests(comprehensiveResponse.pendingVotes || []);
       
     } catch (error) {
-      console.error('❌ Error fetching counts:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack,
-        userId: user.uid
-      });
-      
-      // Set counts to 0 on error to prevent UI issues
+      console.error('❌ Error fetching data:', error);
+      setError(error.message || 'Failed to load invitations and requests');
+      setTotalPendingItems(0);
       setInvitationsCount(0);
       setJoinRequestsCount(0);
       setPendingRequests([]);
@@ -234,90 +75,29 @@ const InvitationsAndRequests = () => {
     try {
       console.log('📮 Responding to invitation:', { invitationId, groupId, action, message });
       
-      if (useMockData) {
-        // Simulate API call for mock data
-        console.log('🎭 Simulating invitation response with mock data');
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Show mock success message
-        alert(`✅ Mock: Invitation ${action}ed successfully!\n\nThis is a demo using mock data. In real usage, this would call the API.`);
-        
-        // Remove the responded invitation from mock data
-        setInvitations(prev => prev.filter(inv => inv.invitationId !== invitationId));
-        setInvitationsCount(prev => Math.max(0, prev - 1));
-        
-        return;
-      }
-      
-      // Real API call - you'll need to implement the respondToInvitation endpoint
       const responseData = {
         userId: user.uid,
         invitationId: invitationId,
-        action: action, // 'accept' or 'reject'
+        action: action,
         message: message
       };
       
       const result = await PoolsApi.respondToInvitation(responseData);
       console.log('📮 Invitation response result:', result);
       
-      // Show success message
-      alert(`✅ Invitation ${action}ed successfully!`);
-      
-      // Refresh the data
-      fetchCounts();
+      toast.success(`Invitation ${action}ed successfully!`, { duration: 3000 });
+      fetchData(); // Refresh data
       
     } catch (error) {
       console.error('❌ Error responding to invitation:', error);
-      alert(`❌ Failed to respond to invitation: ${error.message}`);
+      toast.error(`Failed to respond to invitation: ${error.message}`, { duration: 3000 });
     }
-  };
-
-  const handleInvitationUpdate = (result) => {
-    console.log('Invitation updated:', result);
-    fetchCounts(); // Refresh counts
-  };
-
-  const handleJoinRequestUpdate = (result) => {
-    console.log('Join request updated:', result);
-    fetchCounts(); // Refresh counts
   };
 
   const handleVoteOnRequest = async (groupId, requestUserId, approved, comment = '') => {
     try {
       console.log('🗳️ Voting on request:', { groupId, requestUserId, approved, comment });
       
-      if (useMockData) {
-        // Simulate API call for mock data
-        console.log('🎭 Simulating vote with mock data');
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Show mock success message
-        const action = approved ? 'approved' : 'rejected';
-        alert(`✅ Mock: Request ${action} successfully!\n\nThis is a demo using mock data. In real usage, this would call the API.`);
-        
-        // Simulate updating the mock data (remove the voted request)
-        setPendingRequests(prev => 
-          prev.map(group => 
-            group.groupId === groupId 
-              ? {
-                  ...group,
-                  pendingRequests: group.pendingRequests.filter(req => req.userId !== requestUserId)
-                }
-              : group
-          ).filter(group => group.pendingRequests.length > 0)
-        );
-        
-        // Update counts
-        setJoinRequestsCount(prev => Math.max(0, prev - 1));
-        
-        return;
-      }
-      
-      // Real API call
       const voteData = {
         userId: user.uid,
         approved: approved,
@@ -327,395 +107,356 @@ const InvitationsAndRequests = () => {
       const result = await PoolsApi.voteOnJoinRequestNew(groupId, requestUserId, voteData);
       console.log('🗳️ Vote result:', result);
       
-      // Show success message
       const action = approved ? 'approved' : 'rejected';
-      alert(`✅ Request ${action} successfully!\n\nStatus: ${result.requestStatus}\nVotes: ${result.totalVotesReceived}/${result.totalMembersRequired}`);
+      toast.success(`Request ${action} successfully!\n\nStatus: ${result.requestStatus}\nVotes: ${result.totalVotesReceived}/${result.totalMembersRequired}`, { duration: 4000 });
       
-      // Refresh the pending requests
-      fetchCounts();
+      fetchData(); // Refresh data
       
     } catch (error) {
       console.error('❌ Error voting on request:', error);
-      alert(`❌ Failed to vote on request: ${error.message}`);
+      toast.error(`Failed to vote on request: ${error.message}`, { duration: 3000 });
     }
   };
 
-  if (!user) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Please log in</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            You need to be logged in to view your invitations and requests.
-          </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Log In
-          </button>
-        </div>
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading invitations and requests...</span>
       </div>
     );
   }
 
+  if (!user) {
+    return (
+      <>
+        <ErrorState
+          title="Login Required"
+          message="You need to be logged in to view your invitations and requests."
+          showRetry={false}
+          icon={
+            <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          }
+        />
+        
+        <LoginRequiredPopup 
+          isOpen={showLoginPopup}
+          onClose={() => setShowLoginPopup(false)}
+        />
+      </>
+    );
+  }
+
+  // Network/fetch error state
+  if (error) {
+    return (
+      <ErrorState
+        title="Failed to Load Data"
+        message={error}
+        onRetry={fetchData}
+        retryText="Try Again"
+        icon={
+          <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  Invitations & Requests
-                </h1>
-                <p className="text-gray-600">
-                  Manage your pool invitations and join requests
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600">
-                  {useMockData ? 'Mock Data' : 'Live Data'}
-                </span>
-                <button
-                  onClick={() => {
-                    setUseMockData(!useMockData);
-                    setTimeout(() => fetchCounts(), 100); // Refresh data after toggle
-                  }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    useMockData ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      useMockData ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
+            Invitations & Requests
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            Manage your pool invitations and join requests
+            {totalPendingItems > 0 && (
+              <span className="ml-2 bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                {totalPendingItems} pending
+              </span>
+            )}
+          </p>
         </div>
       </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Invitations Card */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <EnvelopeIcon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Pool Invitations
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    Invitations to join travel groups
-                  </p>
-                </div>
-              </div>
+        
+        {/* Tab Navigation */}
+        <div className="flex gap-3 sm:gap-4">
+          <button
+            onClick={() => setActiveTab('invitations')}
+            className={`flex-1 px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base font-medium rounded-xl transition-all ${
+              activeTab === 'invitations'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 border border-gray-200 dark:border-secondary-600'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <EnvelopeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Pool Invitations</span>
+              <span className="sm:hidden">Invitations</span>
               {invitationsCount > 0 && (
-                <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  activeTab === 'invitations' 
+                    ? 'bg-white/20 text-white' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
                   {invitationsCount}
                 </span>
               )}
             </div>
-            
-            <div className="text-center py-8">
-              {loading ? (
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto"></div>
-              ) : invitationsCount > 0 ? (
-                <>
-                  <InboxIcon className="mx-auto h-10 w-10 text-blue-500 mb-3" />
-                  <p className="text-gray-900 font-medium mb-2">
-                    You have {invitationsCount} pending invitation{invitationsCount !== 1 ? 's' : ''}
-                  </p>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Review and respond to invitations from other travelers
-                  </p>
-                </>
-              ) : (
-                <>
-                  <EnvelopeIcon className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                  <p className="text-gray-600 mb-2">No pending invitations</p>
-                  <p className="text-gray-500 text-sm">
-                    You'll see invitations to join travel groups here
-                  </p>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => setInvitationsModalOpen(true)}
-              disabled={loading}
-              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              View Invitations
-            </button>
-          </div>
-
-          {/* Join Requests Card */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <UserGroupIcon className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Join Requests
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    Requests to join your groups
-                  </p>
-                </div>
-              </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`flex-1 px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base font-medium rounded-xl transition-all ${
+              activeTab === 'requests'
+                ? 'bg-green-600 text-white shadow-lg shadow-green-500/20'
+                : 'bg-white dark:bg-secondary-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary-700 border border-gray-200 dark:border-secondary-600'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Join Requests</span>
+              <span className="sm:hidden">Requests</span>
               {joinRequestsCount > 0 && (
-                <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  activeTab === 'requests' 
+                    ? 'bg-white/20 text-white' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
                   {joinRequestsCount}
                 </span>
               )}
             </div>
-            
-            <div className="text-center py-8">
-              {loading ? (
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-600 border-t-transparent mx-auto"></div>
-              ) : joinRequestsCount > 0 ? (
-                <>
-                  <BellIcon className="mx-auto h-10 w-10 text-green-500 mb-3" />
-                  <p className="text-gray-900 font-medium mb-2">
-                    You have {joinRequestsCount} pending request{joinRequestsCount !== 1 ? 's' : ''}
-                  </p>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Review and vote on join requests for your groups
-                  </p>
-                </>
-              ) : (
-                <>
-                  <UserGroupIcon className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                  <p className="text-gray-600 mb-2">No pending requests</p>
-                  <p className="text-gray-500 text-sm">
-                    Join requests for your groups will appear here
-                  </p>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => setJoinRequestsModalOpen(true)}
-              disabled={loading}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              Manage Requests
-            </button>
-          </div>
+          </button>
         </div>
 
-        {/* Invitations Display */}
-        {invitationsCount > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">
-              Pool Invitations ({invitationsCount})
-            </h3>
-            <div className="space-y-6">
-              {invitations.map((invitation) => (
-                <div key={invitation.invitationId} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-lg font-medium text-blue-600">
-                            {invitation.inviterName?.charAt(0) || 'U'}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-medium text-gray-900">
-                            {invitation.groupName}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Invited by {invitation.inviterName} • {invitation.memberCount}/{invitation.maxMembers} members
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <p className="text-sm text-gray-700 mb-3">
-                          "{invitation.message}"
-                        </p>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {invitation.groupDescription}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">📅 Trip Dates:</span>
-                          <p className="text-gray-600">
-                            {new Date(invitation.tripStartDate).toLocaleDateString()} - {new Date(invitation.tripEndDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">📍 Base City:</span>
-                          <p className="text-gray-600">{invitation.baseCity}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">🎯 Activities:</span>
-                          <p className="text-gray-600">{invitation.preferredActivities?.join(', ')}</p>
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-gray-500 mb-4">
-                        Invited: {new Date(invitation.invitedAt).toLocaleDateString()} at {new Date(invitation.invitedAt).toLocaleTimeString()}
-                      </div>
-                    </div>
+        {/* Tab Content */}
+        <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-600 p-4 sm:p-6">
+            {activeTab === 'invitations' ? (
+              /* Invitations Tab */
+              invitationsCount === 0 ? (
+                <ErrorState
+                  title="No Pending Invitations"
+                  message="You'll see invitations to join travel groups here."
+                  showRetry={false}
+                  icon={
+                    <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  }
+                />
+              ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {invitations.map((invitation, idx) => {
+                    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(invitation.inviterName || 'User')}&background=random&color=fff`;
                     
-                    <div className="flex space-x-2 ml-6">
-                      <button
-                        onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'accept', '')}
-                        className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        ✅ Accept
-                      </button>
-                      <button
-                        onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'reject', 'Thank you for the invitation, but I cannot join this trip.')}
-                        className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        ❌ Decline
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Pending Requests Display */}
-        {joinRequestsCount > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">
-              Pending Join Requests ({joinRequestsCount})
-            </h3>
-            <div className="space-y-6">
-              {pendingRequests.map((group) => (
-                <div key={group.groupId} className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">
-                    {group.groupName}
-                  </h4>
-                  <div className="space-y-4">
-                    {group.pendingRequests?.map((request) => (
-                      <div key={request.requestId} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-600">
-                                  {request.userName?.charAt(0) || 'U'}
+                    return (
+                      <div key={invitation.invitationId || idx} className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700 p-4 sm:p-5 hover:shadow-lg transition-all duration-300">
+                        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                          <img 
+                            src={avatarUrl} 
+                            alt={invitation.inviterName || 'User'} 
+                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0" 
+                          />
+                          <div className="flex-1 min-w-0 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg mb-1">{invitation.groupName}</h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                                  Invited by <span className="font-medium">{invitation.inviterName}</span> • {invitation.currentMembers}/{invitation.maxMembers} members
+                                </p>
+                                {invitation.tripName && (
+                                  <p className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">{invitation.tripName}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <button
+                                  onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'reject', 'Thank you for the invitation, but I cannot join this trip.')}
+                                  className="px-3 sm:px-4 py-2 bg-white dark:bg-secondary-700 text-red-600 dark:text-red-400 text-xs sm:text-sm font-medium rounded-full hover:bg-red-50 dark:hover:bg-secondary-600 transition-colors border border-red-200 dark:border-red-700"
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => handleInvitationResponse(invitation.invitationId, invitation.groupId, 'accept', '')}
+                                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                  Accept
+                                </button>
+                              </div>
+                            </div>
+                            {invitation.message && (
+                              <div className="bg-white/50 dark:bg-secondary-800/50 rounded-lg p-3 mb-3">
+                                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 italic">"{invitation.message}"</p>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
+                              <div className="bg-white/60 dark:bg-secondary-800/60 rounded-lg p-2">
+                                <span className="text-gray-500 dark:text-gray-400 block mb-1">Trip Dates</span>
+                                <span className="font-medium text-gray-900 dark:text-white text-xs">
+                                  {new Date(invitation.tripStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(invitation.tripEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                 </span>
                               </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {request.userName || 'Unknown User'}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {request.userEmail}
-                                </p>
+                              <div className="bg-white/60 dark:bg-secondary-800/60 rounded-lg p-2">
+                                <span className="text-gray-500 dark:text-gray-400 block mb-1">Base City</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{invitation.baseCity}</span>
+                              </div>
+                              <div className="bg-white/60 dark:bg-secondary-800/60 rounded-lg p-2 col-span-2 sm:col-span-1">
+                                <span className="text-gray-500 dark:text-gray-400 block mb-1">Activities</span>
+                                <span className="font-medium text-gray-900 dark:text-white text-xs truncate block">{invitation.preferredActivities?.join(', ') || 'Various'}</span>
                               </div>
                             </div>
-                            <p className="text-sm text-gray-700 mb-3">
-                              "{request.message}"
-                            </p>
-                            <div className="text-xs text-gray-500 mb-3">
-                              Requested: {new Date(request.requestedAt).toLocaleDateString()} at {new Date(request.requestedAt).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              /* Join Requests Tab */
+              joinRequestsCount === 0 ? (
+                <ErrorState
+                  title="No Pending Requests"
+                  message="Join requests for your groups will appear here."
+                  showRetry={false}
+                  icon={
+                    <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  }
+                />
+              ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {pendingRequests.map((request, idx) => {
+                    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.requestingUserName || 'User')}&background=random&color=fff`;
+                    
+                    return (
+                      <div key={request.joinRequestId || idx} className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-700 p-4 sm:p-5 hover:shadow-lg transition-all duration-300">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{request.groupName}</h4>
+                            {request.tripName && (
+                              <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium">{request.tripName}</p>
+                            )}
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
+                            request.urgencyLevel === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                            request.urgencyLevel === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          }`}>
+                            {request.daysPending}d pending
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                          <img 
+                            src={avatarUrl} 
+                            alt={request.requestingUserName || 'User'} 
+                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0" 
+                          />
+                          <div className="flex-1 min-w-0 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">{request.requestingUserName || 'Unknown User'}</h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{request.requestingUserEmail}</p>
+                                {request.requestingUserProfile && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    {request.requestingUserProfile.nationality}
+                                    {request.requestingUserProfile.age && ` • ${request.requestingUserProfile.age} years`}
+                                  </div>
+                                )}
+                              </div>
+                              {!request.hasCurrentUserVoted && (
+                                <div className="flex gap-2 flex-shrink-0">
+                                  <button
+                                    onClick={() => handleVoteOnRequest(request.groupId, request.requestingUserId, false, 'Not a good fit')}
+                                    className="px-3 sm:px-4 py-2 bg-white dark:bg-secondary-700 text-red-600 dark:text-red-400 text-xs sm:text-sm font-medium rounded-full hover:bg-red-50 dark:hover:bg-secondary-600 transition-colors border border-red-200 dark:border-red-700"
+                                  >
+                                    Reject
+                                  </button>
+                                  <button
+                                    onClick={() => handleVoteOnRequest(request.groupId, request.requestingUserId, true, '')}
+                                    className="px-3 sm:px-4 py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-green-700 transition-colors shadow-sm"
+                                  >
+                                    Approve
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            <div className="text-xs text-gray-600 mb-3">
-                              Votes: {request.votesReceived || 0} / {request.totalMembersRequired || 0} required
-                            </div>
-                            {request.memberApprovals && request.memberApprovals.length > 0 && (
-                              <div className="text-xs text-gray-500 mb-3">
-                                <span className="font-medium">Existing votes:</span>
-                                {request.memberApprovals.map((approval, index) => (
-                                  <span key={index} className="ml-1">
-                                    {approval.action === 'approve' ? '✅' : '❌'}
-                                  </span>
-                                ))}
+                            {request.requestMessage && (
+                              <div className="bg-white/50 dark:bg-secondary-800/50 rounded-lg p-3 mb-3">
+                                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 italic">"{request.requestMessage}"</p>
+                              </div>
+                            )}
+                            {request.requestingUserProfile && (
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
+                                <div className="bg-white/60 dark:bg-secondary-800/60 rounded-lg p-2">
+                                  <span className="text-gray-500 dark:text-gray-400 block mb-1">Languages</span>
+                                  <span className="font-medium text-gray-900 dark:text-white text-xs truncate block">{request.requestingUserProfile.languages?.join(', ') || 'Not specified'}</span>
+                                </div>
+                                <div className="bg-white/60 dark:bg-secondary-800/60 rounded-lg p-2">
+                                  <span className="text-gray-500 dark:text-gray-400 block mb-1">Budget Level</span>
+                                  <span className="font-medium text-gray-900 dark:text-white">{request.requestingUserProfile.budgetLevel || 'Not specified'}</span>
+                                </div>
+                                <div className="bg-white/60 dark:bg-secondary-800/60 rounded-lg p-2 col-span-2 sm:col-span-1">
+                                  <span className="text-gray-500 dark:text-gray-400 block mb-1">Votes</span>
+                                  <span className="font-medium text-gray-900 dark:text-white">{request.totalVotesReceived} / {request.totalVotesRequired}</span>
+                                </div>
+                              </div>
+                            )}
+                            {request.hasCurrentUserVoted && (
+                              <div className="mt-3 text-xs sm:text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 p-2 sm:p-3 rounded-lg font-medium">
+                                ✅ You have already voted: <span className="capitalize">{request.currentUserVote}</span>
                               </div>
                             )}
                           </div>
-                          <div className="flex space-x-2 ml-4">
-                            <button
-                              onClick={() => handleVoteOnRequest(group.groupId, request.userId, true, '')}
-                              className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                            >
-                              ✅ Approve
-                            </button>
-                            <button
-                              onClick={() => handleVoteOnRequest(group.groupId, request.userId, false, 'Not a good fit')}
-                              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                            >
-                              ❌ Reject
-                            </button>
-                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              )
+            )}
           </div>
-        )}
 
         {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-600 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <button
               onClick={() => navigate('/pools')}
-              className="flex items-center justify-center px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-center px-4 py-3 bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-secondary-600 transition-colors border border-gray-200 dark:border-secondary-600 font-medium text-sm sm:text-base"
             >
-              <MapPinIcon className="h-5 w-5 mr-2" />
+              <MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
               Find Pools
             </button>
             <button
               onClick={() => navigate('/pool-duration')}
-              className="flex items-center justify-center px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-center px-4 py-3 bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-secondary-600 transition-colors border border-gray-200 dark:border-secondary-600 font-medium text-sm sm:text-base"
             >
-              <UserGroupIcon className="h-5 w-5 mr-2" />
+              <UserGroupIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
               Create Pool
             </button>
             <button
               onClick={() => navigate('/trips')}
-              className="flex items-center justify-center px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-center px-4 py-3 bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-secondary-600 transition-colors border border-gray-200 dark:border-secondary-600 font-medium text-sm sm:text-base"
             >
-              <CalendarIcon className="h-5 w-5 mr-2" />
+              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
               My Trips
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Modals */}
-      <InvitationsManager
-        isOpen={invitationsModalOpen}
-        onClose={() => setInvitationsModalOpen(false)}
-        onInvitationUpdate={handleInvitationUpdate}
-      />
-
-      <JoinRequestsManager
-        groupId={null} // This will be managed differently for user's groups
-        isOpen={joinRequestsModalOpen}
-        onClose={() => setJoinRequestsModalOpen(false)}
-        onRequestUpdate={handleJoinRequestUpdate}
-      />
+      
+        {/* Login Required Popup */}
+        <LoginRequiredPopup 
+          isOpen={showLoginPopup}
+          onClose={() => setShowLoginPopup(false)}
+        />
     </div>
   );
 };
