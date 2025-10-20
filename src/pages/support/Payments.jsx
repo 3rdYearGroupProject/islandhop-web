@@ -15,12 +15,14 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
+import { useToast } from '../../components/ToastProvider';
 
 const Payments = () => {
   const [driverPayments, setDriverPayments] = useState([]);
   const [guidePayments, setGuidePayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const toast = useToast();
   const [filter, setFilter] = useState('pending'); // pending, completed, all
   const [activeTab, setActiveTab] = useState('drivers'); // drivers, guides, history
   const [searchTerm, setSearchTerm] = useState('');
@@ -158,7 +160,7 @@ const Payments = () => {
 
   const submitPayment = async () => {
     if (!selectedPayment || !evidenceFile) {
-      alert('Please upload evidence before submitting');
+      toast.warning('Please upload evidence before submitting');
       return;
     }
 
@@ -168,9 +170,10 @@ const Payments = () => {
       const formData = new FormData();
       formData.append('evidence', evidenceFile);
 
-      const endpoint = selectedPayment.type === 'driver' 
-        ? `http://localhost:4021/payment/update/drivers/${selectedPayment.tripId}`
-        : `http://localhost:4021/payment/update/guides/${selectedPayment.tripId}`;
+      // Determine the correct role for the endpoint
+      const role = selectedPayment.type === 'driver' ? 'drivers' : 'guides';
+      console.log('Submitting payment for role:', role);
+      const endpoint = `http://localhost:4021/payment/update/${role}/${selectedPayment.tripId}`;
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -178,18 +181,20 @@ const Payments = () => {
       });
 
       if (response.ok) {
-        alert('Payment marked as paid successfully!');
+        const result = await response.json();
+        toast.success('Payment marked as paid successfully!');
         setShowPaymentModal(false);
         setSelectedPayment(null);
         setEvidenceFile(null);
         // Refresh payment data
         await fetchPayments();
       } else {
-        throw new Error('Failed to update payment');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update payment');
       }
     } catch (err) {
       console.error('Error submitting payment:', err);
-      alert('Failed to update payment. Please try again.');
+      toast.error(`Failed to update payment: ${err.message}`);
     } finally {
       setUploadLoading(false);
     }
