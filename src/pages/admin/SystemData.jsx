@@ -71,7 +71,7 @@ const SystemData = () => {
         try {
           console.log("Fetching vehicles...");
           const vehiclesResponse = await axios.get(
-            "http://localhost:8091/api/admin/vehicle-types",
+            "http://localhost:8091/api/v1/admin/vehicle-types",
             {
               headers: {
                 Authorization: `Bearer ${authToken}`,
