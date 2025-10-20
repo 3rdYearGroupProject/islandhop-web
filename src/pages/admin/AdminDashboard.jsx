@@ -131,7 +131,7 @@ const AdminDashboard = ({ onPageChange }) => {
       color: "neutral",
     },
     {
-      title: "Revenue",
+      title: "Total Transactions",
       value: revenue,
       change: "+15%",
       changeType: "positive",
@@ -247,6 +247,15 @@ const AdminDashboard = ({ onPageChange }) => {
                     </p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {stat.value}
+                    </p>
+                    <p
+                      className={`text-sm font-medium mt-1 ${
+                        stat.changeType === "positive"
+                          ? "text-success-600 dark:text-success-400"
+                          : "text-danger-600 dark:text-danger-400"
+                      }`}
+                    >
+                      {stat.change} from last month
                     </p>
                   </div>
                   <div
