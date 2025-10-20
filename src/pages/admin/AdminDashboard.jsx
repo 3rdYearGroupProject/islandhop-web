@@ -7,11 +7,9 @@ import {
   CogIcon,
   PresentationChartBarIcon,
   ServerIcon,
-  ShieldCheckIcon,
   BellIcon,
   UserGroupIcon,
   ClockIcon,
-  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 const AdminDashboard = ({ onPageChange }) => {
@@ -133,7 +131,7 @@ const AdminDashboard = ({ onPageChange }) => {
       color: "neutral",
     },
     {
-      title: "Revenue",
+      title: "Total Transactions",
       value: revenue,
       change: "+15%",
       changeType: "positive",
@@ -165,11 +163,11 @@ const AdminDashboard = ({ onPageChange }) => {
       action: () => navigate("/admin/settings"),
     },
     {
-      title: "Reviews",
-      description: "Manage user reviews and feedback",
-      icon: ShieldCheckIcon,
+      title: "System Data",
+      description: "View and manage system data",
+      icon: ServerIcon,
       color: "primary",
-      action: () => navigate("/admin/reviews"),
+      action: () => navigate("/admin/system-data"),
     },
     {
       title: "Notifications",
@@ -184,27 +182,6 @@ const AdminDashboard = ({ onPageChange }) => {
       icon: ClockIcon,
       color: "primary",
       action: () => navigate("/admin/history"),
-    },
-  ];
-
-  const recentAlerts = [
-    {
-      id: 1,
-      type: "warning",
-      message: "High server load detected",
-      time: "5 minutes ago",
-    },
-    {
-      id: 2,
-      type: "info",
-      message: "New user registration spike",
-      time: "15 minutes ago",
-    },
-    {
-      id: 3,
-      type: "success",
-      message: "Database backup completed",
-      time: "1 hour ago",
     },
   ];
 
@@ -294,89 +271,40 @@ const AdminDashboard = ({ onPageChange }) => {
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                Quick Actions
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {quickActions.map((action, index) => {
-                  const IconComponent = action.icon;
-                  return (
-                    <button
-                      key={index}
-                      onClick={action.action}
-                      className={`p-4 rounded-lg border border-gray-200 dark:border-secondary-600 hover:border-${action.color}-300 dark:hover:border-${action.color}-600 transition-all group hover:scale-105 hover:shadow-md`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div
-                          className={`p-2 rounded-lg bg-${action.color}-100 dark:bg-${action.color}-900/20 group-hover:bg-${action.color}-200 dark:group-hover:bg-${action.color}-800/30 transition-colors`}
-                        >
-                          <IconComponent
-                            className={`h-6 w-6 ${getIconColor(action.color)}`}
-                          />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                            {action.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {action.description}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Alerts */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                Recent Alerts
-              </h2>
-              <div className="space-y-4">
-                {recentAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
-                  >
+        {/* Quick Actions */}
+        <div className="bg-white dark:bg-secondary-800 rounded-xl border border-gray-200 dark:border-secondary-700 p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {quickActions.map((action, index) => {
+              const IconComponent = action.icon;
+              return (
+                <button
+                  key={index}
+                  onClick={action.action}
+                  className={`p-4 rounded-lg border border-gray-200 dark:border-secondary-600 hover:border-${action.color}-300 dark:hover:border-${action.color}-600 transition-all group hover:scale-105 hover:shadow-md`}
+                >
+                  <div className="flex items-start space-x-3">
                     <div
-                      className={`p-1 rounded-full ${
-                        alert.type === "warning"
-                          ? "bg-warning-100 dark:bg-warning-900/20"
-                          : alert.type === "info"
-                          ? "bg-info-100 dark:bg-info-900/20"
-                          : "bg-success-100 dark:bg-success-900/20"
-                      }`}
+                      className={`p-2 rounded-lg bg-${action.color}-100 dark:bg-${action.color}-900/20 group-hover:bg-${action.color}-200 dark:group-hover:bg-${action.color}-800/30 transition-colors`}
                     >
-                      <ExclamationTriangleIcon
-                        className={`h-4 w-4 ${
-                          alert.type === "warning"
-                            ? "text-warning-600 dark:text-warning-400"
-                            : alert.type === "info"
-                            ? "text-info-600 dark:text-info-400"
-                            : "text-success-600 dark:text-success-400"
-                        }`}
+                      <IconComponent
+                        className={`h-6 w-6 ${getIconColor(action.color)}`}
                       />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {alert.message}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {alert.time}
+                    <div className="flex-1 text-left">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                        {action.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {action.description}
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

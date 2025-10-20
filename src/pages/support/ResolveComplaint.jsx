@@ -264,14 +264,12 @@ const ResolveComplaint = () => {
         },
       });
 
-      const data = await response.json();
-      console.log('Response received for third party drivers:', data);
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('Response received for third party drivers:', result);
       
       if (result.success && result.data) {
         setThirdPartyDrivers(result.data);
@@ -575,10 +573,9 @@ const ResolveComplaint = () => {
 
       {/* Main Content - Only show when not loading */}
       {!loading && filteredComplaints.length > 0 && (
-
-      <div className="space-y-4">
-        {/* Display filtered complaints */}
-        {filteredComplaints.map((complaint, index) => (
+        <div className="space-y-4">
+          {/* Display filtered complaints */}
+          {filteredComplaints.map((complaint, index) => (
           <div key={complaint._id} className="bg-white dark:bg-secondary-800 rounded-xl shadow-sm border border-gray-200 dark:border-secondary-700">
             {/* Compact Header View */}
             <div className="p-4">
@@ -588,21 +585,16 @@ const ResolveComplaint = () => {
                     <ExclamationTriangleIcon className="h-6 w-6 text-warning-600 dark:text-warning-400" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {complaint.type ? complaint.type.replace('_', ' ') : complaint.description}
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Ticket ID: {complaint._id} • Created: {new Date(complaint.createdAt).toLocaleDateString()}
+                    <p className="text-base text-gray-500 dark:text-gray-400">
+                      Complaint #{String(index + 1).padStart(3, '0')} • Created: {new Date(complaint.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  {complaint.priority && (
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClasses(complaint.priority)}`}>
-                      {complaint.priority.charAt(0).toUpperCase() + complaint.priority.slice(1)} Priority
-                    </span>
-                  )}
-                  <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeClasses(complaint.status)}`}>
+                  <span className={`inline-flex px-3 py-1 text-base font-medium rounded-full ${getStatusBadgeClasses(complaint.status)}`}>
                     {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1).replace('_', ' ')}
                   </span>
                   <button
@@ -621,20 +613,20 @@ const ResolveComplaint = () => {
               {/* Basic Info - Always Visible */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm">{complaint.description}</p>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
+                  <p className="text-gray-700 dark:text-gray-300 text-base">{complaint.description}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Tourist Details</h3>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Tourist Details</h3>
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
                       <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-base font-medium text-gray-900 dark:text-white">
                         {complaint.tourist ? `${complaint.tourist.first_name} ${complaint.tourist.last_name}` : 'N/A'}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {complaint.tourist ? complaint.tourist.email : 'N/A'}
                       </p>
                     </div>
@@ -646,20 +638,13 @@ const ResolveComplaint = () => {
               <div className="flex justify-between items-center">
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => handleContact('email', complaint.tourist)}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
-                  >
-                    <EnvelopeIcon className="h-3 w-3 mr-1" />
-                    Contact Tourist
-                  </button>
-                  <button
                     onClick={() => handleResolve(complaint._id)}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-success-600 hover:bg-success-700 transition-colors duration-200"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-lg text-white bg-success-600 hover:bg-success-700 transition-colors duration-200"
                   >
                     Quick Resolve
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   #{index + 1} of {filteredComplaints.length}
                 </p>
               </div>
@@ -674,7 +659,7 @@ const ResolveComplaint = () => {
                   {activeTab === 'high-priority' ? (
                     /* High Priority Tab - Driver and Trip Details Only */
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                         Driver & Trip Details
                       </h3>
                       
@@ -687,14 +672,14 @@ const ResolveComplaint = () => {
                                 <TruckIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                               </div>
                               <div>
-                                <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                                   {`${complaint.driver.first_name} ${complaint.driver.last_name}`}
                                 </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Driver</p>
+                                <p className="text-base text-gray-500 dark:text-gray-400">Driver</p>
                               </div>
                             </div>
 
-                            <div className="space-y-3 mb-3 text-sm">
+                            <div className="space-y-3 mb-3 text-base">
                               <div>
                                 <span className="text-gray-600 dark:text-gray-400">Email:</span>
                                 <p className="font-medium text-gray-900 dark:text-white break-words">
@@ -712,7 +697,7 @@ const ResolveComplaint = () => {
                             <div className="flex justify-center">
                               <button
                                 onClick={() => handleContact('email', complaint.driver)}
-                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
+                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
                               >
                                 <EnvelopeIcon className="h-4 w-4 mr-2" />
                                 Email Driver
@@ -729,14 +714,14 @@ const ResolveComplaint = () => {
                                 <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div>
-                                <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                                   Trip Information
                                 </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Trip ID: {complaint.tripId}</p>
+                                <p className="text-base text-gray-500 dark:text-gray-400">Trip ID: {complaint.tripId}</p>
                               </div>
                             </div>
 
-                            <div className="space-y-3 mb-3 text-sm">
+                            <div className="space-y-3 mb-3 text-base">
                               <div>
                                 <span className="text-gray-600 dark:text-gray-400">Base City:</span>
                                 <p className="font-medium text-gray-900 dark:text-white">
@@ -753,7 +738,7 @@ const ResolveComplaint = () => {
                                 <span className="text-gray-600 dark:text-gray-400">Daily Destinations:</span>
                                 <div className="mt-2 space-y-1">
                                   {complaint.trip_details.dailyPlans?.map((plan, index) => (
-                                    <p key={index} className="font-medium text-gray-900 dark:text-white text-xs">
+                                    <p key={index} className="font-medium text-gray-900 dark:text-white text-sm">
                                       Day {plan.day}: {plan.city}
                                     </p>
                                   )) || <p className="font-medium text-gray-900 dark:text-white">N/A</p>}
@@ -767,7 +752,7 @@ const ResolveComplaint = () => {
                   ) : (
                     /* All Complaints Tab - Driver and Guide Details */
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                         Driver & Guide Details
                       </h3>
                       
@@ -780,14 +765,14 @@ const ResolveComplaint = () => {
                                 <TruckIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                               </div>
                               <div>
-                                <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                                   {`${complaint.driver.first_name} ${complaint.driver.last_name}`}
                                 </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Driver</p>
+                                <p className="text-base text-gray-500 dark:text-gray-400">Driver</p>
                               </div>
                             </div>
 
-                            <div className="space-y-3 mb-3 text-sm">
+                            <div className="space-y-3 mb-3 text-base">
                               <div>
                                 <span className="text-gray-600 dark:text-gray-400">Email:</span>
                                 <p className="font-medium text-gray-900 dark:text-white break-words">
@@ -805,7 +790,7 @@ const ResolveComplaint = () => {
                             <div className="flex justify-center">
                               <button
                                 onClick={() => handleContact('email', complaint.driver)}
-                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
+                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
                               >
                                 <EnvelopeIcon className="h-4 w-4 mr-2" />
                                 Email Driver
@@ -822,14 +807,14 @@ const ResolveComplaint = () => {
                                 <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div>
-                                <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                                   {`${complaint.guide.first_name} ${complaint.guide.last_name}`}
                                 </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Tour Guide</p>
+                                <p className="text-base text-gray-500 dark:text-gray-400">Tour Guide</p>
                               </div>
                             </div>
 
-                            <div className="space-y-3 mb-3 text-sm">
+                            <div className="space-y-3 mb-3 text-base">
                               <div>
                                 <span className="text-gray-600 dark:text-gray-400">Email:</span>
                                 <p className="font-medium text-gray-900 dark:text-white break-words">
@@ -847,7 +832,7 @@ const ResolveComplaint = () => {
                             <div className="flex justify-center">
                               <button
                                 onClick={() => handleContact('email', complaint.guide)}
-                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
+                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors duration-200"
                               >
                                 <EnvelopeIcon className="h-4 w-4 mr-2" />
                                 Email Guide
@@ -885,7 +870,7 @@ const ResolveComplaint = () => {
             )}
           </div>
         ))}
-      </div>
+        </div>
       )}
 
       {/* Assign Driver Modal */}
@@ -894,7 +879,7 @@ const ResolveComplaint = () => {
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-secondary-800">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Assign New Driver
               </h3>
               <button
@@ -910,7 +895,7 @@ const ResolveComplaint = () => {
 
             {/* Modal Content */}
             <div className="max-h-96 overflow-y-auto">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-base text-gray-600 dark:text-gray-400 mb-4">
                 Select an available third party driver to assign to complaint #{selectedComplaintId}
               </p>
               
@@ -935,16 +920,16 @@ const ResolveComplaint = () => {
                                 <TruckIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                               </div>
                               <div>
-                                <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                                   {driver.firstName || driver.name} {driver.lastName || ''}
                                 </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className="text-base text-gray-600 dark:text-gray-400">
                                   {driver.companyName || driver.company} • {driver.district}
                                 </p>
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-base">
                               <div>
                                 <span className="text-gray-500 dark:text-gray-400">Contact 1:</span>
                                 <span className="ml-2 font-medium text-gray-900 dark:text-white">
@@ -959,7 +944,7 @@ const ResolveComplaint = () => {
                               </div>
                               <div className="md:col-span-2">
                                 <span className="text-gray-500 dark:text-gray-400">Email:</span>
-                                <span className="ml-2 font-medium text-gray-900 dark:text-white text-xs">
+                                <span className="ml-2 font-medium text-gray-900 dark:text-white text-sm">
                                   {driver.companyEmail || 'N/A'}
                                 </span>
                               </div>

@@ -525,6 +525,7 @@ const ConfirmedPools = ({ currentUser }) => {
             }
           );
           console.log('💳 Success with confirmedTripId');
+
         }
       }
 
@@ -562,15 +563,33 @@ const ConfirmedPools = ({ currentUser }) => {
               
               for (const payment of allMemberPayments) {
                 let memberPaid = false;
+                const memberName = payment.userName || payment.userEmail || payment.userId;
                 
                 if (payment.upfrontPayment && payment.finalPayment) {
                   // Phased payment: check if BOTH upfront AND final are paid (full payment required)
                   const upfrontPaid = payment.upfrontPayment.status === 'paid' || payment.upfrontPayment.status === 'completed';
                   const finalPaid = payment.finalPayment.status === 'paid' || payment.finalPayment.status === 'completed';
                   memberPaid = upfrontPaid && finalPaid;
+                  
+                  console.log(`💳 Member ${memberName}:`, {
+                    upfrontAmount: payment.upfrontPayment.amount,
+                    upfrontStatus: payment.upfrontPayment.status,
+                    upfrontPaid: upfrontPaid,
+                    finalAmount: payment.finalPayment.amount,
+                    finalStatus: payment.finalPayment.status,
+                    finalPaid: finalPaid,
+                    overallStatus: payment.overallPaymentStatus,
+                    totalPaid: payment.totalPaid,
+                    memberFullyPaid: memberPaid
+                  });
                 } else {
                   // Single payment
                   memberPaid = payment.status === 'paid' || payment.status === 'completed';
+                  console.log(`💳 Member ${memberName} (single payment):`, {
+                    amount: payment.amount,
+                    status: payment.status,
+                    memberPaid: memberPaid
+                  });
                 }
                 
                 if (memberPaid) {
@@ -581,10 +600,15 @@ const ConfirmedPools = ({ currentUser }) => {
               }
               
               console.log(`💰 Payment status: ${paidCount}/${totalMembers} members paid`);
+              console.log(`📊 Current members: ${updatedTrip.currentMemberCount}, Max members: ${updatedTrip.maxMembers}`);
+              console.log(`🔍 All paid: ${allPaid}, Total members: ${totalMembers}, Member payments length: ${allMemberPayments.length}`);
               
-              // If all members paid AND trip is at full capacity, activate the trip
-              if (allPaid && totalMembers === updatedTrip.maxMembers) {
-                console.log('✅ All participants have paid! Activating trip...');
+              // If all CURRENT members (not max members) have paid, activate the trip
+              // Use currentMemberCount instead of maxMembers to check actual participants
+              const currentMemberCount = updatedTrip.currentMemberCount || updatedTrip.memberIds?.length || totalMembers;
+              
+              if (allPaid && paidCount === currentMemberCount && currentMemberCount > 0) {
+                console.log(`✅ All ${currentMemberCount} participants have paid! Activating trip...`);
 
                 // Prepare activation payload
                 const vehicleTypeString = updatedTrip.vehicleType || updatedTrip.tripDetails?.vehicleType;
@@ -656,8 +680,9 @@ const ConfirmedPools = ({ currentUser }) => {
                   toast.success('Payment completed successfully! Trip activation will be processed shortly.', { duration: 4000 });
                 }
               } else {
-                console.log(`⏳ Waiting for remaining payments (${paidCount}/${totalMembers} paid, max: ${updatedTrip.maxMembers})`);
-                toast.success('Payment completed successfully! Waiting for other participants to complete their payments.', { duration: 4000 });
+                const currentMemberCount = updatedTrip.currentMemberCount || updatedTrip.memberIds?.length || totalMembers;
+                console.log(`⏳ Waiting for remaining payments (${paidCount}/${currentMemberCount} current members paid)`);
+                toast.success(`Payment completed successfully! Waiting for ${currentMemberCount - paidCount} more participant(s) to complete their payments.`, { duration: 4000 });
               }
             }
           }
