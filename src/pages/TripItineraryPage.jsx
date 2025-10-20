@@ -17,7 +17,7 @@ import TripProgressBar from '../components/TripProgressBar';
 // import { createTripItinerary } from '../api/tripApi'; // Moved to TripPreferencesPage
 import { GOOGLE_MAPS_LIBRARIES } from '../utils/googleMapsConfig';
 // Import suggestions data for fallback
-import suggestionsData from '../../suggestions.json';
+import suggestionsData from '../suggestions.json';
 
 // Google Places API integration
 const GOOGLE_PLACES_API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
@@ -779,19 +779,37 @@ const TripItineraryPage = () => {
       return mockSuggestions[category] || [];
     };
 
-    if (!tripId || !userUid) {
-      console.warn('⚠️ No tripId or userUid available for backend search:', { tripId, userUid });
-      return getFallbackData();
-    }
-
-    // Map frontend categories to API endpoint types
+    // Check if fallback data exists first - if it does, use it immediately without API call
+    const destination = destinations[dayIndex]?.name;
     const categoryTypeMap = {
       'activities': 'attractions',
       'places': 'hotels', 
       'food': 'restaurants'
     };
-
     const apiType = categoryTypeMap[category];
+    
+    // If we have local data, return it immediately without making API calls
+    if (apiType && destination && suggestionsData[destination] && suggestionsData[destination][apiType] && suggestionsData[destination][apiType].length > 0) {
+      console.log(`✅ Local data available for ${destination} - ${apiType}, skipping API call`);
+      return getFallbackData();
+    }
+    
+    // If no destination-specific data, check if any city has data
+    if (apiType) {
+      const cities = Object.keys(suggestionsData);
+      for (const city of cities) {
+        if (suggestionsData[city][apiType] && suggestionsData[city][apiType].length > 0) {
+          console.log(`✅ Local data available from ${city} - ${apiType}, skipping API call`);
+          return getFallbackData();
+        }
+      }
+    }
+
+    if (!tripId || !userUid) {
+      console.warn('⚠️ No tripId or userUid available for backend search:', { tripId, userUid });
+      return getFallbackData();
+    }
+
     if (!apiType) {
       console.warn('⚠️ Unknown category for API:', category);
       return getFallbackData();
@@ -801,7 +819,7 @@ const TripItineraryPage = () => {
     const dayNumber = (dayIndex || 0) + 1;
 
     try {
-      console.log('🔄 Fetching suggestions for modal - category:', category, 'type:', apiType, 'day:', dayNumber);
+      console.log('🔄 No local data found, fetching from API - category:', category, 'type:', apiType, 'day:', dayNumber);
       
       const apiUrl = `${process.env.REACT_APP_API_BASE_URL_TRIP_PLANNING || 'http://localhost:8085/api/v1'}/itinerary/${tripId}/day/${dayNumber}/suggestions/${apiType}?userId=${userUid}`;
       
@@ -852,8 +870,7 @@ const TripItineraryPage = () => {
       }));
     } catch (error) {
       if (error.name === 'AbortError') {
-        console.warn('⏱️ API request timed out after 1 second, using fallback data');
-        toast.info('Loading suggestions from local data...', { duration: 2000 });
+        console.warn('⏱️ API request timed out, using fallback data');
       } else {
         console.error('❌ Error fetching modal suggestions:', error);
       }
