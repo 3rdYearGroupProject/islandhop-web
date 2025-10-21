@@ -839,13 +839,18 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Meter Reading
                 </label>
-                <input
-                  type="number"
-                  value={startMeterReading}
-                  onChange={(e) => setStartMeterReading(e.target.value)}
-                  placeholder="Enter current meter reading"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={startMeterReading}
+                    onChange={(e) => setStartMeterReading(e.target.value)}
+                    placeholder="Enter current meter reading"
+                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                    km
+                  </span>
+                </div>
               </div>
               <div className="flex gap-3">
                 <button
@@ -887,13 +892,18 @@ const MapPopupModal = ({ open, onClose, tripId, tripData }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   End Meter Reading *
                 </label>
-                <input
-                  type="number"
-                  value={endMeterReading}
-                  onChange={(e) => setEndMeterReading(e.target.value)}
-                  placeholder="Enter end meter reading"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={endMeterReading}
+                    onChange={(e) => setEndMeterReading(e.target.value)}
+                    placeholder="Enter end meter reading"
+                    className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                    km
+                  </span>
+                </div>
               </div>
 
               <div className="mb-4">
